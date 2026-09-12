@@ -51,6 +51,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     onNavigateToBudget(p);
   };
 
+  const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
+
   return (
     <div className="space-y-6 pb-12">
       {/* 6 Souhrnných KPI karet */}
@@ -74,7 +76,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         {/* 2. Očekávaný stav na konci měsíce */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Konec aktuálního období</span>
+            <span className="text-xs font-semibold">Očekávaný stav</span>
             <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -82,7 +84,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           <div className={`text-xl font-bold truncate ${
             forecast.expectedClosingCurrentPeriodInHaler < 0 
               ? 'text-red-600' 
-              : forecast.expectedClosingCurrentPeriodInHaler < settings.minReserveInHaler 
+              : forecast.expectedClosingCurrentPeriodInHaler < overdraftLimit 
                 ? 'text-amber-600' 
                 : 'text-slate-900'
           }`}>
@@ -153,7 +155,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <div className={`p-1.5 rounded-lg ${
               forecast.overallMinBalanceInHaler < 0 
                 ? 'bg-red-50 text-red-600' 
-                : forecast.overallMinBalanceInHaler < settings.minReserveInHaler 
+                : forecast.overallMinBalanceInHaler < overdraftLimit 
                   ? 'bg-amber-50 text-amber-600' 
                   : 'bg-slate-100 text-slate-600'
             }`}>
@@ -163,14 +165,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           <div className={`text-xl font-bold truncate ${
             forecast.overallMinBalanceInHaler < 0 
               ? 'text-red-600' 
-              : forecast.overallMinBalanceInHaler < settings.minReserveInHaler 
+              : forecast.overallMinBalanceInHaler < overdraftLimit 
                 ? 'text-amber-600' 
                 : 'text-slate-900'
           }`}>
             {formatCurrency(forecast.overallMinBalanceInHaler)}
           </div>
           <p className="text-[11px] text-slate-400 mt-1 truncate">
-            {forecast.earliestShortagePeriod ? `Riziko: ${forecast.earliestShortagePeriod.name}` : 'Rezerva v pořádku'}
+            {forecast.earliestShortagePeriod ? `Riziko: ${forecast.earliestShortagePeriod.name}` : 'Kontokorent v pořádku'}
           </p>
         </div>
       </div>
@@ -178,7 +180,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       {/* Graf vývoje zůstatků */}
       <OverviewChart 
         periods={displayPeriods} 
-        minReserveInHaler={settings.minReserveInHaler} 
+        overdraftLimitInHaler={overdraftLimit}
+        minReserveInHaler={overdraftLimit} 
         forecastMonths={forecastMonths}
       />
 
@@ -243,7 +246,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 const change = forecastScope === 'usable' ? p.usableNetChangeInHaler : p.netChangeInHaler;
 
                 const isNegative = closing < 0;
-                const isBelowReserve = forecastScope === 'usable' && closing < settings.minReserveInHaler;
+                const isBelowReserve = forecastScope === 'usable' && closing < overdraftLimit;
 
                 return (
                   <tr
@@ -295,7 +298,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         </span>
                       ) : isBelowReserve ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-                          Pod rezervou
+                          Pod kontokorentem
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
@@ -486,7 +489,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
                       const isOpeningNegative = opening < 0;
                       const isClosingNegative = closing < 0;
-                      const isClosingBelowReserve = acc.isUsableCash && closing < settings.minReserveInHaler && closing >= 0;
+                      const isClosingBelowReserve = acc.isUsableCash && closing < overdraftLimit && closing >= 0;
 
                       return (
                         <td
@@ -559,7 +562,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     const totalClosing = p.netWorthClosingInHaler;
                     const isOpeningNegative = totalOpening < 0;
                     const isClosingNegative = totalClosing < 0;
-                    const isClosingBelowReserve = totalClosing < settings.minReserveInHaler && totalClosing >= 0;
+                    const isClosingBelowReserve = totalClosing < overdraftLimit && totalClosing >= 0;
 
                     return (
                       <td key={p.period.key} className="py-2.5 px-3 text-right">

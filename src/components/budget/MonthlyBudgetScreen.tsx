@@ -16,6 +16,7 @@ import {
   Search, 
   ShieldCheck, 
   AlertTriangle,
+  AlertCircle,
   GripVertical,
   List,
   Calendar,
@@ -394,78 +395,141 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     return transferTxs.reduce((sum, t) => sum + t.amountInHaler, 0);
   }, [transferTxs]);
 
-  const diffVsReserve = currentSummary.usableClosingInHaler - settings.minReserveInHaler;
+  // Výchozí účet a jeho souhrnné údaje
+  const defaultAccount = useMemo(() => {
+    return accounts.find(a => a.isDefault && a.status !== 'archived');
+  }, [accounts]);
+
+  const defaultAccountBalance = useMemo(() => {
+    if (!defaultAccount) return null;
+    return currentSummary.accountBalances[defaultAccount.id] || null;
+  }, [defaultAccount, currentSummary]);
+
+  const defaultOpeningBalance = defaultAccountBalance?.openingBalanceInHaler ?? 0;
+  const defaultIncomeBalance = defaultAccountBalance?.incomeInHaler ?? 0;
+  const defaultExpenseBalance = defaultAccountBalance?.expenseInHaler ?? 0;
+  const defaultTransfersIn = defaultAccountBalance?.transfersInInHaler ?? 0;
+  const defaultTransfersOut = defaultAccountBalance?.transfersOutInHaler ?? 0;
+  const defaultNetTransfers = defaultTransfersIn - defaultTransfersOut;
+  const defaultCorrections = defaultAccountBalance?.correctionsInHaler ?? 0;
+  const defaultInitDate = defaultAccount?.initialBalanceDate || '1970-01-01';
+  const defaultBaseInitialToAdd = (defaultInitDate > selectedPeriod.startDate && defaultInitDate <= selectedPeriod.endDate)
+    ? (defaultAccount?.initialBalanceInHaler || 0)
+    : 0;
+  const defaultNetChange = defaultIncomeBalance - defaultExpenseBalance + defaultNetTransfers + defaultCorrections + defaultBaseInitialToAdd;
+  const defaultClosingBalance = defaultAccountBalance?.closingBalanceInHaler ?? (defaultOpeningBalance + defaultNetChange);
+  const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
+  const defaultWithOverdraft = defaultClosingBalance + overdraftLimit;
+  const isOverdraftExceeded = defaultWithOverdraft < 0;
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Finanční bilance období (Souhrnný panel) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-slate-400 block font-medium">Počáteční stav</span>
-          <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
-            {formatCurrency(currentSummary.usableOpeningInHaler)}
-          </span>
-          <span className="text-[10px] text-slate-400">Přenese se z minulého</span>
+      {/* Finanční bilance období (Souhrnný panel výchozího účtu) */}
+      {!defaultAccount ? (
+        <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-amber-900">Není zvolen výchozí účet</h4>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Pro zobrazení souhrnných finančních ukazatelů rozpočtu je nutné nejprve nastavit výchozí účet ve správě účtů (sekce <strong>Účty</strong>).
+            </p>
+          </div>
         </div>
+      ) : (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-200/70 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-sky-500" />
+              Výchozí účet: <strong>{defaultAccount.name}</strong>
+            </span>
+          </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-emerald-600 block font-semibold">+ Příjmy</span>
-          <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
-            {formatCurrency(currentSummary.incomeInHaler)}
-          </span>
-          <span className="text-[10px] text-slate-400">Mzda a příjmy</span>
-        </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-slate-400 block font-medium">Počáteční stav</span>
+              <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+                {formatCurrency(defaultOpeningBalance)}
+              </span>
+              <span className="text-[10px] text-slate-400">Přenese se z minulého</span>
+            </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-red-600 block font-semibold">− Výdaje</span>
-          <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
-            {formatCurrency(currentSummary.expenseInHaler)}
-          </span>
-          <span className="text-[10px] text-slate-400">Výdaje a provoz</span>
-        </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-emerald-600 block font-semibold">+ Příjmy</span>
+              <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
+                {formatCurrency(defaultIncomeBalance)}
+              </span>
+              <span className="text-[10px] text-slate-400">Příjmy výchozího účtu</span>
+            </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-sky-600 block font-semibold">Převody</span>
-          <span className="text-base font-bold text-sky-700 block mt-0.5 truncate">
-            {formatCurrency(totalTransfersInHaler)}
-          </span>
-          <span className="text-[10px] text-slate-400">Spoření & investice</span>
-        </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-red-600 block font-semibold">− Výdaje</span>
+              <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
+                {formatCurrency(defaultExpenseBalance)}
+              </span>
+              <span className="text-[10px] text-slate-400">Výdaje výchozího účtu</span>
+            </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
-          <span className={`text-base font-bold block mt-0.5 truncate ${
-            currentSummary.usableNetChangeInHaler >= 0 ? 'text-emerald-600' : 'text-red-600'
-          }`}>
-            {formatCurrency(currentSummary.usableNetChangeInHaler, { showPlus: true })}
-          </span>
-          <span className="text-[10px] text-slate-400">Příjmy − Výdaje</span>
-        </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-sky-600 block font-semibold">Převody</span>
+              <span className={`text-base font-bold block mt-0.5 truncate ${
+                defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-800'
+              }`}>
+                {formatCurrency(defaultNetTransfers, { showPlus: true })}
+              </span>
+              <span className="text-[10px] text-slate-400" title={`Příchozí: ${formatCurrency(defaultTransfersIn)}, Odchozí: ${formatCurrency(defaultTransfersOut)}`}>
+                Příchozí − Odchozí
+              </span>
+            </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-          <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
-          <span className={`text-base font-bold block mt-0.5 truncate ${
-            currentSummary.usableClosingInHaler < 0 
-              ? 'text-red-600' 
-              : currentSummary.usableClosingInHaler < settings.minReserveInHaler 
-                ? 'text-amber-600' 
-                : 'text-slate-900'
-          }`}>
-            {formatCurrency(currentSummary.usableClosingInHaler)}
-          </span>
-          <span className="text-[10px] text-slate-400">Očekávaný zůstatek</span>
-        </div>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
+              <span className={`text-base font-bold block mt-0.5 truncate ${
+                defaultNetChange >= 0 ? 'text-emerald-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(defaultNetChange, { showPlus: true })}
+              </span>
+              <span className="text-[10px] text-slate-400">Příjmy − Výdaje + Převody</span>
+            </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
-          <span className="text-xs text-slate-500 block font-medium">Rozdíl proti rezervě</span>
-          <span className={`text-base font-bold block mt-0.5 truncate ${
-            diffVsReserve >= 0 ? 'text-emerald-600' : 'text-amber-600'
-          }`}>
-            {formatCurrency(diffVsReserve, { showPlus: true })}
-          </span>
-          <span className="text-[10px] text-slate-400">Min. {formatCurrency(settings.minReserveInHaler)}</span>
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
+              <span className={`text-base font-bold block mt-0.5 truncate ${
+                isOverdraftExceeded 
+                  ? 'text-red-600' 
+                  : defaultClosingBalance < 0 
+                    ? 'text-amber-600' 
+                    : 'text-slate-900'
+              }`}>
+                {formatCurrency(defaultClosingBalance)}
+              </span>
+              <span className="text-[10px] text-slate-400">Očekávaný zůstatek</span>
+            </div>
+
+            <div className={`p-3.5 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
+              isOverdraftExceeded
+                ? 'bg-red-50/90 border-red-300'
+                : 'bg-white border-slate-200/80'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-xs block font-medium ${isOverdraftExceeded ? 'text-red-700 font-bold' : 'text-slate-500'}`}>
+                  Včetně kontokorentu
+                </span>
+                {isOverdraftExceeded && (
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                )}
+              </div>
+              <span className={`text-base font-bold block mt-0.5 truncate ${
+                isOverdraftExceeded ? 'text-red-600' : 'text-emerald-600'
+              }`}>
+                {formatCurrency(defaultWithOverdraft)}
+              </span>
+              <span className={`text-[10px] ${isOverdraftExceeded ? 'text-red-600 font-semibold' : 'text-slate-400'}`}>
+                {isOverdraftExceeded ? 'Kontokorent překročen' : `Limit ${formatCurrency(overdraftLimit)}`}
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">

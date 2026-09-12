@@ -5,15 +5,18 @@ import { formatMonthsCount } from '../../services/periodService';
 
 interface OverviewChartProps {
   periods: PeriodSummary[];
-  minReserveInHaler: number;
+  minReserveInHaler?: number;
+  overdraftLimitInHaler?: number;
   forecastMonths?: number;
 }
 
 export const OverviewChart: React.FC<OverviewChartProps> = ({
   periods,
   minReserveInHaler,
+  overdraftLimitInHaler,
   forecastMonths,
 }) => {
+  const overdraftLimit = overdraftLimitInHaler ?? minReserveInHaler ?? 0;
   const horizon = forecastMonths || periods?.length || 12;
   const [showUsable, setShowUsable] = useState(true);
   const [showNetWorth, setShowNetWorth] = useState(true);
@@ -36,7 +39,7 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
     }
   });
 
-  if (minReserveInHaler > maxVal) maxVal = minReserveInHaler;
+  if (overdraftLimit > maxVal) maxVal = overdraftLimit;
 
   // Přidáme 10% padding nahoru a dolů
   const padding = (maxVal - minVal) * 0.1 || 100000;
@@ -71,7 +74,7 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
   const nwAreaPath = `M ${getX(0)},${getY(0)} L ${nwPoints.join(' L ')} L ${getX(periods.length - 1)},${getY(0)} Z`;
 
   const zeroY = getY(0);
-  const reserveY = getY(minReserveInHaler);
+  const reserveY = getY(overdraftLimit);
 
   const hoveredPeriod = hoveredIdx !== null ? periods[hoveredIdx] : null;
 
@@ -142,7 +145,7 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
             strokeDasharray="4 4"
           />
 
-          {/* Linka minimální rezervy */}
+          {/* Linka kontokorentu */}
           {reserveY >= margin.top && reserveY <= height - margin.bottom && (
             <g>
               <line
@@ -160,7 +163,7 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
                 textAnchor="end"
                 className="text-[10px] font-medium fill-amber-600"
               >
-                Rezerva ({formatCurrency(minReserveInHaler)})
+                Kontokorent ({formatCurrency(overdraftLimit)})
               </text>
             </g>
           )}
@@ -229,7 +232,7 @@ export const OverviewChart: React.FC<OverviewChartProps> = ({
                     cx={x}
                     cy={getY(p.usableClosingInHaler)}
                     r={isHovered ? 5 : 3.5}
-                    fill={p.usableClosingInHaler < 0 ? '#ef4444' : p.usableClosingInHaler < minReserveInHaler ? '#f59e0b' : '#0284c7'}
+                    fill={p.usableClosingInHaler < 0 ? '#ef4444' : p.usableClosingInHaler < overdraftLimit ? '#f59e0b' : '#0284c7'}
                     stroke="#ffffff"
                     strokeWidth="1.5"
                   />

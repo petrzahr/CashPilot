@@ -393,7 +393,8 @@ export function calculateForecast(
   settings: AppSettings = {
     currency: 'CZK',
     budgetStartDay: 15,
-    minReserveInHaler: 5000000,
+    overdraftLimitInHaler: 2000000,
+    minReserveInHaler: 2000000,
     forecastMonths: 12,
     roundAmounts: false
   },
@@ -713,7 +714,8 @@ export function calculateForecast(
     const usableNetChange = subHaler(usableClosing, usableOpening);
 
     const isNegative = usableClosing < 0;
-    const isBelowReserve = usableClosing < settings.minReserveInHaler;
+    const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
+    const isBelowReserve = usableClosing < overdraftLimit;
 
     periodSummaries.push({
       period,

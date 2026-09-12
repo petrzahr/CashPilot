@@ -55,7 +55,9 @@ export const SettingsScreen: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [budgetStartDay, setBudgetStartDay] = useState(settings.budgetStartDay);
-  const [minReserveStr, setMinReserveStr] = useState(halerToInputValue(settings.minReserveInHaler));
+  const [overdraftLimitStr, setOverdraftLimitStr] = useState(
+    halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
+  );
   const [forecastMonths, setForecastMonths] = useState(settings.forecastMonths || 12);
   const [roundAmounts, setRoundAmounts] = useState(settings.roundAmounts);
 
@@ -70,7 +72,12 @@ export const SettingsScreen: React.FC = () => {
   // Synchronizace při změně zvenčí
   React.useEffect(() => {
     setBudgetStartDay(settings.budgetStartDay);
-  }, [settings.budgetStartDay]);
+    setOverdraftLimitStr(
+      halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
+    );
+    setForecastMonths(settings.forecastMonths || 12);
+    setRoundAmounts(settings.roundAmounts);
+  }, [settings.budgetStartDay, settings.overdraftLimitInHaler, settings.minReserveInHaler, settings.forecastMonths, settings.roundAmounts]);
 
   const handleStartDayChange = (newDay: number) => {
     if (isNaN(newDay) || newDay < 1 || newDay > 31 || !Number.isInteger(newDay)) return;
@@ -101,9 +108,10 @@ export const SettingsScreen: React.FC = () => {
 
   const handleSaveGeneral = (e: React.FormEvent) => {
     e.preventDefault();
-    const reserveHaler = parseInputToHaler(minReserveStr);
+    const overdraftHaler = parseInputToHaler(overdraftLimitStr);
     updateSettings({
-      minReserveInHaler: reserveHaler,
+      overdraftLimitInHaler: overdraftHaler,
+      minReserveInHaler: overdraftHaler, // Pro zpětnou kompatibilitu
       forecastMonths,
       roundAmounts,
     });
@@ -135,7 +143,7 @@ export const SettingsScreen: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-slate-900">Rozpočtové období a pravidla</h2>
             <p className="text-xs text-slate-500">
-              Konfigurace začátku rozpočtového měsíce a minimální finanční rezervy
+              Konfigurace začátku rozpočtového měsíce a výše kontokorentu
             </p>
           </div>
         </div>
@@ -169,24 +177,24 @@ export const SettingsScreen: React.FC = () => {
               </p>
             </div>
 
-            {/* Minimální finanční rezerva */}
+            {/* Výše kontokorentu */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Minimální finanční rezerva (Kč)
+                Výše kontokorentu (Kč)
               </label>
               <div className="relative">
                 <input
                   type="number"
                   step="any"
                   min="0"
-                  value={minReserveStr}
-                  onChange={(e) => setMinReserveStr(e.target.value)}
+                  value={overdraftLimitStr}
+                  onChange={(e) => setOverdraftLimitStr(e.target.value)}
                   className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
                 />
                 <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-400">Kč</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                Při poklesu použitelných peněz pod tuto částku se zobrazí upozornění.
+                Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
               </p>
             </div>
 

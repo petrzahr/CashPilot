@@ -3,7 +3,8 @@ import { Account, AppSettings, Category, RecurringRule, Transaction } from '../t
 export const DEFAULT_SETTINGS: AppSettings = {
   currency: 'CZK',
   budgetStartDay: 15,
-  minReserveInHaler: 5000000, // 50 000 Kč
+  overdraftLimitInHaler: 2000000, // Výše kontokorentu: 20 000 Kč
+  minReserveInHaler: 2000000, // Pro zpětnou kompatibilitu
   forecastMonths: 12,
   roundAmounts: false,
 };

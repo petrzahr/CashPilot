@@ -145,10 +145,29 @@ export function loadStoredData(): AppData {
       sanitizedAccounts.some(a => a.id === s.accountId)
     );
 
+    // Migrace a sanitace nastavení (kontokorent se zpětnou kompatibilitou)
+    const rawSettings = (parsed.settings || {}) as unknown as Record<string, unknown>;
+    let overdraftLimitInHaler = rawSettings.overdraftLimitInHaler;
+    if (typeof overdraftLimitInHaler !== 'number') {
+      overdraftLimitInHaler = typeof rawSettings.minReserveInHaler === 'number'
+        ? rawSettings.minReserveInHaler
+        : DEFAULT_SETTINGS.overdraftLimitInHaler;
+    }
+    const hasSettingsChanges =
+      rawSettings.overdraftLimitInHaler !== overdraftLimitInHaler ||
+      rawSettings.minReserveInHaler !== overdraftLimitInHaler;
+
+    const sanitizedSettings: AppSettings = {
+      ...DEFAULT_SETTINGS,
+      ...rawSettings,
+      overdraftLimitInHaler: overdraftLimitInHaler as number,
+      minReserveInHaler: overdraftLimitInHaler as number,
+    };
+
     // Doplnit případná chybějící pole pro kompatibilitu
     const dataToReturn = {
       version: parsed.version || 1,
-      settings: parsed.settings || { ...DEFAULT_SETTINGS },
+      settings: sanitizedSettings,
       accounts: sanitizedAccounts,
       categories: parsed.categories || [...DEFAULT_CATEGORIES],
       transactions: finalTxs,
@@ -157,7 +176,14 @@ export function loadStoredData(): AppData {
       corrections: cleanedCorrections,
       marketValueSnapshots: cleanedSnapshots,
     };
-    if (finalTxs !== parsed.transactions || hasStatusChanges || hasCorrectionsRemoved || hasAccountChanges || cleanedSnapshots.length !== (parsed.marketValueSnapshots || []).length) {
+    if (
+      finalTxs !== parsed.transactions ||
+      hasStatusChanges ||
+      hasCorrectionsRemoved ||
+      hasAccountChanges ||
+      hasSettingsChanges ||
+      cleanedSnapshots.length !== (parsed.marketValueSnapshots || []).length
+    ) {
       saveStoredData(dataToReturn);
     }
     return dataToReturn;
@@ -212,9 +238,23 @@ export function validateAndParseBackup(jsonStr: string): AppData {
     (parsed.accounts as Account[]).some((a: Account) => a.id === s.accountId)
   );
 
+  const rawSettings = (parsed.settings || {}) as unknown as Record<string, unknown>;
+  let overdraftLimitInHaler = rawSettings.overdraftLimitInHaler;
+  if (typeof overdraftLimitInHaler !== 'number') {
+    overdraftLimitInHaler = typeof rawSettings.minReserveInHaler === 'number'
+      ? rawSettings.minReserveInHaler
+      : DEFAULT_SETTINGS.overdraftLimitInHaler;
+  }
+  const sanitizedSettings: AppSettings = {
+    ...DEFAULT_SETTINGS,
+    ...rawSettings,
+    overdraftLimitInHaler: overdraftLimitInHaler as number,
+    minReserveInHaler: overdraftLimitInHaler as number,
+  };
+
   return {
     version: parsed.version || 1,
-    settings: parsed.settings || { ...DEFAULT_SETTINGS },
+    settings: sanitizedSettings,
     accounts: parsed.accounts,
     categories: parsed.categories,
     transactions: rawTxs,
