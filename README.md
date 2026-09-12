@@ -106,3 +106,4 @@ Doporučujeme pravidelně vytvářet zálohu vašich dat do souboru, zejména p�
 
 Aplikace CashPilot je v aktivním vývoji. Průběžně probíhají aktualizace, optimalizace finančního výpočetního jádra a rozšiřování funkcionalit pro ještě pohodlnější správu osobních a rodinných financí.
 
+Test automatického workflow
