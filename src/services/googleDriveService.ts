@@ -3,7 +3,26 @@
  * Využívá Google Identity Services (GIS) Token Client a Google Drive API v3 (appDataFolder).
  */
 
-import { AppData } from './storageService';
+import { AppData, sanitizeCorrections } from './storageService';
+import {
+  Account,
+  AppSettings,
+  BalanceCorrection,
+  Category,
+  MarketValueSnapshot,
+  RecurringException,
+  RecurringRule,
+  Transaction,
+} from '../types/finance';
+import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_SETTINGS,
+  DEMO_ACCOUNTS,
+  DEMO_RECURRING_RULES,
+  DEMO_TRANSACTIONS,
+} from './demoData';
+import { sanitizeAndRepairSequences } from './sequenceService';
+
 
 // Typy pro Google Identity Services (GIS)
 export interface GoogleTokenResponse {
@@ -435,3 +454,219 @@ export async function uploadToGoogleDrive(
   const result = await res.json();
   return result as DriveFileInfo;
 }
+
+export interface MergeResult {
+  mergedData: AppData;
+  hasLocalAdditions: boolean;
+}
+
+/**
+ * Sloučí data z Google Disku (autorita) a lokálního úložiště (cache).
+ * - Google Disk je Single Source of Truth.
+ * - Lokální nově vytvořené offline záznamy (nebo záznamy s novějším časovým razítkem úpravy) jsou začleněny.
+ * - Ošetřuje se, aby se nesmazaly smazané položky znovu zavlečením z lokální demo databáze.
+ */
+export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData): MergeResult {
+  let hasLocalAdditions = false;
+
+  // Pokud jsou data identická, není co slučovat
+  if (JSON.stringify(cloudData) === JSON.stringify(localData)) {
+    return { mergedData: cloudData, hasLocalAdditions: false };
+  }
+
+  const getTime = (dateStr?: string): number => {
+    if (!dateStr) return 0;
+    const t = new Date(dateStr).getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
+  // 1. Sloučení účtů (Accounts)
+  const cloudAccounts = Array.isArray(cloudData.accounts) ? [...cloudData.accounts] : [];
+  const localAccounts = Array.isArray(localData.accounts) ? localData.accounts : [];
+  const accMap = new Map<string, Account>(cloudAccounts.map(a => [a.id, { ...a }]));
+
+  for (const localAcc of localAccounts) {
+    if (accMap.has(localAcc.id)) {
+      const cloudAcc = accMap.get(localAcc.id)!;
+      if (getTime(localAcc.updatedAt) > getTime(cloudAcc.updatedAt)) {
+        accMap.set(localAcc.id, { ...localAcc });
+        hasLocalAdditions = true;
+      }
+    } else {
+      const isDemo = DEMO_ACCOUNTS.some(d => d.id === localAcc.id);
+      if (!isDemo) {
+        accMap.set(localAcc.id, { ...localAcc });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+
+  const mergedAccounts = Array.from(accMap.values());
+  let defaultCount = 0;
+  const sanitizedAccounts = mergedAccounts.map(a => {
+    if (a.isDefault && a.status !== 'archived') {
+      defaultCount++;
+      if (defaultCount > 1) {
+        return { ...a, isDefault: false };
+      }
+    }
+    return a;
+  });
+  if (defaultCount === 0 && sanitizedAccounts.length > 0) {
+    const firstActive = sanitizedAccounts.find(a => a.status !== 'archived');
+    if (firstActive) firstActive.isDefault = true;
+  }
+
+  // 2. Sloučení kategorií (Categories)
+  const cloudCategories = Array.isArray(cloudData.categories) ? [...cloudData.categories] : [];
+  const localCategories = Array.isArray(localData.categories) ? localData.categories : [];
+  const catMap = new Map<string, Category>(cloudCategories.map(c => [c.id, { ...c }]));
+
+  for (const localCat of localCategories) {
+    if (catMap.has(localCat.id)) {
+      const cloudCat = catMap.get(localCat.id)!;
+      if (getTime(localCat.updatedAt) > getTime(cloudCat.updatedAt)) {
+        catMap.set(localCat.id, { ...localCat });
+        hasLocalAdditions = true;
+      }
+    } else {
+      const isDefault = DEFAULT_CATEGORIES.some(d => d.id === localCat.id);
+      if (!isDefault) {
+        catMap.set(localCat.id, { ...localCat });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+  const mergedCategories = Array.from(catMap.values());
+
+  // 3. Sloučení pravidel opakovaných plateb (RecurringRules)
+  const cloudRules = Array.isArray(cloudData.recurringRules) ? [...cloudData.recurringRules] : [];
+  const localRules = Array.isArray(localData.recurringRules) ? localData.recurringRules : [];
+  const ruleMap = new Map<string, RecurringRule>(cloudRules.map(r => [r.id, { ...r }]));
+
+  for (const localRule of localRules) {
+    if (ruleMap.has(localRule.id)) {
+      const cloudRule = ruleMap.get(localRule.id)!;
+      if (getTime(localRule.updatedAt) > getTime(cloudRule.updatedAt)) {
+        ruleMap.set(localRule.id, { ...localRule });
+        hasLocalAdditions = true;
+      }
+    } else {
+      const isDemo = DEMO_RECURRING_RULES.some(d => d.id === localRule.id);
+      if (!isDemo) {
+        ruleMap.set(localRule.id, { ...localRule });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+  const mergedRules = Array.from(ruleMap.values());
+
+  // 4. Sloučení transakcí (Transactions)
+  const cloudTxs = Array.isArray(cloudData.transactions) ? [...cloudData.transactions] : [];
+  const localTxs = Array.isArray(localData.transactions) ? localData.transactions : [];
+  const txMap = new Map<string, Transaction>(cloudTxs.map(t => [t.id, { ...t }]));
+
+  for (const localTx of localTxs) {
+    if (txMap.has(localTx.id)) {
+      const cloudTx = txMap.get(localTx.id)!;
+      const localUpdatedTime = getTime(localTx.updatedAt) || getTime(localTx.createdAt);
+      const cloudUpdatedTime = getTime(cloudTx.updatedAt) || getTime(cloudTx.createdAt);
+      if (localUpdatedTime > cloudUpdatedTime) {
+        txMap.set(localTx.id, { ...localTx });
+        hasLocalAdditions = true;
+      }
+    } else {
+      const isDemo = DEMO_TRANSACTIONS.some(d => d.id === localTx.id);
+      if (!isDemo) {
+        txMap.set(localTx.id, { ...localTx });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+
+  const rawMergedTxs = Array.from(txMap.values());
+  const mergedTransactions = sanitizeAndRepairSequences(rawMergedTxs);
+
+  // 5. Sloučení výjimek opakovaných plateb (RecurringExceptions)
+  const cloudExceptions = Array.isArray(cloudData.recurringExceptions) ? [...cloudData.recurringExceptions] : [];
+  const localExceptions = Array.isArray(localData.recurringExceptions) ? localData.recurringExceptions : [];
+  const exMap = new Map<string, RecurringException>(cloudExceptions.map(e => [e.id, { ...e }]));
+
+  for (const localEx of localExceptions) {
+    if (!exMap.has(localEx.id)) {
+      if (ruleMap.has(localEx.ruleId)) {
+        exMap.set(localEx.id, { ...localEx });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+  const mergedExceptions = Array.from(exMap.values());
+
+  // 6. Sloučení korekcí zůstatku (BalanceCorrections)
+  const cloudCorrections = Array.isArray(cloudData.corrections) ? [...cloudData.corrections] : [];
+  const localCorrections = Array.isArray(localData.corrections) ? localData.corrections : [];
+  const corrMap = new Map<string, BalanceCorrection>(cloudCorrections.map(c => [c.id, { ...c }]));
+
+  for (const localCorr of localCorrections) {
+    if (corrMap.has(localCorr.id)) {
+      const cloudCorr = corrMap.get(localCorr.id)!;
+      if (getTime(localCorr.updatedAt) > getTime(cloudCorr.updatedAt)) {
+        corrMap.set(localCorr.id, { ...localCorr });
+        hasLocalAdditions = true;
+      }
+    } else {
+      if (accMap.has(localCorr.accountId)) {
+        corrMap.set(localCorr.id, { ...localCorr });
+        hasLocalAdditions = true;
+      }
+    }
+  }
+  const { cleanedCorrections: mergedCorrections } = sanitizeCorrections(
+    Array.from(corrMap.values()),
+    mergedTransactions,
+    mergedRules
+  );
+
+  // 7. Sloučení snímků tržní hodnoty (MarketValueSnapshots)
+  const cloudSnapshots = Array.isArray(cloudData.marketValueSnapshots) ? [...cloudData.marketValueSnapshots] : [];
+  const localSnapshots = Array.isArray(localData.marketValueSnapshots) ? localData.marketValueSnapshots : [];
+  const snapMap = new Map<string, MarketValueSnapshot>(cloudSnapshots.map(s => [s.id, { ...s }]));
+
+  for (const localSnap of localSnapshots) {
+    if (!snapMap.has(localSnap.id) && accMap.has(localSnap.accountId)) {
+      snapMap.set(localSnap.id, { ...localSnap });
+      hasLocalAdditions = true;
+    }
+  }
+  const mergedSnapshots = Array.from(snapMap.values()).filter(s => accMap.has(s.accountId));
+
+  // 8. Nastavení (Settings) - cloud má přednost
+  const cloudSettings = cloudData.settings || localData.settings || DEFAULT_SETTINGS;
+  const overdraftLimit = typeof cloudSettings.overdraftLimitInHaler === 'number'
+    ? cloudSettings.overdraftLimitInHaler
+    : typeof cloudSettings.minReserveInHaler === 'number'
+      ? cloudSettings.minReserveInHaler
+      : DEFAULT_SETTINGS.overdraftLimitInHaler;
+
+  const mergedSettings: AppSettings = {
+    ...DEFAULT_SETTINGS,
+    ...cloudSettings,
+    overdraftLimitInHaler: overdraftLimit,
+    minReserveInHaler: overdraftLimit,
+  };
+
+  const mergedData: AppData = {
+    version: cloudData.version || localData.version || 1,
+    settings: mergedSettings,
+    accounts: sanitizedAccounts,
+    categories: mergedCategories,
+    transactions: mergedTransactions,
+    recurringRules: mergedRules,
+    recurringExceptions: mergedExceptions,
+    corrections: mergedCorrections,
+    marketValueSnapshots: mergedSnapshots,
+  };
+
+  return { mergedData, hasLocalAdditions };
+}
+

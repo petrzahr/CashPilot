@@ -15,6 +15,7 @@ import {
   logoutFromGoogle,
   CASH_PILOT_DATA_FILENAME,
   GOOGLE_DRIVE_APP_DATA_SCOPE,
+  mergeCloudAndLocalData,
 } from '../services/googleDriveService';
 import { getInitialData } from '../services/storageService';
 
@@ -317,4 +318,216 @@ describe('googleDriveService', () => {
       expect(getStoredAuth()).toBeNull();
     });
   });
+
+  describe('8. Silent Cloud-First merge logiky (mergeCloudAndLocalData)', () => {
+    it('vrací identická data a hasLocalAdditions=false, pokud jsou data shodná', () => {
+      const base = getInitialData();
+      const res = mergeCloudAndLocalData(base, base);
+      expect(res.hasLocalAdditions).toBe(false);
+      expect(res.mergedData).toEqual(base);
+    });
+
+    it('upřednostňuje cloud jako Single Source of Truth při běžných neshodách', () => {
+      const cloud = getInitialData();
+      cloud.transactions = [
+        {
+          id: 'tx_cloud_1',
+          title: 'Cloud transakce',
+          amountInHaler: 150000,
+          date: '2026-09-10',
+          sequence: 1,
+          type: 'expense',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T10:00:00Z',
+          updatedAt: '2026-09-10T10:00:00Z',
+        },
+      ];
+
+      const local = getInitialData();
+      local.transactions = [
+        {
+          id: 'tx_cloud_1',
+          title: 'Starý lokální název',
+          amountInHaler: 100000,
+          date: '2026-09-10',
+          sequence: 1,
+          type: 'expense',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T10:00:00Z',
+          updatedAt: '2026-09-10T09:00:00Z', // Starší než cloud
+        },
+      ];
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.hasLocalAdditions).toBe(false);
+      expect(res.mergedData.transactions[0].title).toBe('Cloud transakce');
+      expect(res.mergedData.transactions[0].amountInHaler).toBe(150000);
+    });
+
+    it('upřednostní lokální položku, pokud má novější časové razítko úpravy (updatedAt)', () => {
+      const cloud = getInitialData();
+      cloud.transactions = [
+        {
+          id: 'tx_shared_1',
+          title: 'Cloudová verze',
+          amountInHaler: 200000,
+          date: '2026-09-10',
+          sequence: 1,
+          type: 'expense',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T10:00:00Z',
+          updatedAt: '2026-09-10T10:00:00Z',
+        },
+      ];
+
+      const local = getInitialData();
+      local.transactions = [
+        {
+          id: 'tx_shared_1',
+          title: 'Offline editovaná verze na notebooku',
+          amountInHaler: 250000,
+          date: '2026-09-10',
+          sequence: 1,
+          type: 'expense',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T10:00:00Z',
+          updatedAt: '2026-09-10T12:00:00Z', // Novější než cloud
+        },
+      ];
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.hasLocalAdditions).toBe(true);
+      expect(res.mergedData.transactions[0].title).toBe('Offline editovaná verze na notebooku');
+      expect(res.mergedData.transactions[0].amountInHaler).toBe(250000);
+    });
+
+    it('začlení novou offline vytvořenou položku s novým ID a nastaví hasLocalAdditions=true', () => {
+      const cloud = getInitialData();
+      cloud.transactions = [
+        {
+          id: 'tx_cloud_existing',
+          title: 'Existující na cloudu',
+          amountInHaler: 50000,
+          date: '2026-09-10',
+          sequence: 1,
+          type: 'income',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T08:00:00Z',
+          updatedAt: '2026-09-10T08:00:00Z',
+        },
+      ];
+
+      const local = getInitialData();
+      local.transactions = [
+        ...cloud.transactions,
+        {
+          id: 'tx_offline_new_1',
+          title: 'Nákup v kavárně offline',
+          amountInHaler: 9900,
+          date: '2026-09-10',
+          sequence: 2,
+          type: 'expense',
+          sourceAccountId: 'acc_checking_1',
+          status: 'executed',
+          createdAt: '2026-09-10T14:00:00Z',
+          updatedAt: '2026-09-10T14:00:00Z',
+        },
+      ];
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.hasLocalAdditions).toBe(true);
+      expect(res.mergedData.transactions).toHaveLength(2);
+      expect(res.mergedData.transactions.some(t => t.id === 'tx_offline_new_1')).toBe(true);
+      expect(res.mergedData.transactions.some(t => t.id === 'tx_cloud_existing')).toBe(true);
+    });
+
+    it('nezavleče zpět smazané výchozí demo položky z čerstvého zařízení', () => {
+      // Cloud má vlastní účty a transakce (uživatel smazal demo data)
+      const cloud = getInitialData();
+      cloud.transactions = [
+        {
+          id: 'tx_user_custom_1',
+          title: 'Reálná výplata',
+          amountInHaler: 6000000,
+          date: '2026-09-15',
+          sequence: 1,
+          type: 'income',
+          sourceAccountId: 'acc_checking_1',
+          status: 'planned',
+          createdAt: '2026-09-02T10:00:00Z',
+          updatedAt: '2026-09-02T10:00:00Z',
+        },
+      ];
+
+      // Lokál je čerstvý prohlížeč s původními demo daty
+      const local = getInitialData(); // Obsahuje DEMO_TRANSACTIONS (např. tx_salary_1 atd.)
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.hasLocalAdditions).toBe(false);
+      // Výsledek má pouze reálnou transakci z cloudu, demo položky nebyly zavlečeny
+      expect(res.mergedData.transactions).toHaveLength(1);
+      expect(res.mergedData.transactions[0].id).toBe('tx_user_custom_1');
+    });
+
+    it('správně sloučí nově vytvořený offline účet a zachová invariant jediného výchozího účtu', () => {
+      const cloud = getInitialData();
+      const local = getInitialData();
+      local.accounts = [
+        ...cloud.accounts,
+        {
+          id: 'acc_custom_offline_savings',
+          name: 'Nová offline spořitelna',
+          type: 'savings',
+          currency: 'CZK',
+          initialBalanceInHaler: 500000,
+          initialBalanceDate: '2026-09-01',
+          isUsableCash: true,
+          isNetWorth: true,
+          color: '#10b981',
+          sortOrder: 10,
+          status: 'active',
+          createdAt: '2026-09-10T12:00:00Z',
+          updatedAt: '2026-09-10T12:00:00Z',
+        },
+      ];
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.hasLocalAdditions).toBe(true);
+      expect(res.mergedData.accounts.some(a => a.id === 'acc_custom_offline_savings')).toBe(true);
+      const defaults = res.mergedData.accounts.filter(a => a.isDefault && a.status !== 'archived');
+      expect(defaults.length).toBe(1);
+    });
+
+    it('přejímá cloudové nastavení včetně kontokorentu', () => {
+      const cloud = getInitialData();
+      cloud.settings = {
+        currency: 'CZK',
+        budgetStartDay: 20,
+        overdraftLimitInHaler: 3500000,
+        minReserveInHaler: 3500000,
+        forecastMonths: 12,
+        roundAmounts: false,
+      };
+
+      const local = getInitialData();
+      local.settings = {
+        currency: 'CZK',
+        budgetStartDay: 1,
+        overdraftLimitInHaler: 1000000,
+        minReserveInHaler: 1000000,
+        forecastMonths: 6,
+        roundAmounts: true,
+      };
+
+      const res = mergeCloudAndLocalData(cloud, local);
+      expect(res.mergedData.settings.budgetStartDay).toBe(20);
+      expect(res.mergedData.settings.overdraftLimitInHaler).toBe(3500000);
+    });
+  });
 });
+
