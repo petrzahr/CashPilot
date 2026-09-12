@@ -10,6 +10,7 @@ import { AccountsScreen } from './components/accounts/AccountsScreen';
 import { CategoriesScreen } from './components/categories/CategoriesScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { TransactionModal } from './components/transactions/TransactionModal';
+import { LoginScreen } from './components/auth/LoginScreen';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
 import { formatMonthsCount } from './services/periodService';
@@ -156,10 +157,25 @@ const MainLayout: React.FC = () => {
   );
 };
 
+export function AppContent() {
+  const { isDriveConnected } = useFinance();
+
+  if (!isDriveConnected) {
+    return (
+      <>
+        <LoginScreen />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  return <MainLayout />;
+}
+
 export function App() {
   return (
     <FinanceProvider>
-      <MainLayout />
+      <AppContent />
     </FinanceProvider>
   );
 }

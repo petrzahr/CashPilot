@@ -14,6 +14,7 @@ import {
 } from '../types/finance';
 import {
   AppData,
+  getInitialData,
   loadStoredData,
   saveStoredData,
   exportBackupJSON,
@@ -1679,12 +1680,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch (e) {
       console.warn('Chyba při odhlašování:', e);
     }
+    // Bezpečné vyčištění stavu aplikace a lokální mezipaměti
+    try {
+      localStorage.removeItem('cashpilot_data_v1');
+      localStorage.removeItem('cashpilot_drive_file_id');
+    } catch {}
+    setData(getInitialData());
     setIsDriveConnected(false);
     setDriveSyncStatus('disconnected');
     setDriveUser(null);
     setDriveFileId(null);
+    driveFileIdRef.current = null;
     setDriveError(null);
-    showToast('Google Disk byl odpojen.', 'info');
+    showToast('Byli jste úspěšně odhlášeni.', 'info');
   }, [showToast]);
 
   const syncWithGoogleDrive = useCallback(async (forceDirection?: 'upload' | 'download') => {
