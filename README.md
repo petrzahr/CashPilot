@@ -99,3 +99,10 @@ Doporučujeme pravidelně vytvářet zálohu vašich dat do souboru, zejména p�
 - **12měsíční forecast likvidity**: Plynulý graf a matice účtů s rozlišením použitelných provozních peněz a celkového majetku.
 - **Transparentní korekce**: Funkce „Aktualizovat skutečný stav“ porovná stav s bankou a zaeviduje jasnou účetní korekci.
 - **20 automatických integračních testů**: Pokrývajících veškerou finanční logiku, přelomy roků, výjimky i sekvenční řazení.
+
+---
+
+## 🚧 Aktivní vývoj
+
+Aplikace CashPilot je v aktivním vývoji. Průběžně probíhají aktualizace, optimalizace finančního výpočetního jádra a rozšiřování funkcionalit pro ještě pohodlnější správu osobních a rodinných financí.
+
