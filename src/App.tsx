@@ -10,6 +10,7 @@ import { AccountsScreen } from './components/accounts/AccountsScreen';
 import { CategoriesScreen } from './components/categories/CategoriesScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { TransactionModal } from './components/transactions/TransactionModal';
+import { GoogleSyncModal } from './components/common/GoogleSyncModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
 import { formatMonthsCount } from './services/periodService';
@@ -26,7 +27,13 @@ function parseScreenFromUrl(): NavScreen {
 }
 
 const MainLayout: React.FC = () => {
-  const { settings } = useFinance();
+  const {
+    settings,
+    data,
+    pendingRemoteData,
+    resolveDriveConflict,
+    cancelDriveConflict,
+  } = useFinance();
   const forecastMonths = settings.forecastMonths || 12;
 
   const [currentScreen, setCurrentScreen] = useState<NavScreen>(() => parseScreenFromUrl());
@@ -146,6 +153,18 @@ const MainLayout: React.FC = () => {
         initialType={initialTxType}
         initialDate={initialTxDate}
       />
+
+      {/* Modál pro řešení konfliktu Google Drive dat při přihlášení */}
+      {pendingRemoteData && (
+        <GoogleSyncModal
+          isOpen={Boolean(pendingRemoteData)}
+          onClose={cancelDriveConflict}
+          fileInfo={pendingRemoteData.fileInfo}
+          remoteData={pendingRemoteData.remoteData}
+          localData={data}
+          onSelectChoice={resolveDriveConflict}
+        />
+      )}
 
       {/* Toast notifikace */}
       <ToastContainer />
