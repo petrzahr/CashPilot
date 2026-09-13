@@ -155,11 +155,7 @@ export const SettingsScreen: React.FC = () => {
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
-                    {day === 1
-                      ? '1. den (standardní kalendářní měsíc)'
-                      : day === 15
-                      ? '15. den v měsíci (výchozí doporučeno)'
-                      : `${day}. den v měsíci`}
+                    {`${day}. den v měsíci`}
                   </option>
                 ))}
               </select>
