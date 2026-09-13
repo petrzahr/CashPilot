@@ -4,6 +4,7 @@ import { Header } from './components/layout/Header';
 import { Sidebar, NavScreen } from './components/layout/Sidebar';
 import { AlertBanner } from './components/layout/AlertBanner';
 import { OverviewScreen } from './components/overview/OverviewScreen';
+import { AnalyticsScreen } from './components/analytics/AnalyticsScreen';
 import { MonthlyBudgetScreen } from './components/budget/MonthlyBudgetScreen';
 import { TransactionsScreen } from './components/transactions/TransactionsScreen';
 import { AccountsScreen } from './components/accounts/AccountsScreen';
@@ -15,7 +16,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
 import { formatMonthsCount } from './services/periodService';
 
-const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'transactions', 'accounts', 'categories', 'settings'];
+const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'transactions', 'accounts', 'categories', 'settings'];
 
 function parseScreenFromUrl(): NavScreen {
   if (typeof window === 'undefined') return 'budget';
@@ -77,6 +78,7 @@ const MainLayout: React.FC = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
       case 'overview': return `Přehled & výhled na ${formatMonthsCount(forecastMonths)}`;
+      case 'analytics': return 'Analýza & trendy';
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Správa účtů';
       case 'categories': return 'Kategorie';
@@ -117,6 +119,12 @@ const MainLayout: React.FC = () => {
             {currentScreen === 'overview' && (
               <OverviewScreen
                 onNavigateToBudget={(p) => handleSelectScreen('budget')}
+              />
+            )}
+
+            {currentScreen === 'analytics' && (
+              <AnalyticsScreen
+                onEditTransaction={handleEditTx}
               />
             )}
 

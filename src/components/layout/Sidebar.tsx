@@ -10,10 +10,11 @@ import {
   Settings, 
   Plus, 
   X, 
-  Compass 
+  Compass,
+  TrendingUp 
 } from 'lucide-react';
 
-export type NavScreen = 'budget' | 'overview' | 'transactions' | 'accounts' | 'categories' | 'settings';
+export type NavScreen = 'budget' | 'overview' | 'analytics' | 'transactions' | 'accounts' | 'categories' | 'settings';
 
 interface SidebarProps {
   currentScreen: NavScreen;
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: { id: NavScreen; label: string; icon: React.ReactNode }[] = [
     { id: 'budget', label: 'Měsíční rozpočet', icon: <CalendarDays className="w-4 h-4" /> },
     { id: 'overview', label: 'Přehled', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'analytics', label: 'Analýza & trendy', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'transactions', label: 'Položky', icon: <Receipt className="w-4 h-4" /> },
     { id: 'accounts', label: 'Účty', icon: <Landmark className="w-4 h-4" /> },
     { id: 'categories', label: 'Kategorie', icon: <FolderTree className="w-4 h-4" /> },
