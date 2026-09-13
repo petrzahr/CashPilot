@@ -16,7 +16,18 @@ import {
   calculateFinancialExtremes,
   computeLiquidAccountBalanceAtDate,
   computeAssetAccountBalanceAtDate,
+  createBudgetPeriodInfo,
+  generateBudgetPeriodSequence,
 } from '../services/analyticsEngine';
+import {
+  getPeriodForDate,
+  createBudgetPeriod,
+  getPreviousPeriod,
+  getNextPeriod,
+  isDateInPeriod,
+  formatCzechDate,
+  formatPeriodRange,
+} from '../services/periodService';
 import {
   Account,
   BalanceCorrection,
@@ -173,64 +184,71 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
 
   const testCategories = [catFood, subGroceries, catSalary];
 
-  // 1. Správné rozsahy všech rychlých voleb období
-  it('1. Správné rozsahy všech rychlých voleb období (3m, 6m, 12m, ytd, all)', () => {
-    const res3m = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today);
-    expect(res3m.range.months.length).toBe(3);
-    expect(res3m.range.fromMonthKey).toBe('2026-07');
-    expect(res3m.range.endDate).toBe(today);
+  // 1. Správné rozsahy všech rychlých voleb období podle rozpočtového dne (15)
+  it('1. Správné rozsahy všech rychlých voleb období (3m, 6m, 12m, ytd, all) při startDay 15', () => {
+    // Dne 13. 9. 2026 při startovním dni 15 je aktuální periodou Srpen 2026 (15. 8. - 14. 9. 2026)
+    const res3m = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today, 15);
+    expect(res3m.range.periods.length).toBe(3);
+    expect(res3m.range.fromPeriodKey).toBe('2026-06'); // Červen, Červenec, Srpen 2026
+    expect(res3m.range.endDate).toBe(today); // Analyzováno do 13. 9. 2026
+    expect(res3m.range.periods[2].isCurrentPeriod).toBe(true);
+    expect(res3m.range.periods[2].label).toBe('Srpen 2026');
 
-    const res6m = resolveAnalyticsDateRange('6m', undefined, undefined, undefined, today);
-    expect(res6m.range.months.length).toBe(6);
-    expect(res6m.range.fromMonthKey).toBe('2026-04');
+    const res6m = resolveAnalyticsDateRange('6m', undefined, undefined, undefined, today, 15);
+    expect(res6m.range.periods.length).toBe(6);
+    expect(res6m.range.fromPeriodKey).toBe('2026-03'); // Březen až Srpen 2026
 
-    const res12m = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today);
-    expect(res12m.range.months.length).toBe(12);
-    expect(res12m.range.fromMonthKey).toBe('2025-10');
+    const res12m = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today, 15);
+    expect(res12m.range.periods.length).toBe(12);
+    expect(res12m.range.fromPeriodKey).toBe('2025-09'); // Září 2025 až Srpen 2026
 
-    const resYtd = resolveAnalyticsDateRange('ytd', undefined, undefined, undefined, today);
-    expect(resYtd.range.fromMonthKey).toBe('2026-01');
-    expect(resYtd.range.months.length).toBe(9); // Leden až Září 2026
+    const resYtd = resolveAnalyticsDateRange('ytd', undefined, undefined, undefined, today, 15);
+    expect(resYtd.range.fromPeriodKey).toBe('2026-01'); // Leden 2026 až Srpen 2026
+    expect(resYtd.range.periods.length).toBe(8); // 8 rozpočtových period (Leden až Srpen)
 
     const resAll = resolveAnalyticsDateRange(
       'all',
       undefined,
       undefined,
       { accounts: testAccounts, transactions: [], corrections: [], snapshots: [] },
-      today
+      today,
+      15
     );
-    expect(resAll.range.fromMonthKey).toBe('2025-01');
+    // Počáteční zůstatek je k 2025-01-01, což při startovním dni 15 spadá do Prosinec 2024 (15. 12. 2024 – 14. 1. 2025)
+    expect(resAll.range.fromPeriodKey).toBe('2024-12');
   });
 
-  // 2. Výchozí volba posledních 12 měsíců
-  it('2. Výchozí volba je 12 měsíců', () => {
-    const res = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today);
+  // 2. Výchozí volba posledních 12 rozpočtových období
+  it('2. Výchozí volba je 12 rozpočtových období', () => {
+    const res = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today, 15);
     expect(res.range.preset).toBe('12m');
-    expect(res.range.months.length).toBe(12);
+    expect(res.range.periods.length).toBe(12);
   });
 
-  // 3. Vlastní rozsah Od-Do
-  it('3. Vlastní rozsah Od–Do analyzuje zadané měsíce do aktuálního dne', () => {
-    const res = resolveAnalyticsDateRange('custom', '2026-05', '2026-08', undefined, today);
+  // 3. Vlastní rozsah Od-Do rozpočtových period
+  it('3. Vlastní rozsah Od–Do analyzuje zadaná rozpočtová období', () => {
+    const res = resolveAnalyticsDateRange('custom', '2026-05', '2026-08', undefined, today, 15);
     expect(res.error).toBeUndefined();
-    expect(res.range.months.length).toBe(4);
-    expect(res.range.startDate).toBe('2026-05-01');
-    expect(res.range.endDate).toBe('2026-08-31');
+    expect(res.range.periods.length).toBe(4);
+    expect(res.range.startDate).toBe('2026-05-15');
+    expect(res.range.endDate).toBe(today); // Srpen 2026 ještě probíhá k 13. 9. 2026
+    expect(res.range.periods[0].label).toBe('Květen 2026');
+    expect(res.range.periods[3].label).toBe('Srpen 2026');
   });
 
-  // 4. Odmítnutí neplatného nebo budoucího období
+  // 4. Odmítnutí neplatného nebo budoucího rozpočtového období
   it('4. Odmítnutí neplatného nebo budoucího období s chybovou zprávou', () => {
     // Od > Do
-    const resInv = resolveAnalyticsDateRange('custom', '2026-08', '2026-05', undefined, today);
-    expect(resInv.error).toBe('Počáteční měsíc nesmí být pozdější než koncový měsíc.');
+    const resInv = resolveAnalyticsDateRange('custom', '2026-08', '2026-05', undefined, today, 15);
+    expect(resInv.error).toBe('Počáteční období nesmí být pozdější než koncové období.');
 
-    // Budoucí měsíc
-    const resFut = resolveAnalyticsDateRange('custom', '2026-05', '2026-11', undefined, today);
-    expect(resFut.error).toBe('Koncový měsíc nesmí být v budoucnosti.');
+    // Budoucí rozpočtové období (k 13. 9. 2026 je Září 2026 v budoucnosti, protože začíná 15. 9. 2026)
+    const resFut = resolveAnalyticsDateRange('custom', '2026-05', '2026-09', undefined, today, 15);
+    expect(resFut.error).toBe('Koncové rozpočtové období nesmí být v budoucnosti.');
 
     // Prázdný rozsah
-    const resEmpty = resolveAnalyticsDateRange('custom', '', '', undefined, today);
-    expect(resEmpty.error).toBe('Vyberte prosím počáteční i koncový měsíc.');
+    const resEmpty = resolveAnalyticsDateRange('custom', '', '', undefined, today, 15);
+    expect(resEmpty.error).toBe('Vyberte prosím počáteční i koncové rozpočtové období.');
   });
 
   // 5. Zahrnutí pouze uskutečněných položek
@@ -592,8 +610,8 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
 
   // 16. Správné měsíční průměry
   it('16. Správné měsíční průměry výdajů', () => {
-    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today).range;
-    expect(range.months.length).toBe(3);
+    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today, 15).range;
+    expect(range.periods.length).toBe(3);
 
     const txs: Transaction[] = [
       {
@@ -721,8 +739,8 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
 
   // 21. Správný vývoj celkového jmění
   it('21. Vývoj celkového jmění správně agreguje všechny skupiny po měsících', () => {
-    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today).range;
-    const history = calculateNetWorthHistory(range.months, testAccounts, [], [], []);
+    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today, 15).range;
+    const history = calculateNetWorthHistory(range.periods, testAccounts, [], [], []);
 
     expect(history.length).toBe(3);
     for (const point of history) {
@@ -868,5 +886,367 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     expect(screenHtml).toContain('Příjmy podle kategorií');
     expect(screenHtml).toContain('Nejvyšší výdaje ve vybraném období');
     expect(screenHtml).toContain('Průměry a finanční extrémy');
+  });
+});
+
+describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne rozpočtového měsíce (20 požadavků)', () => {
+  const sampleChecking: Account = {
+    id: 'acc_chk_b',
+    name: 'Běžný účet',
+    type: 'checking',
+    currency: 'CZK',
+    initialBalanceInHaler: 10000000,
+    initialBalanceDate: '2025-01-01',
+    isUsableCash: true,
+    isNetWorth: true,
+    color: '#0284c7',
+    sortOrder: 1,
+    status: 'active',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+  };
+
+  const sampleAccounts = [sampleChecking];
+
+  // 1. Určení probíhajícího období: 13. 9. 2026 při startDay 15 je Srpen 2026
+  it('1. Určení probíhajícího období: 13. 9. 2026 při startDay 15 je Srpen 2026 (15. 8. – 14. 9.) analyzované do 13. 9. 2026', () => {
+    const period = getPeriodForDate('2026-09-13', 15);
+    expect(period.key).toBe('2026-08');
+    expect(period.startDate).toBe('2026-08-15');
+    expect(period.endDate).toBe('2026-09-14');
+
+    const info = createBudgetPeriodInfo(period, '2026-09-13');
+    expect(info.isCurrentPeriod).toBe(true);
+    expect(info.label).toBe('Srpen 2026');
+    expect(info.analysisEndDate).toBe('2026-09-13');
+    expect(info.dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
+  });
+
+  // 2. Určení probíhajícího období po přelomu: 16. 9. 2026 při startDay 15 je Září 2026
+  it('2. Určení probíhajícího období: 16. 9. 2026 při startDay 15 je Září 2026 (15. 9. – 14. 10.) analyzované do 16. 9. 2026', () => {
+    const period = getPeriodForDate('2026-09-16', 15);
+    expect(period.key).toBe('2026-09');
+    expect(period.startDate).toBe('2026-09-15');
+    expect(period.endDate).toBe('2026-10-14');
+
+    const info = createBudgetPeriodInfo(period, '2026-09-16');
+    expect(info.isCurrentPeriod).toBe(true);
+    expect(info.label).toBe('Září 2026');
+    expect(info.analysisEndDate).toBe('2026-09-16');
+    expect(info.dateRangeStr).toBe('15. 9. 2026 – 16. 9. 2026');
+  });
+
+  // 3. Hraniční datum: 14. 9. 2026 patří do Srpen 2026
+  it('3. Hraniční datum: transakce ze 14. 9. 2026 patří do období Srpen 2026 (při startDay 15)', () => {
+    const period = getPeriodForDate('2026-09-14', 15);
+    expect(period.key).toBe('2026-08');
+    expect(isDateInPeriod('2026-09-14', period)).toBe(true);
+
+    const tx: Transaction = {
+      id: 'tx_b1',
+      title: 'Nákup poslední den období',
+      amountInHaler: 100000,
+      date: '2026-09-14',
+      sequence: 1,
+      type: 'expense',
+      sourceAccountId: sampleChecking.id,
+      status: 'executed',
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const periodInfo = createBudgetPeriodInfo(period, '2026-09-14');
+    const cf = calculateMonthlyCashFlow([periodInfo], [tx], 15);
+    expect(cf[0].expenseInHaler).toBe(100000);
+  });
+
+  // 4. Hraniční datum: 15. 9. 2026 patří do Září 2026
+  it('4. Hraniční datum: transakce z 15. 9. 2026 patří do období Září 2026 (při startDay 15)', () => {
+    const period = getPeriodForDate('2026-09-15', 15);
+    expect(period.key).toBe('2026-09');
+    expect(period.startDate).toBe('2026-09-15');
+    expect(isDateInPeriod('2026-09-15', period)).toBe(true);
+
+    const tx: Transaction = {
+      id: 'tx_b2',
+      title: 'Nákup první den nového období',
+      amountInHaler: 200000,
+      date: '2026-09-15',
+      sequence: 1,
+      type: 'expense',
+      sourceAccountId: sampleChecking.id,
+      status: 'executed',
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const periodAugust = createBudgetPeriodInfo(getPeriodForDate('2026-09-14', 15), '2026-09-15');
+    const periodSeptember = createBudgetPeriodInfo(period, '2026-09-15');
+
+    const cf = calculateMonthlyCashFlow([periodAugust, periodSeptember], [tx], 15);
+    // V srpnu nic, v září 200 000 haléřů
+    expect(cf[0].expenseInHaler).toBe(0);
+    expect(cf[1].expenseInHaler).toBe(200000);
+  });
+
+  // 5. Pojmenování rozpočtových period podle měsíce začátku
+  it('5. Pojmenování období se řídí kalendářním měsícem začátku (15. 8. – 14. 9. je Srpen 2026)', () => {
+    const pAug = createBudgetPeriod(2026, 8, 15);
+    expect(pAug.startDate).toBe('2026-08-15');
+    expect(pAug.endDate).toBe('2026-09-14');
+    const infoAug = createBudgetPeriodInfo(pAug, '2026-09-13');
+    expect(infoAug.label).toBe('Srpen 2026');
+
+    const pSep = createBudgetPeriod(2026, 9, 15);
+    expect(pSep.startDate).toBe('2026-09-15');
+    expect(pSep.endDate).toBe('2026-10-14');
+    const infoSep = createBudgetPeriodInfo(pSep, '2026-09-13');
+    expect(infoSep.label).toBe('Září 2026');
+  });
+
+  // 6. Rychlá předvolba 3m: 3 rozpočtová období
+  it('6. Rychlá volba 3m obsahuje aktuální rozpočtové období + 2 předcházející', () => {
+    const res = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15);
+    expect(res.range.periods.length).toBe(3);
+    expect(res.range.periods.map((p) => p.key)).toEqual(['2026-06', '2026-07', '2026-08']);
+    expect(res.range.periods.map((p) => p.label)).toEqual(['Červen 2026', 'Červenec 2026', 'Srpen 2026']);
+    expect(res.range.startDate).toBe('2026-06-15');
+    expect(res.range.endDate).toBe('2026-09-13');
+  });
+
+  // 7. Rychlá předvolba 6m: 6 rozpočtových období
+  it('7. Rychlá volba 6m obsahuje aktuální rozpočtové období + 5 předcházejících', () => {
+    const res = resolveAnalyticsDateRange('6m', undefined, undefined, undefined, '2026-09-13', 15);
+    expect(res.range.periods.length).toBe(6);
+    expect(res.range.fromPeriodKey).toBe('2026-03');
+    expect(res.range.toPeriodKey).toBe('2026-08');
+  });
+
+  // 8. Rychlá předvolba 12m: 12 rozpočtových období
+  it('8. Rychlá volba 12m obsahuje aktuální rozpočtové období + 11 předcházejících', () => {
+    const res = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, '2026-09-13', 15);
+    expect(res.range.periods.length).toBe(12);
+    expect(res.range.fromPeriodKey).toBe('2025-09');
+    expect(res.range.toPeriodKey).toBe('2026-08');
+  });
+
+  // 9. Rychlá předvolba YTD: Leden [rok] až aktuální rozpočtové období
+  it('9. Rychlá volba YTD začíná obdobím Leden 2026 a končí probíhajícím obdobím k dnešku', () => {
+    const res = resolveAnalyticsDateRange('ytd', undefined, undefined, undefined, '2026-09-13', 15);
+    expect(res.range.fromPeriodKey).toBe('2026-01');
+    expect(res.range.toPeriodKey).toBe('2026-08');
+    expect(res.range.periods.length).toBe(8); // Leden až Srpen
+    expect(res.range.startDate).toBe('2026-01-15');
+    expect(res.range.endDate).toBe('2026-09-13');
+  });
+
+  // 10. Rychlá předvolba All: od nejstaršího záznamu do aktuálního rozpočtového období
+  it('10. Rychlá volba All začíná rozpočtovým obdobím nejstarší aktivity', () => {
+    const earliestTx: Transaction = {
+      id: 'tx_old',
+      title: 'Nejstarší nákup',
+      amountInHaler: 50000,
+      date: '2025-05-20',
+      sequence: 1,
+      type: 'expense',
+      sourceAccountId: sampleChecking.id,
+      status: 'executed',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const res = resolveAnalyticsDateRange(
+      'all',
+      undefined,
+      undefined,
+      { accounts: sampleAccounts, transactions: [earliestTx], corrections: [], snapshots: [] },
+      '2026-09-13',
+      15
+    );
+    // 2025-01-01 (počáteční zůstatek účtu) spadá do periody 2024-12 (15. 12. 2024 – 14. 1. 2025)
+    expect(res.range.fromPeriodKey).toBe('2024-12');
+    expect(res.range.toPeriodKey).toBe('2026-08');
+  });
+
+  // 11. Vlastní rozsah Od–Do s rozpočtovými obdobími
+  it('11. Vlastní výběr Od–Do generuje rozpočtová období a správná data', () => {
+    const res = resolveAnalyticsDateRange('custom', '2026-02', '2026-06', undefined, '2026-09-13', 15);
+    expect(res.error).toBeUndefined();
+    expect(res.range.periods.length).toBe(5);
+    expect(res.range.startDate).toBe('2026-02-15');
+    expect(res.range.endDate).toBe('2026-07-14');
+  });
+
+  // 12. Validace chybného vlastního rozsahu
+  it('12. Validace vlastního výběru: prázdný výběr, obrácené pořadí, budoucí období', () => {
+    const rEmpty = resolveAnalyticsDateRange('custom', '', '', undefined, '2026-09-13', 15);
+    expect(rEmpty.error).toBe('Vyberte prosím počáteční i koncové rozpočtové období.');
+
+    const rInv = resolveAnalyticsDateRange('custom', '2026-07', '2026-04', undefined, '2026-09-13', 15);
+    expect(rInv.error).toBe('Počáteční období nesmí být pozdější než koncové období.');
+
+    const rFut = resolveAnalyticsDateRange('custom', '2026-05', '2026-10', undefined, '2026-09-13', 15);
+    expect(rFut.error).toBe('Koncové rozpočtové období nesmí být v budoucnosti.');
+  });
+
+  // 13. Meziměsíční trend výdajů: probíhající období srovnává 1.–N. den
+  it('13. Meziměsíční trend výdajů u probíhajícího období srovnává 1.–N. den se stejným počtem dní předchozího období', () => {
+    // Dne 13. 9. 2026 je Srpen 2026 probíhající (15. 8. – 13. 9., tj. 30 dní)
+    // Předchozí období je Červenec 2026 (15. 7. – 14. 8.). Prvních 30 dní je 15. 7. – 13. 8.
+    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
+
+    const txs: Transaction[] = [
+      // Červenec: den v prvních 30 dnech
+      { id: 't_prev1', title: '', amountInHaler: 100000, date: '2026-07-20', sequence: 1, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      // Červenec: den 31 (14. 8.), který NESMÍ být započítán do srovnání se Srpnem k 30. dni!
+      { id: 't_prev2', title: '', amountInHaler: 500000, date: '2026-08-14', sequence: 2, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      // Srpen: probíhající výdaj
+      { id: 't_cur', title: '', amountInHaler: 150000, date: '2026-08-25', sequence: 3, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+    ];
+
+    const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13', 15);
+    const augTrend = trends.find((t) => t.monthKey === '2026-08')!;
+
+    expect(augTrend.isCurrentMonth).toBe(true);
+    expect(augTrend.isSameDayComparison).toBe(true);
+    expect(augTrend.expenseInHaler).toBe(150000);
+    // Pouze t_prev1 (100 000 haléřů) v prvních 30 dnech předchozího období, nikoliv t_prev2 (500 000)!
+    expect(augTrend.prevMonthExpenseInHaler).toBe(100000);
+    // Změna: (150k - 100k) / 100k = +50 %
+    expect(augTrend.changePercent).toBe(50);
+  });
+
+  // 14. Meziměsíční trend výdajů: uzavřené období srovnává celé předchozí období
+  it('14. Meziměsíční trend výdajů u uzavřeného období srovnává celé předchozí období', () => {
+    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
+
+    const txs: Transaction[] = [
+      // Červen 2026 (15. 6. – 14. 7.)
+      { id: 't_jun', title: '', amountInHaler: 200000, date: '2026-06-20', sequence: 1, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      // Červenec 2026 (15. 7. – 14. 8.) - uzavřené období
+      { id: 't_jul1', title: '', amountInHaler: 100000, date: '2026-07-20', sequence: 2, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      { id: 't_jul2', title: '', amountInHaler: 150000, date: '2026-08-14', sequence: 3, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+    ];
+
+    const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13', 15);
+    const julTrend = trends.find((t) => t.monthKey === '2026-07')!;
+
+    expect(julTrend.isCurrentMonth).toBe(false);
+    expect(julTrend.isSameDayComparison).toBe(false);
+    expect(julTrend.expenseInHaler).toBe(250000); // 100k + 150k
+    expect(julTrend.prevMonthExpenseInHaler).toBe(200000);
+    expect(julTrend.changePercent).toBe(25); // (250k - 200k) / 200k = +25 %
+  });
+
+  // 15. Okamžitá reaktivita při změně budgetStartDay
+  it('15. Okamžitá reaktivita: změna budgetStartDay z 15 na 1 okamžitě přepočítá rozpočtová období', () => {
+    // Při startDay = 15 je 13. 9. 2026 v Srpen 2026 (15. 8. – 14. 9.)
+    const res15 = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15);
+    expect(res15.range.periods[2].label).toBe('Srpen 2026');
+    expect(res15.range.periods[2].startDate).toBe('2026-08-15');
+
+    // Při startDay = 1 je 13. 9. 2026 v Září 2026 (1. 9. – 30. 9.)
+    const res1 = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 1);
+    expect(res1.range.periods[2].label).toBe('Září 2026');
+    expect(res1.range.periods[2].startDate).toBe('2026-09-01');
+    expect(res1.range.periods[2].endDate).toBe('2026-09-30');
+    expect(res1.range.periods[2].analysisEndDate).toBe('2026-09-13');
+  });
+
+  // 16. Soulad se standardním kalendářním měsícem při startDay = 1
+  it('16. Při startDay = 1 se rozpočtová období chovají identicky jako kalendářní měsíce', () => {
+    const res = resolveAnalyticsDateRange('ytd', undefined, undefined, undefined, '2026-09-13', 1);
+    expect(res.range.periods.length).toBe(9); // Leden až Září
+    expect(res.range.periods[0].startDate).toBe('2026-01-01');
+    expect(res.range.periods[0].endDate).toBe('2026-01-31');
+    expect(res.range.periods[0].label).toBe('Leden 2026');
+    expect(res.range.periods[8].startDate).toBe('2026-09-01');
+    expect(res.range.periods[8].analysisEndDate).toBe('2026-09-13');
+    expect(res.range.periods[8].label).toBe('Září 2026');
+  });
+
+  // 17. Tooltipy a popisky grafů obsahují rozsah a status období
+  it('17. Datové body grafů cash flow a celkového jmění obsahují dateRangeStr a stav období', () => {
+    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
+    const cf = calculateMonthlyCashFlow(range.periods, [], 15);
+    const nw = calculateNetWorthHistory(range.periods, sampleAccounts, [], [], []);
+
+    expect(cf[2].label).toBe('Srpen 2026');
+    expect(cf[2].dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
+    expect(cf[2].isCurrentMonth).toBe(true);
+
+    expect(cf[1].label).toBe('Červenec 2026');
+    expect(cf[1].dateRangeStr).toBe('15. 7. 2026 – 14. 8. 2026');
+    expect(cf[1].isCurrentMonth).toBe(false);
+
+    expect(nw[2].label).toBe('Srpen 2026');
+    expect(nw[2].dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
+    expect(nw[2].isCurrentMonth).toBe(true);
+  });
+
+  // 18. Finanční transakce a účty se při změně období nemění
+  it('18. Změna startDay neupravuje transakce ani zůstatky účtů, pouze jejich zařazení', () => {
+    const tx: Transaction = {
+      id: 't_fix',
+      title: 'Fixní nákup',
+      amountInHaler: 123456,
+      date: '2026-09-14',
+      sequence: 1,
+      type: 'expense',
+      sourceAccountId: sampleChecking.id,
+      status: 'executed',
+      createdAt: '2026-09-14T10:00:00Z',
+      updatedAt: '2026-09-14T10:00:00Z',
+    };
+
+    // Původní vlastnosti transakce
+    const origAmount = tx.amountInHaler;
+    const origDate = tx.date;
+
+    // Zařazení se startDay = 15
+    const p15 = getPeriodForDate(tx.date, 15);
+    expect(p15.key).toBe('2026-08');
+
+    // Zařazení se startDay = 1
+    const p1 = getPeriodForDate(tx.date, 1);
+    expect(p1.key).toBe('2026-09');
+
+    // Transakce samotná zůstává netknutá
+    expect(tx.amountInHaler).toBe(origAmount);
+    expect(tx.date).toBe(origDate);
+  });
+
+  // 19. Integrita v UI AnalyticsScreen s nastaveným startDay
+  it('19. AnalyticsScreen zobrazuje aktivní rozsah rozpočtových period a probíhající stav', () => {
+    const html = renderToStaticMarkup(
+      <FinanceProvider>
+        <AnalyticsScreen />
+      </FinanceProvider>
+    );
+
+    // Musí obsahovat indikaci probíhajícího období s datem k dnešku
+    expect(html).toContain('Období probíhá');
+    expect(html).toContain('13. 9. 2026');
+    expect(html).toContain('Trend výdajů mezi obdobími');
+    expect(html).toContain('Nejlepší a nejnáročnější rozpočtová období');
+  });
+
+  // 20. Správný výpočet změny celkového jmění podle rozpočtového období
+  it('20. Změna celkového jmění správně porovnává konec vybraného období s dnem před začátkem', () => {
+    const res = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15);
+    // Začátek 3m je 2026-06-15, konec je 2026-09-13
+    expect(res.range.startDate).toBe('2026-06-15');
+    expect(res.range.endDate).toBe('2026-09-13');
+
+    const kpis = calculateAnalyticsKPIs(
+      res.range,
+      [],
+      sampleAccounts,
+      [],
+      [],
+      [],
+      null,
+      '2026-09-13'
+    );
+    expect(kpis.netWorthChangeInHaler).toBe(0);
   });
 });

@@ -250,12 +250,23 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="font-bold text-slate-200 border-b border-slate-700/80 pb-1 flex items-center justify-between gap-4">
-              <span>{hoveredItem.label}</span>
-              {hoveredItem.isCurrentMonth && (
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-full font-normal">
-                  Probíhající
+            <div className="font-bold text-slate-200 border-b border-slate-700/80 pb-1.5 space-y-0.5">
+              <div className="flex items-center justify-between gap-4">
+                <span>{hoveredItem.label}</span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    hoveredItem.isCurrentMonth
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-slate-700/60 text-slate-300'
+                  }`}
+                >
+                  {hoveredItem.isCurrentMonth ? 'Probíhající období' : 'Uzavřené období'}
                 </span>
+              </div>
+              {hoveredItem.dateRangeStr && (
+                <div className="text-[10px] text-slate-400 font-normal">
+                  {hoveredItem.dateRangeStr}
+                </div>
               )}
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-0.5">

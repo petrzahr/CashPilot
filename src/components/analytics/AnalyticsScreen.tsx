@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types/finance';
 import {
@@ -13,9 +13,17 @@ import {
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
+  getEarliestActivityDate,
+  generateBudgetPeriodSequence,
 } from '../../services/analyticsEngine';
 import { formatCurrency } from '../../services/currencyService';
-import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
+import {
+  formatCzechDate,
+  getTodayInPrague,
+  getPeriodForDate,
+  getPreviousPeriod,
+  formatPeriodRange,
+} from '../../services/periodService';
 import { sortCategoriesAlphabetically, czechStringCompare } from '../../services/categoryService';
 import { CashFlowBarChart } from './CashFlowBarChart';
 import { CategoryBarChart } from './CategoryBarChart';
@@ -61,9 +69,38 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     transactions,
     corrections,
     marketValueSnapshots,
+    settings,
   } = useFinance();
 
   const todayStr = getTodayInPrague();
+  const budgetStartDay = settings?.budgetStartDay || 15;
+
+  const currentPeriod = useMemo(() => {
+    return getPeriodForDate(todayStr, budgetStartDay);
+  }, [todayStr, budgetStartDay]);
+
+  // Seznam rozpočtových period pro výběr vlastního období Od - Do
+  const availableBudgetPeriods = useMemo(() => {
+    const earliestDate = getEarliestActivityDate(
+      accounts,
+      transactions,
+      corrections,
+      marketValueSnapshots,
+      todayStr
+    );
+    let startPeriod = getPeriodForDate(earliestDate, budgetStartDay);
+
+    // Zajistit alespoň 24 období do minulosti
+    let minPeriod = currentPeriod;
+    for (let i = 0; i < 24; i++) {
+      minPeriod = getPreviousPeriod(minPeriod, budgetStartDay);
+    }
+    if (startPeriod.key > minPeriod.key) {
+      startPeriod = minPeriod;
+    }
+
+    return generateBudgetPeriodSequence(startPeriod, currentPeriod, budgetStartDay, todayStr);
+  }, [accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay, currentPeriod]);
 
   // Stav výběru období
   const [preset, setPreset] = useState<AnalyticsPeriodPreset>(() => savedPreset);
@@ -72,6 +109,28 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const [appliedCustomFrom, setAppliedCustomFrom] = useState<string>(() => savedCustomFrom);
   const [appliedCustomTo, setAppliedCustomTo] = useState<string>(() => savedCustomTo);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Inicializace výchozích period pro vlastní výběr, pokud nejsou nastaveny
+  useEffect(() => {
+    if (availableBudgetPeriods.length > 0) {
+      if (!customFromInput || !availableBudgetPeriods.some((p) => p.key === customFromInput)) {
+        const defaultFrom = availableBudgetPeriods[Math.max(0, availableBudgetPeriods.length - 12)]?.key || availableBudgetPeriods[0]?.key;
+        setCustomFromInput(defaultFrom);
+        if (!appliedCustomFrom) {
+          setAppliedCustomFrom(defaultFrom);
+          savedCustomFrom = defaultFrom;
+        }
+      }
+      if (!customToInput || !availableBudgetPeriods.some((p) => p.key === customToInput)) {
+        const defaultTo = currentPeriod.key;
+        setCustomToInput(defaultTo);
+        if (!appliedCustomTo) {
+          setAppliedCustomTo(defaultTo);
+          savedCustomTo = defaultTo;
+        }
+      }
+    }
+  }, [availableBudgetPeriods, currentPeriod.key, customFromInput, customToInput, appliedCustomFrom, appliedCustomTo]);
 
   // Stav doplňkových filtrů
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => savedFilters.accountId || null);
@@ -88,16 +147,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const handleApplyCustom = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!customFromInput || !customToInput) {
-      setValidationError('Vyberte prosím počáteční i koncový měsíc.');
+      setValidationError('Vyberte prosím počáteční i koncové rozpočtové období.');
       return;
     }
     if (customFromInput > customToInput) {
-      setValidationError('Počáteční měsíc nesmí být pozdější než koncový měsíc.');
+      setValidationError('Počáteční období nesmí být pozdější než koncové období.');
       return;
     }
-    const currentMonthKey = todayStr.slice(0, 7);
-    if (customToInput > currentMonthKey) {
-      setValidationError('Koncový měsíc nesmí být v budoucnosti.');
+    if (customToInput > currentPeriod.key) {
+      setValidationError('Koncové rozpočtové období nesmí být v budoucnosti.');
       return;
     }
 
@@ -139,9 +197,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         corrections,
         snapshots: marketValueSnapshots,
       },
-      todayStr
+      todayStr,
+      budgetStartDay
     );
-  }, [preset, appliedCustomFrom, appliedCustomTo, accounts, transactions, corrections, marketValueSnapshots, todayStr]);
+  }, [preset, appliedCustomFrom, appliedCustomTo, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
 
   const dateRange = dateRangeResult.range;
 
@@ -185,8 +244,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   }, [dateRange, filteredTxs, accounts, transactions, corrections, marketValueSnapshots, selectedAccountId, todayStr]);
 
   const monthlyCashFlow = useMemo(() => {
-    return calculateMonthlyCashFlow(dateRange.months, filteredTxs);
-  }, [dateRange.months, filteredTxs]);
+    return calculateMonthlyCashFlow(dateRange.periods, filteredTxs, budgetStartDay);
+  }, [dateRange.periods, filteredTxs, budgetStartDay]);
 
   const expenseCategories = useMemo(() => {
     return calculateCategoryBreakdown('expense', filteredTxs, categories);
@@ -198,24 +257,25 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
   const netWorthHistory = useMemo(() => {
     return calculateNetWorthHistory(
-      dateRange.months,
+      dateRange.periods,
       accounts,
       transactions,
       corrections,
       marketValueSnapshots,
       selectedAccountId
     );
-  }, [dateRange.months, accounts, transactions, corrections, marketValueSnapshots, selectedAccountId]);
+  }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots, selectedAccountId]);
 
   const expenseTrends = useMemo(() => {
     return calculateExpenseMoMTrend(
-      dateRange.months,
+      dateRange.periods,
       allExecutedTxs,
       currentFilters,
       categories,
-      todayStr
+      todayStr,
+      budgetStartDay
     );
-  }, [dateRange.months, allExecutedTxs, currentFilters, categories, todayStr]);
+  }, [dateRange.periods, allExecutedTxs, currentFilters, categories, todayStr, budgetStartDay]);
 
   const topExpenses = useMemo(() => {
     return getTopExpenses(filteredTxs, accounts, categories);
@@ -325,24 +385,32 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           >
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-slate-500 font-medium">Od:</span>
-              <input
-                type="month"
-                max={todayStr.slice(0, 7)}
+              <select
                 value={customFromInput}
                 onChange={(e) => setCustomFromInput(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-              />
+                className="max-w-[200px] px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 truncate"
+              >
+                {availableBudgetPeriods.map((p) => (
+                  <option key={`from-${p.key}`} value={p.key}>
+                    {p.label} ({formatPeriodRange(p.period)})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-slate-500 font-medium">Do:</span>
-              <input
-                type="month"
-                max={todayStr.slice(0, 7)}
+              <select
                 value={customToInput}
                 onChange={(e) => setCustomToInput(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-              />
+                className="max-w-[200px] px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 truncate"
+              >
+                {availableBudgetPeriods.map((p) => (
+                  <option key={`to-${p.key}`} value={p.key}>
+                    {p.label} ({formatPeriodRange(p.period)})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
@@ -365,6 +433,30 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             <span>{validationError}</span>
           </div>
         )}
+
+        {/* Aktivní zobrazený rozsah a stav období */}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold text-slate-800">
+              {dateRange.periods.length === 1
+                ? dateRange.periods[0]?.label
+                : `${dateRange.periods[0]?.label || ''} – ${dateRange.periods[dateRange.periods.length - 1]?.label || ''}`}
+            </span>
+            <span className="text-slate-400">•</span>
+            <span className="font-medium text-slate-600">
+              {formatCzechDate(dateRange.startDate)} – {formatCzechDate(dateRange.endDate)}
+            </span>
+          </div>
+
+          {dateRange.periods.some((p) => p.isCurrentPeriod) && (
+            <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg font-medium">
+              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>
+                Období probíhá (data k {formatCzechDate(todayStr)}) – měsíc ještě není uzavřen
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 2. Doplňkové filtry */}
@@ -531,11 +623,11 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           </div>
           <p
             className="text-[11px] text-slate-400 mt-1 truncate flex items-center gap-1"
-            title={kpis.hasPartialCurrentMonth ? 'Aktuální měsíc ještě není uzavřený' : 'Průměr za zahrnuté měsíce'}
+            title={kpis.hasPartialCurrentMonth ? 'Aktuální rozpočtové období ještě není uzavřené' : 'Průměr za zahrnutá rozpočtová období'}
           >
-            <span>/ měsíc</span>
+            <span>/ období</span>
             {kpis.hasPartialCurrentMonth && (
-              <span className="text-amber-500 font-semibold" title="Aktuální měsíc ještě probíhá">
+              <span className="text-amber-500 font-semibold" title="Aktuální rozpočtové období ještě probíhá">
                 *
               </span>
             )}
@@ -595,10 +687,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
-              Trend výdajů mezi měsíci
+              Trend výdajů mezi obdobími
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Porovnání výdajů oproti předcházejícímu kalendářnímu měsíci
+              Porovnání výdajů oproti předcházejícímu rozpočtovému období
             </p>
           </div>
 
@@ -615,7 +707,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800">{t.label}</span>
                     {t.isCurrentMonth && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium" title="Srovnání ke stejnému dni měsíce">
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium" title="Srovnání ke stejnému dni období">
                         Probíhající
                       </span>
                     )}
@@ -637,8 +729,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                         }`}
                         title={
                           t.isSameDayComparison
-                            ? 'Srovnání ke stejnému dni předchozího měsíce'
-                            : 'Meziměsíční změna'
+                            ? 'Srovnání ke stejnému dni období'
+                            : 'Změna oproti předchozímu období'
                         }
                       >
                         {isDecrease ? '↓ ' : isIncrease ? '↑ +' : ''}
@@ -663,7 +755,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               Průměry a finanční extrémy
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Nejlepší a nejnáročnější měsíce ve vybraném období
+              Nejlepší a nejnáročnější rozpočtová období
             </p>
           </div>
 
@@ -671,7 +763,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             {/* Nejvyšší příjem */}
             <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl space-y-1">
               <span className="text-[11px] font-medium text-emerald-800">
-                Nejvyšší měsíční příjem
+                Nejvyšší příjem za období
               </span>
               <div className="text-sm font-bold text-emerald-900 tabular-nums">
                 {extremes.highestIncomeMonth
@@ -686,7 +778,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             {/* Nejvyšší výdaje */}
             <div className="p-3 bg-rose-50/70 border border-rose-100 rounded-xl space-y-1">
               <span className="text-[11px] font-medium text-rose-800">
-                Nejvyšší měsíční výdaje
+                Nejvyšší výdaje za období
               </span>
               <div className="text-sm font-bold text-rose-900 tabular-nums">
                 {extremes.highestExpenseMonth
@@ -728,10 +820,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               </p>
             </div>
 
-            {/* Průměrný měsíční příjem */}
+            {/* Průměrný příjem */}
             <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
               <span className="text-[11px] font-medium text-slate-600">
-                Průměrný měsíční příjem
+                Průměrný příjem za období
               </span>
               <div className="text-sm font-bold text-slate-900 tabular-nums">
                 {formatCurrency(extremes.avgMonthlyIncomeInHaler)}
@@ -753,7 +845,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               >
                 {formatCurrency(extremes.avgMonthlyNetChangeInHaler)}
               </div>
-              <p className="text-[10px] text-slate-400">/ měsíc</p>
+              <p className="text-[10px] text-slate-400">/ období</p>
             </div>
           </div>
         </div>

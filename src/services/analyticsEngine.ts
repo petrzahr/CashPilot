@@ -1,6 +1,7 @@
 import {
   Account,
   BalanceCorrection,
+  BudgetPeriod,
   Category,
   MarketValueSnapshot,
   Transaction,
@@ -8,47 +9,54 @@ import {
 import { addHaler, subHaler } from './currencyService';
 import {
   CZECH_MONTHS,
-  getDaysInMonth,
-  getPeriodKey,
+  createBudgetPeriod,
+  getPeriodForDate,
+  getPreviousPeriod,
+  getNextPeriod,
+  formatCzechDate,
+  formatPeriodRange,
+  getPreviousDayString,
   getTodayInPrague,
+  isDateInPeriod,
 } from './periodService';
 import { czechStringCompare } from './categoryService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
 
-export interface CalendarMonthInfo {
-  year: number;
-  month: number;
-  key: string;        // YYYY-MM
-  label: string;      // např. "Září 2026"
-  shortLabel: string; // např. "Zář 26"
-  startDate: string;  // YYYY-MM-01
-  endDate: string;    // YYYY-MM-DD (konec měsíce nebo todayStr pro aktuální měsíc)
-  isCurrentMonth: boolean;
-  daysInMonthCount: number;
-  totalDaysInMonth: number;
+export interface BudgetPeriodInfo {
+  period: BudgetPeriod;
+  key: string;            // YYYY-MM
+  label: string;          // např. "Srpen 2026"
+  shortLabel: string;     // např. "Srp 26"
+  startDate: string;      // period.startDate (např. 2026-08-15)
+  endDate: string;        // period.endDate (např. 2026-09-14)
+  analysisEndDate: string;// min(period.endDate, todayStr) (např. 2026-09-13)
+  dateRangeStr: string;   // formátovaný rozsah např. "15. 8. 2026 – 13. 9. 2026"
+  isCurrentPeriod: boolean;
+  daysInPeriodCount: number;
+  totalDaysInPeriod: number;
 }
 
 export interface AnalyticsDateRange {
   preset: AnalyticsPeriodPreset;
-  startDate: string; // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
-  fromMonthKey: string; // YYYY-MM
-  toMonthKey: string;   // YYYY-MM
-  months: CalendarMonthInfo[];
+  startDate: string;      // YYYY-MM-DD
+  endDate: string;        // YYYY-MM-DD (až do todayStr u probíhajícího)
+  fromPeriodKey: string;  // YYYY-MM
+  toPeriodKey: string;    // YYYY-MM
+  periods: BudgetPeriodInfo[];
 }
 
 export interface AnalyticsFilters {
-  accountId?: string | null; // null = Všechny účty
-  categoryId?: string | null;// null = Všechny kategorie
-  subcategoryId?: string | null; // null = Všechny podkategorie
+  accountId?: string | null;
+  categoryId?: string | null;
+  subcategoryId?: string | null;
 }
 
 export interface AnalyticsKPIs {
   totalIncomeInHaler: number;
   totalExpenseInHaler: number;
   netChangeInHaler: number;
-  savingsRate: number | null; // null pokud příjem === 0
+  savingsRate: number | null;
   avgMonthlyExpenseInHaler: number;
   netWorthChangeInHaler: number;
   hasPartialCurrentMonth: boolean;
@@ -59,6 +67,7 @@ export interface MonthlyCashFlowPoint {
   monthKey: string;
   label: string;
   shortLabel: string;
+  dateRangeStr: string;
   incomeInHaler: number;
   expenseInHaler: number;
   netChangeInHaler: number;
@@ -86,6 +95,8 @@ export interface CategoryBreakdownItem {
 export interface NetWorthHistoryPoint {
   monthKey: string;
   label: string;
+  shortLabel: string;
+  dateRangeStr: string;
   date: string;
   checkingAndCashInHaler: number;
   savingsInHaler: number;
@@ -98,9 +109,10 @@ export interface NetWorthHistoryPoint {
 export interface ExpenseTrendItem {
   monthKey: string;
   label: string;
+  dateRangeStr: string;
   expenseInHaler: number;
   prevMonthExpenseInHaler: number | null;
-  changePercent: number | null; // kladné = nárůst výdajů, záporné = pokles
+  changePercent: number | null;
   isCurrentMonth: boolean;
   isSameDayComparison: boolean;
 }
@@ -122,11 +134,31 @@ export interface TopExpenseItem {
 }
 
 /**
- * Zjistí datum nejstaršího relevantního historického záznamu v aplikaci:
- * - datum počátečního stavu účtu,
- * - datum uskutečněné finanční položky,
- * - datum korekce,
- * - datum tržní hodnoty.
+ * Spočítá počet kalendářních dnů mezi dvěma daty (včetně obou hranic).
+ */
+export function getDaysBetweenInclusive(startDate: string, endDate: string): number {
+  const [y1, m1, d1] = startDate.split('-').map(Number);
+  const [y2, m2, d2] = endDate.split('-').map(Number);
+  const t1 = Date.UTC(y1, m1 - 1, d1);
+  const t2 = Date.UTC(y2, m2 - 1, d2);
+  return Math.max(1, Math.round((t2 - t1) / 86400000) + 1);
+}
+
+/**
+ * Přičte počet dní k datu ve formátu YYYY-MM-DD a vrátí nový řetězec YYYY-MM-DD.
+ */
+export function addDaysToDateString(dateStr: string, daysToAdd: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + daysToAdd);
+  const resY = dt.getUTCFullYear();
+  const resM = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const resD = String(dt.getUTCDate()).padStart(2, '0');
+  return `${resY}-${resM}-${resD}`;
+}
+
+/**
+ * Zjistí datum nejstaršího relevantního historického záznamu v aplikaci.
  */
 export function getEarliestActivityDate(
   accounts: Account[] = [],
@@ -165,178 +197,177 @@ export function getEarliestActivityDate(
 }
 
 /**
- * Pomocná funkce pro vygenerování seznamu kalendářních měsíců mezi startDate a endDate.
+ * Vytvoří objekt BudgetPeriodInfo pro danou rozpočtovou periodu.
  */
-export function generateCalendarMonths(
-  startDate: string,
-  endDate: string,
+export function createBudgetPeriodInfo(
+  period: BudgetPeriod,
   todayStr: string = getTodayInPrague()
-): CalendarMonthInfo[] {
-  const [startYear, startMonth] = startDate.split('-').map(Number);
-  const [endYear, endMonth] = endDate.split('-').map(Number);
-  const [todayYear, todayMonth] = todayStr.split('-').map(Number);
+): BudgetPeriodInfo {
+  const isCurrentPeriod = isDateInPeriod(todayStr, period);
+  const analysisEndDate = isCurrentPeriod ? (todayStr < period.endDate ? todayStr : period.endDate) : period.endDate;
+  const monthName = CZECH_MONTHS[period.month - 1];
+  const label = `${monthName} ${period.year}`;
+  const shortLabel = `${monthName.substring(0, 3)} ${period.year}`;
 
-  const result: CalendarMonthInfo[] = [];
+  const totalDaysInPeriod = getDaysBetweenInclusive(period.startDate, period.endDate);
+  const daysInPeriodCount = getDaysBetweenInclusive(period.startDate, analysisEndDate);
 
-  let curY = startYear;
-  let curM = startMonth;
+  const dateRangeStr = `${formatCzechDate(period.startDate)} – ${formatCzechDate(analysisEndDate)}`;
 
-  while (curY < endYear || (curY === endYear && curM <= endMonth)) {
-    const key = getPeriodKey(curY, curM);
-    const monthName = CZECH_MONTHS[curM - 1];
-    const label = `${monthName} ${curY}`;
-    const shortLabel = `${monthName.substring(0, 3)} ${String(curY).slice(-2)}`;
-    const totalDays = getDaysInMonth(curY, curM);
+  return {
+    period,
+    key: period.key,
+    label,
+    shortLabel,
+    startDate: period.startDate,
+    endDate: period.endDate,
+    analysisEndDate,
+    dateRangeStr,
+    isCurrentPeriod,
+    daysInPeriodCount,
+    totalDaysInPeriod,
+  };
+}
 
-    const mStartDate = `${key}-01`;
-    const isCurrent = curY === todayYear && curM === todayMonth;
-    const mEndDate = isCurrent
-      ? todayStr
-      : `${key}-${String(totalDays).padStart(2, '0')}`;
+/**
+ * Vygeneruje sekvenci rozpočtových period od startPeriod do endPeriod (včetně obou).
+ */
+export function generateBudgetPeriodSequence(
+  startPeriod: BudgetPeriod,
+  endPeriod: BudgetPeriod,
+  startDay: number = 15,
+  todayStr: string = getTodayInPrague()
+): BudgetPeriodInfo[] {
+  const result: BudgetPeriodInfo[] = [];
+  let cur: BudgetPeriod = startPeriod;
 
-    // Počet započítaných dnů v měsíci
-    const sDay = curY === startYear && curM === startMonth ? Number(startDate.split('-')[2]) : 1;
-    const eDay = curY === endYear && curM === endMonth ? Number(mEndDate.split('-')[2]) : totalDays;
-    const daysInMonthCount = Math.max(1, eDay - sDay + 1);
-
-    result.push({
-      year: curY,
-      month: curM,
-      key,
-      label,
-      shortLabel,
-      startDate: mStartDate,
-      endDate: mEndDate,
-      isCurrentMonth: isCurrent,
-      daysInMonthCount,
-      totalDaysInMonth: totalDays,
-    });
-
-    curM++;
-    if (curM > 12) {
-      curM = 1;
-      curY++;
-    }
+  while (cur.key <= endPeriod.key) {
+    result.push(createBudgetPeriodInfo(cur, todayStr));
+    if (cur.key === endPeriod.key) break;
+    cur = getNextPeriod(cur, startDay);
   }
 
   return result;
 }
 
 /**
- * Vypočítá přesný časový rozsah na základě vybrané předvolby nebo vlastního rozsahu.
+ * Vypočítá přesný rozsah rozpočtových period na základě nastavení startovního dne
+ * a zvolené rychlé volby nebo vlastního výběru Od–Do.
  */
 export function resolveAnalyticsDateRange(
   preset: AnalyticsPeriodPreset,
-  customFrom?: string, // YYYY-MM
-  customTo?: string,   // YYYY-MM
+  customFrom?: string, // klíč YYYY-MM
+  customTo?: string,   // klíč YYYY-MM
   allData?: {
     accounts: Account[];
     transactions: Transaction[];
     corrections: BalanceCorrection[];
     snapshots: MarketValueSnapshot[];
   },
-  todayStr: string = getTodayInPrague()
+  todayStr: string = getTodayInPrague(),
+  startDay: number = 15
 ): { range: AnalyticsDateRange; error?: string } {
-  const [curY, curM] = todayStr.split('-').map(Number);
-  const currentMonthKey = getPeriodKey(curY, curM);
+  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
+  const currentPeriod = getPeriodForDate(todayStr, safeStartDay);
 
   if (preset === 'custom') {
     if (!customFrom || !customTo) {
       return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr).range,
-        error: 'Vyberte prosím počáteční i koncový měsíc.',
+        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
+        error: 'Vyberte prosím počáteční i koncové rozpočtové období.',
       };
     }
 
     if (customFrom > customTo) {
       return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr).range,
-        error: 'Počáteční měsíc nesmí být pozdější než koncový měsíc.',
+        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
+        error: 'Počáteční období nesmí být pozdější než koncové období.',
       };
     }
 
-    if (customTo > currentMonthKey) {
+    if (customTo > currentPeriod.key) {
       return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr).range,
-        error: 'Koncový měsíc nesmí být v budoucnosti.',
+        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
+        error: 'Koncové rozpočtové období nesmí být v budoucnosti.',
       };
     }
 
-    const startDate = `${customFrom}-01`;
+    const [fromY, fromM] = customFrom.split('-').map(Number);
     const [toY, toM] = customTo.split('-').map(Number);
-    const toMonthDays = getDaysInMonth(toY, toM);
-    const nominalEndDate = `${customTo}-${String(toMonthDays).padStart(2, '0')}`;
-    const endDate = nominalEndDate > todayStr ? todayStr : nominalEndDate;
+    const startPeriod = createBudgetPeriod(fromY, fromM, safeStartDay);
+    const endPeriod = createBudgetPeriod(toY, toM, safeStartDay);
 
-    const months = generateCalendarMonths(startDate, endDate, todayStr);
+    const periods = generateBudgetPeriodSequence(startPeriod, endPeriod, safeStartDay, todayStr);
+    const lastInfo = periods[periods.length - 1];
+
     return {
       range: {
         preset: 'custom',
-        startDate,
-        endDate,
-        fromMonthKey: customFrom,
-        toMonthKey: customTo,
-        months,
+        startDate: startPeriod.startDate,
+        endDate: lastInfo ? lastInfo.analysisEndDate : endPeriod.endDate,
+        fromPeriodKey: customFrom,
+        toPeriodKey: customTo,
+        periods,
       },
     };
   }
 
   if (preset === '3m') {
-    let startY = curY;
-    let startM = curM - 2;
-    if (startM < 1) {
-      startM += 12;
-      startY -= 1;
+    let p = currentPeriod;
+    for (let i = 0; i < 2; i++) {
+      p = getPreviousPeriod(p, safeStartDay);
     }
-    const fromMonthKey = getPeriodKey(startY, startM);
-    const startDate = `${fromMonthKey}-01`;
-    const months = generateCalendarMonths(startDate, todayStr, todayStr);
+    const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
+    const lastInfo = periods[periods.length - 1];
+
     return {
       range: {
         preset: '3m',
-        startDate,
-        endDate: todayStr,
-        fromMonthKey,
-        toMonthKey: currentMonthKey,
-        months,
+        startDate: p.startDate,
+        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
+        fromPeriodKey: p.key,
+        toPeriodKey: currentPeriod.key,
+        periods,
       },
     };
   }
 
   if (preset === '6m') {
-    let startY = curY;
-    let startM = curM - 5;
-    if (startM < 1) {
-      startM += 12;
-      startY -= 1;
+    let p = currentPeriod;
+    for (let i = 0; i < 5; i++) {
+      p = getPreviousPeriod(p, safeStartDay);
     }
-    const fromMonthKey = getPeriodKey(startY, startM);
-    const startDate = `${fromMonthKey}-01`;
-    const months = generateCalendarMonths(startDate, todayStr, todayStr);
+    const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
+    const lastInfo = periods[periods.length - 1];
+
     return {
       range: {
         preset: '6m',
-        startDate,
-        endDate: todayStr,
-        fromMonthKey,
-        toMonthKey: currentMonthKey,
-        months,
+        startDate: p.startDate,
+        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
+        fromPeriodKey: p.key,
+        toPeriodKey: currentPeriod.key,
+        periods,
       },
     };
   }
 
   if (preset === 'ytd') {
-    const fromMonthKey = `${curY}-01`;
-    const startDate = `${curY}-01-01`;
-    const months = generateCalendarMonths(startDate, todayStr, todayStr);
+    // Začíná prvním rozpočtovým obdobím označeným aktuálním rokem (Leden [currentPeriod.year])
+    // a končí aktuálním rozpočtovým obdobím k aktuálnímu dni
+    const curYear = currentPeriod.year;
+    const startPeriod = createBudgetPeriod(curYear, 1, safeStartDay);
+    const periods = generateBudgetPeriodSequence(startPeriod, currentPeriod, safeStartDay, todayStr);
+    const lastInfo = periods[periods.length - 1];
+
     return {
       range: {
         preset: 'ytd',
-        startDate,
-        endDate: todayStr,
-        fromMonthKey,
-        toMonthKey: currentMonthKey,
-        months,
+        startDate: startPeriod.startDate,
+        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
+        fromPeriodKey: startPeriod.key,
+        toPeriodKey: currentPeriod.key,
+        periods,
       },
     };
   }
@@ -349,48 +380,44 @@ export function resolveAnalyticsDateRange(
       allData?.snapshots || [],
       todayStr
     );
-    const [eY, eM] = earliestDate.split('-').map(Number);
-    const fromMonthKey = getPeriodKey(eY, eM);
-    const startDate = `${fromMonthKey}-01`;
-    const months = generateCalendarMonths(startDate, todayStr, todayStr);
+    const startPeriod = getPeriodForDate(earliestDate, safeStartDay);
+    const periods = generateBudgetPeriodSequence(startPeriod, currentPeriod, safeStartDay, todayStr);
+    const lastInfo = periods[periods.length - 1];
+
     return {
       range: {
         preset: 'all',
-        startDate,
-        endDate: todayStr,
-        fromMonthKey,
-        toMonthKey: currentMonthKey,
-        months,
+        startDate: startPeriod.startDate,
+        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
+        fromPeriodKey: startPeriod.key,
+        toPeriodKey: currentPeriod.key,
+        periods,
       },
     };
   }
 
-  // Výchozí: 12 měsíců
-  let startY = curY;
-  let startM = curM - 11;
-  if (startM < 1) {
-    startM += 12;
-    startY -= 1;
+  // Výchozí: 12 měsíců (rozpočtových period)
+  let p = currentPeriod;
+  for (let i = 0; i < 11; i++) {
+    p = getPreviousPeriod(p, safeStartDay);
   }
-  const fromMonthKey = getPeriodKey(startY, startM);
-  const startDate = `${fromMonthKey}-01`;
-  const months = generateCalendarMonths(startDate, todayStr, todayStr);
+  const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
+  const lastInfo = periods[periods.length - 1];
+
   return {
     range: {
       preset: '12m',
-      startDate,
-      endDate: todayStr,
-      fromMonthKey,
-      toMonthKey: currentMonthKey,
-      months,
+      startDate: p.startDate,
+      endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
+      fromPeriodKey: p.key,
+      toPeriodKey: currentPeriod.key,
+      periods,
     },
   };
 }
 
 /**
  * Vyfiltruje uskutečněné transakce podle časového rozsahu a volitelných filtrů.
- * Zahrnuje jak aktivní, tak archivované účty a kategorie.
- * Nezahrnuje budoucí položky, plánované položky ani zrušené položky.
  */
 export function getFilteredExecutedTransactions(
   transactions: Transaction[] = [],
@@ -402,23 +429,17 @@ export function getFilteredExecutedTransactions(
   const safeTxs = Array.isArray(transactions) ? transactions : [];
 
   return safeTxs.filter((t) => {
-    // Pouze uskutečněné
     if (t.status !== 'executed') return false;
-    // Nesmí být v budoucnosti
     if (t.date > todayStr) return false;
-    // Musí spadat do vybraného rozsahu
     if (t.date < range.startDate || t.date > range.endDate) return false;
 
-    // Filtr účtu
     if (filters.accountId) {
       if (t.sourceAccountId !== filters.accountId && t.targetAccountId !== filters.accountId) {
         return false;
       }
     }
 
-    // Filtr kategorie
     if (filters.categoryId) {
-      // Zjistit hlavní kategorii transakce
       const txCat = categories.find((c) => c.id === t.categoryId);
       const mainCatId = txCat ? (txCat.parentId ? txCat.parentId : txCat.id) : null;
       if (mainCatId !== filters.categoryId) {
@@ -426,7 +447,6 @@ export function getFilteredExecutedTransactions(
       }
     }
 
-    // Filtr podkategorie
     if (filters.subcategoryId) {
       if (t.subcategoryId !== filters.subcategoryId && t.categoryId !== filters.subcategoryId) {
         return false;
@@ -438,9 +458,7 @@ export function getFilteredExecutedTransactions(
 }
 
 /**
- * Spočítá stav likvidního účtu (checking, cash, savings, other) k přesnému datu pointDate.
- * Nezahrnuje budoucí ani plánované položky.
- * Zahrnuje uskutečněné platby, převody a korekce.
+ * Spočítá stav likvidního účtu k danému dni.
  */
 export function computeLiquidAccountBalanceAtDate(
   acc: Account,
@@ -476,7 +494,6 @@ export function computeLiquidAccountBalanceAtDate(
     }
   }
 
-  // Legacy korekce
   const relevantCorrections = (corrections || []).filter((c) => {
     if (c.accountId !== acc.id) return false;
     if (c.checkDate < initDate || c.checkDate > pointDate) return false;
@@ -498,9 +515,7 @@ export function computeLiquidAccountBalanceAtDate(
 }
 
 /**
- * Spočítá stav investičního / penzijního účtu k přesnému datu pointDate.
- * Používá nejnovější tržní snapshot k danému dni + uskutečněné převody po tomto datu.
- * Korekce zůstatku se na investiční/penzijní účty neaplikují.
+ * Spočítá stav investičního / penzijního účtu k danému dni.
  */
 export function computeAssetAccountBalanceAtDate(
   acc: Account,
@@ -537,7 +552,6 @@ export function computeAssetAccountBalanceAtDate(
     valDate = initDate;
   }
 
-  // Uskutečněné převody po ocenění
   for (const t of transactions) {
     if (t.status !== 'executed' || t.type !== 'transfer') continue;
     if (hasValuation) {
@@ -555,7 +569,7 @@ export function computeAssetAccountBalanceAtDate(
 }
 
 /**
- * Spočítá celkové jmění (nebo zůstatek vybraného účtu) k danému datu.
+ * Spočítá celkové jmění k danému dni.
  */
 export function calculateNetWorthAtDate(
   accounts: Account[] = [],
@@ -637,7 +651,6 @@ export function calculateAnalyticsKPIs(
   let totalExpenseInHaler = 0;
 
   for (const t of filteredTxs) {
-    // Převody a korekce se NIKDY nezapočítávají do příjmů ani výdajů
     if (t.type === 'transfer' || t.type === 'balance_adjustment') continue;
 
     const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
@@ -651,21 +664,16 @@ export function calculateAnalyticsKPIs(
 
   const netChangeInHaler = subHaler(totalIncomeInHaler, totalExpenseInHaler);
 
-  // Míra úspor v %: (příjmy - výdaje) / příjmy * 100
   const savingsRate =
     totalIncomeInHaler > 0
       ? ((totalIncomeInHaler - totalExpenseInHaler) / totalIncomeInHaler) * 100
       : null;
 
-  const totalMonthsCount = Math.max(1, range.months.length);
+  const totalMonthsCount = Math.max(1, range.periods.length);
   const avgMonthlyExpenseInHaler = Math.round(totalExpenseInHaler / totalMonthsCount);
 
-  // Změna celkového jmění = stav ke konci období - stav na začátku období
-  // Stav na začátku = stav k předcházejícímu dni před startem období
-  const startDay = range.startDate;
-  const prevDayDate = new Date(startDay);
-  prevDayDate.setDate(prevDayDate.getDate() - 1);
-  const prevDayStr = prevDayDate.toISOString().slice(0, 10);
+  // Změna celkového jmění = stav ke konci období - stav k předchozímu dni před startem období
+  const prevDayStr = getPreviousDayString(range.startDate);
 
   const netWorthStart = calculateNetWorthAtDate(
     accounts,
@@ -686,8 +694,7 @@ export function calculateAnalyticsKPIs(
   ).totalNetWorthInHaler;
 
   const netWorthChangeInHaler = subHaler(netWorthEnd, netWorthStart);
-
-  const hasPartialCurrentMonth = range.months.some((m) => m.isCurrentMonth);
+  const hasPartialCurrentMonth = range.periods.some((p) => p.isCurrentPeriod);
 
   return {
     totalIncomeInHaler,
@@ -702,19 +709,21 @@ export function calculateAnalyticsKPIs(
 }
 
 /**
- * Spočítá měsíční cash flow (příjmy, výdaje, čistá změna) pro hlavní sloupcový graf.
+ * Spočítá cash flow podle rozpočtových period pro hlavní sloupcový graf.
  */
 export function calculateMonthlyCashFlow(
-  months: CalendarMonthInfo[],
-  filteredTxs: Transaction[]
+  periods: BudgetPeriodInfo[],
+  filteredTxs: Transaction[],
+  startDay: number = 15
 ): MonthlyCashFlowPoint[] {
-  return months.map((m) => {
+  return periods.map((p) => {
     let incomeInHaler = 0;
     let expenseInHaler = 0;
 
     for (const t of filteredTxs) {
       if (t.type === 'transfer' || t.type === 'balance_adjustment') continue;
-      if (t.date >= m.startDate && t.date <= m.endDate) {
+      // Ověříme, zda transakce patří do této rozpočtové periody
+      if (isDateInPeriod(t.date, p.period) && t.date <= p.analysisEndDate) {
         const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
         if (t.type === 'income') incomeInHaler = addHaler(incomeInHaler, amt);
         if (t.type === 'expense') expenseInHaler = addHaler(expenseInHaler, amt);
@@ -728,21 +737,21 @@ export function calculateMonthlyCashFlow(
         : null;
 
     return {
-      monthKey: m.key,
-      label: m.label,
-      shortLabel: m.shortLabel,
+      monthKey: p.key,
+      label: p.label,
+      shortLabel: p.shortLabel,
+      dateRangeStr: p.dateRangeStr,
       incomeInHaler,
       expenseInHaler,
       netChangeInHaler,
       savingsRate,
-      isCurrentMonth: m.isCurrentMonth,
+      isCurrentMonth: p.isCurrentPeriod,
     };
   });
 }
 
 /**
- * Spočítá rozpad kategorií (výdaje nebo příjmy) seřazený sestupně podle částky
- * a při shodě abecedně A–Z podle českého řazení.
+ * Spočítá rozpad kategorií seřazený sestupně podle částky a abecedně A–Z.
  */
 export function calculateCategoryBreakdown(
   type: 'expense' | 'income',
@@ -757,13 +766,11 @@ export function calculateCategoryBreakdown(
     totalAmountInHaler = addHaler(totalAmountInHaler, amt);
   }
 
-  // Mapa kategorií podle ID pro rychlé dohledání
   const catMap = new Map<string, Category>();
   for (const c of categories) {
     catMap.set(c.id, c);
   }
 
-  // Struktura pro agregaci: mainCatId -> { total, subMap: subId -> total }
   const mainAgg = new Map<
     string,
     {
@@ -789,7 +796,6 @@ export function calculateCategoryBreakdown(
 
     if (cat) {
       if (cat.parentId) {
-        // t.categoryId byla podkategorie
         const parent = catMap.get(cat.parentId);
         mainCatId = cat.parentId;
         mainCatName = parent ? parent.name : 'Neznámá kategorie';
@@ -798,7 +804,6 @@ export function calculateCategoryBreakdown(
         subId = cat.id;
         subName = cat.name;
       } else {
-        // t.categoryId byla hlavní kategorie
         mainCatId = cat.id;
         mainCatName = cat.name;
         mainColor = cat.color;
@@ -832,11 +837,10 @@ export function calculateCategoryBreakdown(
     sItem.total = addHaler(sItem.total, amt);
   }
 
-  // Převod na výsledné pole a řazení
   const result: CategoryBreakdownItem[] = [];
 
   for (const [id, data] of mainAgg.entries()) {
-    if (data.total <= 0) continue; // Nezobrazovat kategorie s nulovou částkou
+    if (data.total <= 0) continue;
 
     const percentage =
       totalAmountInHaler > 0 ? (data.total / totalAmountInHaler) * 100 : 0;
@@ -852,7 +856,6 @@ export function calculateCategoryBreakdown(
       });
     }
 
-    // Řadit podkategorie: částka sestupně, pak abecedně A–Z
     subcategories.sort((a, b) => {
       if (b.totalInHaler !== a.totalInHaler) {
         return b.totalInHaler - a.totalInHaler;
@@ -871,7 +874,6 @@ export function calculateCategoryBreakdown(
     });
   }
 
-  // Řadit hlavní kategorie: částka sestupně, pak abecedně A–Z
   result.sort((a, b) => {
     if (b.totalInHaler !== a.totalInHaler) {
       return b.totalInHaler - a.totalInHaler;
@@ -883,18 +885,18 @@ export function calculateCategoryBreakdown(
 }
 
 /**
- * Spočítá vývoj celkového jmění a jeho 4 skupin v jednotlivých kalendářních měsících.
+ * Spočítá vývoj celkového jmění podle rozpočtových period.
  */
 export function calculateNetWorthHistory(
-  months: CalendarMonthInfo[],
+  periods: BudgetPeriodInfo[],
   accounts: Account[],
   transactions: Transaction[],
   corrections: BalanceCorrection[],
   snapshots: MarketValueSnapshot[],
   filterAccountId?: string | null
 ): NetWorthHistoryPoint[] {
-  return months.map((m) => {
-    const pointDate = m.endDate;
+  return periods.map((p) => {
+    const pointDate = p.analysisEndDate;
     const nw = calculateNetWorthAtDate(
       accounts,
       pointDate,
@@ -905,44 +907,45 @@ export function calculateNetWorthHistory(
     );
 
     return {
-      monthKey: m.key,
-      label: m.label,
+      monthKey: p.key,
+      label: p.label,
+      shortLabel: p.shortLabel,
+      dateRangeStr: p.dateRangeStr,
       date: pointDate,
       checkingAndCashInHaler: nw.checkingAndCashInHaler,
       savingsInHaler: nw.savingsInHaler,
       investmentsInHaler: nw.investmentsInHaler,
       pensionInHaler: nw.pensionInHaler,
       totalNetWorthInHaler: nw.totalNetWorthInHaler,
-      isCurrentMonth: m.isCurrentMonth,
+      isCurrentMonth: p.isCurrentPeriod,
     };
   });
 }
 
 /**
- * Spočítá meziměsíční změnu výdajů (trend).
- * U probíhajícího neúplného měsíce provede srovnání na shodný počet dní v předchozím měsíci.
+ * Spočítá meziměsíční trend výdajů mezi rozpočtovými obdobími.
+ * U probíhajícího období srovnává 1.–N. den s 1.–N. dnem předchozího rozpočtového období.
  */
 export function calculateExpenseMoMTrend(
-  months: CalendarMonthInfo[],
+  periods: BudgetPeriodInfo[],
   allExecutedTxs: Transaction[],
   filters: AnalyticsFilters = {},
   categories: Category[] = [],
-  todayStr: string = getTodayInPrague()
+  todayStr: string = getTodayInPrague(),
+  startDay: number = 15
 ): ExpenseTrendItem[] {
+  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
   const result: ExpenseTrendItem[] = [];
 
-  // Pomocná funkce pro výpočet výdajů v daném intervalu
-  const getExpensesInInterval = (startDate: string, endDate: string): number => {
+  const getExpensesInDateRange = (sDate: string, eDate: string): number => {
     let sum = 0;
     for (const t of allExecutedTxs) {
       if (t.status !== 'executed' || t.type !== 'expense') continue;
       if (t.date > todayStr) continue;
-      if (t.date >= startDate && t.date <= endDate) {
-        // Filtr účtu
+      if (t.date >= sDate && t.date <= eDate) {
         if (filters.accountId && t.sourceAccountId !== filters.accountId && t.targetAccountId !== filters.accountId) {
           continue;
         }
-        // Filtr kategorie
         if (filters.categoryId) {
           const txCat = categories.find((c) => c.id === t.categoryId);
           const mainCatId = txCat ? (txCat.parentId ? txCat.parentId : txCat.id) : null;
@@ -959,50 +962,39 @@ export function calculateExpenseMoMTrend(
     return sum;
   };
 
-  for (let i = 0; i < months.length; i++) {
-    const curMonth = months[i];
-    const curExpenses = getExpensesInInterval(curMonth.startDate, curMonth.endDate);
+  for (let i = 0; i < periods.length; i++) {
+    const curP = periods[i];
+    const curExpenses = getExpensesInDateRange(curP.startDate, curP.analysisEndDate);
 
-    let prevMonthExpenses: number | null = null;
+    const prevPeriod = getPreviousPeriod(curP.period, safeStartDay);
+    let prevExpenses: number | null = null;
     let isSameDayComparison = false;
 
-    // Najdeme předchozí měsíc v čase (i když není v months, odvodíme jej)
-    let prevY = curMonth.year;
-    let prevM = curMonth.month - 1;
-    if (prevM < 1) {
-      prevM = 12;
-      prevY -= 1;
-    }
-    const prevKey = getPeriodKey(prevY, prevM);
-    const prevTotalDays = getDaysInMonth(prevY, prevM);
-
-    if (curMonth.isCurrentMonth) {
-      // Pro neúplný aktuální měsíc porovnáváme shodný počet dní
-      const todayDay = Number(todayStr.split('-')[2]);
-      const compareDay = Math.min(todayDay, prevTotalDays);
-      const prevStartDate = `${prevKey}-01`;
-      const prevEndDate = `${prevKey}-${String(compareDay).padStart(2, '0')}`;
-      prevMonthExpenses = getExpensesInInterval(prevStartDate, prevEndDate);
+    if (curP.isCurrentPeriod) {
+      // Shodný počet uplynulých dní (1.–N. den)
+      const elapsedDays = getDaysBetweenInclusive(curP.startDate, curP.analysisEndDate);
+      const prevCompareEndDate = addDaysToDateString(prevPeriod.startDate, elapsedDays - 1);
+      const effectivePrevEnd = prevCompareEndDate < prevPeriod.endDate ? prevCompareEndDate : prevPeriod.endDate;
+      prevExpenses = getExpensesInDateRange(prevPeriod.startDate, effectivePrevEnd);
       isSameDayComparison = true;
     } else {
-      // Celý předchozí měsíc
-      const prevStartDate = `${prevKey}-01`;
-      const prevEndDate = `${prevKey}-${String(prevTotalDays).padStart(2, '0')}`;
-      prevMonthExpenses = getExpensesInInterval(prevStartDate, prevEndDate);
+      // Celé předchozí rozpočtové období
+      prevExpenses = getExpensesInDateRange(prevPeriod.startDate, prevPeriod.endDate);
     }
 
     let changePercent: number | null = null;
-    if (prevMonthExpenses !== null && prevMonthExpenses > 0) {
-      changePercent = ((curExpenses - prevMonthExpenses) / prevMonthExpenses) * 100;
+    if (prevExpenses !== null && prevExpenses > 0) {
+      changePercent = ((curExpenses - prevExpenses) / prevExpenses) * 100;
     }
 
     result.push({
-      monthKey: curMonth.key,
-      label: curMonth.label,
+      monthKey: curP.key,
+      label: curP.label,
+      dateRangeStr: curP.dateRangeStr,
       expenseInHaler: curExpenses,
-      prevMonthExpenseInHaler: prevMonthExpenses,
+      prevMonthExpenseInHaler: prevExpenses,
       changePercent,
-      isCurrentMonth: curMonth.isCurrentMonth,
+      isCurrentMonth: curP.isCurrentPeriod,
       isSameDayComparison,
     });
   }
@@ -1011,8 +1003,7 @@ export function calculateExpenseMoMTrend(
 }
 
 /**
- * Vrátí 10 nejvyšších uskutečněných výdajových položek ve vybraném období.
- * Nezahrnuje převody ani korekce.
+ * Vrátí 10 nejvyšších uskutečněných výdajů ve vybraném rozsahu.
  */
 export function getTopExpenses(
   filteredTxs: Transaction[],
@@ -1066,7 +1057,7 @@ export function getTopExpenses(
 }
 
 /**
- * Spočítá finanční extrémy a průměry (nejlepší/nejhorší měsíc, nejvyšší příjem/výdaj atd.).
+ * Spočítá finanční extrémy a průměry.
  */
 export function calculateFinancialExtremes(
   monthlyCashFlow: MonthlyCashFlowPoint[]
