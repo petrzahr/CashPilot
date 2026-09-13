@@ -274,14 +274,14 @@ export function resolveAnalyticsDateRange(
     if (!customFrom || !customTo) {
       return {
         range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
-        error: 'Vyberte prosím počáteční i koncové rozpočtové období.',
+        error: 'Vyberte prosím počáteční i koncový měsíc.',
       };
     }
 
     if (customFrom > customTo) {
       return {
         range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
-        error: 'Počáteční období nesmí být pozdější než koncové období.',
+        error: 'Počáteční měsíc nesmí být pozdější než koncový měsíc.',
       };
     }
 

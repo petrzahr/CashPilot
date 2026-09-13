@@ -13,16 +13,12 @@ import {
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
-  getEarliestActivityDate,
-  generateBudgetPeriodSequence,
 } from '../../services/analyticsEngine';
 import { formatCurrency } from '../../services/currencyService';
 import {
   formatCzechDate,
   getTodayInPrague,
   getPeriodForDate,
-  getPreviousPeriod,
-  formatPeriodRange,
 } from '../../services/periodService';
 import { sortCategoriesAlphabetically, czechStringCompare } from '../../services/categoryService';
 import { CashFlowBarChart } from './CashFlowBarChart';
@@ -79,29 +75,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     return getPeriodForDate(todayStr, budgetStartDay);
   }, [todayStr, budgetStartDay]);
 
-  // Seznam rozpočtových period pro výběr vlastního období Od - Do
-  const availableBudgetPeriods = useMemo(() => {
-    const earliestDate = getEarliestActivityDate(
-      accounts,
-      transactions,
-      corrections,
-      marketValueSnapshots,
-      todayStr
-    );
-    let startPeriod = getPeriodForDate(earliestDate, budgetStartDay);
-
-    // Zajistit alespoň 24 období do minulosti
-    let minPeriod = currentPeriod;
-    for (let i = 0; i < 24; i++) {
-      minPeriod = getPreviousPeriod(minPeriod, budgetStartDay);
-    }
-    if (startPeriod.key > minPeriod.key) {
-      startPeriod = minPeriod;
-    }
-
-    return generateBudgetPeriodSequence(startPeriod, currentPeriod, budgetStartDay, todayStr);
-  }, [accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay, currentPeriod]);
-
   // Stav výběru období
   const [preset, setPreset] = useState<AnalyticsPeriodPreset>(() => savedPreset);
   const [customFromInput, setCustomFromInput] = useState<string>(() => savedCustomFrom);
@@ -109,28 +82,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const [appliedCustomFrom, setAppliedCustomFrom] = useState<string>(() => savedCustomFrom);
   const [appliedCustomTo, setAppliedCustomTo] = useState<string>(() => savedCustomTo);
   const [validationError, setValidationError] = useState<string | null>(null);
-
-  // Inicializace výchozích period pro vlastní výběr, pokud nejsou nastaveny
-  useEffect(() => {
-    if (availableBudgetPeriods.length > 0) {
-      if (!customFromInput || !availableBudgetPeriods.some((p) => p.key === customFromInput)) {
-        const defaultFrom = availableBudgetPeriods[Math.max(0, availableBudgetPeriods.length - 12)]?.key || availableBudgetPeriods[0]?.key;
-        setCustomFromInput(defaultFrom);
-        if (!appliedCustomFrom) {
-          setAppliedCustomFrom(defaultFrom);
-          savedCustomFrom = defaultFrom;
-        }
-      }
-      if (!customToInput || !availableBudgetPeriods.some((p) => p.key === customToInput)) {
-        const defaultTo = currentPeriod.key;
-        setCustomToInput(defaultTo);
-        if (!appliedCustomTo) {
-          setAppliedCustomTo(defaultTo);
-          savedCustomTo = defaultTo;
-        }
-      }
-    }
-  }, [availableBudgetPeriods, currentPeriod.key, customFromInput, customToInput, appliedCustomFrom, appliedCustomTo]);
 
   // Stav doplňkových filtrů
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => savedFilters.accountId || null);
@@ -147,11 +98,11 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const handleApplyCustom = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!customFromInput || !customToInput) {
-      setValidationError('Vyberte prosím počáteční i koncové rozpočtové období.');
+      setValidationError('Vyberte prosím počáteční i koncový měsíc.');
       return;
     }
     if (customFromInput > customToInput) {
-      setValidationError('Počáteční období nesmí být pozdější než koncové období.');
+      setValidationError('Počáteční měsíc nesmí být pozdější než koncový měsíc.');
       return;
     }
     if (customToInput > currentPeriod.key) {
@@ -203,6 +154,18 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   }, [preset, appliedCustomFrom, appliedCustomTo, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
 
   const dateRange = dateRangeResult.range;
+
+  // Po použití rychlé volby nebo změně nastavení startovního dne aktualizujeme pole Od a Do na odpovídající měsíce
+  useEffect(() => {
+    if (preset !== 'custom') {
+      setCustomFromInput(dateRange.fromPeriodKey);
+      setCustomToInput(dateRange.toPeriodKey);
+      setAppliedCustomFrom(dateRange.fromPeriodKey);
+      setAppliedCustomTo(dateRange.toPeriodKey);
+      savedCustomFrom = dateRange.fromPeriodKey;
+      savedCustomTo = dateRange.toPeriodKey;
+    }
+  }, [preset, dateRange.fromPeriodKey, dateRange.toPeriodKey]);
 
   // Filtrované transakce
   const currentFilters = useMemo<AnalyticsFilters>(
@@ -385,32 +348,30 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           >
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-slate-500 font-medium">Od:</span>
-              <select
+              <input
+                type="month"
+                max={currentPeriod.key}
                 value={customFromInput}
-                onChange={(e) => setCustomFromInput(e.target.value)}
-                className="max-w-[200px] px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 truncate"
-              >
-                {availableBudgetPeriods.map((p) => (
-                  <option key={`from-${p.key}`} value={p.key}>
-                    {p.label} ({formatPeriodRange(p.period)})
-                  </option>
-                ))}
-              </select>
+                onChange={(e) => {
+                  setCustomFromInput(e.target.value);
+                  setValidationError(null);
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+              />
             </div>
 
             <div className="flex items-center gap-1.5 text-xs">
               <span className="text-slate-500 font-medium">Do:</span>
-              <select
+              <input
+                type="month"
+                max={currentPeriod.key}
                 value={customToInput}
-                onChange={(e) => setCustomToInput(e.target.value)}
-                className="max-w-[200px] px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 truncate"
-              >
-                {availableBudgetPeriods.map((p) => (
-                  <option key={`to-${p.key}`} value={p.key}>
-                    {p.label} ({formatPeriodRange(p.period)})
-                  </option>
-                ))}
-              </select>
+                onChange={(e) => {
+                  setCustomToInput(e.target.value);
+                  setValidationError(null);
+                }}
+                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+              />
             </div>
 
             <button
