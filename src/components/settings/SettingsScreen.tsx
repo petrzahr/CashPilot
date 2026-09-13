@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { isDemoModeEnabled } from '../../services/storageService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
+import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
   Settings, 
   Download, 
@@ -29,15 +30,20 @@ export const SettingsScreen: React.FC = () => {
     updateSettings,
     accounts,
     updateAccount,
+    categories,
     transactions,
+    recurringRules,
+    recurringExceptions,
+    corrections,
+    marketValueSnapshots,
     exportJSON,
     importJSON,
     exportCSV,
     loadDemoData,
-    clearDemoData,
+    clearAllTransactions,
+    clearAllAccounts,
+    clearAllCategories,
     resetAllData,
-    cleanupKnownDemoData,
-    scanForKnownDemoData,
     isDriveConnected,
     driveSyncStatus,
     driveUser,
@@ -61,25 +67,11 @@ export const SettingsScreen: React.FC = () => {
   const [confirmStartDayOpen, setConfirmStartDayOpen] = useState(false);
   const [pendingStartDay, setPendingStartDay] = useState<number | null>(null);
 
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
-  const [confirmClearDemoOpen, setConfirmClearDemoOpen] = useState(false);
   const [confirmLoadDemoOpen, setConfirmLoadDemoOpen] = useState(false);
-  const [confirmCleanupDemoOpen, setConfirmCleanupDemoOpen] = useState(false);
-  const [detectedDemoRecords, setDetectedDemoRecords] = useState<{
-    demoAccounts: any[];
-    demoTransactions: any[];
-    demoRules: any[];
-  } | null>(null);
-
-  const handleScanDemo = () => {
-    const found = scanForKnownDemoData();
-    if (found.demoAccounts.length === 0 && found.demoTransactions.length === 0 && found.demoRules.length === 0) {
-      alert('V datech nebyly nalezeny žádné ukázkové položky.');
-      return;
-    }
-    setDetectedDemoRecords(found);
-    setConfirmCleanupDemoOpen(true);
-  };
+  const [confirmClearTransactionsOpen, setConfirmClearTransactionsOpen] = useState(false);
+  const [confirmClearAccountsOpen, setConfirmClearAccountsOpen] = useState(false);
+  const [confirmClearCategoriesOpen, setConfirmClearCategoriesOpen] = useState(false);
+  const [confirmResetAllOpen, setConfirmResetAllOpen] = useState(false);
 
   // Synchronizace při změně zvenčí
   React.useEffect(() => {
@@ -497,44 +489,120 @@ export const SettingsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Ukázková data a správa úložiště */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+      {/* 4. Správa dat a reset */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-6">
         <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
           <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-            <Sparkles className="w-5 h-5" />
+            <Trash2 className="w-5 h-5" />
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">Správa dat a reset</h2>
             <p className="text-xs text-slate-500">
-              Bezpečné vyčištění demonstračních položek nebo kompletní reset úložiště
+              Samostatná správa jednotlivých finančních dat nebo kompletní reset aplikace
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {isDemoModeEnabled() && (
+        {/* Správa jednotlivých dat */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Správa jednotlivých dat
+          </h3>
+
+          <div className="space-y-2.5">
+            {/* 1. Vymazat všechny transakce */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Vymazat všechny transakce</h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Odstraní všechny finanční položky a související pohyby. Účty, kategorie a nastavení zůstanou zachované.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmClearTransactionsOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+              >
+                Vymazat všechny transakce
+              </button>
+            </div>
+
+            {/* 2. Vymazat všechny účty */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Vymazat všechny účty</h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Odstraní všechny účty a všechna data, která jsou na tyto účty přímo navázaná. Kategorie a nastavení zůstanou zachované.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmClearAccountsOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+              >
+                Vymazat všechny účty
+              </button>
+            </div>
+
+            {/* 3. Vymazat všechny kategorie */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Vymazat všechny kategorie</h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Odstraní všechny hlavní kategorie a podkategorie. Finanční položky, účty a nastavení zůstanou zachované.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmClearCategoriesOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+              >
+                Vymazat všechny kategorie
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Nebezpečná zóna */}
+        <div className="pt-2">
+          <div className="p-4 sm:p-5 rounded-2xl border-2 border-red-100 bg-red-50/30 space-y-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-red-600" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-red-700">
+                Nebezpečná zóna
+              </h3>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Kompletně vymazat všechna data</h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Trvale odstraní všechna uživatelská data a vrátí aplikaci do čistého počátečního stavu.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmResetAllOpen(true)}
+                className="px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
+              >
+                Kompletně vymazat všechna data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Načíst ukázková data (pouze při zapnutém demo režimu) */}
+        {isDemoModeEnabled() && (
+          <div className="pt-2 border-t border-slate-100 flex justify-end">
             <button
+              type="button"
               onClick={() => setConfirmLoadDemoOpen(true)}
-              className="px-4 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
             >
               Načíst ukázková data (Demo režim)
             </button>
-          )}
-
-          <button
-            onClick={handleScanDemo}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
-          >
-            Zkontrolovat a vyčistit ukázková data
-          </button>
-
-          <button
-            onClick={() => setConfirmResetOpen(true)}
-            className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors ml-auto"
-          >
-            Kompletně vymazat všechna data
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Potvrzovací dialog pro změnu začátku měsíce */}
@@ -557,29 +625,94 @@ export const SettingsScreen: React.FC = () => {
         confirmText="Načíst demo"
       />
 
-      {/* Potvrzovací dialog pro bezpečné vyčištění demo dat se stažením zálohy */}
-      <ConfirmationModal
-        isOpen={confirmCleanupDemoOpen}
-        onClose={() => setConfirmCleanupDemoOpen(false)}
+      {/* Dialog 1: Vymazat všechny transakce */}
+      <DataActionConfirmationModal
+        isOpen={confirmClearTransactionsOpen}
+        onClose={() => setConfirmClearTransactionsOpen(false)}
         onConfirm={() => {
-          cleanupKnownDemoData();
-          setConfirmCleanupDemoOpen(false);
+          clearAllTransactions();
+          setConfirmClearTransactionsOpen(false);
         }}
-        title="Vyčistit nalezená ukázková data"
-        message={`Bylo nalezeno: ${detectedDemoRecords?.demoAccounts.length || 0} ukázkových účtů, ${detectedDemoRecords?.demoTransactions.length || 0} ukázkových položek a ${detectedDemoRecords?.demoRules.length || 0} trvalých pravidel. Před jejich odstraněním bude automaticky stažena kompletní JSON záloha vašich stávajících dat. Přejete si pokračovat?`}
-        confirmText="Stáhnout zálohu a vyčistit demo"
-        isDestructive
+        title="Vymazat všechny transakce"
+        description="Odstraní všechny finanční položky a související pohyby. Účty, kategorie a nastavení zůstanou zachované."
+        warningMessage="Tuto operaci nelze běžně vrátit zpět."
+        affectedRecords={[
+          { label: 'Finanční položky (transakce)', count: transactions.length },
+          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
+          { label: 'Výjimky opakovaných plateb', count: recurringExceptions.length },
+          { label: 'Korekce zůstatků', count: corrections.length },
+        ]}
+        confirmButtonText="Vymazat všechny transakce"
+        onDownloadBackup={exportJSON}
       />
 
-      {/* Potvrzovací dialog pro kompletní reset */}
-      <ConfirmationModal
-        isOpen={confirmResetOpen}
-        onClose={() => setConfirmResetOpen(false)}
-        onConfirm={resetAllData}
-        title="Kompletní smazání dat"
-        message="POZOR: Tato akce je nevratná. Dojde k trvalému smazání všech účtů, transakcí, korekcí a pravidel a uvedení aplikace do čistého stavu. Doporučujeme předem provést export JSON zálohy. Chcete opravdu pokračovat?"
-        confirmText="Trvale smazat vše"
-        isDestructive
+      {/* Dialog 2: Vymazat všechny účty */}
+      <DataActionConfirmationModal
+        isOpen={confirmClearAccountsOpen}
+        onClose={() => setConfirmClearAccountsOpen(false)}
+        onConfirm={() => {
+          clearAllAccounts();
+          setConfirmClearAccountsOpen(false);
+        }}
+        title="Vymazat všechny účty"
+        description="Odstraní všechny účty a všechna data, která jsou na tyto účty přímo navázaná. Kategorie a nastavení zůstanou zachované."
+        warningMessage="Odstraněním účtů budou odstraněny také všechny transakce, převody, opakované platby, korekce a tržní hodnoty navázané na tyto účty. Tuto operaci nelze běžně vrátit zpět."
+        affectedRecords={[
+          { label: 'Účty (aktivní i archivované)', count: accounts.length },
+          { label: 'Finanční položky (transakce)', count: transactions.length },
+          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
+          { label: 'Výjimky opakovaných plateb', count: recurringExceptions.length },
+          { label: 'Korekce zůstatků', count: corrections.length },
+          { label: 'Tržní hodnoty investic a penzí', count: marketValueSnapshots.length },
+        ]}
+        confirmButtonText="Vymazat všechny účty"
+        onDownloadBackup={exportJSON}
+      />
+
+      {/* Dialog 3: Vymazat všechny kategorie */}
+      <DataActionConfirmationModal
+        isOpen={confirmClearCategoriesOpen}
+        onClose={() => setConfirmClearCategoriesOpen(false)}
+        onConfirm={() => {
+          clearAllCategories();
+          setConfirmClearCategoriesOpen(false);
+        }}
+        title="Vymazat všechny kategorie"
+        description="Odstraní všechny hlavní kategorie a podkategorie. Finanční položky, účty a nastavení zůstanou zachované."
+        warningMessage="U všech existujících transakcí a pravidel bude kategorie nastavena na „Bez kategorie“. Tuto operaci nelze běžně vrátit zpět."
+        affectedRecords={[
+          { label: 'Hlavní kategorie', count: categories.filter(c => !c.parentId).length },
+          { label: 'Podkategorie', count: categories.filter(c => !!c.parentId).length },
+          { label: 'Položky s přiřazenou kategorií', count: transactions.filter(t => t.categoryId).length },
+          { label: 'Pravidla s přiřazenou kategorií', count: recurringRules.filter(r => r.categoryId).length },
+        ]}
+        confirmButtonText="Vymazat všechny kategorie"
+        onDownloadBackup={exportJSON}
+      />
+
+      {/* Dialog 4: Kompletně vymazat všechna data */}
+      <DataActionConfirmationModal
+        isOpen={confirmResetAllOpen}
+        onClose={() => setConfirmResetAllOpen(false)}
+        onConfirm={() => {
+          resetAllData();
+          setConfirmResetAllOpen(false);
+        }}
+        title="Kompletně vymazat všechna data"
+        description="Budou odstraněny všechny účty, transakce, kategorie, opakované platby, korekce, tržní hodnoty a nastavení aplikace."
+        warningMessage="Trvale odstraní všechna uživatelská data a vrátí aplikaci do čistého počátečního stavu. Tuto operaci nelze vzít zpět."
+        affectedRecords={[
+          { label: 'Účty', count: accounts.length },
+          { label: 'Finanční položky (transakce)', count: transactions.length },
+          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
+          { label: 'Korekce zůstatků', count: corrections.length },
+          { label: 'Tržní hodnoty', count: marketValueSnapshots.length },
+          { label: 'Kategorie a podkategorie', count: categories.length },
+        ]}
+        confirmButtonText="Trvale vymazat vše"
+        onDownloadBackup={exportJSON}
+        requiresConfirmationPhrase={true}
+        confirmationPhrase="VYMAZAT VŠE"
       />
     </div>
   );

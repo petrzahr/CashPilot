@@ -585,7 +585,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                         ) : tx.type === 'transfer' ? (
                           <span className="text-sky-600 font-medium">Převod</span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-400 italic text-xs">Bez kategorie</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-slate-600">

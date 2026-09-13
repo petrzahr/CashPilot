@@ -164,6 +164,24 @@ export function createEmptyAppData(): AppData {
   };
 }
 
+/**
+ * Vytvoří kompletně vymazanou datovou strukturu aplikace (po resetu).
+ * Obsahuje 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot i 0 kategorií.
+ */
+export function createResetAppData(): AppData {
+  return {
+    version: CURRENT_DATA_VERSION,
+    settings: { ...DEFAULT_SETTINGS },
+    accounts: [],
+    categories: [],
+    transactions: [],
+    recurringRules: [],
+    recurringExceptions: [],
+    corrections: [],
+    marketValueSnapshots: [],
+  };
+}
+
 const KNOWN_DEMO_EXACT_IDS = new Set([
   'demo_acc_checking',
   'demo_acc_cash',

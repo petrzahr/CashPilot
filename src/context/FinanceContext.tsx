@@ -22,12 +22,13 @@ import {
   exportTransactionsCSV,
   getActiveStorageKey,
   isDemoModeEnabled,
+  createOperationRecoveryBackup,
 } from '../services/storageService';
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
   createEmptyAppData,
-  isKnownDemoRecordId,
+  createResetAppData,
 } from '../constants/defaultData';
 import {
   calculateForecast,
@@ -170,18 +171,14 @@ interface FinanceContextType {
   restoreFromBackupFile: (jsonStr: string) => void;
   resetToFreshData: () => void;
   retryLoadData: () => void;
-  cleanupKnownDemoData: () => { removedAccounts: number; removedTransactions: number; removedRules: number };
-  scanForKnownDemoData: () => {
-    demoAccounts: Account[];
-    demoTransactions: Transaction[];
-    demoRules: RecurringRule[];
-  };
 
   // Nastavení & Správa dat
+  clearAllTransactions: () => boolean;
+  clearAllAccounts: () => boolean;
+  clearAllCategories: () => boolean;
+  resetAllData: () => boolean;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   loadDemoData: () => void;
-  clearDemoData: () => void;
-  resetAllData: () => void;
   exportJSON: () => void;
   importJSON: (jsonStr: string) => boolean;
   exportCSV: () => void;
@@ -1540,78 +1537,112 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Ukázková data byla úspěšně načtena.');
   }, [showToast]);
 
-  const scanForKnownDemoData = useCallback(() => {
-    const demoAccounts = data.accounts.filter(a => isKnownDemoRecordId(a.id));
-    const demoTransactions = data.transactions.filter(t => isKnownDemoRecordId(t.id));
-    const demoRules = data.recurringRules.filter(r => isKnownDemoRecordId(r.id));
-    return { demoAccounts, demoTransactions, demoRules };
-  }, [data]);
-
-  const cleanupKnownDemoData = useCallback(() => {
-    // 1. Vytvořit a stáhnout bezpečnostní zálohu před odstraněním
-    exportBackupJSON(latestDataRef.current);
-
-    // 2. Najít demo záznamy podle známých ID
-    const demoAccIds = new Set(latestDataRef.current.accounts.filter(a => isKnownDemoRecordId(a.id)).map(a => a.id));
-    const demoTxIds = new Set(latestDataRef.current.transactions.filter(t => isKnownDemoRecordId(t.id)).map(t => t.id));
-    const demoRuleIds = new Set(latestDataRef.current.recurringRules.filter(r => isKnownDemoRecordId(r.id)).map(r => r.id));
-
-    // Ověřit, že demo účet nemá uživatelské (non-demo) transakce
-    const accsToRemove = new Set<string>();
-    demoAccIds.forEach(accId => {
-      const hasUserTxs = latestDataRef.current.transactions.some(
-        t => !demoTxIds.has(t.id) && (t.sourceAccountId === accId || t.targetAccountId === accId)
-      );
-      if (!hasUserTxs) {
-        accsToRemove.add(accId);
-      }
-    });
-
-    const newAccounts = latestDataRef.current.accounts.filter(a => !accsToRemove.has(a.id));
-    const newTransactions = latestDataRef.current.transactions.filter(t => !demoTxIds.has(t.id));
-    const newRules = latestDataRef.current.recurringRules.filter(r => !demoRuleIds.has(r.id));
-    const newExceptions = latestDataRef.current.recurringExceptions.filter(e => !demoRuleIds.has(e.ruleId));
-    const newCorrections = latestDataRef.current.corrections.filter(c => !accsToRemove.has(c.accountId));
-    const newSnapshots = latestDataRef.current.marketValueSnapshots.filter(s => !accsToRemove.has(s.accountId));
-
-    // Pokud byl výchozí účet odstraněn a zbývají jiné aktivní účty, zvolit nový výchozí
-    let defaultCount = newAccounts.filter(a => a.isDefault && a.status !== 'archived').length;
-    if (defaultCount === 0 && newAccounts.length > 0) {
-      const firstActive = newAccounts.find(a => a.status !== 'archived');
-      if (firstActive) firstActive.isDefault = true;
+  const clearAllTransactions = useCallback((): boolean => {
+    // 1. Vytvořit interní recovery zálohu
+    const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_transactions');
+    if (!backupCreated) {
+      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání transakcí bylo zrušeno.', 'error');
+      return false;
     }
 
-    const cleanedData: AppData = {
+    // 2. Odstranit všechny finanční položky, pravidla opakovaných plateb, výjimky a korekce
+    const updated: AppData = {
       ...latestDataRef.current,
-      accounts: newAccounts,
-      transactions: newTransactions,
-      recurringRules: newRules,
-      recurringExceptions: newExceptions,
-      corrections: newCorrections,
-      marketValueSnapshots: newSnapshots,
+      transactions: [],
+      recurringRules: [],
+      recurringExceptions: [],
+      corrections: [],
     };
 
-    setData(cleanedData);
-    saveStoredData(cleanedData);
-
-    showToast(`Ukázková data byla odstraněna (automaticky stažena bezpečnostní záloha).`);
-
-    return {
-      removedAccounts: accsToRemove.size,
-      removedTransactions: demoTxIds.size,
-      removedRules: demoRuleIds.size,
-    };
+    setData(updated);
+    saveStoredData(updated);
+    showToast('Všechny finanční položky, pravidla opakovaných plateb a korekce byly vymazány.');
+    return true;
   }, [showToast]);
 
-  const clearDemoData = useCallback(() => {
-    cleanupKnownDemoData();
-  }, [cleanupKnownDemoData]);
+  const clearAllAccounts = useCallback((): boolean => {
+    // 1. Vytvořit interní recovery zálohu
+    const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_accounts');
+    if (!backupCreated) {
+      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání účtů bylo zrušeno.', 'error');
+      return false;
+    }
 
-  const resetAllData = useCallback(() => {
-    const fresh = createEmptyAppData();
+    // 2. Odstranit všechny účty a všechna závislá finanční data
+    const updated: AppData = {
+      ...latestDataRef.current,
+      accounts: [],
+      transactions: [],
+      recurringRules: [],
+      recurringExceptions: [],
+      corrections: [],
+      marketValueSnapshots: [],
+      settings: {
+        ...latestDataRef.current.settings,
+      },
+    };
+
+    setData(updated);
+    saveStoredData(updated);
+    showToast('Všechny účty a navázaná finanční data byly úspěšně vymazány.');
+    return true;
+  }, [showToast]);
+
+  const clearAllCategories = useCallback((): boolean => {
+    // 1. Vytvořit interní recovery zálohu
+    const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_categories');
+    if (!backupCreated) {
+      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání kategorií bylo zrušeno.', 'error');
+      return false;
+    }
+
+    // 2. Odstranit všechny kategorie a u všech zachovaných položek a pravidel odpojit kategorie (nastavit na null)
+    const updatedTxs = latestDataRef.current.transactions.map(t => ({
+      ...t,
+      categoryId: null,
+      subcategoryId: null,
+    }));
+
+    const updatedRules = latestDataRef.current.recurringRules.map(r => ({
+      ...r,
+      categoryId: null,
+      subcategoryId: null,
+    }));
+
+    const updatedExceptions = latestDataRef.current.recurringExceptions.map(e => ({
+      ...e,
+      overrideCategoryId: null,
+      overrideSubcategoryId: null,
+    }));
+
+    const updated: AppData = {
+      ...latestDataRef.current,
+      categories: [],
+      transactions: updatedTxs,
+      recurringRules: updatedRules,
+      recurringExceptions: updatedExceptions,
+    };
+
+    setData(updated);
+    saveStoredData(updated);
+    showToast('Všechny kategorie byly vymazány. U existujících položek byla nastavena kategorie „Bez kategorie“.');
+    return true;
+  }, [showToast]);
+
+  const resetAllData = useCallback((): boolean => {
+    // 1. Vytvořit interní recovery zálohu
+    const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_all');
+    if (!backupCreated) {
+      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Kompletní reset byl zrušen.', 'error');
+      return false;
+    }
+
+    // 2. Kompletní čistý reset: 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií
+    const fresh = createResetAppData();
     setData(fresh);
     saveStoredData(fresh);
-    showToast('Všechna data byla vymazána.');
+    showToast('Všechna data byla kompletně vymazána a aplikace byla uvedena do čistého výchozího stavu.');
+    return true;
   }, [showToast]);
 
   const restoreFromBackupFile = useCallback((jsonStr: string) => {
@@ -2072,13 +2103,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     restoreFromBackupFile,
     resetToFreshData,
     retryLoadData,
-    cleanupKnownDemoData,
-    scanForKnownDemoData,
-
+    clearAllTransactions,
+    clearAllAccounts,
+    clearAllCategories,
+    resetAllData,
     updateSettings,
     loadDemoData,
-    clearDemoData,
-    resetAllData,
     exportJSON,
     importJSON,
     exportCSV,

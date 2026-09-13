@@ -830,9 +830,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                                   {isCorrection ? (
                                     <span className="text-amber-700 font-medium">Korekce zůstatku</span>
-                                  ) : (
-                                    cat && <span>{cat.name} {subCat && `› ${subCat.name}`}</span>
-                                  )}
+                                  ) : cat ? (
+                                    <span>{cat.name} {subCat && `› ${subCat.name}`}</span>
+                                  ) : tx.type !== 'transfer' ? (
+                                    <span className="italic">Bez kategorie</span>
+                                  ) : null}
                                   {sourceAcc && <span>• {sourceAcc.name} {targetAcc && `→ ${targetAcc.name}`}</span>}
                                 </div>
                               </div>
@@ -1060,7 +1062,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         ) : tx.type === 'transfer' ? (
                           <span className="text-sky-600 font-medium">Převod</span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-400 italic text-xs">Bez kategorie</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-slate-600">

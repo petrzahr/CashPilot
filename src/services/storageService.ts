@@ -11,7 +11,8 @@ import {
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  createEmptyAppData
+  createEmptyAppData,
+  createResetAppData
 } from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
 import { formatCzechDate } from './periodService';
@@ -34,7 +35,53 @@ export const STORAGE_KEY_PRODUCTION = 'cashpilot_data_v1';
 export const STORAGE_KEY_TEST = 'cashpilot_test_data_v1';
 export const STORAGE_KEY_DEMO = 'cashpilot_demo_data_v1';
 export const RECOVERY_KEY_PREFIX = 'cashpilot_data_recovery_';
+export const OPERATION_RECOVERY_KEY = 'cashpilot_data_recovery_operation';
 const PRE_CLEANUP_BACKUP_KEY = 'cashpilot_data_backup_pre_cleanup';
+
+export type OperationType = 'clear_transactions' | 'clear_accounts' | 'clear_categories' | 'clear_all';
+
+export interface OperationRecoveryBackup {
+  timestamp: string;
+  operationType: OperationType;
+  data: AppData;
+}
+
+/**
+ * Vytvoří interní bezpečnostní zálohu aktuálních dat před provedením destruktivní operace.
+ * Vrací true při úspěšném uložení, false při selhání (např. chyba kvóty).
+ */
+export function createOperationRecoveryBackup(
+  data: AppData,
+  operationType: OperationType
+): boolean {
+  try {
+    const payload: OperationRecoveryBackup = {
+      timestamp: new Date().toISOString(),
+      operationType,
+      data,
+    };
+    localStorage.setItem(OPERATION_RECOVERY_KEY, JSON.stringify(payload));
+    const saved = localStorage.getItem(OPERATION_RECOVERY_KEY);
+    return Boolean(saved);
+  } catch (err) {
+    console.error('[CashPilot] Chyba při vytváření bezpečnostní recovery kopie:', err);
+    return false;
+  }
+}
+
+/**
+ * Načte poslední interní recovery zálohu po operaci.
+ */
+export function getOperationRecoveryBackup(): OperationRecoveryBackup | null {
+  try {
+    const raw = localStorage.getItem(OPERATION_RECOVERY_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Nepodařilo se načíst recovery zálohu operace:', err);
+    return null;
+  }
+}
 
 export function isTestEnvironment(): boolean {
   const g = globalThis as any;
@@ -246,7 +293,7 @@ export function loadStoredDataResult(targetKey?: string): LoadDataResult {
       version: parsed.version || 1,
       settings: sanitizedSettings,
       accounts: sanitizedAccounts,
-      categories: parsed.categories || [...DEFAULT_CATEGORIES],
+      categories: Array.isArray(parsed.categories) ? parsed.categories : [...DEFAULT_CATEGORIES],
       transactions: finalTxs,
       recurringRules: parsed.recurringRules || [],
       recurringExceptions: parsed.recurringExceptions || [],
