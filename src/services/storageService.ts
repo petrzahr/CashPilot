@@ -11,10 +11,8 @@ import {
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  DEMO_ACCOUNTS,
-  DEMO_RECURRING_RULES,
-  DEMO_TRANSACTIONS
-} from './demoData';
+  createEmptyAppData
+} from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
 import { formatCzechDate } from './periodService';
 import { sanitizeAndRepairSequences } from './sequenceService';
@@ -32,29 +30,50 @@ export interface AppData {
   marketValueSnapshots: MarketValueSnapshot[];
 }
 
-const STORAGE_KEY = 'cashpilot_data_v1';
+export const STORAGE_KEY_PRODUCTION = 'cashpilot_data_v1';
+export const STORAGE_KEY_TEST = 'cashpilot_test_data_v1';
+export const STORAGE_KEY_DEMO = 'cashpilot_demo_data_v1';
+export const RECOVERY_KEY_PREFIX = 'cashpilot_data_recovery_';
+const PRE_CLEANUP_BACKUP_KEY = 'cashpilot_data_backup_pre_cleanup';
 
-export function getInitialData(): AppData {
-  return {
-    version: 1,
-    settings: { ...DEFAULT_SETTINGS },
-    accounts: [...DEMO_ACCOUNTS],
-    categories: [...DEFAULT_CATEGORIES],
-    transactions: [...DEMO_TRANSACTIONS],
-    recurringRules: [...DEMO_RECURRING_RULES],
-    recurringExceptions: [],
-    corrections: [],
-    marketValueSnapshots: [],
-  };
+export function isTestEnvironment(): boolean {
+  const g = globalThis as any;
+  return Boolean(
+    g.process?.env?.VITEST ||
+    g.process?.env?.NODE_ENV === 'test' ||
+    (typeof import.meta !== 'undefined' && (import.meta as any).env?.MODE === 'test')
+  );
 }
 
-const PRE_CLEANUP_BACKUP_KEY = 'cashpilot_data_backup_pre_cleanup';
+export function isDemoModeEnabled(): boolean {
+  return typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ENABLE_DEMO_DATA === 'true';
+}
+
+let activeStorageKeyOverride: string | null = null;
+
+export function getActiveStorageKey(): string {
+  if (activeStorageKeyOverride) return activeStorageKeyOverride;
+  if (isTestEnvironment()) return STORAGE_KEY_TEST;
+  if (isDemoModeEnabled()) return STORAGE_KEY_DEMO;
+  return STORAGE_KEY_PRODUCTION;
+}
+
+export function setActiveStorageKey(key: string | null): void {
+  activeStorageKeyOverride = key;
+}
+
+/**
+ * Vrací čistou produkční datovou strukturu.
+ * Nikdy neobsahuje demonstrační účty, transakce ani pravidla.
+ */
+export function getInitialData(): AppData {
+  return createEmptyAppData();
+}
 
 /**
  * Sanituje a vyčistí osiřelé/neaktivní korekce:
  * - Záznam korekce, který patří účtu bez jakýchkoli reálných transakcí a bez pravidel
- *   (např. testovací stará korekce na účtu Spořicí účet Air Bank před zavedením systémových pohybů),
- *   nesmí existovat jako skrytý blokující záznam.
+ *   (např. testovací stará korekce na prázdném účtu), nesmí existovat jako skrytý blokující záznam.
  * - Zachovává všechny platné korekce a korekce na účtech s existující finanční historií.
  */
 export function sanitizeCorrections(
@@ -70,7 +89,6 @@ export function sanitizeCorrections(
     const hasRules = recurringRules.some(
       r => r.sourceAccountId === c.accountId || r.targetAccountId === c.accountId
     );
-    // Pokud účet nemá žádné transakce ani trvalá pravidla, jedná se o osiřelý interní záznam
     if (!hasTxs && !hasRules) {
       console.info(`[Sanitace dat] Odstraněn osiřelý záznam korekce ${c.id} pro prázdný účet ${c.accountId}.`);
       return false;
@@ -84,13 +102,73 @@ export function sanitizeCorrections(
   };
 }
 
-export function loadStoredData(): AppData {
+export interface LoadDataResult {
+  status: 'ready' | 'loadError';
+  data: AppData;
+  isNewInstall: boolean;
+  error?: string;
+  recoveryKey?: string;
+  corruptedRaw?: string;
+}
+
+/**
+ * Bezpečně načte a zvaliduje data z localStorage bez rizika přepsání poškozených dat.
+ */
+export function loadStoredDataResult(targetKey?: string): LoadDataResult {
+  const key = targetKey || getActiveStorageKey();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) {
-      const initial = getInitialData();
-      saveStoredData(initial);
-      return initial;
+      return {
+        status: 'ready',
+        data: getInitialData(),
+        isNewInstall: true,
+      };
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (parseErr) {
+      console.error('[CashPilot] Chyba parsování JSON v úložišti:', parseErr);
+      const recoveryKey = `${RECOVERY_KEY_PREFIX}${Date.now()}`;
+      try {
+        localStorage.setItem(recoveryKey, raw);
+        console.info(`[CashPilot Záloha] Původní poškozená data byla uložena pod klíčem: ${recoveryKey}`);
+      } catch (backupErr) {
+        console.warn('Nepodařilo se uložit recovery zálohu poškozených dat:', backupErr);
+      }
+      return {
+        status: 'loadError',
+        data: getInitialData(),
+        isNewInstall: false,
+        error: 'Data aplikace se nepodařilo bezpečně načíst (neplatný formát JSON). Původní data nebyla přepsána. Obnovte data ze zálohy nebo použijte nástroj pro jejich kontrolu.',
+        recoveryKey,
+        corruptedRaw: raw,
+      };
+    }
+
+    // Validace základní struktury objektu
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      (parsed.accounts && !Array.isArray(parsed.accounts)) ||
+      (parsed.transactions && !Array.isArray(parsed.transactions)) ||
+      (parsed.categories && !Array.isArray(parsed.categories))
+    ) {
+      console.error('[CashPilot] Neplatná datová struktura v úložišti');
+      const recoveryKey = `${RECOVERY_KEY_PREFIX}${Date.now()}`;
+      try {
+        localStorage.setItem(recoveryKey, raw);
+      } catch {}
+      return {
+        status: 'loadError',
+        data: getInitialData(),
+        isNewInstall: false,
+        error: 'Data aplikace se nepodařilo bezpečně načíst (poškozená struktura). Původní data nebyla přepsána. Obnovte data ze zálohy nebo použijte nástroj pro jejich kontrolu.',
+        recoveryKey,
+        corruptedRaw: raw,
+      };
     }
 
     // Bezpečná záloha před sanitací dat
@@ -103,7 +181,6 @@ export function loadStoredData(): AppData {
       }
     }
 
-    const parsed = JSON.parse(raw) as AppData;
     const sanitizedTxs = sanitizeAndRepairSequences(parsed.transactions || []);
     const { transactions: autoExecutedTxs, hasChanges: hasStatusChanges } = autoExecuteDueTransactions(
       sanitizedTxs,
@@ -120,8 +197,9 @@ export function loadStoredData(): AppData {
       parsed.recurringRules || []
     );
 
-    const safeAccounts = parsed.accounts || [...DEMO_ACCOUNTS];
-    
+    // DŮLEŽITÉ: Nikdy neseedovat DEMO_ACCOUNTS! Použít čisté pole []
+    const safeAccounts: Account[] = parsed.accounts || [];
+
     // Invariant: nejvýše jeden aktivní výchozí účet, archivovaný účet nesmí být výchozí
     let defaultFound = false;
     let hasAccountChanges = false;
@@ -141,7 +219,7 @@ export function loadStoredData(): AppData {
       return a;
     });
 
-    const cleanedSnapshots = (parsed.marketValueSnapshots || []).filter(s =>
+    const cleanedSnapshots = (parsed.marketValueSnapshots || []).filter((s: MarketValueSnapshot) =>
       sanitizedAccounts.some(a => a.id === s.accountId)
     );
 
@@ -164,8 +242,7 @@ export function loadStoredData(): AppData {
       minReserveInHaler: overdraftLimitInHaler as number,
     };
 
-    // Doplnit případná chybějící pole pro kompatibilitu
-    const dataToReturn = {
+    const dataToReturn: AppData = {
       version: parsed.version || 1,
       settings: sanitizedSettings,
       accounts: sanitizedAccounts,
@@ -176,6 +253,7 @@ export function loadStoredData(): AppData {
       corrections: cleanedCorrections,
       marketValueSnapshots: cleanedSnapshots,
     };
+
     if (
       finalTxs !== parsed.transactions ||
       hasStatusChanges ||
@@ -184,21 +262,56 @@ export function loadStoredData(): AppData {
       hasSettingsChanges ||
       cleanedSnapshots.length !== (parsed.marketValueSnapshots || []).length
     ) {
-      saveStoredData(dataToReturn);
+      saveStoredData(dataToReturn, key);
     }
-    return dataToReturn;
-  } catch (err) {
+
+    return {
+      status: 'ready',
+      data: dataToReturn,
+      isNewInstall: false,
+    };
+  } catch (err: any) {
     console.error('Chyba při načítání dat z localStorage:', err);
-    return getInitialData();
+    return {
+      status: 'loadError',
+      data: getInitialData(),
+      isNewInstall: false,
+      error: `Chyba při načítání dat z úložiště: ${err.message || err}`,
+    };
   }
 }
 
-export function saveStoredData(data: AppData): void {
+/**
+ * Standardní načtení dat pro běžné synchronní scénáře.
+ */
+export function loadStoredData(targetKey?: string): AppData {
+  const result = loadStoredDataResult(targetKey);
+  return result.data;
+}
+
+export function saveStoredData(data: AppData, targetKey?: string): void {
+  const key = targetKey || getActiveStorageKey();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
     console.error('Chyba při ukládání dat do localStorage:', err);
   }
+}
+
+/**
+ * Export poškozeného raw obsahu úložiště do textového/JSON souboru pro kontrolu uživatelem
+ */
+export function exportCorruptedRawData(rawContent: string): void {
+  const blob = new Blob([rawContent], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const now = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `cashpilot_poskozena_data_${now}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 /**

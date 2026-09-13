@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
+import { isDemoModeEnabled } from '../../services/storageService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { 
   Settings, 
@@ -35,6 +36,8 @@ export const SettingsScreen: React.FC = () => {
     loadDemoData,
     clearDemoData,
     resetAllData,
+    cleanupKnownDemoData,
+    scanForKnownDemoData,
     isDriveConnected,
     driveSyncStatus,
     driveUser,
@@ -61,6 +64,22 @@ export const SettingsScreen: React.FC = () => {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [confirmClearDemoOpen, setConfirmClearDemoOpen] = useState(false);
   const [confirmLoadDemoOpen, setConfirmLoadDemoOpen] = useState(false);
+  const [confirmCleanupDemoOpen, setConfirmCleanupDemoOpen] = useState(false);
+  const [detectedDemoRecords, setDetectedDemoRecords] = useState<{
+    demoAccounts: any[];
+    demoTransactions: any[];
+    demoRules: any[];
+  } | null>(null);
+
+  const handleScanDemo = () => {
+    const found = scanForKnownDemoData();
+    if (found.demoAccounts.length === 0 && found.demoTransactions.length === 0 && found.demoRules.length === 0) {
+      alert('V datech nebyly nalezeny žádné ukázkové položky.');
+      return;
+    }
+    setDetectedDemoRecords(found);
+    setConfirmCleanupDemoOpen(true);
+  };
 
   // Synchronizace při změně zvenčí
   React.useEffect(() => {
@@ -485,26 +504,28 @@ export const SettingsScreen: React.FC = () => {
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900">Ukázková data a reset</h2>
+            <h2 className="text-base font-bold text-slate-900">Správa dat a reset</h2>
             <p className="text-xs text-slate-500">
-              Možnost načíst demonstrační profil pro prezentaci nebo smazat data
+              Bezpečné vyčištění demonstračních položek nebo kompletní reset úložiště
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setConfirmLoadDemoOpen(true)}
-            className="px-4 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-colors"
-          >
-            Načíst ukázková data
-          </button>
+          {isDemoModeEnabled() && (
+            <button
+              onClick={() => setConfirmLoadDemoOpen(true)}
+              className="px-4 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-colors"
+            >
+              Načíst ukázková data (Demo režim)
+            </button>
+          )}
 
           <button
-            onClick={() => setConfirmClearDemoOpen(true)}
+            onClick={handleScanDemo}
             className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
           >
-            Odstranit ukázkové položky
+            Zkontrolovat a vyčistit ukázková data
           </button>
 
           <button
@@ -526,24 +547,27 @@ export const SettingsScreen: React.FC = () => {
         confirmText="Ano, pokračovat"
       />
 
-      {/* Potvrzovací dialog pro načtení demo dat */}
+      {/* Potvrzovací dialog pro načtení demo dat (pouze demo režim) */}
       <ConfirmationModal
         isOpen={confirmLoadDemoOpen}
         onClose={() => setConfirmLoadDemoOpen(false)}
         onConfirm={loadDemoData}
         title="Načíst ukázková data"
-        message="Tato akce nahradí stávající data ukázkovým portfoliem účtů (Běžný, Spořicí Air Bank, ČSOB Odvážný...), pravidelnou mzdou, hypotékou a výdaji. Přejete si pokračovat?"
+        message="Tato akce nahradí stávající data ukázkovým portfoliem účtů, pravidelnou mzdou, hypotékou a výdaji. Přejete si pokračovat?"
         confirmText="Načíst demo"
       />
 
-      {/* Potvrzovací dialog pro vyčištění demo dat */}
+      {/* Potvrzovací dialog pro bezpečné vyčištění demo dat se stažením zálohy */}
       <ConfirmationModal
-        isOpen={confirmClearDemoOpen}
-        onClose={() => setConfirmClearDemoOpen(false)}
-        onConfirm={clearDemoData}
-        title="Odstranit položky"
-        message="Opravdu si přejete smazat všechny transakce a trvalá pravidla? Účty a kategorie zůstanou zachovány."
-        confirmText="Odstranit položky"
+        isOpen={confirmCleanupDemoOpen}
+        onClose={() => setConfirmCleanupDemoOpen(false)}
+        onConfirm={() => {
+          cleanupKnownDemoData();
+          setConfirmCleanupDemoOpen(false);
+        }}
+        title="Vyčistit nalezená ukázková data"
+        message={`Bylo nalezeno: ${detectedDemoRecords?.demoAccounts.length || 0} ukázkových účtů, ${detectedDemoRecords?.demoTransactions.length || 0} ukázkových položek a ${detectedDemoRecords?.demoRules.length || 0} trvalých pravidel. Před jejich odstraněním bude automaticky stažena kompletní JSON záloha vašich stávajících dat. Přejete si pokračovat?`}
+        confirmText="Stáhnout zálohu a vyčistit demo"
         isDestructive
       />
 
@@ -553,7 +577,7 @@ export const SettingsScreen: React.FC = () => {
         onClose={() => setConfirmResetOpen(false)}
         onConfirm={resetAllData}
         title="Kompletní smazání dat"
-        message="POZOR: Tato akce je nevratná. Dojde k trvalému smazání všech účtů, transakcí, korekcí a pravidel. Doporučujeme předem provést export JSON zálohy. Chcete opravdu pokračovat?"
+        message="POZOR: Tato akce je nevratná. Dojde k trvalému smazání všech účtů, transakcí, korekcí a pravidel a uvedení aplikace do čistého stavu. Doporučujeme předem provést export JSON zálohy. Chcete opravdu pokračovat?"
         confirmText="Trvale smazat vše"
         isDestructive
       />

@@ -17,10 +17,8 @@ import {
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  DEMO_ACCOUNTS,
-  DEMO_RECURRING_RULES,
-  DEMO_TRANSACTIONS,
-} from './demoData';
+  isKnownDemoRecordId,
+} from '../constants/defaultData';
 import { sanitizeAndRepairSequences } from './sequenceService';
 
 
@@ -493,7 +491,7 @@ export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData): 
         hasLocalAdditions = true;
       }
     } else {
-      const isDemo = DEMO_ACCOUNTS.some(d => d.id === localAcc.id);
+      const isDemo = isKnownDemoRecordId(localAcc.id);
       if (!isDemo) {
         accMap.set(localAcc.id, { ...localAcc });
         hasLocalAdditions = true;
@@ -552,7 +550,7 @@ export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData): 
         hasLocalAdditions = true;
       }
     } else {
-      const isDemo = DEMO_RECURRING_RULES.some(d => d.id === localRule.id);
+      const isDemo = isKnownDemoRecordId(localRule.id);
       if (!isDemo) {
         ruleMap.set(localRule.id, { ...localRule });
         hasLocalAdditions = true;
@@ -576,7 +574,7 @@ export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData): 
         hasLocalAdditions = true;
       }
     } else {
-      const isDemo = DEMO_TRANSACTIONS.some(d => d.id === localTx.id);
+      const isDemo = isKnownDemoRecordId(localTx.id);
       if (!isDemo) {
         txMap.set(localTx.id, { ...localTx });
         hasLocalAdditions = true;

@@ -36,25 +36,54 @@ function isPortAvailable(port) {
   });
 }
 
-async function getAvailablePort(startPort = 3000) {
-  let port = startPort;
-  const isDefaultFree = await isPortAvailable(port);
-  if (isDefaultFree) {
-    console.log(`[INFO] Port ${port} je volný.`);
-    return port;
+function checkHttpEndpoint(port) {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/`, (res) => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => {
+        resolve({ running: true, isCashPilot: body.includes('CashPilot') || body.includes('cashpilot') || (res.statusCode >= 200 && res.statusCode < 500) });
+      });
+    });
+    req.on('error', () => resolve({ running: false, isCashPilot: false }));
+    req.setTimeout(1000, () => {
+      req.destroy();
+      resolve({ running: false, isCashPilot: false });
+    });
+  });
+}
+
+async function verifyOrGetFixedPort(expectedPort = 3000) {
+  const isFree = await isPortAvailable(expectedPort);
+  if (isFree) {
+    console.log(`[INFO] Výchozí stabilní port ${expectedPort} je volný.`);
+    return expectedPort;
   }
 
-  console.log(`[UPOZORNĚNÍ] Výchozí port ${port} je již obsazen jinou aplikací.`);
-  console.log('[INFO] Vyhledávám nejbližší volný alternativní port...');
-  port++;
-  while (port < 3100) {
-    if (await isPortAvailable(port)) {
-      console.log(`[INFO] Vybrán dostupný port: ${port}`);
-      return port;
-    }
-    port++;
+  // Zkontrolovat, zda na portu 3000 již běží CashPilot
+  const check = await checkHttpEndpoint(expectedPort);
+  if (check.running) {
+    console.log(`\n[INFO] Aplikace CashPilot již běží na adrese http://localhost:${expectedPort}/`);
+    console.log(`[INFO] Vaše lokální data jsou bezpečně uložena pro tento origin.`);
+    console.log(`[INFO] Otevírám aplikaci ve vašem prohlížeči...\n`);
+    openBrowser(`http://localhost:${expectedPort}/`);
+    process.exit(0);
   }
-  throw new Error('Nepodařilo se nalézt žádný volný port v rozsahu 3000-3100.');
+
+  console.error('\n======================================================================');
+  console.error(`  [UPOZORNĚNÍ] Výchozí port ${expectedPort} je již obsazen jiným procesem!`);
+  console.error('======================================================================');
+  console.error(`  Vaše uživatelská data v prohlížeči jsou vázána na adresu:`);
+  console.error(`  --> http://localhost:${expectedPort}/`);
+  console.error('');
+  console.error('  Z bezpečnostních důvodů (ochrana uživatelských dat v localStorage)');
+  console.error('  aplikace automaticky nepřepíná na jiný náhodný port.');
+  console.error('');
+  console.error('  Postup řešení:');
+  console.error(`  1. Ukončete aplikaci či proces blokující port ${expectedPort}.`);
+  console.error('  2. Spusťte start.bat znovu.');
+  console.error('======================================================================\n');
+  process.exit(1);
 }
 
 function waitForServer(port, timeoutMs = 30000) {
@@ -107,7 +136,7 @@ async function main() {
     throw new Error('Vite nebyl nalezen v node_modules. Spusťte nejprve npm install.');
   }
 
-  const port = await getAvailablePort(3000);
+  const port = await verifyOrGetFixedPort(3000);
   const appUrl = `http://localhost:${port}/`;
 
   console.log(`[INFO] Spouštím aplikační server Vite na portu ${port}...`);

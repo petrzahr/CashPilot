@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, AppSettings, BalanceCorrection, Transaction } from '../types/finance';
 import { calculateForecast } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
-import { loadStoredData, saveStoredData, validateAndParseBackup, AppData, getInitialData } from '../services/storageService';
+import { loadStoredData, saveStoredData, validateAndParseBackup, AppData, getInitialData, getActiveStorageKey } from '../services/storageService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { halerToCzk } from '../services/currencyService';
 
@@ -145,7 +145,7 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       marketValueSnapshots: []
     };
 
-    localStorage.setItem('cashpilot_data_v1', JSON.stringify(legacyData));
+    localStorage.setItem(getActiveStorageKey(), JSON.stringify(legacyData));
     const loaded = loadStoredData();
     expect(loaded.settings.overdraftLimitInHaler).toBe(3500000);
     expect(loaded.settings.minReserveInHaler).toBe(3500000);

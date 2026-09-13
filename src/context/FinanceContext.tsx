@@ -15,19 +15,20 @@ import {
 import {
   AppData,
   getInitialData,
-  loadStoredData,
+  loadStoredDataResult,
   saveStoredData,
   exportBackupJSON,
   validateAndParseBackup,
-  exportTransactionsCSV
+  exportTransactionsCSV,
+  getActiveStorageKey,
+  isDemoModeEnabled,
 } from '../services/storageService';
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  DEMO_ACCOUNTS,
-  DEMO_RECURRING_RULES,
-  DEMO_TRANSACTIONS
-} from '../services/demoData';
+  createEmptyAppData,
+  isKnownDemoRecordId,
+} from '../constants/defaultData';
 import {
   calculateForecast,
   generateOccurrenceForPeriod,
@@ -163,6 +164,19 @@ interface FinanceContextType {
   restoreCategory: (id: string) => void;
   deleteCategory: (id: string) => { success: boolean; message?: string };
 
+  // Stav načtení a obnova dat
+  loadState: AppLoadState;
+  loadErrorDetails: { message: string; recoveryKey?: string; corruptedRaw?: string } | null;
+  restoreFromBackupFile: (jsonStr: string) => void;
+  resetToFreshData: () => void;
+  retryLoadData: () => void;
+  cleanupKnownDemoData: () => { removedAccounts: number; removedTransactions: number; removedRules: number };
+  scanForKnownDemoData: () => {
+    demoAccounts: Account[];
+    demoTransactions: Transaction[];
+    demoRules: RecurringRule[];
+  };
+
   // Nastavení & Správa dat
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   loadDemoData: () => void;
@@ -182,29 +196,54 @@ interface FinanceContextType {
   syncWithGoogleDrive: (forceDirection?: 'upload' | 'download') => Promise<void>;
 }
 
+export type AppLoadState = 'loading' | 'ready' | 'loadError';
+
 const FinanceContext = createContext<FinanceContextType | null>(null);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [loadState, setLoadState] = useState<AppLoadState>('loading');
+  const [loadErrorDetails, setLoadErrorDetails] = useState<{ message: string; recoveryKey?: string; corruptedRaw?: string } | null>(null);
+
   const [data, setData] = useState<AppData>(() => {
-    const raw = loadStoredData();
+    const res = loadStoredDataResult();
+    if (res.status === 'loadError') {
+      return res.data;
+    }
     // Normalizovat všechny položky po dnech na souvislou řadu 1, 2, 3...
-    const uniqueDates = Array.from(new Set(raw.transactions.map(t => t.date)));
+    const uniqueDates = Array.from(new Set(res.data.transactions.map(t => t.date)));
     const normalizedAll: Transaction[] = [];
     uniqueDates.forEach(date => {
-      const dayTxs = raw.transactions.filter(t => t.date === date);
+      const dayTxs = res.data.transactions.filter(t => t.date === date);
       normalizedAll.push(...normalizeDaySequences(dayTxs));
     });
     return {
-      ...raw,
+      ...res.data,
       transactions: sortTransactionsByDateAndSequence(normalizedAll)
     };
   });
 
+  useEffect(() => {
+    const res = loadStoredDataResult();
+    if (res.status === 'loadError') {
+      setLoadState('loadError');
+      setLoadErrorDetails({
+        message: res.error || 'Chyba při načítání dat.',
+        recoveryKey: res.recoveryKey,
+        corruptedRaw: res.corruptedRaw,
+      });
+    } else {
+      setLoadState('ready');
+      setLoadErrorDetails(null);
+    }
+  }, []);
+
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
-    saveStoredData(data);
-  }, [data]);
+    if (loadState === 'ready') {
+      saveStoredData(data);
+    }
+  }, [data, loadState]);
 
   const showToast = useCallback((text: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = `${Date.now()}_${Math.random()}`;
@@ -1481,7 +1520,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Nastavení bylo uloženo.');
   }, [showToast]);
 
-  const loadDemoData = useCallback(() => {
+  const loadDemoData = useCallback(async () => {
+    if (!isDemoModeEnabled()) {
+      showToast('Ukázková data nejsou v produkčním režimu povolena.', 'warning');
+      return;
+    }
+    const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
     setData({
       version: 1,
       settings: { ...DEFAULT_SETTINGS },
@@ -1496,32 +1540,113 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Ukázková data byla úspěšně načtena.');
   }, [showToast]);
 
-  const clearDemoData = useCallback(() => {
-    setData(prev => ({
-      ...prev,
-      transactions: [],
-      recurringRules: [],
-      recurringExceptions: [],
-      corrections: [],
-      marketValueSnapshots: []
-    }));
-    showToast('Ukázková data byla odstraněna.');
+  const scanForKnownDemoData = useCallback(() => {
+    const demoAccounts = data.accounts.filter(a => isKnownDemoRecordId(a.id));
+    const demoTransactions = data.transactions.filter(t => isKnownDemoRecordId(t.id));
+    const demoRules = data.recurringRules.filter(r => isKnownDemoRecordId(r.id));
+    return { demoAccounts, demoTransactions, demoRules };
+  }, [data]);
+
+  const cleanupKnownDemoData = useCallback(() => {
+    // 1. Vytvořit a stáhnout bezpečnostní zálohu před odstraněním
+    exportBackupJSON(latestDataRef.current);
+
+    // 2. Najít demo záznamy podle známých ID
+    const demoAccIds = new Set(latestDataRef.current.accounts.filter(a => isKnownDemoRecordId(a.id)).map(a => a.id));
+    const demoTxIds = new Set(latestDataRef.current.transactions.filter(t => isKnownDemoRecordId(t.id)).map(t => t.id));
+    const demoRuleIds = new Set(latestDataRef.current.recurringRules.filter(r => isKnownDemoRecordId(r.id)).map(r => r.id));
+
+    // Ověřit, že demo účet nemá uživatelské (non-demo) transakce
+    const accsToRemove = new Set<string>();
+    demoAccIds.forEach(accId => {
+      const hasUserTxs = latestDataRef.current.transactions.some(
+        t => !demoTxIds.has(t.id) && (t.sourceAccountId === accId || t.targetAccountId === accId)
+      );
+      if (!hasUserTxs) {
+        accsToRemove.add(accId);
+      }
+    });
+
+    const newAccounts = latestDataRef.current.accounts.filter(a => !accsToRemove.has(a.id));
+    const newTransactions = latestDataRef.current.transactions.filter(t => !demoTxIds.has(t.id));
+    const newRules = latestDataRef.current.recurringRules.filter(r => !demoRuleIds.has(r.id));
+    const newExceptions = latestDataRef.current.recurringExceptions.filter(e => !demoRuleIds.has(e.ruleId));
+    const newCorrections = latestDataRef.current.corrections.filter(c => !accsToRemove.has(c.accountId));
+    const newSnapshots = latestDataRef.current.marketValueSnapshots.filter(s => !accsToRemove.has(s.accountId));
+
+    // Pokud byl výchozí účet odstraněn a zbývají jiné aktivní účty, zvolit nový výchozí
+    let defaultCount = newAccounts.filter(a => a.isDefault && a.status !== 'archived').length;
+    if (defaultCount === 0 && newAccounts.length > 0) {
+      const firstActive = newAccounts.find(a => a.status !== 'archived');
+      if (firstActive) firstActive.isDefault = true;
+    }
+
+    const cleanedData: AppData = {
+      ...latestDataRef.current,
+      accounts: newAccounts,
+      transactions: newTransactions,
+      recurringRules: newRules,
+      recurringExceptions: newExceptions,
+      corrections: newCorrections,
+      marketValueSnapshots: newSnapshots,
+    };
+
+    setData(cleanedData);
+    saveStoredData(cleanedData);
+
+    showToast(`Ukázková data byla odstraněna (automaticky stažena bezpečnostní záloha).`);
+
+    return {
+      removedAccounts: accsToRemove.size,
+      removedTransactions: demoTxIds.size,
+      removedRules: demoRuleIds.size,
+    };
   }, [showToast]);
 
+  const clearDemoData = useCallback(() => {
+    cleanupKnownDemoData();
+  }, [cleanupKnownDemoData]);
+
   const resetAllData = useCallback(() => {
-    setData({
-      version: 1,
-      settings: { ...DEFAULT_SETTINGS },
-      accounts: [],
-      categories: [...DEFAULT_CATEGORIES],
-      transactions: [],
-      recurringRules: [],
-      recurringExceptions: [],
-      corrections: [],
-      marketValueSnapshots: [],
-    });
+    const fresh = createEmptyAppData();
+    setData(fresh);
+    saveStoredData(fresh);
     showToast('Všechna data byla vymazána.');
   }, [showToast]);
+
+  const restoreFromBackupFile = useCallback((jsonStr: string) => {
+    const parsed = validateAndParseBackup(jsonStr);
+    setData(parsed);
+    saveStoredData(parsed);
+    setLoadState('ready');
+    setLoadErrorDetails(null);
+    showToast('Záloha byla úspěšně obnovena.');
+  }, [showToast]);
+
+  const resetToFreshData = useCallback(() => {
+    const fresh = createEmptyAppData();
+    setData(fresh);
+    saveStoredData(fresh);
+    setLoadState('ready');
+    setLoadErrorDetails(null);
+    showToast('Byla založena čistá instalace.');
+  }, [showToast]);
+
+  const retryLoadData = useCallback(() => {
+    const res = loadStoredDataResult();
+    if (res.status === 'loadError') {
+      setLoadState('loadError');
+      setLoadErrorDetails({
+        message: res.error || 'Chyba při načítání dat.',
+        recoveryKey: res.recoveryKey,
+        corruptedRaw: res.corruptedRaw
+      });
+    } else {
+      setData(res.data);
+      setLoadState('ready');
+      setLoadErrorDetails(null);
+    }
+  }, []);
 
   const exportJSON = useCallback(() => {
     exportBackupJSON(data);
@@ -1699,7 +1824,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     // Bezpečné vyčištění stavu aplikace a lokální mezipaměti
     try {
-      localStorage.removeItem('cashpilot_data_v1');
+      localStorage.removeItem(getActiveStorageKey());
       localStorage.removeItem('cashpilot_drive_file_id');
     } catch {}
     setData(getInitialData());
@@ -1940,6 +2065,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     archiveCategory,
     restoreCategory,
     deleteCategory,
+
+    // Stav načtení a obnova dat
+    loadState,
+    loadErrorDetails,
+    restoreFromBackupFile,
+    resetToFreshData,
+    retryLoadData,
+    cleanupKnownDemoData,
+    scanForKnownDemoData,
 
     updateSettings,
     loadDemoData,

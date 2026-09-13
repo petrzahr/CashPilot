@@ -18,6 +18,7 @@ import {
   mergeCloudAndLocalData,
 } from '../services/googleDriveService';
 import { getInitialData } from '../services/storageService';
+import { DEMO_TRANSACTIONS } from '../fixtures/demoData';
 
 const storageMock = (() => {
   let store: Record<string, string> = {};
@@ -464,8 +465,9 @@ describe('googleDriveService', () => {
         },
       ];
 
-      // Lokál je čerstvý prohlížeč s původními demo daty
-      const local = getInitialData(); // Obsahuje DEMO_TRANSACTIONS (např. tx_salary_1 atd.)
+      // Lokál má původní demo položky
+      const local = getInitialData();
+      local.transactions = [...DEMO_TRANSACTIONS];
 
       const res = mergeCloudAndLocalData(cloud, local);
       expect(res.hasLocalAdditions).toBe(false);

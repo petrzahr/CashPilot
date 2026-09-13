@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AppContent } from '../App';
 import { FinanceProvider } from '../context/FinanceContext';
 import { saveStoredAuth, clearStoredAuth, getStoredAuth, isStoredTokenValid } from '../services/googleDriveService';
+import { getActiveStorageKey } from '../services/storageService';
 
 const storageMock = (() => {
   let store: Record<string, string> = {};
@@ -110,17 +111,18 @@ describe('Auth Guard & Login Wall', () => {
       accessToken: 'token_to_clear',
       expiresAt: Date.now() + 3600 * 1000,
     });
-    localStorage.setItem('cashpilot_data_v1', JSON.stringify({ version: 1 }));
+    const testStorageKey = getActiveStorageKey();
+    localStorage.setItem(testStorageKey, JSON.stringify({ version: 1 }));
     localStorage.setItem('cashpilot_drive_file_id', 'file_abc_123');
 
     // Simulace vyčištění v rámci odhlášení
     clearStoredAuth();
-    localStorage.removeItem('cashpilot_data_v1');
+    localStorage.removeItem(testStorageKey);
     localStorage.removeItem('cashpilot_drive_file_id');
 
     expect(getStoredAuth()).toBeNull();
     expect(isStoredTokenValid()).toBe(false);
-    expect(localStorage.getItem('cashpilot_data_v1')).toBeNull();
+    expect(localStorage.getItem(testStorageKey)).toBeNull();
     expect(localStorage.getItem('cashpilot_drive_file_id')).toBeNull();
 
     // Následný render zobrazí LoginScreen

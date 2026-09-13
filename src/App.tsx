@@ -12,6 +12,7 @@ import { CategoriesScreen } from './components/categories/CategoriesScreen';
 import { SettingsScreen } from './components/settings/SettingsScreen';
 import { TransactionModal } from './components/transactions/TransactionModal';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { DataLoadErrorScreen } from './components/common/DataLoadErrorScreen';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
 import { formatMonthsCount } from './services/periodService';
@@ -166,7 +167,30 @@ const MainLayout: React.FC = () => {
 };
 
 export function AppContent() {
-  const { isDriveConnected } = useFinance();
+  const {
+    isDriveConnected,
+    loadState,
+    loadErrorDetails,
+    restoreFromBackupFile,
+    resetToFreshData,
+    retryLoadData,
+  } = useFinance();
+
+  if (loadState === 'loadError') {
+    return (
+      <>
+        <DataLoadErrorScreen
+          errorMessage={loadErrorDetails?.message}
+          recoveryKey={loadErrorDetails?.recoveryKey}
+          corruptedRaw={loadErrorDetails?.corruptedRaw}
+          onRestoreBackup={restoreFromBackupFile}
+          onResetToFresh={resetToFreshData}
+          onRetry={retryLoadData}
+        />
+        <ToastContainer />
+      </>
+    );
+  }
 
   if (!isDriveConnected) {
     return (
