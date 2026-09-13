@@ -28,7 +28,13 @@ import {
   DEMO_RECURRING_RULES,
   DEMO_TRANSACTIONS
 } from '../services/demoData';
-import { calculateForecast, generateOccurrenceForPeriod, getAccountBalanceAtDate } from '../services/financialEngine';
+import {
+  calculateForecast,
+  generateOccurrenceForPeriod,
+  getAccountBalanceAtDate,
+  calculateQuickFinancialOverview,
+  QuickFinancialOverview,
+} from '../services/financialEngine';
 import {
   createBudgetPeriod,
   generatePeriodsSequence,
@@ -97,6 +103,7 @@ interface FinanceContextType {
   isCurrentPeriodSelected: boolean;
   forecastSequence: BudgetPeriod[];
   forecast: ForecastResult;
+  quickOverview: QuickFinancialOverview;
 
   // Notifikace
   toasts: ToastMessage[];
@@ -419,6 +426,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       data.settings.budgetStartDay
     );
   }, [forecast.forecastPeriods, currentPeriod.year, currentPeriod.month, data.settings.forecastMonths, data.settings.budgetStartDay]);
+
+  const quickOverview = useMemo(() => {
+    return calculateQuickFinancialOverview(
+      data.accounts,
+      data.transactions,
+      data.corrections,
+      data.marketValueSnapshots,
+      todayStr
+    );
+  }, [data.accounts, data.transactions, data.corrections, data.marketValueSnapshots, todayStr]);
 
   // ------------------- TRANSAKCE & POŘADÍ -------------------
 
@@ -1885,6 +1902,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     isCurrentPeriodSelected,
     forecastSequence,
     forecast,
+    quickOverview,
 
     toasts,
     showToast,

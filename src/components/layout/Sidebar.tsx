@@ -10,7 +10,6 @@ import {
   Settings, 
   Plus, 
   X, 
-  Wallet, 
   Compass 
 } from 'lucide-react';
 
@@ -31,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   onOpenTransactionModal,
 }) => {
-  const { forecast, selectedPeriod } = useFinance();
+  const { quickOverview } = useFinance();
 
   const navItems: { id: NavScreen; label: string; icon: React.ReactNode }[] = [
     { id: 'budget', label: 'Měsíční rozpočet', icon: <CalendarDays className="w-4 h-4" /> },
@@ -123,19 +122,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Spodní info box se stavem likvidity */}
-        <div className="p-4 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
-          <div className="flex items-center justify-between text-slate-500 font-medium">
-            <span>Použitelné peníze:</span>
-            <Wallet className="w-3.5 h-3.5 text-slate-400" />
+        {/* Spodní rychlý finanční přehled k dnešnímu dni */}
+        <div className="p-3.5 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-slate-600">
+              <span className="truncate pr-2" title="Běžné účty + hotovost">Běžné účty + hotovost</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingAndCashInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {formatCurrency(quickOverview.checkingAndCashInHaler)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span className="truncate pr-2" title="Spořicí účty">Spořicí účty</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.savingsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {formatCurrency(quickOverview.savingsInHaler)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span className="truncate pr-2" title="Investice">Investice</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.investmentsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {formatCurrency(quickOverview.investmentsInHaler)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span className="truncate pr-2" title="Penzijní účty">Penzijní účty</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.pensionInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                {formatCurrency(quickOverview.pensionInHaler)}
+              </span>
+            </div>
           </div>
-          <div className="text-base font-extrabold text-slate-900 truncate">
-            {formatCurrency(forecast.usableCashNowInHaler)}
-          </div>
-          <div className="border-t border-slate-200/60 pt-2 flex justify-between text-[11px] text-slate-500">
-            <span>Celkový majetek:</span>
-            <span className="font-bold text-slate-700">
-              {formatCurrency(forecast.netWorthNowInHaler)}
+
+          <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between">
+            <span className="font-bold text-slate-700 truncate pr-2" title="Celkové jmění">Celkové jmění</span>
+            <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+              {formatCurrency(quickOverview.totalNetWorthInHaler)}
             </span>
           </div>
         </div>

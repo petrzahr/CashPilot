@@ -809,3 +809,158 @@ export function calculateForecast(
     plannedExpenseCurrentPeriodInHaler: currentSummary ? currentSummary.expenseInHaler : 0,
   };
 }
+
+export interface QuickFinancialOverview {
+  checkingAndCashInHaler: number;
+  savingsInHaler: number;
+  investmentsInHaler: number;
+  pensionInHaler: number;
+  totalNetWorthInHaler: number;
+}
+
+/**
+ * Spočítá aktuální finanční přehled k danému kalendářnímu dni (výchozí: dnešek v Praze).
+ * Nezahrnuje budoucí plánované položky, budoucí tržní hodnoty, archivované účty ani kontokorent.
+ * Převody mezi účty zachovávají celkové jmění invariantní.
+ */
+export function calculateQuickFinancialOverview(
+  accounts: Account[] = [],
+  transactions: Transaction[] = [],
+  corrections: BalanceCorrection[] = [],
+  marketValueSnapshots: MarketValueSnapshot[] = [],
+  todayStr: string = getTodayInPrague()
+): QuickFinancialOverview {
+  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived') : [];
+  const safeTxs = Array.isArray(transactions) ? transactions : [];
+  const safeCorrections = Array.isArray(corrections) ? corrections : [];
+  const safeSnapshots = Array.isArray(marketValueSnapshots) ? marketValueSnapshots : [];
+
+  // Pomocná funkce pro výpočet běžného/spořicího účtu k todayStr
+  const computeLiquidAccountBalance = (acc: Account): number => {
+    const initDate = acc.initialBalanceDate || '1970-01-01';
+    if (initDate > todayStr) return 0;
+
+    let bal = acc.initialBalanceInHaler || 0;
+
+    // Uskutečněné transakce do todayStr
+    for (const t of safeTxs) {
+      if (t.status === 'cancelled') continue;
+      // Zahrnout pouze uskutečněné položky nebo systémové korekce zůstatku
+      if (t.status !== 'executed' && t.type !== 'balance_adjustment') continue;
+      if (t.date < initDate || t.date > todayStr) continue;
+
+      const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined
+        ? t.actualAmountInHaler
+        : t.amountInHaler;
+
+      if (t.type === 'income' && t.sourceAccountId === acc.id) {
+        bal = addHaler(bal, amt);
+      } else if (t.type === 'expense' && t.sourceAccountId === acc.id) {
+        bal = subHaler(bal, amt);
+      } else if (t.type === 'transfer') {
+        if (t.sourceAccountId === acc.id) bal = subHaler(bal, amt);
+        if (t.targetAccountId === acc.id) bal = addHaler(bal, amt);
+      } else if (t.type === 'balance_adjustment' && t.sourceAccountId === acc.id) {
+        const diff = t.diffInHaler !== undefined ? t.diffInHaler : amt;
+        bal = addHaler(bal, diff);
+      }
+    }
+
+    // Legacy korekce
+    const relevantCorrections = safeCorrections.filter(c => {
+      if (c.accountId !== acc.id) return false;
+      if (c.checkDate < initDate || c.checkDate > todayStr) return false;
+      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
+      return !isAlreadyInTxs;
+    });
+    for (const c of relevantCorrections) {
+      bal = addHaler(bal, c.diffInHaler);
+    }
+
+    return bal;
+  };
+
+  // Pomocná funkce pro ocenění investičního / penzijního účtu k todayStr
+  const computeAssetAccountValue = (acc: Account): number => {
+    const initDate = acc.initialBalanceDate || '1970-01-01';
+    if (initDate > todayStr) return 0;
+
+    // Hledáme snapshoty s datem <= todayStr
+    const validSnapshots = safeSnapshots
+      .filter(s => s.accountId === acc.id && s.date >= initDate && s.date <= todayStr)
+      .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+    let baseVal = acc.initialBalanceInHaler || 0;
+    let valDate = initDate;
+    let hasValuation = false;
+
+    if (validSnapshots.length > 0) {
+      baseVal = validSnapshots[0].marketValueInHaler;
+      valDate = validSnapshots[0].date;
+      hasValuation = true;
+    } else if (
+      acc.currentMarketValueInHaler !== undefined &&
+      acc.marketValueUpdatedAt &&
+      acc.marketValueUpdatedAt >= initDate &&
+      acc.marketValueUpdatedAt <= todayStr
+    ) {
+      baseVal = acc.currentMarketValueInHaler;
+      valDate = acc.marketValueUpdatedAt;
+      hasValuation = true;
+    } else if (
+      acc.currentMarketValueInHaler !== undefined &&
+      !acc.marketValueUpdatedAt
+    ) {
+      baseVal = acc.currentMarketValueInHaler;
+      valDate = initDate;
+    }
+
+    // Přičíst/odečíst uskutečněné převody (vklady a výběry) po datu ocenění až do todayStr (včetně)
+    for (const t of safeTxs) {
+      if (t.status !== 'executed' || t.type !== 'transfer') continue;
+      if (hasValuation) {
+        if (t.date <= valDate || t.date > todayStr) continue;
+      } else {
+        if (t.date < initDate || t.date > todayStr) continue;
+      }
+      const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
+      if (t.targetAccountId === acc.id) baseVal = addHaler(baseVal, amt);
+      if (t.sourceAccountId === acc.id) baseVal = subHaler(baseVal, amt);
+    }
+
+    return baseVal;
+  };
+
+  let checkingAndCashInHaler = 0;
+  let savingsInHaler = 0;
+  let investmentsInHaler = 0;
+  let pensionInHaler = 0;
+
+  for (const acc of safeAccounts) {
+    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
+      checkingAndCashInHaler = addHaler(checkingAndCashInHaler, computeLiquidAccountBalance(acc));
+    } else if (acc.type === 'savings') {
+      savingsInHaler = addHaler(savingsInHaler, computeLiquidAccountBalance(acc));
+    } else if (acc.type === 'investment') {
+      investmentsInHaler = addHaler(investmentsInHaler, computeAssetAccountValue(acc));
+    } else if (acc.type === 'pension') {
+      pensionInHaler = addHaler(pensionInHaler, computeAssetAccountValue(acc));
+    }
+  }
+
+  const totalNetWorthInHaler = addHaler(
+    checkingAndCashInHaler,
+    savingsInHaler,
+    investmentsInHaler,
+    pensionInHaler
+  );
+
+  return {
+    checkingAndCashInHaler,
+    savingsInHaler,
+    investmentsInHaler,
+    pensionInHaler,
+    totalNetWorthInHaler,
+  };
+}
+
