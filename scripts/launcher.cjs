@@ -199,7 +199,7 @@ async function main() {
     openBrowser(appUrl);
 
     console.log('\n======================================================================');
-    console.log('  CashPilot – Správa osobního rozpočtu a 12měsíční forecast');
+    console.log('  CashPilot – Vaše osobní finance pod kontrolou');
     console.log('======================================================================');
     console.log(`  Stav:        Běží (aktivní)`);
     console.log(`  Adresa:      ${appUrl}`);

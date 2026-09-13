@@ -51,7 +51,7 @@ export const LoginScreen: React.FC = () => {
               CashPilot
             </h1>
             <p className="text-xs text-sky-600 font-bold uppercase tracking-wider mt-0.5">
-              Osobní rozpočet & forecast
+              Vaše osobní finance pod kontrolou
             </p>
           </div>
           <p className="text-sm text-slate-600 pt-1 leading-relaxed">
