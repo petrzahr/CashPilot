@@ -1,7 +1,8 @@
 import React from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { GoogleIcon } from '../common/GoogleIcon';
-import { Compass, ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { Compass, ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail } from 'lucide-react';
+import { buildAccessRequestMailtoUrl } from '../../constants/authConfig';
 
 export const LoginScreen: React.FC = () => {
   const { connectGoogleDrive, driveSyncStatus, driveError } = useFinance();
@@ -25,7 +26,7 @@ export const LoginScreen: React.FC = () => {
             </p>
           </div>
           <p className="text-sm text-slate-600 pt-1 leading-relaxed">
-            Inteligentní plánování příjmů, výdajů a predikce zůstatků účtů v čase s bezpečným privátním cloudovým úložištěm.
+            Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou. Data jsou bezpečně uložena v soukromém prostoru vašeho účtu Google.
           </p>
         </div>
 
@@ -36,8 +37,8 @@ export const LoginScreen: React.FC = () => {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Privátní Google Disk</span>
-              <span>Data se ukládají v privátním aplikačním prostoru vašeho účtu Google.</span>
+              <span className="font-semibold text-slate-800 block">Soukromé úložiště Google Disk</span>
+              <span>Vaše finanční data jsou bezpečně uložena v neveřejném aplikačním prostoru vašeho účtu Google.</span>
             </div>
           </div>
 
@@ -46,8 +47,8 @@ export const LoginScreen: React.FC = () => {
               <Zap className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Tichá synchronizace</span>
-              <span>Rychlá práce v mezipaměti a automatické ukládání změn na pozadí.</span>
+              <span className="font-semibold text-slate-800 block">Automatická synchronizace</span>
+              <span>Aplikace pracuje rychle s místní mezipamětí a všechny změny průběžně ukládá na pozadí.</span>
             </div>
           </div>
 
@@ -56,8 +57,8 @@ export const LoginScreen: React.FC = () => {
               <TrendingUp className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Výhled a kontokorent</span>
-              <span>Dlouhodobý horizont a hlídání limitů vašich bankovních účtů.</span>
+              <span className="font-semibold text-slate-800 block">Plánování a statistiky</span>
+              <span>Plánujte budoucí příjmy a výdaje a sledujte vývoj svých financí v přehledných statistikách.</span>
             </div>
           </div>
         </div>
@@ -97,6 +98,31 @@ export const LoginScreen: React.FC = () => {
           <p className="text-[11px] text-center text-slate-400">
             Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.
           </p>
+        </div>
+
+        {/* Oddělovač */}
+        <div className="relative flex items-center py-0.5">
+          <div className="flex-grow border-t border-slate-200" />
+          <span className="flex-shrink mx-3 text-xs font-medium text-slate-400">nebo</span>
+          <div className="flex-grow border-t border-slate-200" />
+        </div>
+
+        {/* Žádost o přístup do testovacího režimu */}
+        <div className="space-y-3 text-center sm:text-left">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800">Nemáte přístup?</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.
+            </p>
+          </div>
+
+          <a
+            href={buildAccessRequestMailtoUrl()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
+          >
+            <Mail className="w-4 h-4 text-slate-500 shrink-0" />
+            <span>Požádat o přístup</span>
+          </a>
         </div>
 
       </div>
