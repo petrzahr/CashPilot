@@ -29,7 +29,18 @@ export const ACCESS_REQUEST_BODY = [
 ].join('\r\n');
 
 /**
- * Bezpečně sestaví odkaz `mailto:` se zakódovaným předmětem a tělem zprávy.
+ * Bezpečně sestaví URL pro přímé otevření editoru zpráv ve webovém Gmailu (Compose).
+ * Formát: https://mail.google.com/mail/?view=cm&fs=1&to=...&su=...&body=...
+ */
+export function buildGmailComposeUrl(email: string = ACCESS_REQUEST_EMAIL): string {
+  const encodedTo = encodeURIComponent(email);
+  const encodedSubject = encodeURIComponent(ACCESS_REQUEST_SUBJECT);
+  const encodedBody = encodeURIComponent(ACCESS_REQUEST_BODY);
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`;
+}
+
+/**
+ * @deprecated Nahrazeno webovým odkazem na Gmail buildGmailComposeUrl()
  */
 export function buildAccessRequestMailtoUrl(email: string = ACCESS_REQUEST_EMAIL): string {
   const encodedSubject = encodeURIComponent(ACCESS_REQUEST_SUBJECT);

@@ -1,12 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { GoogleIcon } from '../common/GoogleIcon';
-import { Compass, ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail } from 'lucide-react';
-import { buildAccessRequestMailtoUrl } from '../../constants/authConfig';
+import { Compass, ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail, Check } from 'lucide-react';
+import { buildGmailComposeUrl, ACCESS_REQUEST_EMAIL } from '../../constants/authConfig';
 
 export const LoginScreen: React.FC = () => {
   const { connectGoogleDrive, driveSyncStatus, driveError } = useFinance();
   const isSyncing = driveSyncStatus === 'syncing';
+  const [copiedEmail, setCopiedEmail] = useState(false);
+
+  const handleCopyEmail = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(ACCESS_REQUEST_EMAIL);
+        setCopiedEmail(true);
+        setTimeout(() => setCopiedEmail(false), 3000);
+      } else if (typeof document !== 'undefined') {
+        const textarea = document.createElement('textarea');
+        textarea.value = ACCESS_REQUEST_EMAIL;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setCopiedEmail(true);
+        setTimeout(() => setCopiedEmail(false), 3000);
+      }
+    } catch {
+      // Fallback v případě selhání schránky
+      if (typeof window !== 'undefined') {
+        window.prompt('Zkopírujte si prosím kontaktní e-mail:', ACCESS_REQUEST_EMAIL);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 select-none">
@@ -117,12 +146,32 @@ export const LoginScreen: React.FC = () => {
           </div>
 
           <a
-            href={buildAccessRequestMailtoUrl()}
+            href={buildGmailComposeUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
           >
             <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>Požádat o přístup</span>
+            <span>Požádat o přístup přes Gmail</span>
           </a>
+
+          <div className="flex flex-col items-center sm:items-start pt-0.5">
+            {copiedEmail ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                <Check className="w-3.5 h-3.5" />
+                <span>E-mailová adresa byla zkopírována.</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                title={`Zkopírovat adresu ${ACCESS_REQUEST_EMAIL}`}
+                className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+              >
+                Zkopírovat kontaktní e-mail
+              </button>
+            )}
+          </div>
         </div>
 
       </div>

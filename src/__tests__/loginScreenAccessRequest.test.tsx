@@ -7,7 +7,7 @@ import {
   ACCESS_REQUEST_EMAIL,
   ACCESS_REQUEST_SUBJECT,
   ACCESS_REQUEST_BODY,
-  buildAccessRequestMailtoUrl,
+  buildGmailComposeUrl,
 } from '../constants/authConfig';
 
 const storageMock = (() => {
@@ -26,7 +26,7 @@ const storageMock = (() => {
   };
 })();
 
-describe('CashPilot - Přihlašovací stránka a žádost o přístup (18 bodů ověření)', () => {
+describe('CashPilot - Přihlašovací stránka a žádost o přístup přes Gmail (ověření požadavků)', () => {
   beforeEach(() => {
     Object.defineProperty(globalThis, 'localStorage', {
       value: storageMock,
@@ -49,145 +49,107 @@ describe('CashPilot - Přihlašovací stránka a žádost o přístup (18 bodů 
     );
   };
 
-  it('1. Úvodní text přesně odpovídá novému znění a je zobrazen nad panelem výhod', () => {
+  it('1. Tlačítko již nepoužívá protokol mailto:', () => {
     const html = renderScreen();
-    const expectedIntro =
-      'Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou. Data jsou bezpečně uložena v soukromém prostoru vašeho účtu Google.';
-    expect(html).toContain(expectedIntro);
-
-    const introIndex = html.indexOf(expectedIntro);
-    const featuresIndex = html.indexOf('Soukromé úložiště Google Disk');
-    expect(introIndex).toBeGreaterThan(-1);
-    expect(featuresIndex).toBeGreaterThan(introIndex);
+    expect(html).not.toContain('mailto:');
+    expect(html).not.toContain('href="mailto:');
   });
 
-  it('2. První vlastnost se jmenuje „Soukromé úložiště Google Disk“ a má správný popis', () => {
+  it('2. Kliknutí na žádost o přístup otevírá webový Gmail v nové kartě se zabezpečením', () => {
     const html = renderScreen();
-    expect(html).toContain('Soukromé úložiště Google Disk');
-    expect(html).toContain(
-      'Vaše finanční data jsou bezpečně uložena v neveřejném aplikačním prostoru vašeho účtu Google.'
-    );
+    // Musí obsahovat Gmail compose URL
+    expect(html).toContain('https://mail.google.com/mail/?view=cm&amp;fs=1');
+    // Musí mít target="_blank" a rel="noopener noreferrer"
+    expect(html).toMatch(/<a[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*>/);
   });
 
-  it('3. Druhá vlastnost se jmenuje „Automatická synchronizace“ a má správný popis', () => {
+  it('3. Text tlačítka žádosti je přesně „Požádat o přístup přes Gmail“', () => {
     const html = renderScreen();
-    expect(html).toContain('Automatická synchronizace');
-    expect(html).toContain(
-      'Aplikace pracuje rychle s místní mezipamětí a všechny změny průběžně ukládá na pozadí.'
-    );
+    expect(html).toContain('Požádat o přístup přes Gmail');
   });
 
-  it('4. Třetí vlastnost se jmenuje „Plánování a statistiky“ a má správný popis', () => {
-    const html = renderScreen();
-    expect(html).toContain('Plánování a statistiky');
-    expect(html).toContain(
-      'Plánujte budoucí příjmy a výdaje a sledujte vývoj svých financí v přehledných statistikách.'
-    );
-  });
-
-  it('5. V prezentační části přihlašovací stránky nejsou uvedeny žádné zmínky o kontokorentu ani bankovních limitech', () => {
-    const html = renderScreen();
-    expect(html.toLowerCase()).not.toContain('kontokorent');
-    expect(html.toLowerCase()).not.toContain('bankovních limitech');
-    expect(html.toLowerCase()).not.toContain('hlídání limitů');
-    expect(html.toLowerCase()).not.toContain('hlídání kontokorentu');
-  });
-
-  it('6. Je zobrazena samostatná část „Nemáte přístup?“ s popisem testovacího režimu', () => {
-    const html = renderScreen();
-    expect(html).toContain('Nemáte přístup?');
-    expect(html).toContain(
-      'CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.'
-    );
-  });
-
-  it('7. Je zobrazeno tlačítko / odkaz „Požádat o přístup“', () => {
-    const html = renderScreen();
-    expect(html).toContain('Požádat o přístup');
-  });
-
-  it('8. Hlavní akcí stránky zůstává tlačítko „Přihlásit se přes Google“ a je zobrazen oddělovač „nebo“', () => {
-    const html = renderScreen();
-    const loginBtnIndex = html.indexOf('Přihlásit se přes Google');
-    const dividerIndex = html.indexOf('nebo');
-    const requestAccessIndex = html.indexOf('Nemáte přístup?');
-
-    expect(loginBtnIndex).toBeGreaterThan(-1);
-    expect(dividerIndex).toBeGreaterThan(loginBtnIndex);
-    expect(requestAccessIndex).toBeGreaterThan(dividerIndex);
-  });
-
-  it('9. Tlačítko žádosti o přístup obsahuje platný mailto: odkaz otevírající výchozí e-mail', () => {
-    const html = renderScreen();
-    expect(html).toContain('href="mailto:');
-    const expectedUrl = buildAccessRequestMailtoUrl();
-    // V HTML výstupu renderToStaticMarkup je & v atributech kódován jako &amp;
-    expect(html).toContain(expectedUrl.replace(/&/g, '&amp;'));
-  });
-
-  it('10. Příjemcem žádosti o přístup je přesně cashpilot@byzahr.app', () => {
+  it('4. Cílovým příjemcem v Gmail Compose URL je přesně cashpilot@byzahr.app', () => {
     expect(ACCESS_REQUEST_EMAIL).toBe('cashpilot@byzahr.app');
-    const mailtoUrl = buildAccessRequestMailtoUrl();
-    expect(mailtoUrl.startsWith('mailto:cashpilot@byzahr.app?')).toBe(true);
+    const gmailUrl = buildGmailComposeUrl();
+    expect(gmailUrl).toContain('to=cashpilot%40byzahr.app');
   });
 
-  it('11. Předmět zprávy je přesně „Žádost o přístup do CashPilot“', () => {
+  it('5. Předmět zprávy je správně předvyplněný a zakódovaný v parametru su', () => {
     expect(ACCESS_REQUEST_SUBJECT).toBe('Žádost o přístup do CashPilot');
-    const mailtoUrl = buildAccessRequestMailtoUrl();
-    expect(mailtoUrl).toContain(encodeURIComponent('Žádost o přístup do CashPilot'));
+    const gmailUrl = buildGmailComposeUrl();
+    expect(gmailUrl).toContain(`su=${encodeURIComponent('Žádost o přístup do CashPilot')}`);
   });
 
-  it('12. Text zprávy obsahuje předepsanou strukturu a místo pro doplnění Google účtu', () => {
+  it('6. Text zprávy je předvyplněný v parametru body a obsahuje místo pro doplnění Google účtu', () => {
     expect(ACCESS_REQUEST_BODY).toContain('Dobrý den,');
     expect(ACCESS_REQUEST_BODY).toContain('žádám o přístup do aplikace CashPilot.');
     expect(ACCESS_REQUEST_BODY).toContain('E-mail účtu Google, kterým se budu přihlašovat:');
     expect(ACCESS_REQUEST_BODY).toContain('[DOPLŇTE E-MAIL]');
     expect(ACCESS_REQUEST_BODY).toContain('Děkuji.');
+
+    const gmailUrl = buildGmailComposeUrl();
+    expect(gmailUrl).toContain(`body=${encodeURIComponent(ACCESS_REQUEST_BODY)}`);
   });
 
-  it('13. Česká diakritika, mezery, odřádkování i hranaté závorky jsou v mailto URL správně zakódovány', () => {
-    const mailtoUrl = buildAccessRequestMailtoUrl();
-    const urlObj = new URL(mailtoUrl);
-    expect(urlObj.protocol).toBe('mailto:');
-    expect(urlObj.pathname).toBe('cashpilot@byzahr.app');
-
-    const searchParams = new URLSearchParams(urlObj.search);
-    expect(searchParams.get('subject')).toBe(ACCESS_REQUEST_SUBJECT);
-    expect(searchParams.get('body')).toBe(ACCESS_REQUEST_BODY);
+  it('7. Česká diakritika, mezery a odřádkování v Gmail Compose URL fungují a dekódují se správně', () => {
+    const gmailUrl = buildGmailComposeUrl();
+    const urlObj = new URL(gmailUrl);
+    expect(urlObj.origin).toBe('https://mail.google.com');
+    expect(urlObj.pathname).toBe('/mail/');
+    expect(urlObj.searchParams.get('view')).toBe('cm');
+    expect(urlObj.searchParams.get('fs')).toBe('1');
+    expect(urlObj.searchParams.get('to')).toBe('cashpilot@byzahr.app');
+    expect(urlObj.searchParams.get('su')).toBe('Žádost o přístup do CashPilot');
+    expect(urlObj.searchParams.get('body')).toBe(ACCESS_REQUEST_BODY);
   });
 
-  it('14. Aplikace netvrdí, že byl e-mail automaticky odeslán (žádná falešná zpráva)', () => {
+  it('8. Uživatel bez lokálního poštovního klienta může žádost připravit přímo v prohlížeči', () => {
+    const gmailUrl = buildGmailComposeUrl();
+    expect(gmailUrl.startsWith('https://mail.google.com/mail/?view=cm&fs=1')).toBe(true);
+  });
+
+  it('9. Pod tlačítkem je zobrazena záložní možnost „Zkopírovat kontaktní e-mail“', () => {
+    const html = renderScreen();
+    expect(html).toContain('Zkopírovat kontaktní e-mail');
+  });
+
+  it('10. Záložní možnost obsahuje adresu cashpilot@byzahr.app', () => {
+    const html = renderScreen();
+    expect(html).toContain('cashpilot@byzahr.app');
+  });
+
+  it('11. Aplikace netvrdí, že byla zpráva odeslána (žádné falešné hlášení)', () => {
     const html = renderScreen();
     expect(html).not.toContain('Žádost byla odeslána');
+    expect(html).not.toContain('Zpráva byla odeslána');
     expect(html).not.toContain('byla odeslána');
-    expect(html).not.toContain('Odesláno');
   });
 
-  it('15. Adresa pzahradn@gmail.com se nikde v konfiguraci ani kódu žádosti nepoužívá', () => {
-    const mailtoUrl = buildAccessRequestMailtoUrl();
-    expect(mailtoUrl).not.toContain('pzahradn@gmail.com');
+  it('12. Původní přihlášení přes Google zůstalo zachováno jako primární akce', () => {
+    const html = renderScreen();
+    const loginBtnIndex = html.indexOf('Přihlásit se přes Google');
+    const dividerIndex = html.indexOf('nebo');
+    const gmailBtnIndex = html.indexOf('Požádat o přístup přes Gmail');
+
+    expect(loginBtnIndex).toBeGreaterThan(-1);
+    expect(dividerIndex).toBeGreaterThan(loginBtnIndex);
+    expect(gmailBtnIndex).toBeGreaterThan(dividerIndex);
+  });
+
+  it('13. Adresa pzahradn@gmail.com se nikde v souvislosti se žádostí nepoužívá', () => {
+    const gmailUrl = buildGmailComposeUrl();
+    expect(gmailUrl).not.toContain('pzahradn@gmail.com');
     const html = renderScreen();
     expect(html).not.toContain('pzahradn@gmail.com');
   });
 
-  it('16. Tlačítko přihlášení zůstává plně zachováno s Google ikonou a funkcionalitou', () => {
+  it('14. Úvodní text a 3 vlastnosti odpovídají novému znění bez kontokorentu', () => {
     const html = renderScreen();
-    expect(html).toMatch(/<button[^>]*type="button"[^>]*>[\s\S]*?Přihlásit se přes Google[\s\S]*?<\/button>/);
-    expect(html).toContain('Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.');
-  });
-
-  it('17. Všechny prvky jsou začleněny do jedné přihlašovací karty s responzivním rozložením', () => {
-    const html = renderScreen();
-    // Jediná hlavní karta s max-w-md
-    expect(html).toContain('max-w-md w-full bg-white rounded-3xl');
-    // Oddělovač nebo
-    expect(html).toContain('nebo</span>');
-  });
-
-  it('18. Odkaz / tlačítko je plně přístupné (srozumitelný název, ikona, focus styly)', () => {
-    const html = renderScreen();
-    expect(html).toMatch(
-      /<a[^>]*href="mailto:[^"]*"[^>]*class="[^"]*focus:ring-2[^"]*"[^>]*>[\s\S]*?Požádat o přístup[\s\S]*?<\/a>/
-    );
+    expect(html).toContain('Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou');
+    expect(html).toContain('Soukromé úložiště Google Disk');
+    expect(html).toContain('Automatická synchronizace');
+    expect(html).toContain('Plánování a statistiky');
+    expect(html.toLowerCase()).not.toContain('kontokorent');
+    expect(html.toLowerCase()).not.toContain('bankovních limitech');
   });
 });
