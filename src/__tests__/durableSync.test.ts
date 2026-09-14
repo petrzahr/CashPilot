@@ -3,7 +3,7 @@ import { createResetAppData } from '../constants/defaultData';
 import { validateAndParseBackup, type AppData } from '../services/storageService';
 import { COLLECTIONS, accountStorageKey, applyDeletions, mergePending, recordLocalChange, type SyncEnvelope } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
-import { DriveConflictError, findAppDataFile, readDriveSnapshot, uploadToGoogleDrive } from '../services/googleDriveService';
+import { DriveConflictError, findAppDataFile, pickCanonicalDriveFile, readDriveSnapshot, uploadToGoogleDrive } from '../services/googleDriveService';
 
 export function memoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -232,9 +232,37 @@ describe('serialized cloud synchronization', () => {
 });
 
 describe('Drive concurrency protocol', () => {
-  it('refuses duplicate or incomplete canonical file listings', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ files: [{ id: 'a' }, { id: 'b' }] }))));
+  it('keeps the newest duplicate and renames the others instead of failing', async () => {
+    const files = [
+      { id: 'old', name: 'cashpilot_data.json', modifiedTime: '2026-09-14T10:00:00Z' },
+      { id: 'new', name: 'cashpilot_data.json', modifiedTime: '2026-09-14T12:00:00Z' },
+    ];
+    const fetch = vi.fn(async (_url: string, init?: RequestInit) =>
+      new Response(JSON.stringify(init?.method === 'PATCH' ? { id: 'old' } : { files })));
+    vi.stubGlobal('fetch', fetch);
+    expect(await findAppDataFile('token')).toMatchObject({ id: 'new' });
+    const patch = (fetch.mock.calls as any[]).find(([, init]) => init?.method === 'PATCH');
+    expect(patch[0]).toContain('/files/old');
+    expect(JSON.parse(patch[1].body).name).toMatch(/^cashpilot_duplicate_.*_old\.json$/);
+  });
+  it('resolves duplicates deterministically when timestamps tie', () => {
+    const at = (id: string, size?: string) => ({ id, name: 'cashpilot_data.json', modifiedTime: '2026-09-14T12:00:00Z', size });
+    expect(pickCanonicalDriveFile([at('a', '10'), at('b', '20')])?.id).toBe('b');
+    expect(pickCanonicalDriveFile([at('a'), at('b')])?.id).toBe('b');
+    expect(pickCanonicalDriveFile([])).toBeNull();
+  });
+  it('refuses to create a second file from an incomplete empty listing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ files: [], incompleteSearch: true }))));
     await expect(findAppDataFile('token')).rejects.toThrow('Konflikt');
+  });
+  it('follows pagination instead of treating extra pages as a conflict', async () => {
+    const pages = [
+      { files: [{ id: 'a', modifiedTime: '2026-09-14T10:00:00Z' }], nextPageToken: 'p2' },
+      { files: [{ id: 'b', modifiedTime: '2026-09-14T09:00:00Z' }] },
+      { id: 'b' },
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(pages.shift()))));
+    expect(await findAppDataFile('token')).toMatchObject({ id: 'a' });
   });
   it('never sends an unchecked overwrite', async () => {
     const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);

@@ -301,18 +301,85 @@ export async function fetchGoogleUserProfile(token: string): Promise<GoogleUser 
   }
 }
 
-/**
- * Vyhledá soubor cashpilot_data.json v prostoru appDataFolder
- */
-export async function findAppDataFile(token: string, signal?: AbortSignal): Promise<DriveFileInfo | null> {
-  const query = `name = '${CASH_PILOT_DATA_FILENAME}' and trashed = false`;
-  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&pageSize=1000&fields=nextPageToken,incompleteSearch,files(id,name,modifiedTime,size)`;
+const DUPLICATE_ARCHIVE_PREFIX = 'cashpilot_duplicate_';
+const MAX_LIST_PAGES = 20;
 
-  const res = await fetch(url, {
+const driveFileTime = (file: DriveFileInfo): number => {
+  const parsed = Date.parse(file.modifiedTime || '');
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const driveFileSize = (file: DriveFileInfo): number => {
+  const parsed = Number(file.size);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+/**
+ * Vypíše VŠECHNY soubory cashpilot_data.json v appDataFolder (včetně stránkování).
+ * `complete` je false, pokud Google vrátil neúplný výsledek hledání.
+ */
+export async function listAppDataFiles(token: string, signal?: AbortSignal): Promise<{ files: DriveFileInfo[]; complete: boolean }> {
+  const query = `name = '${CASH_PILOT_DATA_FILENAME}' and trashed = false`;
+  const files: DriveFileInfo[] = [];
+  let complete = true;
+  let pageToken: string | undefined;
+  let page = 0;
+
+  do {
+    const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&pageSize=1000&fields=nextPageToken,incompleteSearch,files(id,name,modifiedTime,size)${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`;
+
+    const res = await fetch(url, {
+      signal, cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (res.status === 401) {
+      if (getStoredAuth()?.accessToken === token) clearStoredAuth();
+      throw new Error('Platnost přihlášení k Google Disku vypršela. Přihlaste se prosím znovu.');
+    }
+
+    if (res.status === 412) throw new DriveConflictError();
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => '');
+      throw new Error(`Chyba při hledání souboru na Google Disku (HTTP ${res.status}): ${errorText}`);
+    }
+
+    const data = await res.json();
+    if (data.incompleteSearch) complete = false;
+    if (Array.isArray(data.files)) files.push(...(data.files as DriveFileInfo[]));
+    pageToken = data.nextPageToken;
+  } while (pageToken && ++page < MAX_LIST_PAGES);
+
+  // Nedočerpané stránkování znamená stejnou nejistotu jako incompleteSearch.
+  if (pageToken) complete = false;
+  return { files, complete };
+}
+
+/** Nejnovější vyhrává; velikost a id rozhodují remízu, aby všechna zařízení zvolila stejný soubor. */
+export function sortDriveFilesByPrecedence(files: DriveFileInfo[]): DriveFileInfo[] {
+  return [...files].sort((a, b) =>
+    driveFileTime(b) - driveFileTime(a) || driveFileSize(b) - driveFileSize(a) || b.id.localeCompare(a.id));
+}
+
+export function pickCanonicalDriveFile(files: DriveFileInfo[]): DriveFileInfo | null {
+  return sortDriveFilesByPrecedence(files)[0] ?? null;
+}
+
+/**
+ * Odloží duplicitní datový soubor přejmenováním. Nikdy nemaže – obsah zůstává v appDataFolder
+ * dostupný, jen přestane odpovídat kanonickému názvu.
+ */
+export async function archiveDuplicateDataFile(token: string, file: DriveFileInfo, signal?: AbortSignal): Promise<string> {
+  const name = `${DUPLICATE_ARCHIVE_PREFIX}${new Date().toISOString().replace(/[:.]/g, '-')}_${file.id}.json`;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?fields=id,name`, {
     signal, cache: 'no-store',
+    method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({ name }),
   });
 
   if (res.status === 401) {
@@ -320,21 +387,42 @@ export async function findAppDataFile(token: string, signal?: AbortSignal): Prom
     throw new Error('Platnost přihlášení k Google Disku vypršela. Přihlaste se prosím znovu.');
   }
 
-  if (res.status === 412) throw new DriveConflictError();
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
-    throw new Error(`Chyba při hledání souboru na Google Disku (HTTP ${res.status}): ${errorText}`);
+    throw new Error(`Konflikt synchronizace: duplicitní datový soubor se nepodařilo odložit (HTTP ${res.status}): ${errorText}. Žádný soubor nebyl přepsán.`);
   }
 
-  const data = await res.json();
-  if (data.nextPageToken || data.incompleteSearch || data.files?.length > 1) {
-    throw new Error('Konflikt synchronizace: na Google Disku je více datových souborů nebo neúplný seznam. Žádný nebyl přepsán.');
-  }
-  if (data.files && data.files.length > 0) {
-    return data.files[0] as DriveFileInfo;
+  return name;
+}
+
+/**
+ * Vyhledá kanonický soubor cashpilot_data.json v prostoru appDataFolder.
+ * Duplicity (dvě zařízení mohla založit soubor současně) řeší deduplikací: ponechá nejnovější
+ * podle modifiedTime a ostatní přejmenuje na zálohy, takže se sync sám uzdraví bez ztráty dat.
+ */
+export async function findAppDataFile(token: string, signal?: AbortSignal): Promise<DriveFileInfo | null> {
+  const { files, complete } = await listAppDataFiles(token, signal);
+  const [canonical, ...duplicates] = sortDriveFilesByPrecedence(files);
+
+  if (!canonical) {
+    // Prázdný a zároveň nejistý seznam je jediný neřešitelný případ: založením souboru bychom
+    // mohli vytvořit další duplicitu k souboru, který jsme jen neviděli.
+    if (!complete) {
+      throw new Error('Konflikt synchronizace: Google Disk vrátil neúplný seznam souborů. Nic nebylo zapsáno, zkuste to prosím znovu.');
+    }
+    return null;
   }
 
-  return null;
+  for (const duplicate of duplicates) {
+    const archived = await archiveDuplicateDataFile(token, duplicate, signal);
+    console.warn(`CashPilot: duplicitní datový soubor ${duplicate.id} byl odložen jako ${archived}.`);
+  }
+
+  if (duplicates.length) {
+    console.warn(`CashPilot: na Google Disku bylo ${files.length} datových souborů. Ponechán nejnovější (${canonical.id}, ${canonical.modifiedTime ?? 'bez času'}).`);
+  }
+
+  return canonical;
 }
 
 /**
