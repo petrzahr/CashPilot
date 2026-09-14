@@ -61,7 +61,7 @@ describe('Auth Guard & Login Wall', () => {
     expect(html).not.toContain('Kategorie');
   });
 
-  it('2. Pokud má uživatel platný token, AuthGuard zpřístupní aplikaci (MainLayout)', () => {
+  it('2. Platný token sám nestačí: AuthGuard čeká na úvodní cloudovou synchronizaci', () => {
     saveStoredAuth({
       accessToken: 'valid_test_token',
       expiresAt: Date.now() + 3600 * 1000,
@@ -79,11 +79,12 @@ describe('Auth Guard & Login Wall', () => {
     expect(html).not.toContain('Pro vstup do aplikace je vyžadováno přihlášení');
     expect(html).not.toContain('Přihlásit se přes Google');
 
-    // Chráněný obsah (Sidebar, Header, rozpočet) je přítomen
-    expect(html).toContain('Měsíční rozpočet');
-    expect(html).toContain('Položky');
-    expect(html).toContain('Účty');
-    expect(html).toContain('Kategorie');
+    // Stará cache není dostupná k editaci před potvrzením cloudu.
+    expect(html).toContain('Načítám aktuální data z Google Disku');
+    expect(html).not.toContain('Měsíční rozpočet');
+    expect(html).not.toContain('Položky');
+    expect(html).not.toContain('Účty');
+    expect(html).not.toContain('Kategorie');
   });
 
   it('3. Po vypršení tokenu je uživatel vyhodnocen jako nepřihlášený a chráněn Login Wall', () => {

@@ -1,3 +1,4 @@
+import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
@@ -388,15 +389,15 @@ export const SettingsScreen: React.FC = () => {
                       <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
                       <span className="text-sky-600">Probíhá synchronizace...</span>
                     </>
-                  ) : driveSyncStatus === 'error' ? (
+                  ) : driveSyncStatus !== 'synced' ? (
                     <>
                       <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                      <span className="text-amber-600">Chyba synchronizace</span>
+                      <span className="text-amber-600">{SYNC_LABELS[driveSyncStatus]}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700">Data jsou v cloudu aktuální</span>
+                      <span className="text-emerald-700">{SYNC_LABELS[driveSyncStatus]}</span>
                     </>
                   )}
                 </div>

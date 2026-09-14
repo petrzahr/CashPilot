@@ -1,3 +1,4 @@
+import { recordLocalChange } from '../services/syncModel';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   getGoogleClientId,
@@ -215,7 +216,7 @@ describe('googleDriveService', () => {
       );
     });
 
-    it('aktualizuje existující soubor přes PATCH, pokud je zadán existingFileId', async () => {
+    it('aktualizuje existující soubor přes podmíněné PUT v2, pokud je zadán existingFileId', async () => {
       const fakeData = getInitialData();
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -224,13 +225,13 @@ describe('googleDriveService', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const result = await uploadToGoogleDrive('token_123', fakeData, 'existing_file_999');
+      const result = await uploadToGoogleDrive('token_123', fakeData, 'existing_file_999', '"etag"');
       expect(result.id).toBe('existing_file_999');
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('files/existing_file_999?uploadType=multipart'),
         expect.objectContaining({
-          method: 'PATCH',
+          method: 'PUT',
           headers: expect.objectContaining({
             Authorization: 'Bearer token_123',
             'Content-Type': expect.stringContaining('multipart/related'),
@@ -400,7 +401,7 @@ describe('googleDriveService', () => {
         },
       ];
 
-      const res = mergeCloudAndLocalData(cloud, local);
+      const res = mergeCloudAndLocalData(cloud, local, recordLocalChange({ data: cloud, pending: [], cloudRevision: 0, generation: 0 }, local, 'test-device', '2026-09-10T14:00:00Z').pending);
       expect(res.hasLocalAdditions).toBe(true);
       expect(res.mergedData.transactions[0].title).toBe('Offline editovaná verze na notebooku');
       expect(res.mergedData.transactions[0].amountInHaler).toBe(250000);
@@ -440,7 +441,7 @@ describe('googleDriveService', () => {
         },
       ];
 
-      const res = mergeCloudAndLocalData(cloud, local);
+      const res = mergeCloudAndLocalData(cloud, local, recordLocalChange({ data: cloud, pending: [], cloudRevision: 0, generation: 0 }, local, 'test-device', '2026-09-10T14:00:00Z').pending);
       expect(res.hasLocalAdditions).toBe(true);
       expect(res.mergedData.transactions).toHaveLength(2);
       expect(res.mergedData.transactions.some(t => t.id === 'tx_offline_new_1')).toBe(true);
@@ -484,6 +485,7 @@ describe('googleDriveService', () => {
         {
           id: 'acc_custom_offline_savings',
           name: 'Nová offline spořitelna',
+          isDefault: true,
           type: 'savings',
           currency: 'CZK',
           initialBalanceInHaler: 500000,
@@ -498,7 +500,7 @@ describe('googleDriveService', () => {
         },
       ];
 
-      const res = mergeCloudAndLocalData(cloud, local);
+      const res = mergeCloudAndLocalData(cloud, local, recordLocalChange({ data: cloud, pending: [], cloudRevision: 0, generation: 0 }, local, 'test-device', '2026-09-10T14:00:00Z').pending);
       expect(res.hasLocalAdditions).toBe(true);
       expect(res.mergedData.accounts.some(a => a.id === 'acc_custom_offline_savings')).toBe(true);
       const defaults = res.mergedData.accounts.filter(a => a.isDefault && a.status !== 'archived');

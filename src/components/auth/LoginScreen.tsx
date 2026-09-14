@@ -6,7 +6,7 @@ import { buildGmailComposeUrl, ACCESS_REQUEST_EMAIL } from '../../constants/auth
 
 export const LoginScreen: React.FC = () => {
   const { connectGoogleDrive, driveSyncStatus, driveError } = useFinance();
-  const isSyncing = driveSyncStatus === 'syncing';
+  const isSyncing = (driveSyncStatus === 'syncing' || driveSyncStatus === 'loading');
   const [copiedEmail, setCopiedEmail] = useState(false);
 
   const handleCopyEmail = async (e: React.MouseEvent) => {

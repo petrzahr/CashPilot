@@ -1,3 +1,4 @@
+import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatPeriodRange } from '../../services/periodService';
@@ -102,18 +103,14 @@ export const Header: React.FC<HeaderProps> = ({
                   className={`relative inline-flex rounded-full h-2 w-2 ${
                     driveSyncStatus === 'syncing'
                       ? 'bg-sky-500'
-                      : driveSyncStatus === 'error'
+                      : driveSyncStatus !== 'synced'
                       ? 'bg-amber-500'
                       : 'bg-emerald-500'
                   }`}
                 ></span>
               </span>
               <span className="hidden sm:inline">
-                {driveSyncStatus === 'syncing'
-                  ? 'Ukládám...'
-                  : driveSyncStatus === 'error'
-                  ? 'Chyba'
-                  : 'Synchronizováno'}
+                {SYNC_LABELS[driveSyncStatus]}
               </span>
             </button>
 
@@ -152,15 +149,15 @@ export const Header: React.FC<HeaderProps> = ({
                           <RefreshCw className="w-3 h-3 animate-spin text-sky-600" />
                           <span className="text-sky-600">Probíhá zápis</span>
                         </>
-                      ) : driveSyncStatus === 'error' ? (
+                      ) : driveSyncStatus !== 'synced' ? (
                         <>
                           <AlertCircle className="w-3 h-3 text-amber-600" />
-                          <span className="text-amber-600">Chyba</span>
+                          <span className="text-amber-600">{SYNC_LABELS[driveSyncStatus]}</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span className="text-emerald-700">Synchronizováno</span>
+                          <span className="text-emerald-700">{SYNC_LABELS[driveSyncStatus]}</span>
                         </>
                       )}
                     </span>

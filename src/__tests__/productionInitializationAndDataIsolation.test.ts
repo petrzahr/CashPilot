@@ -103,6 +103,8 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
     } as unknown as Account;
     const existingUserData: AppData = {
       version: 1,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
       settings: { ...DEFAULT_SETTINGS },
       accounts: [existingUserAcc],
       categories: [...DEFAULT_CATEGORIES],
@@ -136,6 +138,8 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
   it('6. Aktualizace a migrace aplikace nepřidá žádná demonstrační data', () => {
     const dataWithoutDemo: AppData = {
       version: 1,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
       settings: { ...DEFAULT_SETTINGS },
       accounts: [{ id: 'my_acc', name: 'Moje banka', type: 'checking', currency: 'CZK', initialBalanceInHaler: 0, currentBalanceInHaler: 0, isActive: true, isDefault: true } as unknown as Account],
       categories: [...DEFAULT_CATEGORIES],
@@ -261,6 +265,8 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
   it('17. Import platné zálohy zachová pouze data obsažená v záloze', () => {
     const backupJSON = JSON.stringify({
       version: 1,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
       settings: { ...DEFAULT_SETTINGS },
       accounts: [
         { id: 'imported_acc_1', name: 'Importovaný účet', type: 'checking', currency: 'CZK', initialBalanceInHaler: 100000, currentBalanceInHaler: 100000, isActive: true, isDefault: true }

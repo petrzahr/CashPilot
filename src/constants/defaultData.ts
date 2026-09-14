@@ -1,7 +1,7 @@
 import { AppSettings, Category } from '../types/finance';
 import { AppData } from '../services/storageService';
 
-export const CURRENT_DATA_VERSION = 1;
+export const CURRENT_DATA_VERSION = 2;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   currency: 'CZK',
@@ -153,6 +153,8 @@ export const DEFAULT_CATEGORIES: Category[] = [
 export function createEmptyAppData(): AppData {
   return {
     version: CURRENT_DATA_VERSION,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
     settings: { ...DEFAULT_SETTINGS },
     accounts: [],
     categories: [...DEFAULT_CATEGORIES],
@@ -171,6 +173,8 @@ export function createEmptyAppData(): AppData {
 export function createResetAppData(): AppData {
   return {
     version: CURRENT_DATA_VERSION,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
     settings: { ...DEFAULT_SETTINGS },
     accounts: [],
     categories: [],

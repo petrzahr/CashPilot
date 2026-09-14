@@ -427,6 +427,8 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
 
     const initialData: AppData = {
       version: 1,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
       settings: defaultSettings,
       accounts: [checkingAccount],
       categories: [],

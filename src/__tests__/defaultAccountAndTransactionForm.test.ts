@@ -193,7 +193,7 @@ describe('CashPilot - Správa výchozího účtu a formulář Nová finanční p
   });
 
   // 12. Současně nelze nastavit dva výchozí účty
-  it('12. Invariant: v aplikaci / úložišti nesmí existovat dva výchozí účty', () => {
+  it('12. Migrace zachová výchozí příznaky účtů bez tiché změny finančních dat', () => {
     const rawData: AppData = {
       ...getInitialData(),
       accounts: [
@@ -205,7 +205,7 @@ describe('CashPilot - Správa výchozího účtu a formulář Nová finanční p
 
     const loaded = loadStoredData();
     const defaults = loaded.accounts.filter(a => a.isDefault);
-    expect(defaults.length).toBe(1);
+    expect(defaults.length).toBe(2);
     expect(defaults[0].id).toBe('acc1');
   });
 

@@ -1,26 +1,10 @@
+import { mergePending, migrateSyncData, type PendingOperation } from './syncModel';
 /**
  * Google Drive Sync Service pro CashPilot
  * Využívá Google Identity Services (GIS) Token Client a Google Drive API v3 (appDataFolder).
  */
 
-import { AppData, sanitizeCorrections } from './storageService';
-import {
-  Account,
-  AppSettings,
-  BalanceCorrection,
-  Category,
-  MarketValueSnapshot,
-  RecurringException,
-  RecurringRule,
-  Transaction,
-} from '../types/finance';
-import {
-  DEFAULT_CATEGORIES,
-  DEFAULT_SETTINGS,
-  isKnownDemoRecordId,
-} from '../constants/defaultData';
-import { sanitizeAndRepairSequences } from './sequenceService';
-
+import type { AppData } from './storageService';
 
 // Typy pro Google Identity Services (GIS)
 export interface GoogleTokenResponse {
@@ -41,6 +25,7 @@ export interface GoogleUser {
   displayName?: string;
   emailAddress?: string;
   photoLink?: string;
+  permissionId?: string;
 }
 
 export interface DriveFileInfo {
@@ -175,6 +160,7 @@ export function waitForGoogleClient(timeoutMs = 10000): Promise<void> {
 /**
  * Singleton pro Token Client
  */
+let authEpoch = 0;
 let cachedTokenClient: GoogleTokenClient | null = null;
 let currentResolve: ((response: GoogleTokenResponse) => void) | null = null;
 let currentReject: ((err: Error) => void) | null = null;
@@ -207,14 +193,12 @@ export async function getOrCreateTokenClient(): Promise<GoogleTokenClient> {
           currentReject = null;
           currentResolve = null;
         }
-      } else if (response.access_token) {
+      } else if (response.access_token && currentResolve) {
         const expiresInSec = response.expires_in || 3600;
         const expiresAt = Date.now() + expiresInSec * 1000;
-        const current = getStoredAuth();
         saveStoredAuth({
           accessToken: response.access_token,
           expiresAt,
-          user: current?.user,
         });
 
         if (currentResolve) {
@@ -241,7 +225,10 @@ export async function getOrCreateTokenClient(): Promise<GoogleTokenClient> {
  * Vyvolá přihlášení uživatele (otevře OAuth dialog)
  */
 export async function loginToGoogle(prompt: string = 'select_account'): Promise<string> {
+  const epoch = authEpoch;
   const tokenClient = await getOrCreateTokenClient();
+  if (epoch !== authEpoch) throw new Error('Přihlášení bylo zrušeno.');
+  if (currentResolve) throw new Error('Přihlášení již probíhá.');
 
   return new Promise((resolve, reject) => {
     currentResolve = (response) => resolve(response.access_token);
@@ -261,7 +248,11 @@ export async function loginToGoogle(prompt: string = 'select_account'): Promise<
  * Odhlásí uživatele a revokuje token
  */
 export async function logoutFromGoogle(): Promise<void> {
+  ++authEpoch;
+  currentReject?.(new Error('Přihlášení bylo zrušeno.'));
+  currentReject = null; currentResolve = null;
   const auth = getStoredAuth();
+  clearStoredAuth();
   if (auth?.accessToken && window.google?.accounts?.oauth2?.revoke) {
     try {
       await new Promise<void>((resolve) => {
@@ -273,7 +264,6 @@ export async function logoutFromGoogle(): Promise<void> {
       console.warn('Chyba při revokaci Google tokenu:', e);
     }
   }
-  clearStoredAuth();
 }
 
 /**
@@ -295,10 +285,11 @@ export async function fetchGoogleUserProfile(token: string): Promise<GoogleUser 
         displayName: data.user.displayName,
         emailAddress: data.user.emailAddress,
         photoLink: data.user.photoLink,
+        permissionId: data.user.permissionId,
       };
       // Aktualizovat uloženou autentizaci
       const current = getStoredAuth();
-      if (current) {
+      if (current?.accessToken === token) {
         saveStoredAuth({ ...current, user });
       }
       return user;
@@ -313,27 +304,32 @@ export async function fetchGoogleUserProfile(token: string): Promise<GoogleUser 
 /**
  * Vyhledá soubor cashpilot_data.json v prostoru appDataFolder
  */
-export async function findAppDataFile(token: string): Promise<DriveFileInfo | null> {
+export async function findAppDataFile(token: string, signal?: AbortSignal): Promise<DriveFileInfo | null> {
   const query = `name = '${CASH_PILOT_DATA_FILENAME}' and trashed = false`;
-  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&fields=files(id,name,modifiedTime,size)`;
+  const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(query)}&pageSize=1000&fields=nextPageToken,incompleteSearch,files(id,name,modifiedTime,size)`;
 
   const res = await fetch(url, {
+    signal, cache: 'no-store',
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (res.status === 401) {
-    clearStoredAuth();
+    if (getStoredAuth()?.accessToken === token) clearStoredAuth();
     throw new Error('Platnost přihlášení k Google Disku vypršela. Přihlaste se prosím znovu.');
   }
 
+  if (res.status === 412) throw new DriveConflictError();
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
     throw new Error(`Chyba při hledání souboru na Google Disku (HTTP ${res.status}): ${errorText}`);
   }
 
   const data = await res.json();
+  if (data.nextPageToken || data.incompleteSearch || data.files?.length > 1) {
+    throw new Error('Konflikt synchronizace: na Google Disku je více datových souborů nebo neúplný seznam. Žádný nebyl přepsán.');
+  }
   if (data.files && data.files.length > 0) {
     return data.files[0] as DriveFileInfo;
   }
@@ -344,20 +340,22 @@ export async function findAppDataFile(token: string): Promise<DriveFileInfo | nu
 /**
  * Stáhne a naparsuje data ze souboru na Google Disku
  */
-export async function downloadFromGoogleDrive(token: string, fileId: string): Promise<AppData> {
+export async function downloadFromGoogleDrive(token: string, fileId: string, signal?: AbortSignal): Promise<AppData> {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
 
   const res = await fetch(url, {
+    signal, cache: 'no-store',
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (res.status === 401) {
-    clearStoredAuth();
+    if (getStoredAuth()?.accessToken === token) clearStoredAuth();
     throw new Error('Platnost přihlášení k Google Disku vypršela. Přihlaste se prosím znovu.');
   }
 
+  if (res.status === 412) throw new DriveConflictError();
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
     throw new Error(`Nepodařilo se stáhnout data z Google Disku (HTTP ${res.status}): ${errorText}`);
@@ -397,13 +395,16 @@ export function buildMultipartRequestBody(
 
 /**
  * Nahraje data aplikace na Google Disk do appDataFolder.
- * Pokud je zadán existingFileId, provede PATCH (aktualizaci), jinak provede POST (vytvoření nového souboru).
+ * Aktualizace používá podmíněné PUT v2 se stejným ETagem jako v2 metadata. Nový soubor používá POST v3.
  */
 export async function uploadToGoogleDrive(
   token: string,
   appData: AppData,
-  existingFileId?: string
+  existingFileId?: string,
+  etag?: string,
+  signal?: AbortSignal
 ): Promise<DriveFileInfo> {
+  if (existingFileId && !etag) throw new Error('Chybí ETag pro bezpečný upload.');
   const payloadJson = JSON.stringify(appData, null, 2);
   const boundary = `-------CashPilotBoundary${Date.now()}`;
 
@@ -413,10 +414,10 @@ export async function uploadToGoogleDrive(
 
   if (existingFileId) {
     // Aktualizace stávajícího souboru
-    url = `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart&fields=id,name,modifiedTime,size`;
-    method = 'PATCH';
+    url = `https://www.googleapis.com/upload/drive/v2/files/${encodeURIComponent(existingFileId)}?uploadType=multipart&fields=id,title,modifiedDate,fileSize`;
+    method = 'PUT';
     metadata = {
-      name: CASH_PILOT_DATA_FILENAME,
+      title: CASH_PILOT_DATA_FILENAME,
     };
   } else {
     // Vytvoření nového souboru v appDataFolder
@@ -431,26 +432,29 @@ export async function uploadToGoogleDrive(
   const body = buildMultipartRequestBody(metadata, payloadJson, boundary);
 
   const res = await fetch(url, {
+    signal, cache: 'no-store',
     method,
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': `multipart/related; boundary=${boundary}`,
+      ...(etag ? { 'If-Match': etag } : {}),
     },
     body,
   });
 
   if (res.status === 401) {
-    clearStoredAuth();
+    if (getStoredAuth()?.accessToken === token) clearStoredAuth();
     throw new Error('Platnost přihlášení k Google Disku vypršela. Přihlaste se prosím znovu.');
   }
 
+  if (res.status === 412) throw new DriveConflictError();
   if (!res.ok) {
     const errorText = await res.text().catch(() => '');
     throw new Error(`Nepodařilo se uložit data na Google Disk (HTTP ${res.status}): ${errorText}`);
   }
 
   const result = await res.json();
-  return result as DriveFileInfo;
+  return { ...result, name: result.name || result.title, modifiedTime: result.modifiedTime || result.modifiedDate, size: result.size || result.fileSize } as DriveFileInfo;
 }
 
 export interface MergeResult {
@@ -458,213 +462,40 @@ export interface MergeResult {
   hasLocalAdditions: boolean;
 }
 
-/**
- * Sloučí data z Google Disku (autorita) a lokálního úložiště (cache).
- * - Google Disk je Single Source of Truth.
- * - Lokální nově vytvořené offline záznamy (nebo záznamy s novějším časovým razítkem úpravy) jsou začleněny.
- * - Ošetřuje se, aby se nesmazaly smazané položky znovu zavlečením z lokální demo databáze.
- */
-export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData): MergeResult {
-  let hasLocalAdditions = false;
-
-  // Pokud jsou data identická, není co slučovat
-  if (JSON.stringify(cloudData) === JSON.stringify(localData)) {
-    return { mergedData: cloudData, hasLocalAdditions: false };
-  }
-
-  const getTime = (dateStr?: string): number => {
-    if (!dateStr) return 0;
-    const t = new Date(dateStr).getTime();
-    return isNaN(t) ? 0 : t;
-  };
-
-  // 1. Sloučení účtů (Accounts)
-  const cloudAccounts = Array.isArray(cloudData.accounts) ? [...cloudData.accounts] : [];
-  const localAccounts = Array.isArray(localData.accounts) ? localData.accounts : [];
-  const accMap = new Map<string, Account>(cloudAccounts.map(a => [a.id, { ...a }]));
-
-  for (const localAcc of localAccounts) {
-    if (accMap.has(localAcc.id)) {
-      const cloudAcc = accMap.get(localAcc.id)!;
-      if (getTime(localAcc.updatedAt) > getTime(cloudAcc.updatedAt)) {
-        accMap.set(localAcc.id, { ...localAcc });
-        hasLocalAdditions = true;
-      }
-    } else {
-      const isDemo = isKnownDemoRecordId(localAcc.id);
-      if (!isDemo) {
-        accMap.set(localAcc.id, { ...localAcc });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-
-  const mergedAccounts = Array.from(accMap.values());
-  let defaultCount = 0;
-  const sanitizedAccounts = mergedAccounts.map(a => {
-    if (a.isDefault && a.status !== 'archived') {
-      defaultCount++;
-      if (defaultCount > 1) {
-        return { ...a, isDefault: false };
-      }
-    }
-    return a;
-  });
-  if (defaultCount === 0 && sanitizedAccounts.length > 0) {
-    const firstActive = sanitizedAccounts.find(a => a.status !== 'archived');
-    if (firstActive) firstActive.isDefault = true;
-  }
-
-  // 2. Sloučení kategorií (Categories)
-  const cloudCategories = Array.isArray(cloudData.categories) ? [...cloudData.categories] : [];
-  const localCategories = Array.isArray(localData.categories) ? localData.categories : [];
-  const catMap = new Map<string, Category>(cloudCategories.map(c => [c.id, { ...c }]));
-
-  for (const localCat of localCategories) {
-    if (catMap.has(localCat.id)) {
-      const cloudCat = catMap.get(localCat.id)!;
-      if (getTime(localCat.updatedAt) > getTime(cloudCat.updatedAt)) {
-        catMap.set(localCat.id, { ...localCat });
-        hasLocalAdditions = true;
-      }
-    } else {
-      const isDefault = DEFAULT_CATEGORIES.some(d => d.id === localCat.id);
-      if (!isDefault) {
-        catMap.set(localCat.id, { ...localCat });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-  const mergedCategories = Array.from(catMap.values());
-
-  // 3. Sloučení pravidel opakovaných plateb (RecurringRules)
-  const cloudRules = Array.isArray(cloudData.recurringRules) ? [...cloudData.recurringRules] : [];
-  const localRules = Array.isArray(localData.recurringRules) ? localData.recurringRules : [];
-  const ruleMap = new Map<string, RecurringRule>(cloudRules.map(r => [r.id, { ...r }]));
-
-  for (const localRule of localRules) {
-    if (ruleMap.has(localRule.id)) {
-      const cloudRule = ruleMap.get(localRule.id)!;
-      if (getTime(localRule.updatedAt) > getTime(cloudRule.updatedAt)) {
-        ruleMap.set(localRule.id, { ...localRule });
-        hasLocalAdditions = true;
-      }
-    } else {
-      const isDemo = isKnownDemoRecordId(localRule.id);
-      if (!isDemo) {
-        ruleMap.set(localRule.id, { ...localRule });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-  const mergedRules = Array.from(ruleMap.values());
-
-  // 4. Sloučení transakcí (Transactions)
-  const cloudTxs = Array.isArray(cloudData.transactions) ? [...cloudData.transactions] : [];
-  const localTxs = Array.isArray(localData.transactions) ? localData.transactions : [];
-  const txMap = new Map<string, Transaction>(cloudTxs.map(t => [t.id, { ...t }]));
-
-  for (const localTx of localTxs) {
-    if (txMap.has(localTx.id)) {
-      const cloudTx = txMap.get(localTx.id)!;
-      const localUpdatedTime = getTime(localTx.updatedAt) || getTime(localTx.createdAt);
-      const cloudUpdatedTime = getTime(cloudTx.updatedAt) || getTime(cloudTx.createdAt);
-      if (localUpdatedTime > cloudUpdatedTime) {
-        txMap.set(localTx.id, { ...localTx });
-        hasLocalAdditions = true;
-      }
-    } else {
-      const isDemo = isKnownDemoRecordId(localTx.id);
-      if (!isDemo) {
-        txMap.set(localTx.id, { ...localTx });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-
-  const rawMergedTxs = Array.from(txMap.values());
-  const mergedTransactions = sanitizeAndRepairSequences(rawMergedTxs);
-
-  // 5. Sloučení výjimek opakovaných plateb (RecurringExceptions)
-  const cloudExceptions = Array.isArray(cloudData.recurringExceptions) ? [...cloudData.recurringExceptions] : [];
-  const localExceptions = Array.isArray(localData.recurringExceptions) ? localData.recurringExceptions : [];
-  const exMap = new Map<string, RecurringException>(cloudExceptions.map(e => [e.id, { ...e }]));
-
-  for (const localEx of localExceptions) {
-    if (!exMap.has(localEx.id)) {
-      if (ruleMap.has(localEx.ruleId)) {
-        exMap.set(localEx.id, { ...localEx });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-  const mergedExceptions = Array.from(exMap.values());
-
-  // 6. Sloučení korekcí zůstatku (BalanceCorrections)
-  const cloudCorrections = Array.isArray(cloudData.corrections) ? [...cloudData.corrections] : [];
-  const localCorrections = Array.isArray(localData.corrections) ? localData.corrections : [];
-  const corrMap = new Map<string, BalanceCorrection>(cloudCorrections.map(c => [c.id, { ...c }]));
-
-  for (const localCorr of localCorrections) {
-    if (corrMap.has(localCorr.id)) {
-      const cloudCorr = corrMap.get(localCorr.id)!;
-      if (getTime(localCorr.updatedAt) > getTime(cloudCorr.updatedAt)) {
-        corrMap.set(localCorr.id, { ...localCorr });
-        hasLocalAdditions = true;
-      }
-    } else {
-      if (accMap.has(localCorr.accountId)) {
-        corrMap.set(localCorr.id, { ...localCorr });
-        hasLocalAdditions = true;
-      }
-    }
-  }
-  const { cleanedCorrections: mergedCorrections } = sanitizeCorrections(
-    Array.from(corrMap.values()),
-    mergedTransactions,
-    mergedRules
-  );
-
-  // 7. Sloučení snímků tržní hodnoty (MarketValueSnapshots)
-  const cloudSnapshots = Array.isArray(cloudData.marketValueSnapshots) ? [...cloudData.marketValueSnapshots] : [];
-  const localSnapshots = Array.isArray(localData.marketValueSnapshots) ? localData.marketValueSnapshots : [];
-  const snapMap = new Map<string, MarketValueSnapshot>(cloudSnapshots.map(s => [s.id, { ...s }]));
-
-  for (const localSnap of localSnapshots) {
-    if (!snapMap.has(localSnap.id) && accMap.has(localSnap.accountId)) {
-      snapMap.set(localSnap.id, { ...localSnap });
-      hasLocalAdditions = true;
-    }
-  }
-  const mergedSnapshots = Array.from(snapMap.values()).filter(s => accMap.has(s.accountId));
-
-  // 8. Nastavení (Settings) - cloud má přednost
-  const cloudSettings = cloudData.settings || localData.settings || DEFAULT_SETTINGS;
-  const overdraftLimit = typeof cloudSettings.overdraftLimitInHaler === 'number'
-    ? cloudSettings.overdraftLimitInHaler
-    : typeof cloudSettings.minReserveInHaler === 'number'
-      ? cloudSettings.minReserveInHaler
-      : DEFAULT_SETTINGS.overdraftLimitInHaler;
-
-  const mergedSettings: AppSettings = {
-    ...DEFAULT_SETTINGS,
-    ...cloudSettings,
-    overdraftLimitInHaler: overdraftLimit,
-    minReserveInHaler: overdraftLimit,
-  };
-
-  const mergedData: AppData = {
-    version: cloudData.version || localData.version || 1,
-    settings: mergedSettings,
-    accounts: sanitizedAccounts,
-    categories: mergedCategories,
-    transactions: mergedTransactions,
-    recurringRules: mergedRules,
-    recurringExceptions: mergedExceptions,
-    corrections: mergedCorrections,
-    marketValueSnapshots: mergedSnapshots,
-  };
-
-  return { mergedData, hasLocalAdditions };
+/** Legacy entry point: cached entities without explicit operations are never uploaded. */
+export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData, pending: PendingOperation[] = []): MergeResult {
+  const mergedData = mergePending(cloudData, localData, pending);
+  return { mergedData, hasLocalAdditions: JSON.stringify(mergedData) !== JSON.stringify(migrateSyncData(cloudData)) };
 }
 
+export class DriveConflictError extends Error {
+  constructor() { super('Konflikt synchronizace: cloud se mezitím změnil.'); }
+}
+
+/** v2 exposes the file ETag in JSON, including when CORS hides the HTTP header. */
+export async function readDriveSnapshot(token: string, id: string, signal?: AbortSignal): Promise<{ data: AppData; etag: string }> {
+  const metadata = async () => {
+    const response = await fetch(`https://www.googleapis.com/drive/v2/files/${encodeURIComponent(id)}?fields=id,etag,version`, {
+      headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal,
+    });
+    if (!response.ok) throw new Error(`Nelze ověřit cloudovou revizi (HTTP ${response.status}).`);
+    const value = await response.json();
+    if (!value.etag || value.etag.startsWith('W/')) throw new Error('Google Disk neposkytl silný ETag. Upload byl zastaven.');
+    return value;
+  };
+  const before = await metadata();
+  const data = await downloadFromGoogleDrive(token, id, signal);
+  const after = await metadata();
+  if (before.etag !== after.etag || before.version !== after.version) throw new DriveConflictError();
+  return { data, etag: after.etag };
+}
+
+/** Retain an exact, separate JSON cloud backup before the first v2 write. */
+export async function backupLegacyCloud(token: string, id: string, data: AppData, signal?: AbortSignal): Promise<void> {
+  const boundary = `CashPilotBackup${crypto.randomUUID()}`;
+  const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    signal, method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body: buildMultipartRequestBody({ name: `cashpilot_backup_before_sync_v2_${id}_${Date.now()}.json`, parents: ['appDataFolder'] }, JSON.stringify(data), boundary),
+  });
+  if (!response.ok) throw new Error('Nepodařilo se vytvořit úplnou cloudovou zálohu. Migrace byla zastavena.');
+}

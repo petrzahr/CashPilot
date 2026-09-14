@@ -1,3 +1,4 @@
+import { SYNC_LABELS } from './services/syncController';
 import React, { useState, useEffect, useCallback } from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/layout/Header';
@@ -169,6 +170,7 @@ const MainLayout: React.FC = () => {
 export function AppContent() {
   const {
     isDriveConnected,
+    isCloudReady, driveSyncStatus, driveError, syncWithGoogleDrive, disconnectGoogleDrive,
     loadState,
     loadErrorDetails,
     restoreFromBackupFile,
@@ -201,6 +203,14 @@ export function AppContent() {
     );
   }
 
+  if (!isCloudReady) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><div className="text-center space-y-4 p-6" role="status">
+      <p>{SYNC_LABELS[driveSyncStatus]}</p>
+      {driveError && <p className="text-red-700">{driveError}</p>}
+      {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2 bg-sky-600 text-white rounded">Zkusit znovu</button>}
+      <button onClick={() => void disconnectGoogleDrive()} className="block mx-auto">Odhlásit</button>
+    </div></div>;
+  }
   return <MainLayout />;
 }
 

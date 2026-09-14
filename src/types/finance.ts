@@ -100,6 +100,7 @@ export interface RecurringRule {
 }
 
 export interface RecurringException {
+  updatedAt?: string; // Synchronizační metadata, ve starších datech chybí.
   id: string;
   ruleId: string;
   periodKey: string; // např. 2026-10

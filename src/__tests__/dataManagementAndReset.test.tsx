@@ -1,3 +1,4 @@
+import { SyncController } from '../services/syncController';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -175,6 +176,8 @@ const sampleMarketValues: MarketValueSnapshot[] = [
 function populateTestStorage(customData?: Partial<AppData>): AppData {
   const fullData: AppData = {
     version: 1,
+    deletions: [],
+    sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
     settings: { ...DEFAULT_SETTINGS },
     accounts: [...sampleAccounts],
     categories: [...DEFAULT_CATEGORIES],
@@ -185,22 +188,31 @@ function populateTestStorage(customData?: Partial<AppData>): AppData {
     marketValueSnapshots: [...sampleMarketValues],
     ...customData,
   };
+  localStorage.removeItem('cashpilot_sync_v2:test');
   saveStoredData(fullData, getActiveStorageKey());
   return fullData;
 }
 
-function getContextHandle() {
+async function getContextHandle() {
+  let cloud = loadStoredDataResult().data;
+  const controller = new SyncController('test', () => 'token', next => saveStoredData(next), {
+    find: async () => ({ id: 'file', name: 'cashpilot_data.json' }),
+    read: async () => ({ data: cloud, etag: 'etag' }),
+    backup: async () => {},
+    upload: async (_token, data) => { cloud = data; return { id: 'file', name: 'cashpilot_data.json' }; },
+  });
+  await controller.sync();
   let ctx: any;
   const Consumer = () => {
     ctx = useFinance();
     return null;
   };
   renderToStaticMarkup(
-    <FinanceProvider>
+    <FinanceProvider syncSession={controller}>
       <Consumer />
     </FinanceProvider>
   );
-  return ctx;
+  return { ...ctx, __syncSession: controller };
 }
 
 describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
@@ -226,7 +238,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 1. Funkce „Zkontrolovat a vyčistit ukázková data“ byla odstraněna
-  it('1. Funkce „Zkontrolovat a vyčistit ukázková data“ byla kompletně odstraněna z UI i kontextu', () => {
+  it('1. Funkce „Zkontrolovat a vyčistit ukázková data“ byla kompletně odstraněna z UI i kontextu', async () => {
     populateTestStorage();
     const html = renderToStaticMarkup(
       <FinanceProvider>
@@ -241,9 +253,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 2. Vymazání transakcí odstraní všechny finanční položky
-  it('2. Vymazání transakcí odstraní všechny finanční položky (uskutečněné, plánované, převody)', () => {
+  it('2. Vymazání transakcí odstraní všechny finanční položky (uskutečněné, plánované, převody)', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     expect(ctx.transactions.length).toBe(3);
     const result = ctx.clearAllTransactions();
@@ -254,13 +266,13 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 3. Vymazání transakcí odstraní pravidla a výjimky opakovaných plateb
-  it('3. Vymazání transakcí odstraní pravidla i výjimky opakovaných plateb', () => {
+  it('3. Vymazání transakcí odstraní pravidla i výjimky opakovaných plateb', async () => {
     populateTestStorage({
       recurringExceptions: [
         { id: 'exc_1', ruleId: 'rule_salary', periodKey: '2026-10', isCancelled: true, createdAt: '' }
       ]
     });
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     expect(ctx.recurringRules.length).toBe(1);
     expect(ctx.recurringExceptions.length).toBe(1);
@@ -273,9 +285,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 4. Vymazání transakcí odstraní korekce
-  it('4. Vymazání transakcí odstraní všechny korekce zůstatků', () => {
+  it('4. Vymazání transakcí odstraní všechny korekce zůstatků', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     expect(ctx.corrections.length).toBe(1);
     ctx.clearAllTransactions();
@@ -285,9 +297,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 5. Vymazání transakcí zachová účty, kategorie a nastavení
-  it('5. Vymazání transakcí zachová účty, kategorie a nastavení', () => {
+  it('5. Vymazání transakcí zachová účty, kategorie a nastavení', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllTransactions();
 
@@ -302,9 +314,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 6. Vymazání transakcí zachová tržní hodnoty
-  it('6. Vymazání transakcí zachová tržní hodnoty investičních a penzijních účtů', () => {
+  it('6. Vymazání transakcí zachová tržní hodnoty investičních a penzijních účtů', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllTransactions();
 
@@ -314,9 +326,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 7. Vymazání účtů odstraní aktivní i archivované účty
-  it('7. Vymazání účtů odstraní všechny aktivní i archivované účty', () => {
+  it('7. Vymazání účtů odstraní všechny aktivní i archivované účty', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     expect(ctx.accounts.length).toBe(3);
     const result = ctx.clearAllAccounts();
@@ -327,9 +339,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 8. Vymazání účtů odstraní všechny závislé finanční záznamy
-  it('8. Vymazání účtů odstraní všechny transakce, převody, pravidla, korekce i tržní hodnoty', () => {
+  it('8. Vymazání účtů odstraní všechny transakce, převody, pravidla, korekce i tržní hodnoty', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllAccounts();
 
@@ -343,9 +355,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 9. Vymazání účtů zachová kategorie a nastavení
-  it('9. Vymazání účtů zachová kategorie a nastavení aplikace', () => {
+  it('9. Vymazání účtů zachová kategorie a nastavení aplikace', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllAccounts();
 
@@ -355,9 +367,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 10. Vymazání kategorií odstraní hlavní kategorie i podkategorie
-  it('10. Vymazání kategorií odstraní všechny hlavní kategorie i podkategorie', () => {
+  it('10. Vymazání kategorií odstraní všechny hlavní kategorie i podkategorie', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     expect(ctx.categories.length).toBeGreaterThan(0);
     const result = ctx.clearAllCategories();
@@ -368,9 +380,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 11. Vymazání kategorií zachová transakce a účty
-  it('11. Vymazání kategorií zachová transakce a účty', () => {
+  it('11. Vymazání kategorií zachová transakce a účty', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllCategories();
 
@@ -383,9 +395,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 12. Zachované transakce jsou po odstranění kategorií označeny „Bez kategorie“
-  it('12. Zachované transakce mají po odstranění kategorií categoryId null a v UI se zobrazují jako „Bez kategorie“', () => {
+  it('12. Zachované transakce mají po odstranění kategorií categoryId null a v UI se zobrazují jako „Bez kategorie“', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllCategories();
 
@@ -397,7 +409,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     // V UI TransactionsScreen se vykreslí "Bez kategorie"
     const html = renderToStaticMarkup(
-      <FinanceProvider>
+      <FinanceProvider syncSession={ctx.__syncSession}>
         <TransactionsScreen
           onOpenTransactionModal={() => {}}
           onEditTransaction={() => {}}
@@ -408,9 +420,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 13. Kategorie se po restartu automaticky znovu nevytvoří
-  it('13. Kategorie se po reloadu / načtení z úložiště znovu automaticky nevytvoří', () => {
+  it('13. Kategorie se po reloadu / načtení z úložiště znovu automaticky nevytvoří', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllCategories();
 
@@ -424,9 +436,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 14. Kompletní vymazání odstraní všechny typy uživatelských dat
-  it('14. Kompletní vymazání odstraní všechny typy uživatelských dat (0 účtů, 0 tx, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií)', () => {
+  it('14. Kompletní vymazání odstraní všechny typy uživatelských dat (0 účtů, 0 tx, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií)', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     const result = ctx.resetAllData();
     expect(result).toBe(true);
@@ -442,7 +454,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 15. Kompletní vymazání vyžaduje text „VYMAZAT VŠE“
-  it('15. Modální dialog pro kompletní vymazání vyžaduje přesný potvrzovací text „VYMAZAT VŠE“', () => {
+  it('15. Modální dialog pro kompletní vymazání vyžaduje přesný potvrzovací text „VYMAZAT VŠE“', async () => {
     const html = renderToStaticMarkup(
       <DataActionConfirmationModal
         isOpen={true}
@@ -470,9 +482,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 16. Po kompletním vymazání se nevytvoří demonstrační data
-  it('16. Po kompletním vymazání a reloadu se nevytvoří žádná demonstrační ani testovací data', () => {
+  it('16. Po kompletním vymazání a reloadu se nevytvoří žádná demonstrační ani testovací data', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.resetAllData();
 
@@ -486,9 +498,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 17. Před každou operací vznikne platná recovery záloha
-  it('17. Před každou operací vznikne platná recovery záloha pod recovery klíčem s typem a časem', () => {
+  it('17. Před každou operací vznikne platná recovery záloha pod recovery klíčem s typem a časem', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    let ctx = await getContextHandle();
 
     // Test 1: clearAllTransactions
     ctx.clearAllTransactions();
@@ -498,8 +510,10 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(backup?.timestamp).toBeDefined();
     expect(backup?.data.transactions.length).toBe(3);
 
-    // Obnovit testovací data
+    // Obnovit testovací data v nové relaci
+    ctx.__syncSession.stop();
     populateTestStorage();
+    ctx = await getContextHandle();
 
     // Test 2: clearAllAccounts
     ctx.clearAllAccounts();
@@ -507,8 +521,10 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(backup?.operationType).toBe('clear_accounts');
     expect(backup?.data.accounts.length).toBe(3);
 
-    // Obnovit testovací data
+    // Obnovit testovací data v nové relaci
+    ctx.__syncSession.stop();
     populateTestStorage();
+    ctx = await getContextHandle();
 
     // Test 3: clearAllCategories
     ctx.clearAllCategories();
@@ -516,8 +532,10 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(backup?.operationType).toBe('clear_categories');
     expect(backup?.data.categories.length).toBe(DEFAULT_CATEGORIES.length);
 
-    // Obnovit testovací data
+    // Obnovit testovací data v nové relaci
+    ctx.__syncSession.stop();
     populateTestStorage();
+    ctx = await getContextHandle();
 
     // Test 4: resetAllData
     ctx.resetAllData();
@@ -526,9 +544,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 18. Při selhání zálohy se mazání neprovede
-  it('18. Pokud uložení recovery zálohy selže, operace mazání se neprovede a data zůstanou nedotčena', () => {
+  it('18. Pokud uložení recovery zálohy selže, operace mazání se neprovede a data zůstanou nedotčena', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     // Simulace selhání localStorage.setItem (např. QuotaExceededError)
     const originalSetItem = localStorage.setItem;
@@ -550,9 +568,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 19. Po operaci nezůstanou žádné neplatné reference
-  it('19. Po provedení operací nezůstanou žádné neplatné nebo osiřelé reference', () => {
+  it('19. Po provedení operací nezůstanou žádné neplatné nebo osiřelé reference', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     // Po vymazání kategorií žádná položka neodkazuje na neexistující kategorii
     ctx.clearAllCategories();
@@ -572,9 +590,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 20. Po obnovení stránky zůstane vyčištěný stav zachován
-  it('20. Po uložení a restartu (reload) zůstane vyčištěný stav trvale uložen v localStorage', () => {
+  it('20. Po uložení a restartu (reload) zůstane vyčištěný stav trvale uložen v localStorage', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllTransactions();
 
@@ -586,9 +604,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   });
 
   // 21. Ostatní funkce aplikace zůstanou funkční
-  it('21. Ostatní funkce aplikace (přidání účtu, běžné nastavení, atd.) zůstávají plně funkční', () => {
+  it('21. Ostatní funkce aplikace (přidání účtu, běžné nastavení, atd.) zůstávají plně funkční', async () => {
     populateTestStorage();
-    const ctx = getContextHandle();
+    const ctx = await getContextHandle();
 
     ctx.clearAllAccounts();
 

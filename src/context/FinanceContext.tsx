@@ -1,3 +1,5 @@
+import { accountStorageKey } from '../services/syncModel';
+import { SyncController, type SyncStatus } from '../services/syncController';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Account,
@@ -16,11 +18,12 @@ import {
   AppData,
   getInitialData,
   loadStoredDataResult,
-  saveStoredData,
   exportBackupJSON,
   validateAndParseBackup,
   exportTransactionsCSV,
   getActiveStorageKey,
+  setActiveStorageKey,
+  STORAGE_KEY_PRODUCTION,
   isDemoModeEnabled,
   createOperationRecoveryBackup,
 } from '../services/storageService';
@@ -51,18 +54,12 @@ import {
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
-  DriveFileInfo,
   GoogleUser,
-  downloadFromGoogleDrive,
   fetchGoogleUserProfile,
-  findAppDataFile,
-  getStoredAuth,
   getValidAccessToken,
   isStoredTokenValid,
   loginToGoogle,
   logoutFromGoogle,
-  uploadToGoogleDrive,
-  mergeCloudAndLocalData,
 } from '../services/googleDriveService';
 
 
@@ -76,7 +73,7 @@ import {
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
 
-export type DriveSyncStatus = 'disconnected' | 'idle' | 'syncing' | 'synced' | 'error';
+export type DriveSyncStatus = SyncStatus;
 
 export interface ToastMessage {
   id: string;
@@ -184,6 +181,7 @@ interface FinanceContextType {
   exportCSV: () => void;
   // Google Drive Synchronizace
   driveSyncStatus: DriveSyncStatus;
+  isCloudReady: boolean;
   isDriveConnected: boolean;
   driveUser: GoogleUser | null;
   lastDriveSyncTime: Date | null;
@@ -197,50 +195,18 @@ export type AppLoadState = 'loading' | 'ready' | 'loadError';
 
 const FinanceContext = createContext<FinanceContextType | null>(null);
 
-export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?: SyncController }> = ({ children, syncSession }) => {
   const [loadState, setLoadState] = useState<AppLoadState>('loading');
   const [loadErrorDetails, setLoadErrorDetails] = useState<{ message: string; recoveryKey?: string; corruptedRaw?: string } | null>(null);
 
-  const [data, setData] = useState<AppData>(() => {
-    const res = loadStoredDataResult();
-    if (res.status === 'loadError') {
-      return res.data;
-    }
-    // Normalizovat všechny položky po dnech na souvislou řadu 1, 2, 3...
-    const uniqueDates = Array.from(new Set(res.data.transactions.map(t => t.date)));
-    const normalizedAll: Transaction[] = [];
-    uniqueDates.forEach(date => {
-      const dayTxs = res.data.transactions.filter(t => t.date === date);
-      normalizedAll.push(...normalizeDaySequences(dayTxs));
-    });
-    return {
-      ...res.data,
-      transactions: sortTransactionsByDateAndSequence(normalizedAll)
-    };
-  });
-
-  useEffect(() => {
-    const res = loadStoredDataResult();
-    if (res.status === 'loadError') {
-      setLoadState('loadError');
-      setLoadErrorDetails({
-        message: res.error || 'Chyba při načítání dat.',
-        recoveryKey: res.recoveryKey,
-        corruptedRaw: res.corruptedRaw,
-      });
-    } else {
-      setLoadState('ready');
-      setLoadErrorDetails(null);
-    }
-  }, []);
-
+  const [data, publishData] = useState<AppData>(() => syncSession?.data || getInitialData());
+  const latestDataRef = useRef<AppData>(data);
+  const controllerRef = useRef<SyncController | null>(syncSession || null);
+  const authGeneration = useRef(0);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  useEffect(() => {
-    if (loadState === 'ready') {
-      saveStoredData(data);
-    }
-  }, [data, loadState]);
+  const setData = useCallback((action: React.SetStateAction<AppData>) => {
+    controllerRef.current?.change(action);
+  }, []);
 
   const showToast = useCallback((text: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = `${Date.now()}_${Math.random()}`;
@@ -1524,7 +1490,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
     setData({
-      version: 1,
+      version: 2,
+      deletions: [],
+      sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
       settings: { ...DEFAULT_SETTINGS },
       accounts: [...DEMO_ACCOUNTS],
       categories: [...DEFAULT_CATEGORIES],
@@ -1555,7 +1523,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     setData(updated);
-    saveStoredData(updated);
+
     showToast('Všechny finanční položky, pravidla opakovaných plateb a korekce byly vymazány.');
     return true;
   }, [showToast]);
@@ -1583,7 +1551,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     setData(updated);
-    saveStoredData(updated);
+
     showToast('Všechny účty a navázaná finanční data byly úspěšně vymazány.');
     return true;
   }, [showToast]);
@@ -1624,7 +1592,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     setData(updated);
-    saveStoredData(updated);
+
     showToast('Všechny kategorie byly vymazány. U existujících položek byla nastavena kategorie „Bez kategorie“.');
     return true;
   }, [showToast]);
@@ -1639,8 +1607,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // 2. Kompletní čistý reset: 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií
     const fresh = createResetAppData();
-    setData(fresh);
-    saveStoredData(fresh);
+    controllerRef.current?.change(fresh, true);
+
     showToast('Všechna data byla kompletně vymazána a aplikace byla uvedena do čistého výchozího stavu.');
     return true;
   }, [showToast]);
@@ -1648,7 +1616,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const restoreFromBackupFile = useCallback((jsonStr: string) => {
     const parsed = validateAndParseBackup(jsonStr);
     setData(parsed);
-    saveStoredData(parsed);
+
     setLoadState('ready');
     setLoadErrorDetails(null);
     showToast('Záloha byla úspěšně obnovena.');
@@ -1656,8 +1624,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const resetToFreshData = useCallback(() => {
     const fresh = createEmptyAppData();
-    setData(fresh);
-    saveStoredData(fresh);
+    controllerRef.current?.change(fresh, true);
+
     setLoadState('ready');
     setLoadErrorDetails(null);
     showToast('Byla založena čistá instalace.');
@@ -1710,303 +1678,110 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Položky byly vyexportovány do CSV.');
   }, [data.transactions, data.accounts, data.categories, showToast]);
 
-  // Google Drive synchronizace stav
-  const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>(() => {
-    return isStoredTokenValid() ? 'idle' : 'disconnected';
-  });
-  const [isDriveConnected, setIsDriveConnected] = useState<boolean>(() => isStoredTokenValid());
-  const [driveUser, setDriveUser] = useState<GoogleUser | null>(() => getStoredAuth()?.user || null);
+  const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>(() => isStoredTokenValid() ? 'loading' : 'disconnected');
+  const [isDriveConnected, setIsDriveConnected] = useState(() => isStoredTokenValid());
+  const [isCloudReady, setIsCloudReady] = useState(syncSession?.isReady || false);
+  const [driveUser, setDriveUser] = useState<GoogleUser | null>(null);
   const [lastDriveSyncTime, setLastDriveSyncTime] = useState<Date | null>(null);
   const [driveError, setDriveError] = useState<string | null>(null);
-  const [driveFileId, setDriveFileId] = useState<string | null>(() => {
+
+  const startCloudSession = useCallback(async (token: string, generation: number) => {
+    setDriveSyncStatus('loading');
+    setIsCloudReady(false);
+    setDriveError(null);
     try {
-      return localStorage.getItem('cashpilot_drive_file_id') || null;
-    } catch {
-      return null;
-    }
-  });
-  const driveFileIdRef = useRef<string | null>(driveFileId);
-  const isRemoteUpdateRef = useRef<boolean>(false);
-  const latestDataRef = useRef<AppData>(data);
-  latestDataRef.current = data;
-
-  useEffect(() => {
-    driveFileIdRef.current = driveFileId;
-    try {
-      if (driveFileId) {
-        localStorage.setItem('cashpilot_drive_file_id', driveFileId);
-      } else {
-        localStorage.removeItem('cashpilot_drive_file_id');
+      const user = await fetchGoogleUserProfile(token);
+      if (generation !== authGeneration.current) return;
+      if (!user?.permissionId) throw new Error('Nelze ověřit identitu Google účtu. Data nebyla sloučena.');
+      // Keep the unscoped legacy cache verbatim for explicit recovery; ownership is unknown.
+      const legacy = localStorage.getItem(STORAGE_KEY_PRODUCTION);
+      if (legacy && !localStorage.getItem('cashpilot_legacy_cache_before_sync_v2')) {
+        localStorage.setItem('cashpilot_legacy_cache_before_sync_v2', legacy);
       }
-    } catch {}
-  }, [driveFileId]);
-
-  // Při načtení aplikace tiše synchronizovat s Google Diskem na pozadí (Silent Cloud-First)
-  useEffect(() => {
-    if (isStoredTokenValid()) {
-      const token = getValidAccessToken();
-      if (!token) return;
-
-      if (!driveUser) {
-        fetchGoogleUserProfile(token).then(u => {
-          if (u) setDriveUser(u);
-        }).catch(() => {});
-      }
-
-      // Tiché stažení a sloučení z Google Disku na pozadí
-      (async () => {
-        try {
-          setDriveSyncStatus('syncing');
-          let fileId = driveFileIdRef.current;
-          if (!fileId) {
-            const found = await findAppDataFile(token);
-            fileId = found?.id || null;
-            if (fileId) {
-              setDriveFileId(fileId);
-              driveFileIdRef.current = fileId;
-            }
-          }
-
-          if (fileId) {
-            const remote = await downloadFromGoogleDrive(token, fileId);
-            const validatedRemote = validateAndParseBackup(JSON.stringify(remote));
-            const { mergedData, hasLocalAdditions } = mergeCloudAndLocalData(validatedRemote, latestDataRef.current);
-
-            isRemoteUpdateRef.current = true;
-            setData(mergedData);
-            saveStoredData(mergedData);
-
-            if (hasLocalAdditions) {
-              await uploadToGoogleDrive(token, mergedData, fileId);
-            }
-
-            setDriveSyncStatus('synced');
-            setLastDriveSyncTime(new Date());
-            setDriveError(null);
-          } else {
-            // Soubor na Disku ještě nebyl vytvořen, nahrajeme aktuální lokální data
-            const uploaded = await uploadToGoogleDrive(token, latestDataRef.current);
-            setDriveFileId(uploaded.id);
-            driveFileIdRef.current = uploaded.id;
-            setDriveSyncStatus('synced');
-            setLastDriveSyncTime(new Date());
-            setDriveError(null);
-          }
-        } catch (err: any) {
-          console.warn('Chyba při tiché úvodní synchronizaci s Google Diskem:', err);
-          setDriveSyncStatus('idle');
-        }
-      })();
+      setActiveStorageKey(accountStorageKey(user.permissionId));
+      setDriveUser(user);
+      setIsDriveConnected(true);
+      const controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
+        if (generation !== authGeneration.current) return;
+        latestDataRef.current = next;
+        publishData(next);
+        setDriveSyncStatus(status);
+        setIsCloudReady(ready);
+        setDriveError(error || null);
+        setLoadState('ready');
+        if (status === 'synced') setLastDriveSyncTime(new Date());
+      });
+      controllerRef.current = controller;
+      await controller.sync();
+    } catch (error) {
+      if (generation !== authGeneration.current) return;
+      setDriveSyncStatus('error');
+      setDriveError((error as Error).message);
     }
   }, []);
 
+  useEffect(() => {
+    const generation = ++authGeneration.current;
+    const token = getValidAccessToken();
+    if (token) void startCloudSession(token, generation);
+    else setLoadState('ready');
+    const resume = () => { void controllerRef.current?.sync(); };
+    const visible = () => { if (document.visibilityState === 'visible') resume(); };
+    window.addEventListener('online', resume);
+    window.addEventListener('focus', resume);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      ++authGeneration.current;
+      controllerRef.current?.stop();
+      controllerRef.current = null;
+      window.removeEventListener('online', resume);
+      window.removeEventListener('focus', resume);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, [startCloudSession]);
+
   const connectGoogleDrive = useCallback(async () => {
+    const generation = ++authGeneration.current;
+    controllerRef.current?.stop();
+    controllerRef.current = null;
+    setIsCloudReady(false);
+    setDriveSyncStatus('loading');
     try {
-      setDriveSyncStatus('syncing');
-      setDriveError(null);
       const token = await loginToGoogle();
-      setIsDriveConnected(true);
-
-      const user = await fetchGoogleUserProfile(token);
-      if (user) {
-        setDriveUser(user);
-      }
-
-      const file = await findAppDataFile(token);
-      if (file) {
-        setDriveFileId(file.id);
-        driveFileIdRef.current = file.id;
-        const remote = await downloadFromGoogleDrive(token, file.id);
-        const validatedRemote = validateAndParseBackup(JSON.stringify(remote));
-        const { mergedData, hasLocalAdditions } = mergeCloudAndLocalData(validatedRemote, latestDataRef.current);
-
-        isRemoteUpdateRef.current = true;
-        setData(mergedData);
-        saveStoredData(mergedData);
-
-        if (hasLocalAdditions) {
-          await uploadToGoogleDrive(token, mergedData, file.id);
-        }
-
-        setDriveSyncStatus('synced');
-        setLastDriveSyncTime(new Date());
-        showToast('Google Disk byl úspěšně připojen a synchronizován.', 'success');
-      } else {
-        const uploaded = await uploadToGoogleDrive(token, latestDataRef.current);
-        setDriveFileId(uploaded.id);
-        driveFileIdRef.current = uploaded.id;
-        setDriveSyncStatus('synced');
-        setLastDriveSyncTime(new Date());
-        showToast('Google Disk byl úspěšně připojen a data uložena.', 'success');
-      }
-    } catch (err: any) {
-      console.error('Chyba při připojování Google Disku:', err);
+      if (generation === authGeneration.current) await startCloudSession(token, generation);
+    } catch (error) {
+      if (generation !== authGeneration.current) return;
       setDriveSyncStatus('error');
-      setDriveError(err?.message || 'Chyba při připojení ke Google Disku');
-      showToast(err?.message || 'Nepodařilo se připojit Google Disk', 'error');
+      setDriveError((error as Error).message);
     }
-  }, [showToast]);
+  }, [startCloudSession]);
 
   const disconnectGoogleDrive = useCallback(async () => {
-    try {
-      await logoutFromGoogle();
-    } catch (e) {
-      console.warn('Chyba při odhlašování:', e);
-    }
-    // Bezpečné vyčištění stavu aplikace a lokální mezipaměti
-    try {
-      localStorage.removeItem(getActiveStorageKey());
-      localStorage.removeItem('cashpilot_drive_file_id');
-    } catch {}
-    setData(getInitialData());
+    ++authGeneration.current;
+    controllerRef.current?.stop();
+    controllerRef.current = null;
+    setIsCloudReady(false);
     setIsDriveConnected(false);
     setDriveSyncStatus('disconnected');
+    setActiveStorageKey(null);
     setDriveUser(null);
-    setDriveFileId(null);
-    driveFileIdRef.current = null;
+    setLastDriveSyncTime(null);
     setDriveError(null);
-    showToast('Byli jste úspěšně odhlášeni.', 'info');
-  }, [showToast]);
+    const fresh = getInitialData();
+    latestDataRef.current = fresh;
+    publishData(fresh);
+    await logoutFromGoogle();
+  }, []);
 
-  const syncWithGoogleDrive = useCallback(async (forceDirection?: 'upload' | 'download') => {
-    const token = getValidAccessToken();
-    if (!token) {
-      showToast('Nejste přihlášeni ke Google Disku.', 'warning');
-      setIsDriveConnected(false);
-      setDriveSyncStatus('disconnected');
-      return;
+  const syncWithGoogleDrive = useCallback(async (_forceDirection?: 'upload' | 'download') => {
+    // All entry points reconcile the durable journal; manual directions cannot discard it.
+    if (controllerRef.current) await controllerRef.current.sync();
+    else {
+      const token = getValidAccessToken();
+      if (token) await startCloudSession(token, ++authGeneration.current);
+      else await connectGoogleDrive();
     }
-
-    try {
-      setDriveSyncStatus('syncing');
-      setDriveError(null);
-
-      let fileId = driveFileIdRef.current;
-      if (!fileId) {
-        const found = await findAppDataFile(token);
-        fileId = found?.id || null;
-        if (fileId) {
-          setDriveFileId(fileId);
-          driveFileIdRef.current = fileId;
-        }
-      }
-
-      if (forceDirection === 'download' && fileId) {
-        const remote = await downloadFromGoogleDrive(token, fileId);
-        const validatedRemote = validateAndParseBackup(JSON.stringify(remote));
-        isRemoteUpdateRef.current = true;
-        setData(validatedRemote);
-        saveStoredData(validatedRemote);
-        setDriveSyncStatus('synced');
-        setLastDriveSyncTime(new Date());
-        showToast('Data byla úspěšně stažena z Google Disku.', 'success');
-        return;
-      }
-
-      if (forceDirection === 'upload') {
-        const uploaded = await uploadToGoogleDrive(token, latestDataRef.current, fileId || undefined);
-        setDriveFileId(uploaded.id);
-        driveFileIdRef.current = uploaded.id;
-        setDriveSyncStatus('synced');
-        setLastDriveSyncTime(new Date());
-        showToast('Data byla úspěšně nahrána na Google Disk.', 'success');
-        return;
-      }
-
-      // Tichá synchronizace (Cloud-First s lokálním sloučením)
-      if (fileId) {
-        const remote = await downloadFromGoogleDrive(token, fileId);
-        const validatedRemote = validateAndParseBackup(JSON.stringify(remote));
-        const { mergedData, hasLocalAdditions } = mergeCloudAndLocalData(validatedRemote, latestDataRef.current);
-
-        isRemoteUpdateRef.current = true;
-        setData(mergedData);
-        saveStoredData(mergedData);
-
-        if (hasLocalAdditions) {
-          await uploadToGoogleDrive(token, mergedData, fileId);
-        }
-      } else {
-        const uploaded = await uploadToGoogleDrive(token, latestDataRef.current);
-        setDriveFileId(uploaded.id);
-        driveFileIdRef.current = uploaded.id;
-      }
-
-      setDriveSyncStatus('synced');
-      setLastDriveSyncTime(new Date());
-      showToast('Synchronizace s Google Diskem proběhla úspěšně.', 'success');
-    } catch (err: any) {
-      console.error('Chyba při synchronizaci:', err);
-      setDriveSyncStatus('error');
-      setDriveError(err?.message || 'Chyba při synchronizaci');
-      showToast(err?.message || 'Chyba při synchronizaci', 'error');
-    }
-  }, [showToast]);
-
-  // Automatická debouncovaná synchronizace na pozadí při změně dat
-  const isFirstRender = useRef(true);
-  const uploadDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    if (isRemoteUpdateRef.current) {
-      isRemoteUpdateRef.current = false;
-      return;
-    }
-
-    if (!isDriveConnected) return;
-
-    const token = getValidAccessToken();
-    if (!token) return;
-
-    if (uploadDebounceTimer.current) {
-      clearTimeout(uploadDebounceTimer.current);
-    }
-
-    setDriveSyncStatus('syncing');
-
-    uploadDebounceTimer.current = setTimeout(async () => {
-      try {
-        const validToken = getValidAccessToken();
-        if (!validToken) {
-          setDriveSyncStatus('disconnected');
-          setIsDriveConnected(false);
-          return;
-        }
-        let fileId = driveFileIdRef.current;
-        if (!fileId) {
-          const found = await findAppDataFile(validToken);
-          fileId = found?.id || null;
-          if (fileId) {
-            setDriveFileId(fileId);
-            driveFileIdRef.current = fileId;
-          }
-        }
-        const uploaded = await uploadToGoogleDrive(validToken, latestDataRef.current, fileId || undefined);
-        setDriveFileId(uploaded.id);
-        driveFileIdRef.current = uploaded.id;
-        setDriveSyncStatus('synced');
-        setLastDriveSyncTime(new Date());
-        setDriveError(null);
-      } catch (err: any) {
-        console.error('Chyba při automatickém ukládání na Google Disk:', err);
-        setDriveSyncStatus('error');
-        setDriveError(err?.message || 'Chyba při synchronizaci');
-      }
-    }, 1500);
-
-    return () => {
-      if (uploadDebounceTimer.current) {
-        clearTimeout(uploadDebounceTimer.current);
-      }
-    };
-  }, [data, isDriveConnected]);
-
-
+  }, [startCloudSession, connectGoogleDrive]);
 
   const dataConflicts = useMemo(() => {
     const conflicts: { transaction: Transaction; account: Account; reason: string }[] = [];
@@ -2115,6 +1890,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // Google Drive
     driveSyncStatus,
+    isCloudReady,
     isDriveConnected,
     driveUser,
     lastDriveSyncTime,

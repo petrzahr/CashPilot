@@ -1,3 +1,4 @@
+import { COLLECTIONS, migrateSyncData, type DeletionRecord, type ResetMarker, type SyncMetadata } from './syncModel';
 import {
   Account,
   AppSettings,
@@ -16,10 +17,11 @@ import {
 } from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
 import { formatCzechDate } from './periodService';
-import { sanitizeAndRepairSequences } from './sequenceService';
-import { autoExecuteDueTransactions } from './statusService';
 
 export interface AppData {
+  deletions: DeletionRecord[];
+  sync: SyncMetadata;
+  resetMarker?: ResetMarker;
   version: number;
   settings: AppSettings;
   accounts: Account[];
@@ -39,6 +41,10 @@ export const OPERATION_RECOVERY_KEY = 'cashpilot_data_recovery_operation';
 const PRE_CLEANUP_BACKUP_KEY = 'cashpilot_data_backup_pre_cleanup';
 
 export type OperationType = 'clear_transactions' | 'clear_accounts' | 'clear_categories' | 'clear_all';
+
+export function getOperationRecoveryKey(): string {
+  return activeStorageKeyOverride ? `${activeStorageKeyOverride}:${OPERATION_RECOVERY_KEY}` : OPERATION_RECOVERY_KEY;
+}
 
 export interface OperationRecoveryBackup {
   timestamp: string;
@@ -60,8 +66,8 @@ export function createOperationRecoveryBackup(
       operationType,
       data,
     };
-    localStorage.setItem(OPERATION_RECOVERY_KEY, JSON.stringify(payload));
-    const saved = localStorage.getItem(OPERATION_RECOVERY_KEY);
+    localStorage.setItem(getOperationRecoveryKey(), JSON.stringify(payload));
+    const saved = localStorage.getItem(getOperationRecoveryKey());
     return Boolean(saved);
   } catch (err) {
     console.error('[CashPilot] Chyba při vytváření bezpečnostní recovery kopie:', err);
@@ -74,7 +80,7 @@ export function createOperationRecoveryBackup(
  */
 export function getOperationRecoveryBackup(): OperationRecoveryBackup | null {
   try {
-    const raw = localStorage.getItem(OPERATION_RECOVERY_KEY);
+    const raw = localStorage.getItem(getOperationRecoveryKey());
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (err) {
@@ -218,99 +224,9 @@ export function loadStoredDataResult(targetKey?: string): LoadDataResult {
       };
     }
 
-    // Bezpečná záloha před sanitací dat
-    if (!localStorage.getItem(PRE_CLEANUP_BACKUP_KEY)) {
-      try {
-        localStorage.setItem(PRE_CLEANUP_BACKUP_KEY, raw);
-        console.info('[Záloha dat] Byla vytvořena bezpečnostní záloha dat před vyčištěním osiřelých záznamů.');
-      } catch (backupErr) {
-        console.warn('Nepodařilo se vytvořit automatickou zálohu do localStorage:', backupErr);
-      }
-    }
-
-    const sanitizedTxs = sanitizeAndRepairSequences(parsed.transactions || []);
-    const { transactions: autoExecutedTxs, hasChanges: hasStatusChanges } = autoExecuteDueTransactions(
-      sanitizedTxs,
-      parsed.recurringRules || [],
-      parsed.recurringExceptions || [],
-      parsed.settings?.budgetStartDay || 15
-    );
-    const finalTxs = hasStatusChanges ? sanitizeAndRepairSequences(autoExecutedTxs) : sanitizedTxs;
-
-    // Sanitace osiřelých / neaktivních korekcí pro prázdné účty bez transakcí
-    const { cleanedCorrections, hasCorrectionsRemoved } = sanitizeCorrections(
-      parsed.corrections || [],
-      finalTxs,
-      parsed.recurringRules || []
-    );
-
-    // DŮLEŽITÉ: Nikdy neseedovat DEMO_ACCOUNTS! Použít čisté pole []
-    const safeAccounts: Account[] = parsed.accounts || [];
-
-    // Invariant: nejvýše jeden aktivní výchozí účet, archivovaný účet nesmí být výchozí
-    let defaultFound = false;
-    let hasAccountChanges = false;
-    const sanitizedAccounts = safeAccounts.map(a => {
-      if (a.status === 'archived' && a.isDefault) {
-        hasAccountChanges = true;
-        return { ...a, isDefault: false };
-      }
-      if (a.isDefault) {
-        if (!defaultFound) {
-          defaultFound = true;
-          return a;
-        }
-        hasAccountChanges = true;
-        return { ...a, isDefault: false };
-      }
-      return a;
-    });
-
-    const cleanedSnapshots = (parsed.marketValueSnapshots || []).filter((s: MarketValueSnapshot) =>
-      sanitizedAccounts.some(a => a.id === s.accountId)
-    );
-
-    // Migrace a sanitace nastavení (kontokorent se zpětnou kompatibilitou)
-    const rawSettings = (parsed.settings || {}) as unknown as Record<string, unknown>;
-    let overdraftLimitInHaler = rawSettings.overdraftLimitInHaler;
-    if (typeof overdraftLimitInHaler !== 'number') {
-      overdraftLimitInHaler = typeof rawSettings.minReserveInHaler === 'number'
-        ? rawSettings.minReserveInHaler
-        : DEFAULT_SETTINGS.overdraftLimitInHaler;
-    }
-    const hasSettingsChanges =
-      rawSettings.overdraftLimitInHaler !== overdraftLimitInHaler ||
-      rawSettings.minReserveInHaler !== overdraftLimitInHaler;
-
-    const sanitizedSettings: AppSettings = {
-      ...DEFAULT_SETTINGS,
-      ...rawSettings,
-      overdraftLimitInHaler: overdraftLimitInHaler as number,
-      minReserveInHaler: overdraftLimitInHaler as number,
-    };
-
-    const dataToReturn: AppData = {
-      version: parsed.version || 1,
-      settings: sanitizedSettings,
-      accounts: sanitizedAccounts,
-      categories: Array.isArray(parsed.categories) ? parsed.categories : [...DEFAULT_CATEGORIES],
-      transactions: finalTxs,
-      recurringRules: parsed.recurringRules || [],
-      recurringExceptions: parsed.recurringExceptions || [],
-      corrections: cleanedCorrections,
-      marketValueSnapshots: cleanedSnapshots,
-    };
-
-    if (
-      finalTxs !== parsed.transactions ||
-      hasStatusChanges ||
-      hasCorrectionsRemoved ||
-      hasAccountChanges ||
-      hasSettingsChanges ||
-      cleanedSnapshots.length !== (parsed.marketValueSnapshots || []).length
-    ) {
-      saveStoredData(dataToReturn, key);
-    }
+    const backupKey = `${key}:pre_sync_v2`;
+    if (!localStorage.getItem(backupKey)) localStorage.setItem(backupKey, raw);
+    const dataToReturn = validateAndParseBackup(raw);
 
     return {
       status: 'ready',
@@ -389,40 +305,23 @@ export function validateAndParseBackup(jsonStr: string): AppData {
   if (!Array.isArray(parsed.accounts) || !Array.isArray(parsed.categories)) {
     throw new Error('Záloha neobsahuje povinné entity (účty nebo kategorie).');
   }
-  const rawCorrections = parsed.corrections || [];
-  const rawTxs = parsed.transactions || [];
-  const rawRules = parsed.recurringRules || [];
-  const { cleanedCorrections } = sanitizeCorrections(rawCorrections, rawTxs, rawRules);
-
-  const cleanedSnapshots = (parsed.marketValueSnapshots || []).filter((s: MarketValueSnapshot) =>
-    (parsed.accounts as Account[]).some((a: Account) => a.id === s.accountId)
-  );
-
-  const rawSettings = (parsed.settings || {}) as unknown as Record<string, unknown>;
-  let overdraftLimitInHaler = rawSettings.overdraftLimitInHaler;
-  if (typeof overdraftLimitInHaler !== 'number') {
-    overdraftLimitInHaler = typeof rawSettings.minReserveInHaler === 'number'
-      ? rawSettings.minReserveInHaler
-      : DEFAULT_SETTINGS.overdraftLimitInHaler;
+  for (const name of ['transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots', 'deletions']) {
+    if (parsed[name] !== undefined && !Array.isArray(parsed[name])) throw new Error(`Neplatná kolekce ${name}.`);
+    parsed[name] ??= [];
   }
-  const sanitizedSettings: AppSettings = {
-    ...DEFAULT_SETTINGS,
-    ...rawSettings,
-    overdraftLimitInHaler: overdraftLimitInHaler as number,
-    minReserveInHaler: overdraftLimitInHaler as number,
-  };
-
-  return {
-    version: parsed.version || 1,
-    settings: sanitizedSettings,
-    accounts: parsed.accounts,
-    categories: parsed.categories,
-    transactions: rawTxs,
-    recurringRules: rawRules,
-    recurringExceptions: parsed.recurringExceptions || [],
-    corrections: cleanedCorrections,
-    marketValueSnapshots: cleanedSnapshots,
-  };
+  if (parsed.version > 2) throw new Error('Tato data vyžadují novější verzi CashPilotu.');
+  if (parsed.sync && (!Number.isSafeInteger(parsed.sync.revision) || parsed.sync.revision < 0)) throw new Error('Neplatná revize synchronizace.');
+  for (const deletion of parsed.deletions) {
+    if (!deletion || !(deletion.entityType in COLLECTIONS) || typeof deletion.entityId !== 'string' ||
+      typeof deletion.deviceId !== 'string' || !Number.isFinite(Date.parse(deletion.deletedAt))) throw new Error('Poškozená evidence smazání. Data nebyla změněna.');
+  }
+  if (parsed.resetMarker && (typeof parsed.resetMarker.operationId !== 'string' || typeof parsed.resetMarker.deviceId !== 'string' ||
+    !Number.isFinite(Date.parse(parsed.resetMarker.resetAt)))) throw new Error('Poškozený reset marker.');
+  parsed.settings ??= { ...DEFAULT_SETTINGS };
+  if (typeof parsed.settings.overdraftLimitInHaler !== 'number') {
+    parsed.settings = { ...parsed.settings, overdraftLimitInHaler: parsed.settings.minReserveInHaler ?? DEFAULT_SETTINGS.overdraftLimitInHaler };
+  }
+  return migrateSyncData(parsed);
 }
 
 /**
