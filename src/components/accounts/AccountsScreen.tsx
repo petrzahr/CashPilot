@@ -20,7 +20,8 @@ import {
   AlertTriangle, 
   Clock, 
   ExternalLink,
-  History 
+  History,
+  GripVertical
 } from 'lucide-react';
 
 export const AccountsScreen: React.FC = () => {
@@ -33,6 +34,7 @@ export const AccountsScreen: React.FC = () => {
     archiveAccount,
     restoreAccount,
     deleteAccount,
+    reorderAccounts,
   } = useFinance();
 
   const [showArchived, setShowArchived] = useState(false);
@@ -44,9 +46,59 @@ export const AccountsScreen: React.FC = () => {
   const [marketValueAccount, setMarketValueAccount] = useState<Account | null>(null);
   const [historyAccount, setHistoryAccount] = useState<Account | null>(null);
 
+  // Změna pořadí účtů přetažením (drag-and-drop)
+  const [dragHandleAccountId, setDragHandleAccountId] = useState<string | null>(null);
+  const [draggedAccountId, setDraggedAccountId] = useState<string | null>(null);
+  const [dropTargetAccountId, setDropTargetAccountId] = useState<string | null>(null);
+
   const displayedAccounts = accounts.filter(a => showArchived ? true : a.status === 'active');
 
   const currentSummary = forecast.periods.find(p => p.period.key === selectedPeriod.key);
+
+  const resetDragState = () => {
+    setDragHandleAccountId(null);
+    setDraggedAccountId(null);
+    setDropTargetAccountId(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, accId: string) => {
+    e.dataTransfer.setData('text/plain', accId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedAccountId(accId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, accId: string) => {
+    if (!draggedAccountId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dropTargetAccountId !== accId) {
+      setDropTargetAccountId(accId);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = draggedAccountId || e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId) {
+      resetDragState();
+      return;
+    }
+
+    // Pořadí se počítá nad úplným seznamem účtů, aby skryté archivované
+    // účty zůstaly na své relativní pozici.
+    const orderedIds = accounts.map(a => a.id);
+    const fromIndex = orderedIds.indexOf(sourceId);
+    const toIndex = orderedIds.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) {
+      resetDragState();
+      return;
+    }
+
+    const [moved] = orderedIds.splice(fromIndex, 1);
+    orderedIds.splice(toIndex, 0, moved);
+    reorderAccounts(orderedIds);
+    resetDragState();
+  };
 
   const handleOpenAdd = () => {
     setEditingAccount(null);
@@ -103,6 +155,9 @@ export const AccountsScreen: React.FC = () => {
           <p className="text-xs text-slate-500 mt-0.5">
             Běžné, spořicí, hotovostní a investiční účty s možností kontroly skutečného zůstatku
           </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Pořadí účtů změníte přetažením karty za úchyt. Stejné pořadí se použije i v nastavení.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -145,15 +200,37 @@ export const AccountsScreen: React.FC = () => {
           return (
             <div
               key={acc.id}
+              draggable={dragHandleAccountId === acc.id}
+              onDragStart={(e) => handleDragStart(e, acc.id)}
+              onDragEnd={resetDragState}
+              onDragOver={(e) => handleDragOver(e, acc.id)}
+              onDragLeave={() => setDropTargetAccountId(prev => (prev === acc.id ? null : prev))}
+              onDrop={(e) => handleDrop(e, acc.id)}
               className={`bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
-                acc.status === 'archived' 
-                  ? 'border-slate-200/50 bg-slate-50/50 opacity-75' 
+                acc.status === 'archived'
+                  ? 'border-slate-200/50 bg-slate-50/50 opacity-75'
                   : 'border-slate-200/80 hover:border-slate-300'
+              } ${draggedAccountId === acc.id ? 'opacity-50' : ''} ${
+                dropTargetAccountId === acc.id && draggedAccountId !== acc.id
+                  ? 'ring-2 ring-sky-400 border-sky-300'
+                  : ''
               }`}
             >
               {/* Hlavička karty účtu */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    title="Přetažením změníte pořadí účtu"
+                    aria-label={`Změnit pořadí účtu ${acc.name}`}
+                    onMouseDown={() => setDragHandleAccountId(acc.id)}
+                    onMouseUp={() => setDragHandleAccountId(null)}
+                    onTouchStart={() => setDragHandleAccountId(acc.id)}
+                    onTouchEnd={() => setDragHandleAccountId(null)}
+                    className="-ml-1.5 p-0.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </button>
                   <div
                     className="w-4 h-4 rounded-full shrink-0 shadow-sm"
                     style={{ backgroundColor: acc.color }}
