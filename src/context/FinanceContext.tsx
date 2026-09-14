@@ -51,6 +51,7 @@ import {
   getTodayInPrague,
   formatCzechDate
 } from '../services/periodService';
+import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
@@ -147,6 +148,7 @@ interface FinanceContextType {
   archiveAccount: (id: string) => { success: boolean; message?: string };
   restoreAccount: (id: string) => void;
   deleteAccount: (id: string) => { success: boolean; message?: string };
+  reorderAccounts: (orderedIds: string[]) => void;
   reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => void;
   updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string) => void;
   updateCorrectionNote: (id: string, note: string) => void;
@@ -1085,9 +1087,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       if (isDefault) {
         accounts = accounts.map(a => a.isDefault ? { ...a, isDefault: false, updatedAt: nowIso } : a);
       }
+      // Nový účet se vždy zařadí na konec uživatelského pořadí.
+      const maxSortOrder = accounts.reduce((max, a) => Math.max(max, a.sortOrder ?? 0), 0);
       return {
         ...prev,
-        accounts: [...accounts, newAcc]
+        accounts: [...accounts, { ...newAcc, sortOrder: maxSortOrder + 1 }]
       };
     });
     showToast(`Účet „${newAcc.name}“ byl vytvořen.`);
@@ -1229,6 +1233,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Účet byl trvale smazán.');
     return { success: true };
   }, [data.transactions, data.corrections, data.recurringRules, showToast]);
+
+  const reorderAccounts = useCallback((orderedIds: string[]) => {
+    setData(prev => ({
+      ...prev,
+      accounts: applyAccountOrder(orderedIds, prev.accounts)
+    }));
+  }, []);
 
   const reconcileBalance = useCallback((
     accountId: string,
@@ -1813,10 +1824,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return conflicts;
   }, [data.transactions, data.accounts]);
 
+  // Účty se napříč aplikací zobrazují v uživatelem definovaném pořadí (sortOrder).
+  const orderedAccounts = useMemo(() => sortAccountsByOrder(data.accounts), [data.accounts]);
+
   const value = {
     data,
     settings: data.settings,
-    accounts: data.accounts,
+    accounts: orderedAccounts,
     categories: data.categories,
     transactions: data.transactions,
     recurringRules: data.recurringRules,
@@ -1858,6 +1872,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     archiveAccount,
     restoreAccount,
     deleteAccount,
+    reorderAccounts,
     reconcileBalance,
     updateMarketValue,
     updateCorrectionNote,
