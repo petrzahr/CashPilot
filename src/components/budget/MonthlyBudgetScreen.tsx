@@ -554,7 +554,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 className={`text-base font-bold block mt-0.5 truncate ${
                   isOverdraftExceeded ? 'text-red-600' : 'text-emerald-600'
                 }`}
-                title={isOverdraftExceeded ? 'Kontokorent překročen' : `Limit ${formatCurrency(overdraftLimit)}`}
+                title={isOverdraftExceeded ? 'Kontokorent překročen' : `Limit: ${formatCurrency(overdraftLimit)}`}
               >
                 {formatCurrency(defaultWithOverdraft)}
               </span>
