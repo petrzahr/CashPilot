@@ -34,7 +34,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [type, setType] = useState<AccountType>('checking');
   const [currency, setCurrency] = useState('CZK');
   const [balanceStr, setBalanceStr] = useState('');
-  const [adjustmentStr, setAdjustmentStr] = useState('');
   const [initialBalanceDate, setInitialBalanceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isUsableCash, setIsUsableCash] = useState(true);
   const [isNetWorth, setIsNetWorth] = useState(true);
@@ -52,7 +51,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       setType(accountToEdit.type);
       setCurrency(accountToEdit.currency || 'CZK');
       setBalanceStr(halerToInputValue(accountToEdit.initialBalanceInHaler));
-      setAdjustmentStr(halerToInputValue(accountToEdit.investedAmountAdjustmentInHaler ?? 0));
       setInitialBalanceDate(accountToEdit.initialBalanceDate || new Date().toISOString().slice(0, 10));
       setIsUsableCash(accountToEdit.isUsableCash);
       setIsNetWorth(accountToEdit.isNetWorth);
@@ -64,7 +62,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       setType('checking');
       setCurrency('CZK');
       setBalanceStr('0');
-      setAdjustmentStr('');
       setInitialBalanceDate(new Date().toISOString().slice(0, 10));
       setIsUsableCash(true);
       setIsNetWorth(true);
@@ -94,13 +91,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     }
 
     const initialBalanceInHaler = parseInputToHaler(balanceStr);
-    const investedAmountAdjustmentInHaler = type === 'investment' || type === 'pension'
-      ? parseInputToHaler(adjustmentStr) : 0;
-    if (!Number.isSafeInteger(investedAmountAdjustmentInHaler)) {
-      setErrorMessage('Zadejte platnou částku korekce.');
-      return;
-    }
-
     if (isEditing && accountToEdit) {
       const res = updateAccount({
         ...accountToEdit,
@@ -108,7 +98,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         type,
         currency,
         initialBalanceInHaler,
-        investedAmountAdjustmentInHaler,
         initialBalanceDate,
         isUsableCash,
         isNetWorth,
@@ -126,7 +115,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         type,
         currency,
         initialBalanceInHaler,
-        investedAmountAdjustmentInHaler,
         initialBalanceDate,
         isUsableCash,
         isNetWorth,
@@ -235,27 +223,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             />
           </div>
         </div>
-
-        {(type === 'investment' || type === 'pension') && (
-          <div>
-            <label htmlFor="invested-amount-adjustment" className="block text-xs font-semibold text-slate-700 mb-1">
-              Korekce vložené částky ({currency})
-            </label>
-            <input
-              id="invested-amount-adjustment"
-              type="number"
-              step="0.01"
-              placeholder="0"
-              value={adjustmentStr}
-              onChange={(e) => setAdjustmentStr(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Kladná částka zvýší a záporná sníží vložený kapitál pro výpočet výnosu.
-              Nemění tržní hodnotu ani platby. Vymazáním nebo zadáním 0 korekci zrušíte.
-            </p>
-          </div>
-        )}
 
         {/* Přepínače zahrnutí a výchozí účet */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
