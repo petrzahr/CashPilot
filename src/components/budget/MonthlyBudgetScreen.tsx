@@ -575,66 +575,57 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-400 block font-medium">Použitelný zůstatek</span>
-            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate" title="Ke konci období, viz Přehled">
+            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-500 block font-medium">Celkový majetek</span>
-            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate" title="Včetně investic a penzijka">
+            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-sky-600 block font-semibold">Uspořeno</span>
-            <span
-              className={`text-base font-bold block mt-0.5 truncate ${
-                aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
-              }`}
-              title="Čistý vklad na spořicí účty"
-            >
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
+            }`}>
               {formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-sky-600 block font-semibold">Uspořeno %</span>
-            <span className="text-base font-bold text-sky-600 block mt-0.5 truncate" title="Z příjmů období">
+            <span className="text-base font-bold text-sky-600 block mt-0.5 truncate">
               {formatPercent(aggregateSummary.savedPct)}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-purple-600 block font-semibold">Investováno</span>
-            <span
-              className={`text-base font-bold block mt-0.5 truncate ${
-                aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
-              }`}
-              title="Čistý vklad do investic/penze"
-            >
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
+            }`}>
               {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-purple-600 block font-semibold">Investováno %</span>
-            <span className="text-base font-bold text-purple-600 block mt-0.5 truncate" title="Z příjmů období">
+            <span className="text-base font-bold text-purple-600 block mt-0.5 truncate">
               {formatPercent(aggregateSummary.investedPct)}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
             <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
-            <span
-              className={`text-base font-bold block mt-0.5 truncate ${
-                aggregateSummary.investmentChange === null
-                  ? 'text-slate-400'
-                  : aggregateSummary.investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'
-              }`}
-              title="Oproti předchozímu období"
-            >
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.investmentChange === null
+                ? 'text-slate-400'
+                : aggregateSummary.investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'
+            }`}>
               {aggregateSummary.investmentChange === null ? '—' : formatCurrency(aggregateSummary.investmentChange, { showPlus: true })}
             </span>
           </div>
