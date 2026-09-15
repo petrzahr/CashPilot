@@ -10,7 +10,6 @@ import {
   Settings, 
   Plus, 
   X, 
-  Compass,
   TrendingUp 
 } from 'lucide-react';
 
@@ -68,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
-                <Compass className="w-5 h-5" />
+                <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
               </div>
               <div>
                 <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">

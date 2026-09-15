@@ -8,7 +8,8 @@ if (!fs.existsSync(publicDir)) {
 }
 
 // SVG definition for CashPilot icon
-// Matches exactly: rounded squircle (rounded-2xl) with sky-600 to sky-500 gradient + white Lucide Compass
+// Wallet silhouette on the existing sky-600 to sky-500 brand gradient.
+// Broad shapes keep the wallet and clasp legible at 16px; all surfaces use this source.
 const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="cpGradient" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -18,10 +19,12 @@ const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512
   </defs>
   <!-- Background squircle -->
   <rect width="512" height="512" rx="115" ry="115" fill="url(#cpGradient)" />
-  <!-- CashPilot Compass symbol -->
-  <g transform="translate(256, 256) scale(12.5) translate(-12, -12)" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />
+  <!-- CashPilot wallet: folded top, solid body, contrasting clasp -->
+  <g id="wallet">
+    <path d="M128 176v-16a32 32 0 0 1 26-31l172-33a20 20 0 0 1 24 20v44H160a32 32 0 0 0-32 16Z" fill="#ffffff" />
+    <rect x="112" y="184" width="288" height="208" rx="40" fill="#ffffff" />
+    <path d="M328 248h72v80h-72a40 40 0 0 1 0-80Z" fill="#0284c7" />
+    <circle cx="328" cy="288" r="12" fill="#ffffff" />
   </g>
 </svg>
 `;

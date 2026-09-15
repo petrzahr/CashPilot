@@ -94,12 +94,12 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
       expect(indexHtml).toContain('meta name="theme-color" content="#0284c7"');
     });
 
-    it('odkazuje na favikony a manifest s verzováním proti cache (?v=2) a relativní cestou', () => {
-      expect(indexHtml).toContain('href="./favicon.svg?v=2"');
-      expect(indexHtml).toContain('href="./favicon-32x32.png?v=2"');
-      expect(indexHtml).toContain('href="./favicon-16x16.png?v=2"');
-      expect(indexHtml).toContain('href="./apple-touch-icon.png?v=2"');
-      expect(indexHtml).toContain('href="./site.webmanifest?v=2"');
+    it('odkazuje na favikony a manifest s verzováním proti cache (?v=3) a relativní cestou', () => {
+      expect(indexHtml).toContain('href="./favicon.svg?v=3"');
+      expect(indexHtml).toContain('href="./favicon-32x32.png?v=3"');
+      expect(indexHtml).toContain('href="./favicon-16x16.png?v=3"');
+      expect(indexHtml).toContain('href="./apple-touch-icon.png?v=3"');
+      expect(indexHtml).toContain('href="./site.webmanifest?v=3"');
     });
   });
 
@@ -114,8 +114,8 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
       expect(svgContent).toContain('<svg');
       expect(svgContent).toContain('#0284c7'); // sky-600
       expect(svgContent).toContain('#0ea5e9'); // sky-500
-      expect(svgContent).toContain('circle cx="12" cy="12" r="10"'); // Lucide Compass
-      expect(svgContent).toContain('16.24 7.76'); // needle path
+      expect(svgContent).toContain('id="wallet"');
+      expect(svgContent).not.toContain('16.24 7.76'); // obsolete compass needle
     });
 
     it('obsahuje všechny požadované formáty PNG ikon s nenulovou velikostí', () => {
@@ -145,6 +145,9 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
       expect(manifestContent.icons).toHaveLength(2);
       expect(manifestContent.icons[0].sizes).toBe('192x192');
       expect(manifestContent.icons[1].sizes).toBe('512x512');
+      expect(manifestContent.icons.map((icon: { src: string }) => icon.src)).toEqual([
+        './favicon-192x192.png?v=3', './favicon-512x512.png?v=3',
+      ]);
     });
   });
 });

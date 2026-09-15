@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { GoogleIcon } from '../common/GoogleIcon';
-import { Compass, ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail, Check } from 'lucide-react';
+import { ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail, Check } from 'lucide-react';
 import { buildGmailComposeUrl, ACCESS_REQUEST_EMAIL } from '../../constants/authConfig';
 
 export const LoginScreen: React.FC = () => {
@@ -44,7 +44,7 @@ export const LoginScreen: React.FC = () => {
         {/* Logo a hlavička */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg shadow-sky-500/25 mb-1">
-            <Compass className="w-9 h-9" />
+            <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
