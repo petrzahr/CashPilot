@@ -12,6 +12,7 @@ import {
   MarketValueSnapshot
 } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
+import { getEffectiveInvestedAmount } from './accountService';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
@@ -683,8 +684,8 @@ export function calculateForecast(
         }
 
         accBal.marketValueInHaler = closing;
-        accBal.investedPrincipalInHaler = investedPrincipals[acc.id];
-        accBal.unrealizedGainLossInHaler = subHaler(closing, investedPrincipals[acc.id] || 0);
+        accBal.investedPrincipalInHaler = getEffectiveInvestedAmount(acc, investedPrincipals[acc.id] || 0);
+        accBal.unrealizedGainLossInHaler = subHaler(closing, accBal.investedPrincipalInHaler);
         accBal.closingBalanceInHaler = closing;
       } else {
         closing = addHaler(

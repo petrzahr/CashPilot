@@ -23,6 +23,7 @@ export interface Account {
   sortOrder: number;
   status: AccountStatus;
   currentMarketValueInHaler?: number; // Pro investiční účty
+  investedAmountAdjustmentInHaler?: number; // Korekce vloženého kapitálu, nikoli peněžní pohyb
   marketValueUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
+import { getEffectiveInvestedAmount } from '../../services/accountService';
 import { formatCurrency, parseInputToHaler, subHaler, addHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { TrendingUp, Info } from 'lucide-react';
@@ -55,11 +56,11 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         }
       }
     }
-    return Math.max(0, total);
+    return getEffectiveInvestedAmount(account, Math.max(0, total));
   }, [account, transactions]);
 
   const gainLossHaler = subHaler(enteredValHaler, investedHaler);
-  const gainLossPct = investedHaler > 0 ? (gainLossHaler / investedHaler) * 100 : 0;
+  const gainLossPct = investedHaler !== 0 ? (gainLossHaler / investedHaler) * 100 : 0;
 
   if (!account) return null;
 
