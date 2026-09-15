@@ -37,6 +37,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     return forecast.periods.slice(0, forecastMonths);
   }, [forecast.forecastPeriods, forecast.periods, forecast.currentPeriod.key, forecastMonths]);
 
+  const expectedNetWorth = displayPeriods.find(p => p.period.key === forecast.currentPeriod.key)?.netWorthClosingInHaler ?? 0;
+
   // Režimy zobrazení hlavní forecast tabulky
   const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('usable');
 
@@ -104,7 +106,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             </div>
           </div>
           <div className="text-xl font-bold text-slate-900 truncate">
-            {formatCurrency(forecast.netWorthNowInHaler)}
+            {formatCurrency(expectedNetWorth)}
           </div>
           <p className="text-[11px] text-slate-400 mt-1 truncate">
             Včetně investic a penzijka
