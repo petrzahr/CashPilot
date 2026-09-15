@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { formatCurrency, halerToCzk } from '../../services/currencyService';
+import { addHaler, formatCurrency, halerToCzk, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
+import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { 
   Plus, 
@@ -50,6 +51,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     transactions,
     recurringRules,
     recurringExceptions,
+    marketValueSnapshots = [],
     duplicateTransaction,
     setTransactionStatus,
     markTransactionExecuted,
@@ -229,6 +231,41 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       accountBalances: {},
     };
   }, [forecast.periods, selectedPeriod.key]);
+
+  // Souhrnné ukazatele za všechny účty, respektující vybrané rozpočtové období
+  const aggregateSummary = useMemo(() => {
+    const savedInHaler = accounts
+      .filter(a => a.type === 'savings' && a.status === 'active')
+      .reduce((sum, acc) => {
+        const bal = currentSummary.accountBalances[acc.id];
+        return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
+      }, 0);
+
+    const investedInHaler = accounts
+      .filter(a => (a.type === 'investment' || a.type === 'pension') && a.status === 'active')
+      .reduce((sum, acc) => {
+        const bal = currentSummary.accountBalances[acc.id];
+        return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
+      }, 0);
+
+    const income = currentSummary.incomeInHaler;
+    const savedPct = income > 0 ? (savedInHaler / income) * 100 : null;
+    const investedPct = income > 0 ? (investedInHaler / income) * 100 : null;
+
+    const investmentChange = calculatePeriodInvestmentChange(
+      accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay
+    );
+
+    return {
+      usableClosingInHaler: currentSummary.usableClosingInHaler,
+      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
+      savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
+    };
+  }, [accounts, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
+
+  const formatPercent = (value: number | null) => value === null
+    ? '—'
+    : `${new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 }).format(value)} %`;
 
   // Všechny efektivní položky v tomto období (pro souhrny kategorií a převody)
   const allPeriodTransactions = useMemo(() => {
@@ -530,6 +567,82 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           </div>
         </div>
       )}
+
+      {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200/70 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            Souhrnně: <strong>všechny účty</strong>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-slate-400 block font-medium">Použitelný zůstatek</span>
+            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+              {formatCurrency(aggregateSummary.usableClosingInHaler)}
+            </span>
+            <span className="text-[10px] text-slate-400">Ke konci období, viz Přehled</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-slate-500 block font-medium">Celkový majetek</span>
+            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
+              {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
+            </span>
+            <span className="text-[10px] text-slate-400">Včetně investic a penzijka</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-sky-600 block font-semibold">Uspořeno</span>
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })}
+            </span>
+            <span className="text-[10px] text-slate-400">Čistý vklad na spořicí účty</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-sky-600 block font-semibold">Uspořeno %</span>
+            <span className="text-base font-bold text-sky-600 block mt-0.5 truncate">
+              {formatPercent(aggregateSummary.savedPct)}
+            </span>
+            <span className="text-[10px] text-slate-400">Z příjmů období</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-purple-600 block font-semibold">Investováno</span>
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
+            </span>
+            <span className="text-[10px] text-slate-400">Čistý vklad do investic/penze</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span className="text-xs text-purple-600 block font-semibold">Investováno %</span>
+            <span className="text-base font-bold text-purple-600 block mt-0.5 truncate">
+              {formatPercent(aggregateSummary.investedPct)}
+            </span>
+            <span className="text-[10px] text-slate-400">Z příjmů období</span>
+          </div>
+
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
+            <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.investmentChange === null
+                ? 'text-slate-400'
+                : aggregateSummary.investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'
+            }`}>
+              {aggregateSummary.investmentChange === null ? '—' : formatCurrency(aggregateSummary.investmentChange, { showPlus: true })}
+            </span>
+            <span className="text-[10px] text-slate-400">Oproti předchozímu období</span>
+          </div>
+        </div>
+      </div>
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
