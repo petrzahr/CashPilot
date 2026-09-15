@@ -1,21 +1,87 @@
-﻿node_modules/
+﻿# Dependencies & Package Managers
+node_modules/
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
 bun.lockb
+
+# Build Outputs & Bundles
 .next/
 dist/
 build/
 out/
+bin/
+obj/
 *.tsbuildinfo
 *.map
-*.log
+*.chunk.*
+*.bundle.*
+
+# Git & System
+.git/
+.github/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Cache & Temporary Files
 .turbo/
 .cache/
+.parcel-cache/
 coverage/
-.git/
-public/**/*.svg
-public/**/*.png
-public/**/*.jpg
-public/**/*.ico
-public/**/*.webp
+*.log
+*.tmp
+*.temp
+
+# Tests & Mocks
+__tests__/
+__mocks__/
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.jsx
+*.spec.ts
+*.spec.tsx
+*.spec.js
+*.spec.jsx
+test/
+tests/
+cypress/
+playwright/
+
+# Media & Static Assets
+public/
+assets/
+static/
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.pdf
+*.mp4
+*.webm
+
+# Fonts
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.otf
+
+# Large Data, Dumps & Backups
+*.json.gz
+*.csv
+*.xlsx
+*.sql
+*.sqlite
+*.dump
+backup/
+backups/
+
+# AI & Other Agent Tooling Configs
+.agent/
+.codex/
