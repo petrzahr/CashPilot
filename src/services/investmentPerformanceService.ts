@@ -44,9 +44,10 @@ export function getInvestedAmountAtValuation(account: Account, transactions: Tra
   return getEffectiveInvestedAmount(account, Math.max(0, principal));
 }
 
-/** Compare the same included accounts using their last known state at each period end.
+/** Compare each included account using its last known state at each period end.
  * Carry market value and captured capital together; never apply today's correction to history.
  * Later contributions do not change this unrealized gain/loss until another valuation.
+ * Accounts without a paired valuation at both ends are skipped, not treated as blocking the rest.
  */
 export function calculatePeriodInvestmentChange(
   accounts: Account[], snapshots: MarketValueSnapshot[], period: BudgetPeriod,
@@ -57,15 +58,17 @@ export function calculatePeriodInvestmentChange(
     (a.type === 'investment' || a.type === 'pension') && a.initialBalanceDate <= period.endDate);
   if (!included.length || period.startDate > today) return null;
   let change = 0;
+  let counted = 0;
   for (const account of included) {
     const current = latestInvestmentSnapshot(account, snapshots, period.endDate < today ? period.endDate : today);
     const prior = latestInvestmentSnapshot(account, snapshots, previous.endDate < today ? previous.endDate : today);
     if (!current || !prior || !Number.isSafeInteger(current.effectiveInvestedAmountInHaler) ||
-        !Number.isSafeInteger(prior.effectiveInvestedAmountInHaler)) return null;
+        !Number.isSafeInteger(prior.effectiveInvestedAmountInHaler)) continue;
+    counted++;
     change = addHaler(change, subHaler(
       subHaler(current.marketValueInHaler, current.effectiveInvestedAmountInHaler!),
       subHaler(prior.marketValueInHaler, prior.effectiveInvestedAmountInHaler!),
     ));
   }
-  return change;
+  return counted ? change : null;
 }

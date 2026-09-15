@@ -38,7 +38,7 @@ describe('investment change across financial periods', () => {
     const records = [...history, snapshot('2026-09-10', 10000, 10000, pension.id), snapshot('2026-10-10', 9500, 10000, pension.id)];
     const excluded = [{ ...account, id: 'excluded', isNetWorth: false }, { ...account, id: 'archived', status: 'archived' as const }];
     expect(compare([account, pension, ...excluded], records, period, 15, today)).toBe(50000);
-    expect(compare([account, pension], history, period, 15, today)).toBeNull();
+    expect(compare([account, pension], history, period, 15, today)).toBe(100000);
   });
   it('uses captured corrections, never the current account correction retroactively', () => {
     const records = [history[0], snapshot('2026-09-20', 323000, 321000)];
