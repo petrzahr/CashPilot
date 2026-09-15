@@ -76,6 +76,53 @@ describe('Reconciliation and Market Value Engine', () => {
     endDate: '2026-11-14',
   };
 
+  describe('Current market value forecast', () => {
+    it.each([35000000, 25000000, 0])('anchors assets at %i without predicting returns', marketValue => {
+      const investment = { ...sampleInvestmentAccount, initialBalanceInHaler: 30000000,
+        currentMarketValueInHaler: marketValue, marketValueUpdatedAt: '2026-09-20' };
+      const pension = { ...samplePensionAccount, currentMarketValueInHaler: 18000000,
+        marketValueUpdatedAt: '2026-09-20' };
+      const accounts = [sampleCheckingAccount, investment, pension];
+      const result = calculateForecast([periodSep2026, periodOct2026], accounts,
+        [], [], [], [], DEFAULT_SETTINGS, [], periodSep2026.key, '2026-09-21');
+      expect(result.usableCashNowInHaler).toBe(5000000);
+      expect(result.expectedClosingCurrentPeriodInHaler).toBe(5000000);
+      expect(result.netWorthNowInHaler).toBe(23000000 + marketValue);
+      for (const period of result.forecastPeriods!) {
+        expect(period.accountBalances[investment.id].openingBalanceInHaler).toBe(marketValue);
+        expect(period.accountBalances[investment.id].closingBalanceInHaler).toBe(marketValue);
+        expect(period.openingBalanceInHaler).toBe(23000000 + marketValue);
+        expect(period.netWorthOpeningInHaler).toBe(period.openingBalanceInHaler);
+        expect(period.closingBalanceInHaler).toBe(period.openingBalanceInHaler);
+      }
+    });
+
+    it('applies remaining transfers once and preserves liquid income/expense forecasts', () => {
+      const investment = { ...sampleInvestmentAccount, initialBalanceInHaler: 30000000 };
+      const snapshots: MarketValueSnapshot[] = [{ id: 'valuation', accountId: investment.id,
+        date: '2026-09-18', marketValueInHaler: 35000000, createdAt: '2026-09-18T00:00:00Z' }];
+      const tx = (id: string, date: string, status: Transaction['status'], type: Transaction['type'], amount: number): Transaction => ({
+        id, date, status, type, sequence: 1, amountInHaler: amount, sourceAccountId: sampleCheckingAccount.id,
+        targetAccountId: type === 'transfer' ? investment.id : undefined,
+        title: id, createdAt: date, updatedAt: date,
+      });
+      const transactions = [tx('past', '2026-09-19', 'executed', 'transfer', 100000),
+        tx('future', '2026-09-25', 'planned', 'transfer', 200000),
+        tx('income', '2026-09-26', 'planned', 'income', 500000),
+        tx('expense', '2026-09-27', 'planned', 'expense', 50000)];
+      const result = calculateForecast([periodSep2026, periodOct2026], [sampleCheckingAccount, investment],
+        transactions, [], [], [], DEFAULT_SETTINGS, snapshots, periodSep2026.key, '2026-09-21');
+      const first = result.forecastPeriods![0];
+      expect(result.netWorthNowInHaler).toBe(40100000);
+      expect(first.accountBalances[investment.id].openingBalanceInHaler).toBe(35100000);
+      expect(first.accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
+      expect(result.forecastPeriods![1].accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
+      expect(first.usableClosingInHaler).toBe(5150000);
+      expect(result.expectedClosingCurrentPeriodInHaler).toBe(first.usableClosingInHaler);
+      expect(result.periods[0].accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
+    });
+  });
+
   describe('Standard accounts: getAccountBalanceAtDate and sequence handling', () => {
     it('1. Computes initial balance before any movements', () => {
       const bal = getAccountBalanceAtDate(
