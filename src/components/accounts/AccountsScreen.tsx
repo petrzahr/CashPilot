@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
+import { getEffectiveInvestedAmount } from '../../services/accountService';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
@@ -193,9 +194,9 @@ export const AccountsScreen: React.FC = () => {
 
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
           const marketValue = acc.currentMarketValueInHaler || closingBalance;
-          const investedPrincipal = accBal?.investedPrincipalInHaler || acc.initialBalanceInHaler;
+          const investedPrincipal = accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
           const unrealizedProfitHaler = subHaler(marketValue, investedPrincipal);
-          const unrealizedPct = investedPrincipal > 0 ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
+          const unrealizedPct = investedPrincipal !== 0 ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
 
           return (
             <div
