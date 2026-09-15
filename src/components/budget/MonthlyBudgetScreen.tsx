@@ -487,7 +487,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
                 {formatCurrency(defaultOpeningBalance)}
               </span>
-              <span className="text-[10px] text-slate-400">Přenese se z minulého</span>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
@@ -495,7 +494,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
                 {formatCurrency(defaultIncomeBalance)}
               </span>
-              <span className="text-[10px] text-slate-400">Příjmy výchozího účtu</span>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
@@ -503,18 +501,17 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
                 {formatCurrency(defaultExpenseBalance)}
               </span>
-              <span className="text-[10px] text-slate-400">Výdaje výchozího účtu</span>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-sky-600 block font-semibold">Převody</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
-                defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-800'
-              }`}>
+              <span
+                className={`text-base font-bold block mt-0.5 truncate ${
+                  defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-800'
+                }`}
+                title={`Příchozí: ${formatCurrency(defaultTransfersIn)}, Odchozí: ${formatCurrency(defaultTransfersOut)}`}
+              >
                 {formatCurrency(defaultNetTransfers, { showPlus: true })}
-              </span>
-              <span className="text-[10px] text-slate-400" title={`Příchozí: ${formatCurrency(defaultTransfersIn)}, Odchozí: ${formatCurrency(defaultTransfersOut)}`}>
-                Příchozí − Odchozí
               </span>
             </div>
 
@@ -525,21 +522,19 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               }`}>
                 {formatCurrency(defaultNetChange, { showPlus: true })}
               </span>
-              <span className="text-[10px] text-slate-400">Příjmy − Výdaje + Převody</span>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
-                isOverdraftExceeded 
-                  ? 'text-red-600' 
-                  : defaultClosingBalance < 0 
-                    ? 'text-amber-600' 
+                isOverdraftExceeded
+                  ? 'text-red-600'
+                  : defaultClosingBalance < 0
+                    ? 'text-amber-600'
                     : 'text-slate-900'
               }`}>
                 {formatCurrency(defaultClosingBalance)}
               </span>
-              <span className="text-[10px] text-slate-400">Očekávaný zůstatek</span>
             </div>
 
             <div className={`p-3.5 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
@@ -555,13 +550,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
                 )}
               </div>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
-                isOverdraftExceeded ? 'text-red-600' : 'text-emerald-600'
-              }`}>
+              <span
+                className={`text-base font-bold block mt-0.5 truncate ${
+                  isOverdraftExceeded ? 'text-red-600' : 'text-emerald-600'
+                }`}
+                title={isOverdraftExceeded ? 'Kontokorent překročen' : `Limit ${formatCurrency(overdraftLimit)}`}
+              >
                 {formatCurrency(defaultWithOverdraft)}
-              </span>
-              <span className={`text-[10px] ${isOverdraftExceeded ? 'text-red-600 font-semibold' : 'text-slate-400'}`}>
-                {isOverdraftExceeded ? 'Kontokorent překročen' : `Limit ${formatCurrency(overdraftLimit)}`}
               </span>
             </div>
           </div>
@@ -580,66 +575,68 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-400 block font-medium">Použitelný zůstatek</span>
-            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate" title="Ke konci období, viz Přehled">
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
-            <span className="text-[10px] text-slate-400">Ke konci období, viz Přehled</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-500 block font-medium">Celkový majetek</span>
-            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
+            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate" title="Včetně investic a penzijka">
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
-            <span className="text-[10px] text-slate-400">Včetně investic a penzijka</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-sky-600 block font-semibold">Uspořeno</span>
-            <span className={`text-base font-bold block mt-0.5 truncate ${
-              aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
-            }`}>
+            <span
+              className={`text-base font-bold block mt-0.5 truncate ${
+                aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
+              }`}
+              title="Čistý vklad na spořicí účty"
+            >
               {formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })}
             </span>
-            <span className="text-[10px] text-slate-400">Čistý vklad na spořicí účty</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-sky-600 block font-semibold">Uspořeno %</span>
-            <span className="text-base font-bold text-sky-600 block mt-0.5 truncate">
+            <span className="text-base font-bold text-sky-600 block mt-0.5 truncate" title="Z příjmů období">
               {formatPercent(aggregateSummary.savedPct)}
             </span>
-            <span className="text-[10px] text-slate-400">Z příjmů období</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-purple-600 block font-semibold">Investováno</span>
-            <span className={`text-base font-bold block mt-0.5 truncate ${
-              aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
-            }`}>
+            <span
+              className={`text-base font-bold block mt-0.5 truncate ${
+                aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
+              }`}
+              title="Čistý vklad do investic/penze"
+            >
               {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
             </span>
-            <span className="text-[10px] text-slate-400">Čistý vklad do investic/penze</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-purple-600 block font-semibold">Investováno %</span>
-            <span className="text-base font-bold text-purple-600 block mt-0.5 truncate">
+            <span className="text-base font-bold text-purple-600 block mt-0.5 truncate" title="Z příjmů období">
               {formatPercent(aggregateSummary.investedPct)}
             </span>
-            <span className="text-[10px] text-slate-400">Z příjmů období</span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
             <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
-            <span className={`text-base font-bold block mt-0.5 truncate ${
-              aggregateSummary.investmentChange === null
-                ? 'text-slate-400'
-                : aggregateSummary.investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'
-            }`}>
+            <span
+              className={`text-base font-bold block mt-0.5 truncate ${
+                aggregateSummary.investmentChange === null
+                  ? 'text-slate-400'
+                  : aggregateSummary.investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'
+              }`}
+              title="Oproti předchozímu období"
+            >
               {aggregateSummary.investmentChange === null ? '—' : formatCurrency(aggregateSummary.investmentChange, { showPlus: true })}
             </span>
-            <span className="text-[10px] text-slate-400">Oproti předchozímu období</span>
           </div>
         </div>
       </div>
