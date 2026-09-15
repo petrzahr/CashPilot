@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { OverviewChart } from './OverviewChart';
 import { formatCurrency } from '../../services/currencyService';
-import { formatMonthsCount, getTodayInPrague } from '../../services/periodService';
+import { formatMonthsCount, getTodayInPrague, getPreviousDayString } from '../../services/periodService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
+import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { BudgetPeriod } from '../../types/finance';
 import { 
   TrendingUp, 
@@ -23,7 +24,7 @@ interface OverviewScreenProps {
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod, selectedPeriod, marketValueSnapshots = [] } = useFinance();
+  const { forecast, settings, accounts, setSelectedPeriod, selectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
   const investmentPeriod = selectedPeriod ?? forecast.currentPeriod;
   const investmentChange = calculatePeriodInvestmentChange(accounts, marketValueSnapshots, investmentPeriod, settings.budgetStartDay);
   const forecastMonths = settings.forecastMonths || 12;
@@ -39,6 +40,29 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     }
     return forecast.periods.slice(0, forecastMonths);
   }, [forecast.forecastPeriods, forecast.periods, forecast.currentPeriod.key, forecastMonths]);
+
+  // Account history uses the state entering the period, independently of today's forecast anchor.
+  const accountPeriods = useMemo(() => displayPeriods.map(summary => {
+    const historical = { ...summary, accountBalances: { ...summary.accountBalances } };
+    const openingDate = getPreviousDayString(summary.period.startDate);
+    for (const acc of accounts) {
+      if (acc.type !== 'investment' && acc.type !== 'pension') continue;
+      const original = summary.accountBalances[acc.id];
+      if (!original) continue;
+      const opening = computeAssetAccountBalanceAtDate(acc, openingDate, transactions, marketValueSnapshots);
+      const closing = computeAssetAccountBalanceAtDate(acc, summary.period.endDate, transactions, marketValueSnapshots);
+      historical.accountBalances[acc.id] = {
+        ...original, openingBalanceInHaler: opening, closingBalanceInHaler: closing,
+      };
+      historical.openingBalanceInHaler += opening - original.openingBalanceInHaler;
+      historical.closingBalanceInHaler += closing - original.closingBalanceInHaler;
+      if (acc.isNetWorth) {
+        historical.netWorthOpeningInHaler += opening - original.openingBalanceInHaler;
+        historical.netWorthClosingInHaler += closing - original.closingBalanceInHaler;
+      }
+    }
+    return historical;
+  }), [displayPeriods, accounts, transactions, marketValueSnapshots]);
 
   const expectedNetWorth = displayPeriods.find(p => p.period.key === forecast.currentPeriod.key)?.netWorthClosingInHaler ?? 0;
 
@@ -383,7 +407,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         {/* 1. Režim: Přehled podle období */}
         {accountViewMode === 'period' && (
           <div className="divide-y divide-slate-100">
-            {displayPeriods.map((p) => {
+            {accountPeriods.map((p) => {
               const isExpanded = expandedPeriodKey === p.period.key;
 
               return (
@@ -469,7 +493,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="py-3 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
-                  {displayPeriods.map((p) => (
+                  {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
                       onClick={() => handlePeriodClick(p.period)}
@@ -500,7 +524,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         </div>
                       </div>
                     </td>
-                    {displayPeriods.map((p) => {
+                    {accountPeriods.map((p) => {
                       const accBal = p.accountBalances[acc.id];
                       const opening = accBal?.openingBalanceInHaler || 0;
                       const closing = accBal?.closingBalanceInHaler || 0;
@@ -575,7 +599,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       <span className="text-[10px] font-normal text-slate-400">Zahrnuté účty</span>
                     </div>
                   </td>
-                  {displayPeriods.map((p) => {
+                  {accountPeriods.map((p) => {
                     const totalOpening = p.netWorthOpeningInHaler;
                     const totalClosing = p.netWorthClosingInHaler;
                     const isOpeningNegative = totalOpening < 0;
