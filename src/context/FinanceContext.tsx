@@ -52,6 +52,7 @@ import {
   formatCzechDate
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
+import { getInvestedAmountAtValuation } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
@@ -1372,7 +1373,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       const isLatest = !account.marketValueUpdatedAt || valuationDate >= account.marketValueUpdatedAt;
       return {
         ...prev,
-        marketValueSnapshots: [...prev.marketValueSnapshots, snapshot],
+        marketValueSnapshots: [...prev.marketValueSnapshots, {
+          ...snapshot,
+          effectiveInvestedAmountInHaler: getInvestedAmountAtValuation({
+            ...prev.accounts.find(a => a.id === accountId)!,
+            ...(investedAmountAdjustmentInHaler !== undefined ? { investedAmountAdjustmentInHaler } : {}),
+          }, prev.transactions, valuationDate),
+        }],
         accounts: prev.accounts.map(a => a.id === accountId ? {
           ...a,
           currentMarketValueInHaler: isLatest ? marketValueInHaler : a.currentMarketValueInHaler,

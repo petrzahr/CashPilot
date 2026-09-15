@@ -47,6 +47,7 @@ describe('Market value update with invested amount correction', () => {
     expect(envelope.data.accounts[0].investedAmountAdjustmentInHaler).toBe(expected);
     expect(envelope.data.accounts[0].currentMarketValueInHaler).toBe(12000000);
     expect(envelope.data.marketValueSnapshots).toHaveLength(1);
+    expect(envelope.data.marketValueSnapshots[0].effectiveInvestedAmountInHaler).toBe(10000000 + (expected ?? 0));
     expect(envelope.data.transactions).toEqual(original.transactions);
 
     saveStoredData(envelope.data, 'market-value-test');
