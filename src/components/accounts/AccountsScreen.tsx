@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
 import { getEffectiveInvestedAmount } from '../../services/accountService';
+import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { formatCurrency, subHaler } from '../../services/currencyService';
-import { formatCzechDate } from '../../services/periodService';
+import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
 import { ReconciliationModal } from './ReconciliationModal';
 import { MarketValueModal } from './MarketValueModal';
@@ -196,12 +197,25 @@ export const AccountsScreen: React.FC = () => {
           const lastCorrection = accCorrections[0];
 
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
-          const marketValue = isInvestment && selectedPeriod.endDate < currentPeriod.startDate
+          const isCurrentInvestment = isInvestment && selectedPeriod.key === currentPeriod.key;
+          const today = getTodayInPrague();
+          const marketValue = isCurrentInvestment
+            ? computeAssetAccountBalanceAtDate(acc, today, transactions, marketValueSnapshots)
+            : isInvestment && selectedPeriod.endDate < currentPeriod.startDate
             ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
             : acc.currentMarketValueInHaler || closingBalance;
-          const investedPrincipal = accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
-          const unrealizedProfitHaler = subHaler(marketValue, investedPrincipal);
-          const unrealizedPct = investedPrincipal !== 0 ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
+          let investedPrincipal = selectedPeriod.endDate < currentPeriod.startDate
+            ? accBal?.investedPrincipalInHaler
+            : accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
+          if (isCurrentInvestment) {
+            const base = getInvestedAmountAtValuation({ ...acc, investedAmountAdjustmentInHaler: 0 }, transactions, today);
+            investedPrincipal = getHistoricalInvestedAmount(acc, marketValueSnapshots, transactions, today, base);
+            if (investedPrincipal === undefined && !marketValueSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
+              investedPrincipal = getEffectiveInvestedAmount(acc, base);
+            }
+          }
+          const unrealizedProfitHaler = investedPrincipal === undefined ? 0 : subHaler(marketValue, investedPrincipal);
+          const unrealizedPct = investedPrincipal ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
 
           return (
             <div
@@ -309,8 +323,8 @@ export const AccountsScreen: React.FC = () => {
 
                 {isInvestment && (
                   <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Vloženo: {formatCurrency(investedPrincipal)}</span>
-                    <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span className="text-slate-500">{investedPrincipal === undefined ? 'Historický vložený kapitál není znám' : `Vloženo: ${formatCurrency(investedPrincipal)}`}</span>
+                    <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`} hidden={investedPrincipal === undefined}>
                       {unrealizedProfitHaler >= 0 ? '+' : ''}{formatCurrency(unrealizedProfitHaler)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)} %)
                     </span>
                   </div>

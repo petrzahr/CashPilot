@@ -12,7 +12,7 @@ import {
   MarketValueSnapshot
 } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
-import { getEffectiveInvestedAmount } from './accountService';
+import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
@@ -434,7 +434,7 @@ export function calculateForecast(
       if (isAsset) {
         const priorSnapshots = safeSnapshots
           .filter(s => s.accountId === acc.id && s.date >= initDate && (!firstPeriod || s.date <= firstPeriod.startDate))
-          .sort((a, b) => b.date.localeCompare(a.date));
+          .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
         const latestPriorSnap = priorSnapshots[0];
 
         let baseVal = initBal;
@@ -446,7 +446,7 @@ export function calculateForecast(
         } else if (acc.currentMarketValueInHaler !== undefined && acc.marketValueUpdatedAt && acc.marketValueUpdatedAt >= initDate && (!firstPeriod || acc.marketValueUpdatedAt <= firstPeriod.startDate)) {
           baseVal = acc.currentMarketValueInHaler;
           valDate = acc.marketValueUpdatedAt;
-        } else if (acc.currentMarketValueInHaler !== undefined) {
+        } else if (acc.currentMarketValueInHaler !== undefined && !acc.marketValueUpdatedAt) {
           baseVal = acc.currentMarketValueInHaler;
         }
 
@@ -471,7 +471,10 @@ export function calculateForecast(
           safeAccounts
         );
       }
-      investedPrincipals[acc.id] = runningBalances[acc.id];
+      investedPrincipals[acc.id] = acc.type === 'investment' || acc.type === 'pension'
+        ? getInvestedAmountAtValuation({ ...acc, investedAmountAdjustmentInHaler: 0 },
+          safeTxs.filter(t => t.date < firstPeriod.startDate), firstPeriod.startDate)
+        : runningBalances[acc.id];
     }
   }
 
@@ -591,6 +594,7 @@ export function calculateForecast(
             accountBalances[tx.sourceAccountId].transfersOutInHaler,
             amount
           );
+          investedPrincipals[tx.sourceAccountId] = subHaler(investedPrincipals[tx.sourceAccountId] || 0, amount);
         }
         if (tx.targetAccountId && accountBalances[tx.targetAccountId] && isTgtActive) {
           accountBalances[tx.targetAccountId].transfersInInHaler = addHaler(
@@ -656,12 +660,12 @@ export function calculateForecast(
       let closing = 0;
       if (isAsset) {
         if (initDate >= period.startDate && initDate <= period.endDate) {
-          investedPrincipals[acc.id] = addHaler(initBal, accBal.transfersInInHaler);
+          investedPrincipals[acc.id] = subHaler(addHaler(initBal, accBal.transfersInInHaler), accBal.transfersOutInHaler);
         }
 
         const snapshotsInPeriod = safeSnapshots
           .filter(s => s.accountId === acc.id && s.date >= period.startDate && s.date <= period.endDate && s.date >= initDate)
-          .sort((a, b) => b.date.localeCompare(a.date));
+          .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
 
         if (snapshotsInPeriod.length > 0) {
           const latestSnapInPeriod = snapshotsInPeriod[0];
@@ -684,8 +688,14 @@ export function calculateForecast(
         }
 
         accBal.marketValueInHaler = closing;
-        accBal.investedPrincipalInHaler = getEffectiveInvestedAmount(acc, investedPrincipals[acc.id] || 0);
-        accBal.unrealizedGainLossInHaler = subHaler(closing, accBal.investedPrincipalInHaler);
+        accBal.investedPrincipalInHaler = getHistoricalInvestedAmount(acc, safeSnapshots, safeTxs, period.endDate, investedPrincipals[acc.id] || 0);
+        // Legacy account correction is known now, but has no reliable historical effective date.
+        if (accBal.investedPrincipalInHaler === undefined && period.endDate >= (todayStr || getTodayInPrague()) &&
+            !safeSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
+          accBal.investedPrincipalInHaler = addHaler(investedPrincipals[acc.id] || 0, acc.investedAmountAdjustmentInHaler ?? 0);
+        }
+        accBal.unrealizedGainLossInHaler = accBal.investedPrincipalInHaler === undefined
+          ? undefined : subHaler(closing, accBal.investedPrincipalInHaler);
         accBal.closingBalanceInHaler = closing;
       } else {
         closing = addHaler(

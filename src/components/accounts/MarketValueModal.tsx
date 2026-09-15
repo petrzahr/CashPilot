@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
-import { getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
+import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../../services/investmentPerformanceService';
 import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { TrendingUp, Info } from 'lucide-react';
@@ -18,12 +18,13 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   onClose,
   account,
 }) => {
-  const { transactions, updateMarketValue } = useFinance();
+  const { transactions, marketValueSnapshots, updateMarketValue } = useFinance();
   const [marketValueStr, setMarketValueStr] = useState('');
   const [adjustmentStr, setAdjustmentStr] = useState('');
   const [valuationDate, setValuationDate] = useState(() => getTodayInPrague());
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [correctionKnown, setCorrectionKnown] = useState(true);
 
   useEffect(() => {
     if (account && isOpen) {
@@ -37,6 +38,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
       setValuationDate(initialDate);
       setNote('');
       setIsSubmitting(false);
+      setCorrectionKnown(true);
     }
   }, [account, isOpen]);
 
@@ -61,7 +63,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!Number.isSafeInteger(adjustmentInHaler)) {
+    if (!correctionKnown || !Number.isSafeInteger(adjustmentInHaler)) {
       alert('Zadejte platnou částku korekce.');
       return;
     }
@@ -71,8 +73,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
     }
     setIsSubmitting(true);
     try {
-      updateMarketValue(account.id, enteredValHaler, valuationDate, note,
-        adjustmentInHaler === (account.investedAmountAdjustmentInHaler ?? 0) ? undefined : adjustmentInHaler);
+      updateMarketValue(account.id, enteredValHaler, valuationDate, note, adjustmentInHaler);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -91,12 +92,12 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Vložené prostředky:</span>
-            <span className="font-semibold text-slate-800">{formatCurrency(investedHaler)}</span>
+            <span className="font-semibold text-slate-800">{correctionKnown ? formatCurrency(investedHaler) : 'Neznámé'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Nerealizovaný výnos / ztráta:</span>
             <span className={`font-bold ${gainLossHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {formatCurrency(gainLossHaler, { showPlus: true })} ({gainLossPct >= 0 ? '+' : ''}{gainLossPct.toFixed(1)} %)
+              {correctionKnown ? `${formatCurrency(gainLossHaler, { showPlus: true })} (${gainLossPct >= 0 ? '+' : ''}${gainLossPct.toFixed(1)} %)` : 'Neznámý'}
             </span>
           </div>
         </div>
@@ -111,7 +112,14 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               required
               min={account.initialBalanceDate}
               value={valuationDate}
-              onChange={(e) => setValuationDate(e.target.value)}
+              onChange={(e) => {
+                const date = e.target.value;
+                setValuationDate(date);
+                const correction = date >= getTodayInPrague() ? account.investedAmountAdjustmentInHaler ?? 0
+                  : getHistoricalInvestmentCorrection(account, marketValueSnapshots, date);
+                setCorrectionKnown(correction !== undefined);
+                setAdjustmentStr(correction === undefined ? '' : halerToInputValue(correction));
+              }}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
@@ -143,9 +151,10 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             step="0.01"
             placeholder="0"
             value={adjustmentStr}
-            onChange={(e) => setAdjustmentStr(e.target.value)}
+            onChange={(e) => { setAdjustmentStr(e.target.value); setCorrectionKnown(true); }}
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
+          {!correctionKnown && <p className="text-xs text-amber-700">Historická korekce není známá. Zadejte korekci platnou k datu ocenění (0 pro žádnou korekci).</p>}
           <p className="mt-1 text-xs text-slate-500">
             Kladná částka zvýší a záporná sníží vložený kapitál pro výpočet výnosu.
             Nemění tržní hodnotu ani platby. Vymazáním nebo zadáním 0 korekci zrušíte.

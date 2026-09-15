@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Account, BudgetPeriod } from '../types/finance';
 import { getEffectiveInvestedAmount } from '../services/accountService';
 import { calculateForecast } from '../services/financialEngine';
@@ -18,7 +18,8 @@ const periods: BudgetPeriod[] = [9, 10].map(month => ({
   endDate: `2026-${String(month).padStart(2, '0')}-${month === 9 ? 30 : 31}`,
 }));
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-15T10:00:00Z')); });
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('Invested amount adjustment', () => {
   it.each([undefined, 0, -329145, 12345, -31000000])('applies %s once across forecast periods without changing balances', adjustment => {

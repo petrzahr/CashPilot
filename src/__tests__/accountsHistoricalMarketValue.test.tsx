@@ -56,7 +56,9 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
       .map(match => match[1]);
     expect(balances).toEqual([formatCurrency(value), formatCurrency(index === 0 ? 0 : 2300000)]);
     expect(computeAssetAccountBalanceAtDate(data.accounts[0], periods[index].endDate, [], data.marketValueSnapshots)).toBe(value);
-    if (index > 0) {
+    if (index === 1) {
+      expect(html).toContain('Historický vložený kapitál není znám');
+    } else if (index > 1) {
       expect(html).toContain(`Vloženo: ${formatCurrency(10100000)}`);
       expect(html).toContain(`${((value - 10100000) / 10100000 * 100).toFixed(1)} %)`);
     }
