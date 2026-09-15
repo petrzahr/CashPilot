@@ -151,7 +151,7 @@ interface FinanceContextType {
   deleteAccount: (id: string) => { success: boolean; message?: string };
   reorderAccounts: (orderedIds: string[]) => void;
   reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => void;
-  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string) => void;
+  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string, investedAmountAdjustmentInHaler?: number) => void;
   updateCorrectionNote: (id: string, note: string) => void;
   deleteCorrection: (id: string) => Promise<boolean>;
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
@@ -1338,7 +1338,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     accountId: string,
     marketValueInHaler: number,
     date?: string,
-    note?: string
+    note?: string,
+    investedAmountAdjustmentInHaler?: number
   ) => {
     const account = data.accounts.find(a => a.id === accountId);
     if (!account) return;
@@ -1375,6 +1376,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         accounts: prev.accounts.map(a => a.id === accountId ? {
           ...a,
           currentMarketValueInHaler: isLatest ? marketValueInHaler : a.currentMarketValueInHaler,
+          ...(investedAmountAdjustmentInHaler !== undefined ? { investedAmountAdjustmentInHaler } : {}),
           marketValueUpdatedAt: isLatest ? valuationDate : a.marketValueUpdatedAt,
           updatedAt: nowIso
         } : a)
