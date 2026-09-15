@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { OverviewChart } from './OverviewChart';
 import { formatCurrency } from '../../services/currencyService';
 import { formatMonthsCount } from '../../services/periodService';
+import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { BudgetPeriod } from '../../types/finance';
 import { 
   TrendingUp, 
@@ -22,7 +23,9 @@ interface OverviewScreenProps {
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod } = useFinance();
+  const { forecast, settings, accounts, setSelectedPeriod, selectedPeriod, marketValueSnapshots = [] } = useFinance();
+  const investmentPeriod = selectedPeriod ?? forecast.currentPeriod;
+  const investmentChange = calculatePeriodInvestmentChange(accounts, marketValueSnapshots, investmentPeriod, settings.budgetStartDay);
   const forecastMonths = settings.forecastMonths || 12;
 
   // Filtrované periody pro zobrazení forecastu (od aktuálního období dál podle horizontu)
@@ -57,8 +60,20 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 6 Souhrnných KPI karet */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+      {/* Souhrnné KPI karty */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all"
+          title="Rozdíl nerealizovaného zisku / ztráty oproti předchozímu finančnímu období. Vyžaduje ocenění se zachyceným kapitálem pro každý zahrnutý investiční a penzijní účet v obou obdobích.">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-semibold">Změna investic</span>
+            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600"><TrendingUp className="w-4 h-4" /></div>
+          </div>
+          <div className={`text-xl font-bold truncate ${investmentChange === null ? 'text-slate-400' : investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+            {investmentChange === null ? '—' : formatCurrency(investmentChange, { showPlus: true })}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">{investmentPeriod.name} oproti předchozímu období</p>
+          {investmentChange === null && <p className="text-[11px] text-slate-400 mt-1">Chybí úplné ocenění v jednom z období</p>}
+        </div>
         {/* 1. Počáteční stav */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">

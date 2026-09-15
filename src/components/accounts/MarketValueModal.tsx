@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
-import { getEffectiveInvestedAmount } from '../../services/accountService';
-import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler, addHaler } from '../../services/currencyService';
+import { getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
+import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { TrendingUp, Info } from 'lucide-react';
 
@@ -45,22 +45,10 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
   const investedHaler = useMemo(() => {
     if (!account) return 0;
-    let total = account.initialBalanceInHaler;
-    for (const tx of transactions) {
-      if (tx.status === 'cancelled') continue;
-      if (tx.type === 'transfer') {
-        const amt = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-          ? tx.actualAmountInHaler
-          : tx.amountInHaler;
-        if (tx.targetAccountId === account.id) {
-          total = addHaler(total, amt);
-        } else if (tx.sourceAccountId === account.id) {
-          total = subHaler(total, amt);
-        }
-      }
-    }
-    return getEffectiveInvestedAmount({ ...account, investedAmountAdjustmentInHaler: adjustmentInHaler }, Math.max(0, total));
-  }, [account, transactions, adjustmentInHaler]);
+    return getInvestedAmountAtValuation(
+      { ...account, investedAmountAdjustmentInHaler: adjustmentInHaler }, transactions, valuationDate,
+    );
+  }, [account, transactions, adjustmentInHaler, valuationDate]);
 
   const gainLossHaler = subHaler(enteredValHaler, investedHaler);
   const gainLossPct = investedHaler !== 0 ? (gainLossHaler / investedHaler) * 100 : 0;

@@ -134,6 +134,7 @@ export interface MarketValueSnapshot {
   accountId: string;
   date: string; // YYYY-MM-DD
   marketValueInHaler: number;
+  effectiveInvestedAmountInHaler?: number; // Kapitál včetně korekce zachycený při ocenění; ve staré historii chybí.
   note?: string;
   createdAt: string;
   updatedAt?: string;
