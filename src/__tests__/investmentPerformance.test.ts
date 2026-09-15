@@ -45,8 +45,23 @@ describe('investment change across financial periods', () => {
     expect(compare([{ ...account, investedAmountAdjustmentInHaler: 999999 }], records, period, 15, today)).toBe(0);
     expect(compare([account], [history[0], { ...records[1], effectiveInvestedAmountInHaler: undefined }], period, 15, today)).toBeNull();
   });
-  it('does not carry missing valuations forward or fall back from incomplete latest valuations', () => {
-    expect(compare([account], [history[0]], period, 15, today)).toBeNull();
+  it('carries the paired valuation and capital through one or several periods without updates', () => {
+    expect(compare([account], [history[0]], period, 15, today)).toBe(0);
+    expect(compare([account], [history[0]], createBudgetPeriod(2026, 11, 15), 15, today)).toBe(0);
+    expect(compare([account], [history[0], history[2]], createBudgetPeriod(2026, 10, 15), 15, today)).toBe(-300000);
+  });
+  it('never leaks later valuations across the period boundary or beyond today', () => {
+    const records = [snapshot('2026-08-10', 302000, 300000), snapshot('2026-10-05', 323000, 320000)];
+    expect(compare([account], records, createBudgetPeriod(2026, 9, 1), 1, today)).toBe(0);
+    expect(compare([account], records, period, 15, '2026-09-30')).toBe(0);
+    expect(compare([account], records, period, 15, today)).toBe(100000);
+  });
+  it('aggregates asynchronously updated accounts, carrying each complete state independently', () => {
+    const pension = { ...account, id: 'pension', type: 'pension' as const };
+    const records = [...history, snapshot('2026-07-10', 11000, 10000, pension.id)];
+    expect(compare([account, pension], records, period, 15, today)).toBe(100000);
+  });
+  it('requires historical capital and valuation, without falling back from an incomplete latest state', () => {
     expect(compare([account], [history[1]], period, 15, today)).toBeNull();
     expect(compare([account], [...history, { ...snapshot('2026-09-21', 324000, 320000), effectiveInvestedAmountInHaler: undefined }], period, 15, today)).toBeNull();
     expect(compare([], [], period, 15, today)).toBeNull();
