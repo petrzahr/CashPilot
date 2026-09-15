@@ -52,7 +52,7 @@ import {
   formatCzechDate
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
-import { getInvestedAmountAtValuation } from '../services/investmentPerformanceService';
+import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
@@ -1370,20 +1370,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     };
 
     setData(prev => {
-      const isLatest = !account.marketValueUpdatedAt || valuationDate >= account.marketValueUpdatedAt;
+      const currentAccount = prev.accounts.find(a => a.id === accountId)!;
+      const isLatest = !currentAccount.marketValueUpdatedAt || valuationDate >= currentAccount.marketValueUpdatedAt;
+      const correction = investedAmountAdjustmentInHaler ??
+        getHistoricalInvestmentCorrection(currentAccount, prev.marketValueSnapshots, valuationDate) ??
+        (isLatest && valuationDate >= getTodayInPrague() ? currentAccount.investedAmountAdjustmentInHaler ?? 0 : undefined);
+      const base = getInvestedAmountAtValuation({ ...currentAccount, investedAmountAdjustmentInHaler: 0 }, prev.transactions, valuationDate);
       return {
         ...prev,
         marketValueSnapshots: [...prev.marketValueSnapshots, {
           ...snapshot,
-          effectiveInvestedAmountInHaler: getInvestedAmountAtValuation({
-            ...prev.accounts.find(a => a.id === accountId)!,
-            ...(investedAmountAdjustmentInHaler !== undefined ? { investedAmountAdjustmentInHaler } : {}),
-          }, prev.transactions, valuationDate),
+          createdAt: new Date(prev.marketValueSnapshots.filter(s => s.accountId === accountId)
+            .reduce((time, s) => Math.max(time, (Date.parse(s.createdAt) || 0) + 1), Date.parse(nowIso))).toISOString(),
+          baseInvestedAmountInHaler: base,
+          investedAmountAdjustmentInHaler: correction,
+          effectiveInvestedAmountInHaler: correction === undefined ? undefined : addHaler(base, correction),
+          correctionPreviouslyZero: currentAccount.investedAmountAdjustmentInHaler === undefined &&
+            !prev.marketValueSnapshots.some(s => s.accountId === accountId) || undefined,
         }],
         accounts: prev.accounts.map(a => a.id === accountId ? {
           ...a,
           currentMarketValueInHaler: isLatest ? marketValueInHaler : a.currentMarketValueInHaler,
-          ...(investedAmountAdjustmentInHaler !== undefined ? { investedAmountAdjustmentInHaler } : {}),
+          ...(isLatest && correction !== undefined && (correction !== 0 || a.investedAmountAdjustmentInHaler !== undefined)
+            ? { investedAmountAdjustmentInHaler: correction } : {}),
           marketValueUpdatedAt: isLatest ? valuationDate : a.marketValueUpdatedAt,
           updatedAt: nowIso
         } : a)

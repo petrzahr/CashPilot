@@ -135,6 +135,10 @@ export interface MarketValueSnapshot {
   date: string; // YYYY-MM-DD
   marketValueInHaler: number;
   effectiveInvestedAmountInHaler?: number; // Kapitál včetně korekce zachycený při ocenění; ve staré historii chybí.
+  baseInvestedAmountInHaler?: number;
+  investedAmountAdjustmentInHaler?: number;
+  // First recorded correction on an account that had no previous correction/history.
+  correctionPreviouslyZero?: boolean;
   note?: string;
   createdAt: string;
   updatedAt?: string;

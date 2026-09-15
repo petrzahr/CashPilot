@@ -3,6 +3,34 @@ import { getEffectiveInvestedAmount } from './accountService';
 import { addHaler, subHaler } from './currencyService';
 import { getPreviousPeriod, getTodayInPrague } from './periodService';
 
+export function latestInvestmentSnapshot(account: Account, snapshots: MarketValueSnapshot[], date: string) {
+  return snapshots.filter(s => s.accountId === account.id && s.date >= account.initialBalanceDate && s.date <= date)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))[0];
+}
+
+/** Unknown legacy corrections stay unknown. Never infer them from today's account value. */
+export function getHistoricalInvestmentCorrection(account: Account, snapshots: MarketValueSnapshot[], date: string): number | undefined {
+  const snapshot = latestInvestmentSnapshot(account, snapshots, date);
+  if (snapshot) return snapshot.investedAmountAdjustmentInHaler;
+  const history = snapshots.filter(s => s.accountId === account.id);
+  if (history.some(s => s.correctionPreviouslyZero) ||
+      (!history.length && account.investedAmountAdjustmentInHaler === undefined)) return 0;
+  return undefined;
+}
+
+/** Carry captured capital with net contributions after the valuation, including forecast capital. */
+export function getHistoricalInvestedAmount(account: Account, snapshots: MarketValueSnapshot[], transactions: Transaction[], date: string, base: number): number | undefined {
+  if (date < account.initialBalanceDate) return 0;
+  const snapshot = latestInvestmentSnapshot(account, snapshots, date);
+  if (snapshot && Number.isSafeInteger(snapshot.effectiveInvestedAmountInHaler)) {
+    const capturedBase = snapshot.baseInvestedAmountInHaler ?? getInvestedAmountAtValuation(
+      { ...account, investedAmountAdjustmentInHaler: 0 }, transactions, snapshot.date);
+    return addHaler(snapshot.effectiveInvestedAmountInHaler!, subHaler(base, capturedBase));
+  }
+  const correction = getHistoricalInvestmentCorrection(account, snapshots, date);
+  return correction === undefined ? undefined : addHaler(base, correction);
+}
+
 /** Capture actual capital at valuation time, excluding future/planned contributions. */
 export function getInvestedAmountAtValuation(account: Account, transactions: Transaction[], date: string): number {
   let principal = account.initialBalanceInHaler;
@@ -30,11 +58,8 @@ export function calculatePeriodInvestmentChange(
   if (!included.length || period.startDate > today) return null;
   let change = 0;
   for (const account of included) {
-    const history = snapshots.filter(s => s.accountId === account.id &&
-      s.date >= account.initialBalanceDate && s.date <= today)
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
-    const current = history.find(s => s.date <= period.endDate);
-    const prior = history.find(s => s.date <= previous.endDate);
+    const current = latestInvestmentSnapshot(account, snapshots, period.endDate < today ? period.endDate : today);
+    const prior = latestInvestmentSnapshot(account, snapshots, previous.endDate < today ? previous.endDate : today);
     if (!current || !prior || !Number.isSafeInteger(current.effectiveInvestedAmountInHaler) ||
         !Number.isSafeInteger(prior.effectiveInvestedAmountInHaler)) return null;
     change = addHaler(change, subHaler(

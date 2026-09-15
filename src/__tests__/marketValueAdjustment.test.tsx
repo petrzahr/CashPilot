@@ -19,6 +19,7 @@ describe('Market value update with invested amount correction', () => {
     [undefined, undefined, undefined],
   ])('preserves or updates correction %s to %s in one saved update', (existing, correction, expected) => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-15T10:00:00Z'));
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => store.get(key) ?? null,

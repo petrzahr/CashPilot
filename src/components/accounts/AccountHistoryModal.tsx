@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, Transaction, MarketValueSnapshot } from '../../types/finance';
-import { formatCurrency } from '../../services/currencyService';
+import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import {
@@ -158,6 +158,13 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           {formatCurrency(snap.marketValueInHaler)}
                         </span>
                         <div className="text-[11px] text-purple-600 font-medium">Tržní hodnota</div>
+                        <div className="text-[11px] text-slate-500">
+                          {snap.effectiveInvestedAmountInHaler === undefined ? 'Historický vložený kapitál není znám' : <>
+                            <div>Vloženo: {formatCurrency(snap.effectiveInvestedAmountInHaler)}</div>
+                            {snap.investedAmountAdjustmentInHaler !== undefined && <div>Korekce: {formatCurrency(snap.investedAmountAdjustmentInHaler)}</div>}
+                            <div>Výnos / ztráta: {formatCurrency(subHaler(snap.marketValueInHaler, snap.effectiveInvestedAmountInHaler))}</div>
+                          </>}
+                        </div>
                       </div>
                     </div>
                   );
