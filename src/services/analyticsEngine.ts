@@ -528,7 +528,7 @@ export function computeAssetAccountBalanceAtDate(
 
   const validSnapshots = (snapshots || [])
     .filter((s) => s.accountId === acc.id && s.date >= initDate && s.date <= pointDate)
-    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id));
 
   let baseVal = acc.initialBalanceInHaler || 0;
   let valDate = initDate;

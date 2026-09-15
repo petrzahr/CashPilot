@@ -1,4 +1,5 @@
 import type { AppData } from './storageService';
+import { reconcileMarketValueHistory } from './marketValueHistoryService';
 
 export const COLLECTIONS = {
   transaction: 'transactions', account: 'accounts', category: 'categories',
@@ -54,7 +55,7 @@ export function applyDeletions(input: AppData): AppData {
       return !d || time(e.updatedAt || e.createdAt) > time(d.deletedAt);
     });
   }
-  return result;
+  return reconcileMarketValueHistory(result);
 }
 
 /** Called synchronously for EVERY local mutation, including cascading/bulk deletions. */

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
-import { Account } from '../../types/finance';
+import { Account, MarketValueSnapshot } from '../../types/finance';
 import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../../services/investmentPerformanceService';
 import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
@@ -11,14 +11,16 @@ interface MarketValueModalProps {
   isOpen: boolean;
   onClose: () => void;
   account: Account | null;
+  snapshot?: MarketValueSnapshot | null;
 }
 
 export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   isOpen,
   onClose,
   account,
+  snapshot,
 }) => {
-  const { transactions, marketValueSnapshots, updateMarketValue } = useFinance();
+  const { transactions, marketValueSnapshots, updateMarketValue, editMarketValue } = useFinance();
   const [marketValueStr, setMarketValueStr] = useState('');
   const [adjustmentStr, setAdjustmentStr] = useState('');
   const [valuationDate, setValuationDate] = useState(() => getTodayInPrague());
@@ -28,19 +30,19 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
   useEffect(() => {
     if (account && isOpen) {
-      const val = account.currentMarketValueInHaler || account.initialBalanceInHaler;
+      const val = snapshot?.marketValueInHaler ?? account.currentMarketValueInHaler ?? account.initialBalanceInHaler;
       setMarketValueStr((val / 100).toString());
-      setAdjustmentStr(halerToInputValue(account.investedAmountAdjustmentInHaler ?? 0));
+      setAdjustmentStr(snapshot ? snapshot.investedAmountAdjustmentInHaler === undefined ? '' : halerToInputValue(snapshot.investedAmountAdjustmentInHaler) : halerToInputValue(account.investedAmountAdjustmentInHaler ?? 0));
       const today = getTodayInPrague();
       const initialDate = account.initialBalanceDate && today < account.initialBalanceDate
         ? account.initialBalanceDate
         : today;
-      setValuationDate(initialDate);
-      setNote('');
+      setValuationDate(snapshot?.date ?? initialDate);
+      setNote(snapshot?.note ?? '');
       setIsSubmitting(false);
-      setCorrectionKnown(true);
+      setCorrectionKnown(!snapshot || snapshot.investedAmountAdjustmentInHaler !== undefined);
     }
-  }, [account, isOpen]);
+  }, [account, isOpen, snapshot]);
 
   const enteredValHaler = parseInputToHaler(marketValueStr);
   const adjustmentInHaler = parseInputToHaler(adjustmentStr);
@@ -63,7 +65,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!correctionKnown || !Number.isSafeInteger(adjustmentInHaler)) {
+    if ((!correctionKnown && !snapshot) || !Number.isSafeInteger(adjustmentInHaler) || !Number.isSafeInteger(enteredValHaler)) {
       alert('Zadejte platnou částku korekce.');
       return;
     }
@@ -73,7 +75,12 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
     }
     setIsSubmitting(true);
     try {
-      updateMarketValue(account.id, enteredValHaler, valuationDate, note, adjustmentInHaler);
+      if (snapshot) {
+        editMarketValue(snapshot.id, { date: valuationDate, marketValueInHaler: enteredValHaler,
+          note: note.trim() || undefined, investedAmountAdjustmentInHaler: correctionKnown ? adjustmentInHaler : undefined });
+      } else {
+        updateMarketValue(account.id, enteredValHaler, valuationDate, note, adjustmentInHaler);
+      }
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -84,7 +91,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Aktualizovat tržní hodnotu: ${account.name}`}
+      title={`${snapshot ? 'Upravit tržní ocenění' : 'Aktualizovat tržní hodnotu'}: ${account.name}`}
       subtitle={`Ocenění ${accountTypeLabel} účtu`}
       maxWidth="max-w-md"
     >
@@ -115,6 +122,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               onChange={(e) => {
                 const date = e.target.value;
                 setValuationDate(date);
+                if (snapshot) return;
                 const correction = date >= getTodayInPrague() ? account.investedAmountAdjustmentInHaler ?? 0
                   : getHistoricalInvestmentCorrection(account, marketValueSnapshots, date);
                 setCorrectionKnown(correction !== undefined);
