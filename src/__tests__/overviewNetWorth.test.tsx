@@ -39,9 +39,11 @@ describe('Overview expected total wealth', () => {
       vi.mocked(useFinance).mockReturnValue({ forecast, accounts: [asset], settings: DEFAULT_SETTINGS,
         selectedPeriod, marketValueSnapshots, setSelectedPeriod: vi.fn() } as unknown as ReturnType<typeof useFinance>);
       const html = renderToStaticMarkup(<OverviewScreen onNavigateToBudget={vi.fn()} />);
-      const card = html.split('Změna investic</span>')[1].split('Počáteční stav')[0];
+      const labels = [...html.matchAll(/<span class="text-xs font-semibold">([^<]+)<\/span>/g)].map(match => match[1]);
+      expect(labels.slice(labels.indexOf('Příjmy období'), labels.indexOf('Změna investic') + 1)).toEqual(['Příjmy období', 'Výdaje období', 'Změna investic']);
+      const card = html.split('Změna investic</span>')[1].split('Min. zůstatek')[0];
       expect(card).toContain('Srpen 2026 oproti předchozímu období');
-      expect(card).toContain(marketValueSnapshots.length ? formatCurrency(100000, { showPlus: true }) : 'Chybí úplné ocenění');
+      expect(card).toContain(marketValueSnapshots.length ? formatCurrency(100000, { showPlus: true }) : 'Pro srovnání chybí historické ocenění nebo zachycený vložený kapitál');
     }
   });
   it.each([

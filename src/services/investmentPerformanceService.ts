@@ -1,7 +1,7 @@
 import { Account, BudgetPeriod, MarketValueSnapshot, Transaction } from '../types/finance';
 import { getEffectiveInvestedAmount } from './accountService';
 import { addHaler, subHaler } from './currencyService';
-import { getPreviousPeriod, getTodayInPrague, isDateInPeriod } from './periodService';
+import { getPreviousPeriod, getTodayInPrague } from './periodService';
 
 /** Capture actual capital at valuation time, excluding future/planned contributions. */
 export function getInvestedAmountAtValuation(account: Account, transactions: Transaction[], date: string): number {
@@ -16,8 +16,9 @@ export function getInvestedAmountAtValuation(account: Account, transactions: Tra
   return getEffectiveInvestedAmount(account, Math.max(0, principal));
 }
 
-/** Compare the same included accounts, requiring a fresh, complete valuation in both periods.
- * Never carry valuations forward or apply today's correction to legacy snapshots.
+/** Compare the same included accounts using their last known state at each period end.
+ * Carry market value and captured capital together; never apply today's correction to history.
+ * Later contributions do not change this unrealized gain/loss until another valuation.
  */
 export function calculatePeriodInvestmentChange(
   accounts: Account[], snapshots: MarketValueSnapshot[], period: BudgetPeriod,
@@ -32,8 +33,8 @@ export function calculatePeriodInvestmentChange(
     const history = snapshots.filter(s => s.accountId === account.id &&
       s.date >= account.initialBalanceDate && s.date <= today)
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
-    const current = history.find(s => isDateInPeriod(s.date, period));
-    const prior = history.find(s => isDateInPeriod(s.date, previous));
+    const current = history.find(s => s.date <= period.endDate);
+    const prior = history.find(s => s.date <= previous.endDate);
     if (!current || !prior || !Number.isSafeInteger(current.effectiveInvestedAmountInHaler) ||
         !Number.isSafeInteger(prior.effectiveInvestedAmountInHaler)) return null;
     change = addHaler(change, subHaler(
