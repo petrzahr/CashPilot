@@ -24,8 +24,8 @@ interface OverviewScreenProps {
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod, selectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
-  const investmentPeriod = selectedPeriod ?? forecast.currentPeriod;
+  const { forecast, settings, accounts, setSelectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
+  const investmentPeriod = forecast.currentPeriod;
   const investmentChange = calculatePeriodInvestmentChange(accounts, marketValueSnapshots, investmentPeriod, settings.budgetStartDay);
   const forecastMonths = settings.forecastMonths || 12;
 
