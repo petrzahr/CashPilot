@@ -26,14 +26,14 @@ const cash: Account = {
 };
 
 describe('Overview expected total wealth', () => {
-  it('shows investment change for the selected period and an honest missing-data state', () => {
+  it('always shows investment change for the current period, ignoring the selected period, and an honest missing-data state', () => {
     const selectedPeriod = { ...september, key: '2026-08', name: 'Srpen 2026', month: 8,
       startDate: '2026-08-15', endDate: '2026-09-14' };
     const asset = { ...cash, id: 'asset', type: 'investment' as const, initialBalanceDate: '2026-01-01' };
     const forecast = calculateForecast([september, october], [asset], [], [], [], [], DEFAULT_SETTINGS, [], september.key, '2026-09-15');
     const snapshots = [
-      { id: 'a', accountId: asset.id, date: '2026-08-14', createdAt: '', marketValueInHaler: 30200000, effectiveInvestedAmountInHaler: 30000000 },
-      { id: 'b', accountId: asset.id, date: '2026-09-14', createdAt: '', marketValueInHaler: 32300000, effectiveInvestedAmountInHaler: 32000000 },
+      { id: 'a', accountId: asset.id, date: '2026-09-14', createdAt: '', marketValueInHaler: 30200000, effectiveInvestedAmountInHaler: 30000000 },
+      { id: 'b', accountId: asset.id, date: '2026-09-15', createdAt: '', marketValueInHaler: 32300000, effectiveInvestedAmountInHaler: 32000000 },
     ];
     for (const marketValueSnapshots of [snapshots, []]) {
       vi.mocked(useFinance).mockReturnValue({ forecast, accounts: [asset], settings: DEFAULT_SETTINGS,
@@ -42,7 +42,7 @@ describe('Overview expected total wealth', () => {
       const labels = [...html.matchAll(/<span class="text-xs font-semibold">([^<]+)<\/span>/g)].map(match => match[1]);
       expect(labels.slice(labels.indexOf('Příjmy období'), labels.indexOf('Změna investic') + 1)).toEqual(['Příjmy období', 'Výdaje období', 'Změna investic']);
       const card = html.split('Změna investic</span>')[1].split('Min. zůstatek')[0];
-      expect(card).toContain('Srpen 2026 oproti předchozímu období');
+      expect(card).toContain('Září 2026 oproti předchozímu období');
       expect(card).toContain(marketValueSnapshots.length ? formatCurrency(100000, { showPlus: true }) : 'Pro srovnání chybí historické ocenění nebo zachycený vložený kapitál');
     }
   });
