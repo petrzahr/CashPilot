@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
 import { getEffectiveInvestedAmount } from '../../services/accountService';
-import { formatCurrency, parseInputToHaler, subHaler, addHaler } from '../../services/currencyService';
+import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler, addHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { TrendingUp, Info } from 'lucide-react';
 
@@ -20,6 +20,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 }) => {
   const { transactions, updateMarketValue } = useFinance();
   const [marketValueStr, setMarketValueStr] = useState('');
+  const [adjustmentStr, setAdjustmentStr] = useState('');
   const [valuationDate, setValuationDate] = useState(() => getTodayInPrague());
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +29,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
     if (account && isOpen) {
       const val = account.currentMarketValueInHaler || account.initialBalanceInHaler;
       setMarketValueStr((val / 100).toString());
+      setAdjustmentStr(halerToInputValue(account.investedAmountAdjustmentInHaler ?? 0));
       const today = getTodayInPrague();
       const initialDate = account.initialBalanceDate && today < account.initialBalanceDate
         ? account.initialBalanceDate
@@ -39,6 +41,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   }, [account, isOpen]);
 
   const enteredValHaler = parseInputToHaler(marketValueStr);
+  const adjustmentInHaler = parseInputToHaler(adjustmentStr);
 
   const investedHaler = useMemo(() => {
     if (!account) return 0;
@@ -56,8 +59,8 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         }
       }
     }
-    return getEffectiveInvestedAmount(account, Math.max(0, total));
-  }, [account, transactions]);
+    return getEffectiveInvestedAmount({ ...account, investedAmountAdjustmentInHaler: adjustmentInHaler }, Math.max(0, total));
+  }, [account, transactions, adjustmentInHaler]);
 
   const gainLossHaler = subHaler(enteredValHaler, investedHaler);
   const gainLossPct = investedHaler !== 0 ? (gainLossHaler / investedHaler) * 100 : 0;
@@ -70,13 +73,18 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+    if (!Number.isSafeInteger(adjustmentInHaler)) {
+      alert('Zadejte platnou částku korekce.');
+      return;
+    }
     if (account.initialBalanceDate && valuationDate < account.initialBalanceDate) {
       alert(`Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`);
       return;
     }
     setIsSubmitting(true);
     try {
-      updateMarketValue(account.id, enteredValHaler, valuationDate, note);
+      updateMarketValue(account.id, enteredValHaler, valuationDate, note,
+        adjustmentInHaler === (account.investedAmountAdjustmentInHaler ?? 0) ? undefined : adjustmentInHaler);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -136,6 +144,24 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-400">Kč</span>
             </div>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Korekce vložené částky ({account.currency})
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="0"
+            value={adjustmentStr}
+            onChange={(e) => setAdjustmentStr(e.target.value)}
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Kladná částka zvýší a záporná sníží vložený kapitál pro výpočet výnosu.
+            Nemění tržní hodnotu ani platby. Vymazáním nebo zadáním 0 korekci zrušíte.
+          </p>
         </div>
 
         <div>
