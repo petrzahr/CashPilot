@@ -53,6 +53,7 @@ import {
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../services/investmentPerformanceService';
+import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
@@ -154,6 +155,8 @@ interface FinanceContextType {
   reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => void;
   updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string, investedAmountAdjustmentInHaler?: number) => void;
   updateCorrectionNote: (id: string, note: string) => void;
+  editMarketValue: (id: string, edit: MarketValueEdit) => void;
+  deleteMarketValue: (id: string) => void;
   deleteCorrection: (id: string) => Promise<boolean>;
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
 
@@ -1376,7 +1379,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         getHistoricalInvestmentCorrection(currentAccount, prev.marketValueSnapshots, valuationDate) ??
         (isLatest && valuationDate >= getTodayInPrague() ? currentAccount.investedAmountAdjustmentInHaler ?? 0 : undefined);
       const base = getInvestedAmountAtValuation({ ...currentAccount, investedAmountAdjustmentInHaler: 0 }, prev.transactions, valuationDate);
-      return {
+      return reconcileMarketValueHistory({
         ...prev,
         marketValueSnapshots: [...prev.marketValueSnapshots, {
           ...snapshot,
@@ -1384,6 +1387,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
             .reduce((time, s) => Math.max(time, (Date.parse(s.createdAt) || 0) + 1), Date.parse(nowIso))).toISOString(),
           baseInvestedAmountInHaler: base,
           investedAmountAdjustmentInHaler: correction,
+          correctionChanged: correction !== getHistoricalInvestmentCorrection(currentAccount, prev.marketValueSnapshots, valuationDate),
           effectiveInvestedAmountInHaler: correction === undefined ? undefined : addHaler(base, correction),
           correctionPreviouslyZero: currentAccount.investedAmountAdjustmentInHaler === undefined &&
             !prev.marketValueSnapshots.some(s => s.accountId === accountId) || undefined,
@@ -1396,12 +1400,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           marketValueUpdatedAt: isLatest ? valuationDate : a.marketValueUpdatedAt,
           updatedAt: nowIso
         } : a)
-      };
+      });
     });
 
     const accountTypeLabel = account.type === 'pension' ? 'penzijního' : 'investičního';
     showToast(`Tržní hodnota ${accountTypeLabel} účtu byla aktualizována.`);
   }, [data.accounts, showToast]);
+
+  const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
+    setData(prev => mutateMarketValueHistory(prev, id, edit));
+    showToast('Tržní ocenění bylo upraveno.');
+  }, [setData, showToast]);
+
+  const deleteMarketValue = useCallback((id: string) => {
+    setData(prev => mutateMarketValueHistory(prev, id));
+    showToast('Tržní ocenění bylo smazáno.');
+  }, [setData, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
     const nowIso = new Date().toISOString();
@@ -1903,6 +1917,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     reorderAccounts,
     reconcileBalance,
     updateMarketValue,
+    editMarketValue,
+    deleteMarketValue,
     updateCorrectionNote,
     deleteCorrection,
     dataConflicts,

@@ -5,8 +5,12 @@ import { Account, Transaction, MarketValueSnapshot } from '../../types/finance';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
+import { MarketValueModal } from './MarketValueModal';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import {
   History,
+  Pencil,
+  Trash2,
   ArrowDownLeft,
   ArrowUpRight,
   ArrowLeftRight,
@@ -32,7 +36,11 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
   onClose,
   account,
 }) => {
-  const { transactions, marketValueSnapshots, corrections } = useFinance();
+  const { transactions, marketValueSnapshots, corrections, deleteMarketValue, accounts } = useFinance();
+  const [editingSnapshotId, setEditingSnapshotId] = useState<string | null>(null);
+  const [deletingSnapshotId, setDeletingSnapshotId] = useState<string | null>(null);
+  const editingSnapshot = marketValueSnapshots.find(s => s.id === editingSnapshotId);
+  const deletingSnapshot = marketValueSnapshots.find(s => s.id === deletingSnapshotId);
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
 
   const isAssetAccount = account?.type === 'investment' || account?.type === 'pension';
@@ -95,6 +103,9 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       return combined.sort((a, b) => {
         const dateCmp = b.date.localeCompare(a.date);
         if (dateCmp !== 0) return dateCmp;
+        if (a.kind === 'snapshot' && b.kind === 'snapshot') {
+          return b.data.createdAt.localeCompare(a.data.createdAt) || b.data.id.localeCompare(a.data.id);
+        }
         return (b.sequence ?? 0) - (a.sequence ?? 0);
       });
     }
@@ -158,6 +169,16 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           {formatCurrency(snap.marketValueInHaler)}
                         </span>
                         <div className="text-[11px] text-purple-600 font-medium">Tržní hodnota</div>
+                        <div className="flex justify-end gap-1 mt-1">
+                          <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní ocenění" aria-label="Upravit tržní ocenění"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní ocenění" aria-label="Smazat tržní ocenění"
+                            className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                         <div className="text-[11px] text-slate-500">
                           {snap.effectiveInvestedAmountInHaler === undefined ? 'Historický vložený kapitál není znám' : <>
                             <div>Vloženo: {formatCurrency(snap.effectiveInvestedAmountInHaler)}</div>
@@ -288,6 +309,13 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       </Modal>
 
       {/* Detail korekce při rozkliknutí */}
+      <MarketValueModal isOpen={isOpen && Boolean(editingSnapshot)} onClose={() => setEditingSnapshotId(null)}
+        account={accounts.find(a => a.id === account.id) ?? account} snapshot={editingSnapshot} />
+      <ConfirmationModal isOpen={isOpen && Boolean(deletingSnapshot)} onClose={() => setDeletingSnapshotId(null)}
+        onConfirm={() => { if (deletingSnapshot) deleteMarketValue(deletingSnapshot.id); }}
+        title="Smazat tržní ocenění?"
+        message={`Ocenění${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} bude trvale odstraněno včetně související změny korekce. Navazující hodnoty a období se přepočítají.`}
+        confirmText="Smazat ocenění" cancelText="Zrušit" isDestructive />
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}

@@ -13,8 +13,8 @@ export function getHistoricalInvestmentCorrection(account: Account, snapshots: M
   const snapshot = latestInvestmentSnapshot(account, snapshots, date);
   if (snapshot) return snapshot.investedAmountAdjustmentInHaler;
   const history = snapshots.filter(s => s.accountId === account.id);
-  if (history.some(s => s.correctionPreviouslyZero) ||
-      (!history.length && account.investedAmountAdjustmentInHaler === undefined)) return 0;
+  if (account.investmentCorrectionInitiallyZero || history.some(s => s.correctionPreviouslyZero) ||
+      (!history.length && !account.marketValueHistoryManaged && account.investedAmountAdjustmentInHaler === undefined)) return 0;
   return undefined;
 }
 

@@ -881,7 +881,7 @@ export function getCurrentAssetValue(
   // Hledáme snapshoty s datem <= todayStr
   const validSnapshots = safeSnapshots
     .filter(s => s.accountId === acc.id && s.date >= initDate && s.date <= todayStr)
-    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id));
 
   let baseVal = acc.initialBalanceInHaler || 0;
   let valDate = initDate;

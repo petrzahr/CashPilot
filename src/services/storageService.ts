@@ -1,4 +1,5 @@
 import { COLLECTIONS, migrateSyncData, type DeletionRecord, type ResetMarker, type SyncMetadata } from './syncModel';
+import { reconcileMarketValueHistory } from './marketValueHistoryService';
 import {
   Account,
   AppSettings,
@@ -321,7 +322,7 @@ export function validateAndParseBackup(jsonStr: string): AppData {
   if (typeof parsed.settings.overdraftLimitInHaler !== 'number') {
     parsed.settings = { ...parsed.settings, overdraftLimitInHaler: parsed.settings.minReserveInHaler ?? DEFAULT_SETTINGS.overdraftLimitInHaler };
   }
-  return migrateSyncData(parsed);
+  return reconcileMarketValueHistory(migrateSyncData(parsed));
 }
 
 /**
