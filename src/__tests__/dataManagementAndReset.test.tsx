@@ -1,3 +1,6 @@
+import { TransactionModal } from '../components/transactions/TransactionModal';
+import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { getPeriodForDate } from '../services/periodService';
 import { SyncController } from '../services/syncController';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import React from 'react';
@@ -235,6 +238,84 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('recurring conversion exposes the existing control for one-off edits', () => {
+    populateTestStorage();
+    const render = (transaction?: Transaction) => renderToStaticMarkup(
+      <FinanceProvider><TransactionModal isOpen onClose={() => {}} transactionToEdit={transaction} /></FinanceProvider>
+    );
+    expect(render()).toContain('Pravidelná položka (opakovat');
+    expect(render(sampleTransactions[0])).toContain('Pravidelná položka (opakovat');
+    expect(render({ ...sampleTransactions[0], recurringRuleId: 'rule_salary' })).not.toContain('Pravidelná položka (opakovat');
+  });
+
+  it.each(['planned', 'executed', 'cancelled'] as const)('recurring conversion persists and syncs a single first occurrence (%s)', async status => {
+    populateTestStorage({ recurringRules: [] });
+    const ctx = await getContextHandle();
+    const original = sampleTransactions[0];
+    const ruleData: Omit<RecurringRule, 'id' | 'createdAt' | 'updatedAt'> = {
+      title: 'Edited payment', amountInHaler: 123400, type: 'transfer',
+      sourceAccountId: 'acc_checking_1', targetAccountId: 'acc_invest_1',
+      categoryId: null, subcategoryId: null, note: 'Edited note',
+      startDate: '2026-09-20', frequency: 'quarterly', dayOfMonth: 20, isActive: true,
+    };
+    const rule = ctx.addRecurringRule(ruleData, 1, status, original.id);
+    const read = () => loadStoredDataResult().data;
+    const converted = read().transactions.find(t => t.id === original.id)!;
+    expect(read().transactions).toHaveLength(sampleTransactions.length);
+    const persistedRules = read().recurringRules;
+    expect(persistedRules).toEqual([{ ...rule, updatedAt: expect.any(String) }]);
+    expect(converted).toMatchObject({
+      id: original.id, createdAt: original.createdAt, title: ruleData.title,
+      amountInHaler: ruleData.amountInHaler, date: ruleData.startDate, sequence: 1,
+      type: 'transfer', sourceAccountId: ruleData.sourceAccountId, targetAccountId: ruleData.targetAccountId,
+      categoryId: null, subcategoryId: null, note: ruleData.note, status, recurringRuleId: rule.id,
+    });
+    expect(converted.actualAmountInHaler).toBe(
+      status === 'executed' ? ruleData.amountInHaler : status === 'planned' ? undefined : original.actualAmountInHaler
+    );
+    expect(() => ctx.addRecurringRule(ruleData, 1, status, original.id)).toThrow();
+    expect(() => ctx.addRecurringRule(ruleData, 1, status, 'missing')).toThrow();
+    await ctx.__syncSession.sync();
+    expect(read().transactions.find(t => t.id === original.id)).toEqual(converted);
+    expect(read().recurringRules).toEqual(persistedRules);
+    const effective = (date: string) => getEffectiveTransactionsForPeriod(
+      getPeriodForDate(date, 1), read().transactions, read().recurringRules, [], 1, '2026-09-01'
+    ).filter(t => t.recurringRuleId === rule.id);
+    expect(effective('2026-09-20')).toHaveLength(1);
+    expect(effective('2026-10-20')).toHaveLength(0);
+    expect(effective('2026-12-20')).toMatchObject([{ date: '2026-12-20', amountInHaler: 123400 }]);
+
+    const createdRule = ctx.addRecurringRule(ruleData, 1, status);
+    expect(read().transactions).toHaveLength(sampleTransactions.length + 1);
+    const future = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-12-20', 1), read().transactions, read().recurringRules, [], 1, '2026-09-01');
+    const createdFuture = future.find(t => t.recurringRuleId === createdRule.id)!;
+    const convertedFuture = future.find(t => t.recurringRuleId === rule.id)!;
+    expect(createdFuture).toMatchObject({ title: convertedFuture.title, date: convertedFuture.date, amountInHaler: convertedFuture.amountInHaler, status: convertedFuture.status });
+  });
+
+  it.each([
+    ['monthly', '2026-10-20'],
+    ['bi_monthly', '2026-11-20'],
+    ['quarterly', '2026-12-20'],
+    ['semi_annually', '2027-03-20'],
+    ['annually', '2027-09-20'],
+  ] as const)('recurring conversion retains the %s schedule after reopening', async (frequency, nextDate) => {
+    populateTestStorage({ recurringRules: [] });
+    const ctx = await getContextHandle();
+    const rule = ctx.addRecurringRule({
+      ...sampleRules[0], frequency, startDate: '2026-09-20', dayOfMonth: 20,
+    }, 1, 'planned', sampleTransactions[0].id);
+    await ctx.__syncSession.sync();
+    const reopened = await getContextHandle();
+    expect(reopened.recurringRules).toEqual([{ ...rule, updatedAt: expect.any(String) }]);
+    expect(reopened.transactions.filter((t: Transaction) => t.id === sampleTransactions[0].id))
+      .toMatchObject([{ recurringRuleId: rule.id }]);
+    const future = getEffectiveTransactionsForPeriod(
+      getPeriodForDate(nextDate, 1), reopened.transactions, reopened.recurringRules, [], 1, '2026-09-01'
+    ).filter(t => t.recurringRuleId === rule.id);
+    expect(future).toMatchObject([{ date: nextDate, amountInHaler: rule.amountInHaler }]);
   });
 
   // 1. Funkce „Zkontrolovat a vyčistit ukázková data“ byla odstraněna

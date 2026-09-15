@@ -132,7 +132,8 @@ interface FinanceContextType {
   addRecurringRule: (
     rule: Omit<RecurringRule, 'id' | 'createdAt' | 'updatedAt'>,
     initialSequence?: number,
-    initialStatus?: TransactionStatus
+    initialStatus?: TransactionStatus,
+    existingTransactionId?: string
   ) => RecurringRule;
   updateRecurringRule: (
     ruleId: string, 
@@ -902,7 +903,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const addRecurringRule = useCallback((
     ruleData: Omit<RecurringRule, 'id' | 'createdAt' | 'updatedAt'>,
     initialSequence?: number,
-    initialStatus?: TransactionStatus
+    initialStatus?: TransactionStatus,
+    existingTransactionId?: string
   ) => {
     const srcAcc = data.accounts.find(a => a.id === ruleData.sourceAccountId);
     if (srcAcc?.initialBalanceDate && ruleData.startDate < srcAcc.initialBalanceDate) {
@@ -930,16 +932,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     const effectiveStatus: TransactionStatus = initialStatus || getStatusForDate(newRule.startDate);
 
     setData(prev => {
+      const existingTx = existingTransactionId
+        ? prev.transactions.find(t => t.id === existingTransactionId)
+        : undefined;
+      if (existingTransactionId && (!existingTx || existingTx.recurringRuleId)) {
+        throw new Error('Položka již patří do pravidelné série nebo neexistuje.');
+      }
+
       let targetSeq = initialSequence && initialSequence > 0
         ? Math.round(initialSequence)
         : getNextSequenceForDate(newRule.startDate, prev.transactions);
 
       const firstOccurrenceTx: Transaction = {
-        id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        ...existingTx,
+        id: existingTx?.id || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         title: newRule.title,
         amountInHaler: newRule.amountInHaler,
-        plannedAmountInHaler: newRule.amountInHaler,
-        actualAmountInHaler: effectiveStatus === 'executed' ? newRule.amountInHaler : undefined,
+        plannedAmountInHaler: existingTx ? existingTx.plannedAmountInHaler : newRule.amountInHaler,
+        actualAmountInHaler: effectiveStatus === 'executed' ? newRule.amountInHaler : (effectiveStatus === 'planned' ? undefined : existingTx?.actualAmountInHaler),
         date: newRule.startDate,
         sequence: targetSeq,
         type: newRule.type,
@@ -950,11 +960,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         status: effectiveStatus,
         recurringRuleId: newRule.id,
         note: newRule.note,
-        createdAt: nowIso,
+        createdAt: existingTx?.createdAt || nowIso,
         updatedAt: nowIso,
       };
 
-      const updatedTxs = insertOrUpdateWithSequence(firstOccurrenceTx, targetSeq, prev.transactions);
+      const updatedTxs = insertOrUpdateWithSequence(firstOccurrenceTx, targetSeq, prev.transactions, existingTx?.date);
 
       return {
         ...prev,
@@ -965,7 +975,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     showToast(`Pravidelná položka „${newRule.title}“ byla vytvořena.`);
     return newRule;
-  }, [showToast]);
+  }, [data.accounts, showToast]);
 
   const updateRecurringRule = useCallback((
     ruleId: string,

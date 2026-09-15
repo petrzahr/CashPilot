@@ -95,6 +95,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setStatus(transactionToEdit.status);
       setNote(transactionToEdit.note || '');
       setIsRecurring(false);
+      setFrequency('monthly');
+      setDayOfMonth(parseInt(transactionToEdit.date.split('-')[2], 10) || 1);
     } else {
       const defaultDate = initialDate || getDefaultDateForPeriod(selectedPeriod);
       const defaultDay = parseInt(defaultDate.split('-')[2], 10) || 1;
@@ -126,14 +128,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   // Při změně data v editačním formuláři ihned přepočti a předvyplň pořadí pro nově zvolený den
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
-    if (!isEditing) {
-      const nextSeq = getNextSequenceForDate(newDate, transactions);
-      setSequenceStr(nextSeq.toString());
-      setStatus(getStatusForDate(newDate));
+    if (!isLinkedToRecurring) {
       const parsedDay = parseInt(newDate.split('-')[2], 10);
       if (!isNaN(parsedDay) && parsedDay >= 1 && parsedDay <= 31) {
         setDayOfMonth(parsedDay);
       }
+    }
+    if (!isEditing) {
+      const nextSeq = getNextSequenceForDate(newDate, transactions);
+      setSequenceStr(nextSeq.toString());
+      setStatus(getStatusForDate(newDate));
       if (sourceAccountId) {
         const srcAcc = accounts.find(a => a.id === sourceAccountId);
         if (srcAcc?.initialBalanceDate && newDate < srcAcc.initialBalanceDate) {
@@ -225,7 +229,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     setIsSaving(true);
     try {
-      if (isEditing && transactionToEdit) {
+      if (isRecurring && !isLinkedToRecurring) {
+        const dateDay = parseInt(date.split('-')[2], 10) || 1;
+        const chosenDay = (dayOfMonth >= 1 && dayOfMonth <= 31) ? dayOfMonth : dateDay;
+        addRecurringRule({
+          title,
+          amountInHaler,
+          type,
+          frequency,
+          dayOfMonth: chosenDay,
+          startDate: date,
+          sourceAccountId,
+          targetAccountId: type === 'transfer' ? targetAccountId : undefined,
+          categoryId: type !== 'transfer' && categoryId ? categoryId : null,
+          subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
+          note,
+          isActive: true,
+        }, sequenceNum, status, transactionToEdit?.id);
+      } else if (isEditing && transactionToEdit) {
         if (isLinkedToRecurring && transactionToEdit.recurringRuleId) {
           if (recurringEditMode === 'occurrence') {
             if (transactionToEdit.id.startsWith('virtual_')) {
@@ -297,25 +318,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           });
         }
       } else {
-        if (isRecurring) {
-          const dateDay = parseInt(date.split('-')[2], 10) || 1;
-          const chosenDay = (dayOfMonth >= 1 && dayOfMonth <= 31) ? dayOfMonth : dateDay;
-          addRecurringRule({
-            title,
-            amountInHaler,
-            type,
-            frequency,
-            dayOfMonth: chosenDay,
-            startDate: date,
-            sourceAccountId,
-            targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-            categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-            subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-            note,
-            isActive: true,
-          }, sequenceNum, status);
-        } else {
-          addTransaction({
+        addTransaction({
             title,
             amountInHaler,
             plannedAmountInHaler: amountInHaler,
@@ -329,8 +332,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
             status,
             note,
-          });
-        }
+        });
       }
       onClose();
     } catch (err) {
@@ -614,8 +616,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           )}
         </div>
 
-        {/* Volba opakování (pouze při zakládání nové položky) */}
-        {!isEditing && (
+        {/* Volba opakování pro položky bez pravidelné série */}
+        {!isLinkedToRecurring && (
           <div className="pt-2 border-t border-slate-100">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
