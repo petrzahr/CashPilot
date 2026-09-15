@@ -759,9 +759,48 @@ export function calculateForecast(
 
   const currentPeriodIdx = periodSummaries.findIndex(p => p.period.key === resolvedCurrentPeriod.key);
   const forecastMonths = settings.forecastMonths || 12;
-  const forecastPeriods = currentPeriodIdx >= 0
+  const historicalForecastPeriods = currentPeriodIdx >= 0
     ? periodSummaries.slice(currentPeriodIdx, currentPeriodIdx + forecastMonths)
     : periodSummaries.slice(0, forecastMonths);
+
+  // Keep historical period balances intact; anchor the displayed asset forecast at today.
+  const assetValues = new Map(safeAccounts
+    .filter(a => (a.type === 'investment' || a.type === 'pension') && (!a.initialBalanceDate || a.initialBalanceDate <= today))
+    .map(a => [a.id, getCurrentAssetValue(a, safeTxs, safeSnapshots, today)]));
+  const forecastPeriods = historicalForecastPeriods.map(summary => {
+    const projected = { ...summary, accountBalances: { ...summary.accountBalances } };
+    const remainingTxs = getEffectiveTransactionsForPeriod(
+      summary.period, safeTxs, safeRules, safeExceptions, settings.budgetStartDay, todayStr, safeAccounts
+    ).filter(t => t.status !== 'cancelled' && !(t.status === 'executed' && t.date <= today));
+    for (const acc of safeAccounts) {
+      const opening = assetValues.get(acc.id);
+      if (opening === undefined) continue;
+      const original = summary.accountBalances[acc.id];
+      let incoming = 0;
+      let outgoing = 0;
+      for (const tx of remainingTxs) {
+        if (tx.type !== 'transfer') continue;
+        const amount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler;
+        if (tx.targetAccountId === acc.id) incoming = addHaler(incoming, amount);
+        if (tx.sourceAccountId === acc.id) outgoing = addHaler(outgoing, amount);
+      }
+      const closing = addHaler(opening, incoming, -outgoing);
+      projected.accountBalances[acc.id] = {
+        ...original, openingBalanceInHaler: opening, closingBalanceInHaler: closing,
+        transfersInInHaler: incoming, transfersOutInHaler: outgoing,
+        marketValueInHaler: closing,
+        unrealizedGainLossInHaler: subHaler(closing, original.investedPrincipalInHaler || 0),
+      };
+      projected.openingBalanceInHaler += opening - original.openingBalanceInHaler;
+      projected.closingBalanceInHaler += closing - original.closingBalanceInHaler;
+      if (acc.isNetWorth) {
+        projected.netWorthOpeningInHaler += opening - original.openingBalanceInHaler;
+        projected.netWorthClosingInHaler += closing - original.closingBalanceInHaler;
+      }
+      assetValues.set(acc.id, closing);
+    }
+    return projected;
+  });
 
   overallMinBalance = Infinity;
   earliestShortage = null;
@@ -804,11 +843,75 @@ export function calculateForecast(
           }
         }
       }
+      for (const acc of safeAccounts) {
+        if (!acc.isNetWorth || (acc.type !== 'investment' && acc.type !== 'pension')) continue;
+        const initDate = acc.initialBalanceDate || '1970-01-01';
+        const previousValue = currentSummary?.accountBalances[acc.id]?.openingBalanceInHaler || 0;
+        const activatedValue = currentSummary && initDate > currentSummary.period.startDate && initDate <= today
+          ? acc.initialBalanceInHaler : 0;
+        netWorthNow += getCurrentAssetValue(acc, safeTxs, safeSnapshots, today) - previousValue - activatedValue;
+      }
       return netWorthNow;
     })(),
     plannedIncomeCurrentPeriodInHaler: currentSummary ? currentSummary.incomeInHaler : 0,
     plannedExpenseCurrentPeriodInHaler: currentSummary ? currentSummary.expenseInHaler : 0,
   };
+}
+
+/** Current investment/pension value, including executed transfers after valuation. */
+export function getCurrentAssetValue(
+  acc: Account,
+  safeTxs: Transaction[],
+  safeSnapshots: MarketValueSnapshot[],
+  todayStr: string
+): number {
+  const initDate = acc.initialBalanceDate || '1970-01-01';
+  if (initDate > todayStr) return 0;
+
+  // Hledáme snapshoty s datem <= todayStr
+  const validSnapshots = safeSnapshots
+    .filter(s => s.accountId === acc.id && s.date >= initDate && s.date <= todayStr)
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+  let baseVal = acc.initialBalanceInHaler || 0;
+  let valDate = initDate;
+  let hasValuation = false;
+
+  if (validSnapshots.length > 0) {
+    baseVal = validSnapshots[0].marketValueInHaler;
+    valDate = validSnapshots[0].date;
+    hasValuation = true;
+  } else if (
+    acc.currentMarketValueInHaler !== undefined &&
+    acc.marketValueUpdatedAt &&
+    acc.marketValueUpdatedAt >= initDate &&
+    acc.marketValueUpdatedAt <= todayStr
+  ) {
+    baseVal = acc.currentMarketValueInHaler;
+    valDate = acc.marketValueUpdatedAt;
+    hasValuation = true;
+  } else if (
+    acc.currentMarketValueInHaler !== undefined &&
+    !acc.marketValueUpdatedAt
+  ) {
+    baseVal = acc.currentMarketValueInHaler;
+    valDate = initDate;
+  }
+
+  // Přičíst/odečíst uskutečněné převody (vklady a výběry) po datu ocenění až do todayStr (včetně)
+  for (const t of safeTxs) {
+    if (t.status !== 'executed' || t.type !== 'transfer') continue;
+    if (hasValuation) {
+      if (t.date <= valDate || t.date > todayStr) continue;
+    } else {
+      if (t.date < initDate || t.date > todayStr) continue;
+    }
+    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
+    if (t.targetAccountId === acc.id) baseVal = addHaler(baseVal, amt);
+    if (t.sourceAccountId === acc.id) baseVal = subHaler(baseVal, amt);
+  }
+
+  return baseVal;
 }
 
 export interface QuickFinancialOverview {
@@ -881,56 +984,6 @@ export function calculateQuickFinancialOverview(
     return bal;
   };
 
-  // Pomocná funkce pro ocenění investičního / penzijního účtu k todayStr
-  const computeAssetAccountValue = (acc: Account): number => {
-    const initDate = acc.initialBalanceDate || '1970-01-01';
-    if (initDate > todayStr) return 0;
-
-    // Hledáme snapshoty s datem <= todayStr
-    const validSnapshots = safeSnapshots
-      .filter(s => s.accountId === acc.id && s.date >= initDate && s.date <= todayStr)
-      .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
-
-    let baseVal = acc.initialBalanceInHaler || 0;
-    let valDate = initDate;
-    let hasValuation = false;
-
-    if (validSnapshots.length > 0) {
-      baseVal = validSnapshots[0].marketValueInHaler;
-      valDate = validSnapshots[0].date;
-      hasValuation = true;
-    } else if (
-      acc.currentMarketValueInHaler !== undefined &&
-      acc.marketValueUpdatedAt &&
-      acc.marketValueUpdatedAt >= initDate &&
-      acc.marketValueUpdatedAt <= todayStr
-    ) {
-      baseVal = acc.currentMarketValueInHaler;
-      valDate = acc.marketValueUpdatedAt;
-      hasValuation = true;
-    } else if (
-      acc.currentMarketValueInHaler !== undefined &&
-      !acc.marketValueUpdatedAt
-    ) {
-      baseVal = acc.currentMarketValueInHaler;
-      valDate = initDate;
-    }
-
-    // Přičíst/odečíst uskutečněné převody (vklady a výběry) po datu ocenění až do todayStr (včetně)
-    for (const t of safeTxs) {
-      if (t.status !== 'executed' || t.type !== 'transfer') continue;
-      if (hasValuation) {
-        if (t.date <= valDate || t.date > todayStr) continue;
-      } else {
-        if (t.date < initDate || t.date > todayStr) continue;
-      }
-      const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-      if (t.targetAccountId === acc.id) baseVal = addHaler(baseVal, amt);
-      if (t.sourceAccountId === acc.id) baseVal = subHaler(baseVal, amt);
-    }
-
-    return baseVal;
-  };
 
   let checkingAndCashInHaler = 0;
   let savingsInHaler = 0;
@@ -943,9 +996,9 @@ export function calculateQuickFinancialOverview(
     } else if (acc.type === 'savings') {
       savingsInHaler = addHaler(savingsInHaler, computeLiquidAccountBalance(acc));
     } else if (acc.type === 'investment') {
-      investmentsInHaler = addHaler(investmentsInHaler, computeAssetAccountValue(acc));
+      investmentsInHaler = addHaler(investmentsInHaler, getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr));
     } else if (acc.type === 'pension') {
-      pensionInHaler = addHaler(pensionInHaler, computeAssetAccountValue(acc));
+      pensionInHaler = addHaler(pensionInHaler, getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr));
     }
   }
 

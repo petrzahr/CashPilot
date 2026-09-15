@@ -57,10 +57,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     <div className="space-y-6 pb-12">
       {/* 6 Souhrnných KPI karet */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-        {/* 1. Použitelné peníze nyní */}
+        {/* 1. Počáteční stav */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Použitelné peníze nyní</span>
+            <span className="text-xs font-semibold">Počáteční stav</span>
             <div className="p-1.5 rounded-lg bg-sky-50 text-sky-600">
               <Wallet className="w-4 h-4" />
             </div>
@@ -557,7 +557,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       <span className="text-[10px] font-normal text-slate-400">Zahrnuté účty</span>
                     </div>
                   </td>
-                  {forecast.periods.map((p) => {
+                  {displayPeriods.map((p) => {
                     const totalOpening = p.netWorthOpeningInHaler;
                     const totalClosing = p.netWorthClosingInHaler;
                     const isOpeningNegative = totalOpening < 0;
