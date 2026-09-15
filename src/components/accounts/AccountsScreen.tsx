@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
 import { getEffectiveInvestedAmount } from '../../services/accountService';
+import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
@@ -30,6 +31,8 @@ export const AccountsScreen: React.FC = () => {
     accounts,
     forecast,
     selectedPeriod,
+    currentPeriod,
+    transactions,
     corrections,
     marketValueSnapshots,
     archiveAccount,
@@ -193,7 +196,9 @@ export const AccountsScreen: React.FC = () => {
           const lastCorrection = accCorrections[0];
 
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
-          const marketValue = acc.currentMarketValueInHaler || closingBalance;
+          const marketValue = isInvestment && selectedPeriod.endDate < currentPeriod.startDate
+            ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
+            : acc.currentMarketValueInHaler || closingBalance;
           const investedPrincipal = accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
           const unrealizedProfitHaler = subHaler(marketValue, investedPrincipal);
           const unrealizedPct = investedPrincipal !== 0 ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
