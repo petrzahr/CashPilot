@@ -18,6 +18,8 @@ import {
   getPreviousDayString,
   getTodayInPrague,
   isDateInPeriod,
+  getOverviewPeriods,
+  generatePeriodsBetween,
 } from './periodService';
 import { czechStringCompare } from './categoryService';
 
@@ -414,6 +416,52 @@ export function resolveAnalyticsDateRange(
       periods,
     },
   };
+}
+
+/**
+ * Stav duálního filtru Budoucnost/Historie sdíleného mezi sekcemi Přehled a Analýza & trendy.
+ */
+export type DualPeriodRange = {
+  direction: 'future' | 'past';
+  months?: 3 | 6 | 12 | 18 | 24;
+  preset?: 'ytd' | 'all' | 'custom';
+  from?: string; // klíč YYYY-MM
+  to?: string;   // klíč YYYY-MM
+};
+
+/**
+ * Vyhodnotí sekvenci rozpočtových period pro duální filtr Budoucnost/Historie.
+ */
+export function resolveDualPeriodRange(
+  range: DualPeriodRange,
+  current: BudgetPeriod,
+  allData: {
+    accounts: Account[];
+    transactions: Transaction[];
+    corrections: BalanceCorrection[];
+    snapshots: MarketValueSnapshot[];
+  },
+  todayStr: string = getTodayInPrague(),
+  startDay: number = 15
+): BudgetPeriodInfo[] {
+  let rawPeriods: BudgetPeriod[];
+
+  if (range.preset === 'custom' && range.from && range.to) {
+    const [fromY, fromM] = range.from.split('-').map(Number);
+    const [toY, toM] = range.to.split('-').map(Number);
+    rawPeriods = generatePeriodsBetween(
+      createBudgetPeriod(fromY, fromM, startDay),
+      createBudgetPeriod(toY, toM, startDay),
+      startDay
+    );
+  } else if (range.preset) {
+    rawPeriods = resolveAnalyticsDateRange(range.preset, undefined, undefined, allData, todayStr, startDay)
+      .range.periods.map((info) => info.period);
+  } else {
+    rawPeriods = getOverviewPeriods(current, { direction: range.direction, months: range.months || 12 }, startDay);
+  }
+
+  return rawPeriods.map((p) => createBudgetPeriodInfo(p, todayStr));
 }
 
 /**
