@@ -32,6 +32,7 @@ import {
   Repeat
 } from 'lucide-react';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
+import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
@@ -286,10 +287,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
     return {
       usableClosingInHaler: currentSummary.usableClosingInHaler,
-      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
+      netWorthClosingInHaler: getAccountPeriodSummary(currentSummary, accounts, transactions, marketValueSnapshots).netWorthClosingInHaler,
       savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
     };
-  }, [accounts, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
+  }, [accounts, currentSummary, transactions, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
 
   const formatPercent = (value: number | null) => value === null
     ? '—'

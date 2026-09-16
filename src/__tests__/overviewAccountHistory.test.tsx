@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { calculateForecast } from '../services/financialEngine';
+import { getAccountPeriodSummary } from '../services/accountSummaryService';
 import { createBudgetPeriod } from '../services/periodService';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
@@ -63,4 +64,31 @@ describe.each(['investment', 'pension'] as const)('Overview %s account history',
     expect(html).toContain(`Zůstatek celkem: ${formatCurrency(closing * 100 + 1100000)}`);
     expect(JSON.stringify({ forecast, accounts, transactions, marketValueSnapshots })).toBe(before);
   });
+});
+
+it('uses the same asset totals for budget and forecast summaries as the account breakdown', () => {
+  const period = createBudgetPeriod(2026, 9, 15);
+  const cash: Account = { id: 'cash', name: 'Cash', type: 'checking', currency: 'CZK',
+    initialBalanceInHaler: 48334800, initialBalanceDate: '2026-01-01', isUsableCash: true,
+    isNetWorth: true, color: '', sortOrder: 0, status: 'active', createdAt: '', updatedAt: '' };
+  const asset: Account = { ...cash, id: 'asset', type: 'investment', isUsableCash: false,
+    initialBalanceInHaler: 82600000 };
+  const accounts = [cash, asset];
+  const transfer: Transaction = { id: 'transfer', title: 'Investment', type: 'transfer',
+    sourceAccountId: cash.id, targetAccountId: asset.id, date: '2026-09-25', sequence: 1,
+    amountInHaler: 650000, status: 'planned', createdAt: '', updatedAt: '' };
+  const forecast = calculateForecast([period], accounts, [transfer], [], [], [],
+    DEFAULT_SETTINGS, [], period.key, '2026-09-16');
+  const original = JSON.stringify(forecast);
+  const budget = getAccountPeriodSummary(forecast.periods[0], accounts, [transfer], []);
+  const overview = getAccountPeriodSummary(forecast.forecastPeriods![0], accounts, [transfer], []);
+  expect(budget.netWorthClosingInHaler).toBe(130284800);
+  expect(overview.closingBalanceInHaler).toBe(130284800);
+  expect(overview.netChangeInHaler).toBe(overview.closingBalanceInHaler - overview.openingBalanceInHaler);
+  expect(Object.values(overview.accountBalances).reduce((sum, a) => sum + a.closingBalanceInHaler, 0))
+    .toBe(overview.closingBalanceInHaler);
+  const executed = getAccountPeriodSummary(forecast.forecastPeriods![0], accounts,
+    [{ ...transfer, status: 'executed' }], []);
+  expect(executed.closingBalanceInHaler).toBe(130934800);
+  expect(JSON.stringify(forecast)).toBe(original);
 });
