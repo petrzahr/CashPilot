@@ -61,9 +61,6 @@ export const Header: React.FC<HeaderProps> = ({
           <h1 className="text-base font-bold text-slate-900 leading-tight truncate">
             {activeScreenTitle}
           </h1>
-          <p className="text-[11px] text-slate-400 font-medium hidden sm:block truncate">
-            CashPilot – Osobní finanční forecast
-          </p>
         </div>
       </div>
 
