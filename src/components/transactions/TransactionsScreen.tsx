@@ -310,7 +310,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   }, [filteredTransactions]);
 
   return (
-    <div className="space-y-5 pb-12">
+    <div className="space-y-6 pb-12">
       {dataConflicts && dataConflicts.length > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
