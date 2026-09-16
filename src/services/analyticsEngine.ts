@@ -501,6 +501,7 @@ export function computeLiquidAccountBalanceAtDate(
       (t) =>
         t.id === c.id ||
         (t.type === 'balance_adjustment' &&
+          t.sourceAccountId === c.accountId &&
           t.date === c.checkDate &&
           t.diffInHaler === c.diffInHaler)
     );

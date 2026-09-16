@@ -306,7 +306,7 @@ export function getAccountBalanceAtDate(
     const relevantLegacyCorrections = safeCorrections.filter(c => {
       if (c.accountId !== accountId) return false;
       if (c.checkDate < initDate) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
+      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
       if (isAlreadyInTxs) return false;
       return c.checkDate <= targetDate;
     });
@@ -373,7 +373,7 @@ export function getAccountBalanceBeforeDate(
   if (account.type !== 'investment' && account.type !== 'pension') {
     const priorCorrections = safeCorrections.filter(c => {
       if (c.accountId !== accountId || c.checkDate < initDate || c.checkDate >= targetStartDate) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
+      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
       return !isAlreadyInTxs;
     });
     for (const c of priorCorrections) {
@@ -497,7 +497,7 @@ export function calculateForecast(
       const acc = safeAccounts.find(a => a.id === c.accountId);
       if (acc && (acc.type === 'investment' || acc.type === 'pension')) return false;
       if (acc && acc.initialBalanceDate && c.checkDate < acc.initialBalanceDate) return false;
-      const alreadyInTxs = effectiveTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
+      const alreadyInTxs = effectiveTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
       return !alreadyInTxs;
     });
 
@@ -984,7 +984,7 @@ export function calculateQuickFinancialOverview(
     const relevantCorrections = safeCorrections.filter(c => {
       if (c.accountId !== acc.id) return false;
       if (c.checkDate < initDate || c.checkDate > todayStr) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
+      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
       return !isAlreadyInTxs;
     });
     for (const c of relevantCorrections) {
