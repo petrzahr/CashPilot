@@ -257,7 +257,7 @@ export const AccountsScreen: React.FC = () => {
                     onMouseUp={() => setDragHandleAccountId(null)}
                     onTouchStart={() => setDragHandleAccountId(acc.id)}
                     onTouchEnd={() => setDragHandleAccountId(null)}
-                    className="-ml-1.5 p-0.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                    className="-ml-1.5 p-0.5 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
                   >
                     <GripVertical className="w-4 h-4" />
                   </button>
