@@ -851,11 +851,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-              <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
+              <div className="h-8 flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
                 <button
                   type="button"
                   onClick={() => setViewMode('daily')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
                     viewMode === 'daily' ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -866,7 +866,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
                     viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
