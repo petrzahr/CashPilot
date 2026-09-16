@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
-import { formatCurrency } from '../../services/currencyService';
+import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { 
   Plus, 
@@ -274,6 +274,25 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     selectedPeriod
   ]);
 
+  // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
+  const filteredTransactionsSum = useMemo(() => {
+    return filteredTransactions.reduce((sum, tx) => {
+      const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
+        ? tx.actualAmountInHaler
+        : tx.amountInHaler;
+      if (tx.type === 'balance_adjustment') {
+        const diff = tx.diffInHaler ?? (
+          tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
+            ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
+            : tx.amountInHaler
+        );
+        return addHaler(sum, diff);
+      }
+      if (tx.type === 'expense') return subHaler(sum, effectiveAmount);
+      return addHaler(sum, effectiveAmount);
+    }, 0);
+  }, [filteredTransactions]);
+
   return (
     <div className="space-y-5 pb-12">
       {dataConflicts && dataConflicts.length > 0 && (
@@ -306,6 +325,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <p className="text-xs text-slate-500 mt-0.5">
               Přehled všech příjmů, výdajů a převodů včetně pořadí v rámci dne
             </p>
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              <h3 className="text-sm font-bold text-slate-900">Položky</h3>
+              <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
+                {filteredTransactions.length}
+              </span>
+              <h3 className="text-sm font-bold text-slate-900">Suma položek</h3>
+              <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
+                {formatCurrency(filteredTransactionsSum, { showPlus: true })}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
