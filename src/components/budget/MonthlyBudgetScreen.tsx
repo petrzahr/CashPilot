@@ -826,11 +826,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   {formatCurrency(periodTransactionsSum, { showPlus: true })}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {viewMode === 'daily' 
-                  ? 'Seskupeno po dnech – přetažením položek změníte pořadí a průběžný zůstatek' 
-                  : 'Tabulkový přehled všech položek'}
-              </p>
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
