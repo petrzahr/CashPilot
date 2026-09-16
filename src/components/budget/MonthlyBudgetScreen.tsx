@@ -448,6 +448,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     });
   }, [periodTransactions, dateSortOrder]);
 
+  // Množina účtů zahrnutých do "použitelných peněz" (pro průběžný zůstatek napříč účty)
+  const usableAccountIds = useMemo(() => {
+    return new Set(accounts.filter(a => a.isUsableCash).map(a => a.id));
+  }, [accounts]);
+
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
   const dayGroups = useMemo(() => {
     const dateMap = new Map<string, Transaction[]>();
@@ -463,7 +468,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
     return sortedDates.map(date => {
       const dayTxs = dateMap.get(date)!;
-      const intraDay = calculateIntraDayRunningBalances(runningBalance, dayTxs);
+      const intraDay = calculateIntraDayRunningBalances(runningBalance, dayTxs, undefined, usableAccountIds);
       runningBalance = intraDay.endOfDayBalanceInHaler;
 
       return {
@@ -472,7 +477,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         intraDay,
       };
     });
-  }, [periodTransactions, currentSummary.usableOpeningInHaler]);
+  }, [periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds]);
 
   // Drag-and-drop obsluha
   const handleDragStart = (e: React.DragEvent, txId: string) => {

@@ -211,7 +211,8 @@ export function deleteTransactionsAndReorder(
 export function calculateIntraDayRunningBalances(
   startOfDayBalanceInHaler: number,
   dayTransactions: Transaction[],
-  accountId?: string
+  accountId?: string,
+  usableAccountIds?: Set<string>
 ): IntraDaySummary {
   const sorted = [...dayTransactions].sort((a, b) => (a.sequence ?? 1) - (b.sequence ?? 1));
 
@@ -252,13 +253,22 @@ export function calculateIntraDayRunningBalances(
         currentBalance = addHaler(currentBalance, diff);
       }
     } else {
+      // Bez konkrétního účtu jde o agregovaný (např. "použitelné peníze") pohled přes více účtů.
+      // Pokud je dána množina účtů zahrnutých do agregace, počítáme jen pohyby, které se jí týkají -
+      // jinak by např. převod mimo tuto skupinu (do spoření/investic) zůstal v průběžném zůstatku neviditelný.
+      const isIncluded = (id?: string) => !usableAccountIds || (id !== undefined && usableAccountIds.has(id));
       if (tx.type === 'income') {
-        currentBalance = addHaler(currentBalance, amt);
+        if (isIncluded(tx.sourceAccountId)) currentBalance = addHaler(currentBalance, amt);
       } else if (tx.type === 'expense') {
-        currentBalance = subHaler(currentBalance, amt);
+        if (isIncluded(tx.sourceAccountId)) currentBalance = subHaler(currentBalance, amt);
+      } else if (tx.type === 'transfer') {
+        if (isIncluded(tx.sourceAccountId)) currentBalance = subHaler(currentBalance, amt);
+        if (isIncluded(tx.targetAccountId)) currentBalance = addHaler(currentBalance, amt);
       } else if (tx.type === 'balance_adjustment') {
-        const diff = tx.diffInHaler !== undefined ? tx.diffInHaler : amt;
-        currentBalance = addHaler(currentBalance, diff);
+        if (isIncluded(tx.sourceAccountId)) {
+          const diff = tx.diffInHaler !== undefined ? tx.diffInHaler : amt;
+          currentBalance = addHaler(currentBalance, diff);
+        }
       }
     }
 
