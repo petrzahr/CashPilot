@@ -74,7 +74,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         {(['future', 'past'] as const).map(direction => (
           <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+              <span className="text-sm font-bold text-slate-900 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
               {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
                 const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
                 return <button
