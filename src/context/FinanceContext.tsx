@@ -100,6 +100,7 @@ interface FinanceContextType {
   currentPeriod: BudgetPeriod;
   selectedPeriod: BudgetPeriod;
   setSelectedPeriod: (p: BudgetPeriod) => void;
+  setOverviewPeriodBounds: (bounds: BudgetPeriod[] | null) => void;
   goToNextPeriod: () => void;
   goToPreviousPeriod: () => void;
   goToCurrentPeriod: () => void;
@@ -288,6 +289,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return getPeriodForDate(todayStr, data.settings.budgetStartDay);
   }, [todayStr, data.settings.budgetStartDay]);
 
+  const [overviewPeriodBounds, setOverviewPeriodBounds] = useState<BudgetPeriod[] | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<BudgetPeriod>(() => currentPeriod);
 
   useEffect(() => {
@@ -334,6 +336,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
     if (selectedPeriod.startDate > latestPeriod.startDate) {
       latestPeriod = selectedPeriod;
+    }
+
+    for (const period of overviewPeriodBounds || []) {
+      if (period.key < earliestPeriod.key) earliestPeriod = period;
+      if (period.key > latestPeriod.key) latestPeriod = period;
     }
 
     for (const tx of data.transactions) {
@@ -394,6 +401,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [
     currentPeriod,
     selectedPeriod,
+    overviewPeriodBounds,
     data.transactions,
     data.corrections,
     data.marketValueSnapshots,
@@ -1898,6 +1906,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     currentPeriod,
     selectedPeriod,
     setSelectedPeriod,
+    setOverviewPeriodBounds,
     goToNextPeriod,
     goToPreviousPeriod,
     goToCurrentPeriod,
