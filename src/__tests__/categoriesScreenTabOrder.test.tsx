@@ -21,7 +21,7 @@ const storageMock = (() => {
   };
 })();
 
-describe('CategoriesScreen - Přepínač typu kategorií [Příjmy] [Výdaje]', () => {
+describe('CategoriesScreen - Přepínač typu kategorií [Výdaje] [Příjmy]', () => {
   beforeEach(() => {
     Object.defineProperty(globalThis, 'localStorage', {
       value: storageMock,
@@ -43,7 +43,7 @@ describe('CategoriesScreen - Přepínač typu kategorií [Příjmy] [Výdaje]', 
     vi.restoreAllMocks();
   });
 
-  it('1. Pořadí záložek v přepínači je vlevo Příjmy a vpravo Výdaje: [ Příjmy ] [ Výdaje ]', () => {
+  it('1. Pořadí záložek v přepínači je vlevo Výdaje a vpravo Příjmy: [ Výdaje ] [ Příjmy ]', () => {
     const html = renderToStaticMarkup(
       <FinanceProvider>
         <CategoriesScreen />
@@ -54,47 +54,45 @@ describe('CategoriesScreen - Přepínač typu kategorií [Příjmy] [Výdaje]', 
     const switcherIndex = html.indexOf('bg-slate-200/60 rounded-xl max-w-xs');
     expect(switcherIndex).toBeGreaterThan(0);
 
-    // Index "Příjmy" v přepínači musí být PŘED indexem "Výdaje"
-    const incomeIndex = html.indexOf('Příjmy</span>', switcherIndex);
+    // Index "Výdaje" v přepínači musí být PŘED indexem "Příjmy"
     const expenseIndex = html.indexOf('Výdaje</span>', switcherIndex);
+    const incomeIndex = html.indexOf('Příjmy</span>', switcherIndex);
 
-    expect(incomeIndex).toBeGreaterThan(switcherIndex);
-    expect(expenseIndex).toBeGreaterThan(incomeIndex);
+    expect(expenseIndex).toBeGreaterThan(switcherIndex);
+    expect(incomeIndex).toBeGreaterThan(expenseIndex);
   });
 
-  it('2. Po otevření stránky je výchozí aktivní záložkou Příjmy (zvýrazněna zeleně) a Výdaje jsou neaktivní', () => {
+  it('2. Po otevření stránky je výchozí aktivní záložkou Výdaje (zvýrazněna červeně) a Příjmy jsou neaktivní', () => {
     const html = renderToStaticMarkup(
       <FinanceProvider>
         <CategoriesScreen />
       </FinanceProvider>
     );
 
-    // Příjmy mají aktivní styl (bílé pozadí, stín, zelený text text-emerald-600)
-    expect(html).toMatch(/<button[^>]*class="[^"]*bg-white text-emerald-600 shadow-sm[^"]*"[^>]*>[\s\S]*?Příjmy[\s\S]*?<\/button>/);
+    // Výdaje mají aktivní styl (bílé pozadí, stín, červený text text-red-600)
+    expect(html).toMatch(/<button[^>]*class="[^"]*bg-white text-red-600 shadow-sm[^"]*"[^>]*>[\s\S]*?Výdaje[\s\S]*?<\/button>/);
 
-    // Výdaje mají neaktivní styl (šedý text text-slate-600)
-    expect(html).toMatch(/<button[^>]*class="[^"]*text-slate-600 hover:text-slate-900[^"]*"[^>]*>[\s\S]*?Výdaje[\s\S]*?<\/button>/);
+    // Příjmy mají neaktivní styl (šedý text text-slate-600)
+    expect(html).toMatch(/<button[^>]*class="[^"]*text-slate-600 hover:text-slate-900[^"]*"[^>]*>[\s\S]*?Příjmy[\s\S]*?<\/button>/);
   });
 
-  it('3. Po otevření stránky se pod přepínačem zobrazují příjmové kategorie (Mzda) a nezobrazují se výdajové (Bydlení, Auto)', () => {
+  it('3. Po otevření stránky se pod přepínačem zobrazují výdajové kategorie (Bydlení, Auto) a nezobrazují se příjmové (Mzda)', () => {
     const html = renderToStaticMarkup(
       <FinanceProvider>
         <CategoriesScreen />
       </FinanceProvider>
     );
 
-    // Příjmové kategorie a podkategorie jsou zobrazeny
-    expect(html).toContain('Mzda');
-    expect(html).toContain('Ostatní příjmy');
+    // Výdajové kategorie a podkategorie jsou zobrazeny
+    expect(html).toContain('Bydlení');
+    expect(html).toContain('Hypotéka');
 
-    // Výdajové kategorie pod přepínačem zobrazeny nejsou
-    expect(html).not.toContain('Hypotéka');
-    expect(html).not.toContain('Bydlení');
-    expect(html).not.toContain('Elektřina');
-    expect(html).not.toContain('Leasing');
+    // Příjmové kategorie pod přepínačem zobrazeny nejsou
+    expect(html).not.toContain('Mzda');
+    expect(html).not.toContain('Ostatní příjmy');
   });
 
-  it('4. Vizuální invariant: výsledkem není původní pořadí [Výdaje] [Příjmy]', () => {
+  it('4. Vizuální invariant: výsledkem je nové pořadí [Výdaje] [Příjmy]', () => {
     const html = renderToStaticMarkup(
       <FinanceProvider>
         <CategoriesScreen />
@@ -107,7 +105,7 @@ describe('CategoriesScreen - Přepínač typu kategorií [Příjmy] [Výdaje]', 
 
     const firstBtnMatch = switcherHtml.match(/<button[\s\S]*?<\/button>/);
     expect(firstBtnMatch).not.toBeNull();
-    expect(firstBtnMatch![0]).toContain('Příjmy');
-    expect(firstBtnMatch![0]).not.toContain('Výdaje');
+    expect(firstBtnMatch![0]).toContain('Výdaje');
+    expect(firstBtnMatch![0]).not.toContain('Příjmy');
   });
 });
