@@ -11,6 +11,7 @@ import { AccountModal } from './AccountModal';
 import { ReconciliationModal } from './ReconciliationModal';
 import { MarketValueModal } from './MarketValueModal';
 import { AccountHistoryModal } from './AccountHistoryModal';
+import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { 
   Plus, 
   Wallet, 
@@ -44,7 +45,7 @@ export const AccountsScreen: React.FC = () => {
   } = useFinance();
 
   const [showArchived, setShowArchived] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<AccountType | ''>('');
+  const [typeFilters, setTypeFilters] = useState<AccountType[]>([]);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
@@ -60,7 +61,7 @@ export const AccountsScreen: React.FC = () => {
 
   const displayedAccounts = accounts
     .filter(a => showArchived ? true : a.status === 'active')
-    .filter(a => typeFilter ? a.type === typeFilter : true);
+    .filter(a => typeFilters.length === 0 || typeFilters.includes(a.type));
 
   const currentSummary = getAccountPeriodSummary(forecast, selectedPeriod.key);
 
@@ -160,19 +161,15 @@ export const AccountsScreen: React.FC = () => {
       {/* Hlavička správy účtů */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as AccountType | '')}
-            className="w-full h-8 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
-          >
-            <option value="">Všechny účty</option>
-            <option value="checking">{getTypeLabel('checking')}</option>
-            <option value="cash">{getTypeLabel('cash')}</option>
-            <option value="savings">{getTypeLabel('savings')}</option>
-            <option value="investment">{getTypeLabel('investment')}</option>
-            <option value="pension">{getTypeLabel('pension')}</option>
-            <option value="other">{getTypeLabel('other')}</option>
-          </select>
+          <MultiSelectDropdown
+            placeholder="Všechny účty"
+            selected={typeFilters}
+            onChange={(values) => setTypeFilters(values as AccountType[])}
+            options={(['checking', 'cash', 'savings', 'investment', 'pension', 'other'] as AccountType[]).map(type => ({
+              value: type,
+              label: getTypeLabel(type) ?? type,
+            }))}
+          />
         </div>
 
         <div className="flex items-center gap-3">

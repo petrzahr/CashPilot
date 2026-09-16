@@ -25,6 +25,7 @@ import { getEffectiveTransactionsForPeriod } from '../../services/financialEngin
 import { czechStringCompare } from '../../services/categoryService';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
+import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
   { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
@@ -102,18 +103,18 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     return transactions.some(t => t.recurringRuleId === ruleId && t.status === 'executed');
   }, [deletingTx, transactions]);
 
-  // Vyhledávání a filtry
+  // Vyhledávání a filtry (multi-select - prázdný výběr = bez omezení)
   const [search, setSearch] = useState('');
   const [periodFilter, setPeriodFilter] = useState<'current' | 'all'>('current');
-  const [accountFilter, setAccountFilter] = useState('');
-  const [mainCategoryFilter, setMainCategoryFilter] = useState('');
-  const [subCategoryFilter, setSubCategoryFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [accountFilter, setAccountFilter] = useState<string[]>([]);
+  const [mainCategoryFilter, setMainCategoryFilter] = useState<string[]>([]);
+  const [subCategoryFilter, setSubCategoryFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
-  const handleMainCategoryChange = (newMainId: string) => {
-    setMainCategoryFilter(newMainId);
-    setSubCategoryFilter('');
+  const handleMainCategoryChange = (newMainIds: string[]) => {
+    setMainCategoryFilter(newMainIds);
+    setSubCategoryFilter([]);
   };
 
   // Řazení - výchozí vzestupně (datum od nejstaršího po nejnovější, v rámci dne pořadí 1, 2, 3...)
@@ -177,41 +178,44 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       .sort((a, b) => czechStringCompare(a.name, b.name));
   }, [categories, usedCategoryIdsInBase]);
 
-  // Podkategorie pro vybranou hlavní kategorii, seřazené abecedně A–Z
+  // Podkategorie pro vybrané hlavní kategorie, seřazené abecedně A–Z
   const availableSubCategories = useMemo(() => {
-    if (!mainCategoryFilter) return [];
+    if (mainCategoryFilter.length === 0) return [];
     return categories
       .filter(c => {
-        if (c.parentId !== mainCategoryFilter) return false;
+        if (!c.parentId || !mainCategoryFilter.includes(c.parentId)) return false;
         if (c.status === 'active') return true;
         return usedCategoryIdsInBase.has(c.id);
       })
       .sort((a, b) => czechStringCompare(a.name, b.name));
   }, [categories, mainCategoryFilter, usedCategoryIdsInBase]);
 
-  // ID všech podkategorií patřících pod aktuálně vybranou hlavní kategorii
+  // ID všech podkategorií patřících pod aktuálně vybrané hlavní kategorie
   const childSubCategoryIds = useMemo(() => {
-    if (!mainCategoryFilter) return new Set<string>();
-    return new Set(categories.filter(c => c.parentId === mainCategoryFilter).map(c => c.id));
+    if (mainCategoryFilter.length === 0) return new Set<string>();
+    return new Set(categories.filter(c => c.parentId && mainCategoryFilter.includes(c.parentId)).map(c => c.id));
   }, [categories, mainCategoryFilter]);
 
   // Bezpečný reset filtrů, pokud se vybraná hodnota stane neplatnou
   useEffect(() => {
-    if (accountFilter && !sortedAccounts.some(a => a.id === accountFilter)) {
-      setAccountFilter('');
+    const valid = accountFilter.filter(id => sortedAccounts.some(a => a.id === id));
+    if (valid.length !== accountFilter.length) {
+      setAccountFilter(valid);
     }
   }, [sortedAccounts, accountFilter]);
 
   useEffect(() => {
-    if (mainCategoryFilter && !availableMainCategories.some(c => c.id === mainCategoryFilter)) {
-      setMainCategoryFilter('');
-      setSubCategoryFilter('');
+    const valid = mainCategoryFilter.filter(id => availableMainCategories.some(c => c.id === id));
+    if (valid.length !== mainCategoryFilter.length) {
+      setMainCategoryFilter(valid);
+      setSubCategoryFilter([]);
     }
   }, [availableMainCategories, mainCategoryFilter]);
 
   useEffect(() => {
-    if (subCategoryFilter && !availableSubCategories.some(c => c.id === subCategoryFilter)) {
-      setSubCategoryFilter('');
+    const valid = subCategoryFilter.filter(id => availableSubCategories.some(c => c.id === id));
+    if (valid.length !== subCategoryFilter.length) {
+      setSubCategoryFilter(valid);
     }
   }, [availableSubCategories, subCategoryFilter]);
 
@@ -227,19 +231,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         }
 
         // Filtr účtu
-        if (accountFilter) {
-          if (tx.sourceAccountId !== accountFilter && tx.targetAccountId !== accountFilter) {
-            return false;
-          }
+        if (accountFilter.length > 0) {
+          const matchesAccount = accountFilter.includes(tx.sourceAccountId) ||
+                                  (!!tx.targetAccountId && accountFilter.includes(tx.targetAccountId));
+          if (!matchesAccount) return false;
         }
 
         // Filtr hlavní kategorie a podkategorie
-        if (mainCategoryFilter) {
-          if (subCategoryFilter) {
-            const matchesSub = tx.subcategoryId === subCategoryFilter || tx.categoryId === subCategoryFilter;
+        if (mainCategoryFilter.length > 0) {
+          if (subCategoryFilter.length > 0) {
+            const matchesSub = (!!tx.subcategoryId && subCategoryFilter.includes(tx.subcategoryId)) ||
+                                (!!tx.categoryId && subCategoryFilter.includes(tx.categoryId));
             if (!matchesSub) return false;
           } else {
-            const matchesMain = tx.categoryId === mainCategoryFilter;
+            const matchesMain = !!tx.categoryId && mainCategoryFilter.includes(tx.categoryId);
             const matchesChildSub = (tx.subcategoryId && childSubCategoryIds.has(tx.subcategoryId)) ||
                                     (tx.categoryId && childSubCategoryIds.has(tx.categoryId));
             if (!matchesMain && !matchesChildSub) return false;
@@ -247,12 +252,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         }
 
         // Filtr typu
-        if (typeFilter && tx.type !== typeFilter) {
+        if (typeFilter.length > 0 && !typeFilter.includes(tx.type)) {
           return false;
         }
 
         // Filtr stavu
-        if (statusFilter && tx.status !== statusFilter) {
+        if (statusFilter.length > 0 && !statusFilter.includes(tx.status)) {
           return false;
         }
 
@@ -395,91 +400,63 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
           {/* 3. Účet */}
           <div>
-            <select
-              value={accountFilter}
-              onChange={(e) => setAccountFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
-            >
-              <option value="">Všechny účty</option>
-              {sortedAccounts.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.name}{a.status === 'archived' ? ' (archivovaný)' : ''}
-                </option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              placeholder="Všechny účty"
+              selected={accountFilter}
+              onChange={setAccountFilter}
+              options={sortedAccounts.map(a => ({
+                value: a.id,
+                label: `${a.name}${a.status === 'archived' ? ' (archivovaný)' : ''}`,
+              }))}
+            />
           </div>
 
           {/* 4. Hlavní kategorie */}
           <div>
-            <select
-              value={mainCategoryFilter}
-              onChange={(e) => handleMainCategoryChange(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
-            >
-              <option value="">Všechny kategorie</option>
-              {availableMainCategories.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}{c.status === 'archived' ? ' (archivovaná)' : ''}
-                </option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              placeholder="Všechny kategorie"
+              selected={mainCategoryFilter}
+              onChange={handleMainCategoryChange}
+              options={availableMainCategories.map(c => ({
+                value: c.id,
+                label: `${c.name}${c.status === 'archived' ? ' (archivovaná)' : ''}`,
+              }))}
+            />
           </div>
 
           {/* 5. Podkategorie */}
           <div>
-            <select
-              value={subCategoryFilter}
-              disabled={!mainCategoryFilter || availableSubCategories.length === 0}
-              onChange={(e) => setSubCategoryFilter(e.target.value)}
-              className={`w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
-                !mainCategoryFilter || availableSubCategories.length === 0
-                  ? 'opacity-50 cursor-not-allowed text-slate-500'
-                  : 'text-slate-500'
-              }`}
-            >
-              {!mainCategoryFilter ? (
-                <option value="">Nejprve vyberte hlavní kategorii</option>
-              ) : availableSubCategories.length === 0 ? (
-                <option value="">Žádné podkategorie</option>
-              ) : (
-                <>
-                  <option value="">Všechny podkategorie</option>
-                  {availableSubCategories.map(sub => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}{sub.status === 'archived' ? ' (archivovaná)' : ''}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
+            <MultiSelectDropdown
+              placeholder="Všechny podkategorie"
+              disabled={mainCategoryFilter.length === 0 || availableSubCategories.length === 0}
+              disabledPlaceholder={mainCategoryFilter.length === 0 ? 'Nejprve vyberte hlavní kategorii' : 'Žádné podkategorie'}
+              selected={subCategoryFilter}
+              onChange={setSubCategoryFilter}
+              options={availableSubCategories.map(sub => ({
+                value: sub.id,
+                label: `${sub.name}${sub.status === 'archived' ? ' (archivovaná)' : ''}`,
+              }))}
+            />
           </div>
 
           {/* 6. Typ */}
           <div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
-            >
-              <option value="">Všechny typy</option>
-              {TYPE_OPTIONS.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              placeholder="Všechny typy"
+              selected={typeFilter}
+              onChange={setTypeFilter}
+              options={TYPE_OPTIONS.map(t => ({ value: t.value, label: t.label }))}
+            />
           </div>
 
           {/* 7. Stav */}
           <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
-            >
-              <option value="">Všechny stavy</option>
-              {STATUS_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+            <MultiSelectDropdown
+              placeholder="Všechny stavy"
+              selected={statusFilter}
+              onChange={setStatusFilter}
+              options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))}
+            />
           </div>
         </div>
       </div>
