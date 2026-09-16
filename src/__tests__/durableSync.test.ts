@@ -3,6 +3,8 @@ import { createResetAppData } from '../constants/defaultData';
 import { validateAndParseBackup, type AppData } from '../services/storageService';
 import { COLLECTIONS, accountStorageKey, applyDeletions, mergePending, recordLocalChange, type SyncEnvelope } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
+import { calculateQuickFinancialOverview, type QuickFinancialOverview } from '../services/financialEngine';
+import type { Account, Transaction } from '../types/finance';
 import { DriveConflictError, findAppDataFile, pickCanonicalDriveFile, readDriveSnapshot, uploadToGoogleDrive } from '../services/googleDriveService';
 
 export function memoryStorage(): Storage {
@@ -35,6 +37,52 @@ beforeEach(() => {
   vi.stubGlobal('navigator', { onLine: true });
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+it('publishes current sidebar groups after load, local CRUD, and remote restoration', async () => {
+  const initial = createResetAppData();
+  initial.accounts = (['checking', 'savings', 'investment', 'pension'] as const).map((type): Account => ({
+    id: type, name: type, type, currency: 'CZK', initialBalanceInHaler: 1000,
+    initialBalanceDate: '2026-01-01', isUsableCash: type === 'checking', isNetWorth: false,
+    status: 'active', color: '#000000', sortOrder: 0, createdAt: stamp, updatedAt: stamp,
+  }));
+  const drive = fakeDrive(initial);
+  let overview: QuickFinancialOverview | undefined;
+  const controller = new SyncController('sidebar', () => 'token', (data) => {
+    overview = calculateQuickFinancialOverview(data.accounts, data.transactions, data.corrections,
+      data.marketValueSnapshots, '2026-09-14');
+  }, drive.transport);
+  const expected = {
+    checkingAndCashInHaler: 1000, savingsInHaler: 1000, investmentsInHaler: 1000,
+    pensionInHaler: 1000, totalNetWorthInHaler: 0,
+  };
+  try {
+    await controller.sync();
+    expect(overview).toEqual(expected);
+    const expense: Transaction = { id: 'sidebar-expense', title: 'Expense', type: 'expense',
+      sourceAccountId: 'checking', amountInHaler: 100, status: 'executed', date: '2026-09-14',
+      sequence: 1, createdAt: stamp, updatedAt: stamp };
+    controller.change(data => ({ ...data, transactions: [expense] }));
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 900 });
+    controller.change(data => ({ ...data, transactions: [{ ...expense, actualAmountInHaler: 250 }] }));
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 750 });
+    controller.change(data => ({ ...data, transactions: [] }));
+    expect(overview).toEqual(expected);
+    controller.change(data => ({ ...data, accounts: data.accounts.map(a => ({ ...a, initialBalanceInHaler: 2000 })) }));
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 2000, savingsInHaler: 2000,
+      investmentsInHaler: 2000, pensionInHaler: 2000 });
+    await controller.sync();
+    drive.cloud.accounts = drive.cloud.accounts.map(a => ({ ...a, initialBalanceInHaler: 3000, isNetWorth: true }));
+    drive.cloud.sync.revision++;
+    await controller.sync();
+    expect(overview).toEqual({ checkingAndCashInHaler: 3000, savingsInHaler: 3000,
+      investmentsInHaler: 3000, pensionInHaler: 3000, totalNetWorthInHaler: 12000 });
+    controller.change(data => ({ ...data, accounts: data.accounts.filter(a => a.id !== 'savings') }));
+    expect(overview?.savingsInHaler).toBe(0);
+    expect(overview?.totalNetWorthInHaler).toBe(9000);
+  } finally {
+    controller.stop();
+  }
+});
 
 describe('durable deletion and operation model', () => {
   it('does not resurrect Vercel deletions from an unjournaled localhost cache, even without historical tombstones', () => {

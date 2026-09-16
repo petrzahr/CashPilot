@@ -12,6 +12,7 @@ import {
   MarketValueSnapshot
 } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
+import { computeLiquidAccountBalanceAtDate } from './analyticsEngine';
 import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
@@ -935,7 +936,7 @@ export interface QuickFinancialOverview {
 /**
  * Spočítá aktuální finanční přehled k danému kalendářnímu dni (výchozí: dnešek v Praze).
  * Nezahrnuje budoucí plánované položky, budoucí tržní hodnoty, archivované účty ani kontokorent.
- * Převody mezi účty zachovávají celkové jmění invariantní.
+ * Skupiny zahrnují všechny aktivní účty; celkové jmění pouze účty s isNetWorth.
  */
 export function calculateQuickFinancialOverview(
   accounts: Account[] = [],
@@ -944,80 +945,34 @@ export function calculateQuickFinancialOverview(
   marketValueSnapshots: MarketValueSnapshot[] = [],
   todayStr: string = getTodayInPrague()
 ): QuickFinancialOverview {
-  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived' && a.isNetWorth) : [];
+  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived') : [];
   const safeTxs = Array.isArray(transactions) ? transactions : [];
   const safeCorrections = Array.isArray(corrections) ? corrections : [];
   const safeSnapshots = Array.isArray(marketValueSnapshots) ? marketValueSnapshots : [];
-
-  // Pomocná funkce pro výpočet běžného/spořicího účtu k todayStr
-  const computeLiquidAccountBalance = (acc: Account): number => {
-    const initDate = acc.initialBalanceDate || '1970-01-01';
-    if (initDate > todayStr) return 0;
-
-    let bal = acc.initialBalanceInHaler || 0;
-
-    // Uskutečněné transakce do todayStr
-    for (const t of safeTxs) {
-      if (t.status === 'cancelled') continue;
-      // Zahrnout pouze uskutečněné položky nebo systémové korekce zůstatku
-      if (t.status !== 'executed' && t.type !== 'balance_adjustment') continue;
-      if (t.date < initDate || t.date > todayStr) continue;
-
-      const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined
-        ? t.actualAmountInHaler
-        : t.amountInHaler;
-
-      if (t.type === 'income' && t.sourceAccountId === acc.id) {
-        bal = addHaler(bal, amt);
-      } else if (t.type === 'expense' && t.sourceAccountId === acc.id) {
-        bal = subHaler(bal, amt);
-      } else if (t.type === 'transfer') {
-        if (t.sourceAccountId === acc.id) bal = subHaler(bal, amt);
-        if (t.targetAccountId === acc.id) bal = addHaler(bal, amt);
-      } else if (t.type === 'balance_adjustment' && t.sourceAccountId === acc.id) {
-        const diff = t.diffInHaler !== undefined ? t.diffInHaler : amt;
-        bal = addHaler(bal, diff);
-      }
-    }
-
-    // Legacy korekce
-    const relevantCorrections = safeCorrections.filter(c => {
-      if (c.accountId !== acc.id) return false;
-      if (c.checkDate < initDate || c.checkDate > todayStr) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
-      return !isAlreadyInTxs;
-    });
-    for (const c of relevantCorrections) {
-      bal = addHaler(bal, c.diffInHaler);
-    }
-
-    return bal;
-  };
-
 
   let checkingAndCashInHaler = 0;
   let savingsInHaler = 0;
   let investmentsInHaler = 0;
   let pensionInHaler = 0;
+  let totalNetWorthInHaler = 0;
 
   for (const acc of safeAccounts) {
-    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
-      checkingAndCashInHaler = addHaler(checkingAndCashInHaler, computeLiquidAccountBalance(acc));
-    } else if (acc.type === 'savings') {
-      savingsInHaler = addHaler(savingsInHaler, computeLiquidAccountBalance(acc));
-    } else if (acc.type === 'investment') {
-      investmentsInHaler = addHaler(investmentsInHaler, getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr));
-    } else if (acc.type === 'pension') {
-      pensionInHaler = addHaler(pensionInHaler, getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr));
-    }
-  }
+    const balance = acc.type === 'investment' || acc.type === 'pension'
+      ? getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr)
+      : computeLiquidAccountBalanceAtDate(acc, todayStr, safeTxs, safeCorrections);
 
-  const totalNetWorthInHaler = addHaler(
-    checkingAndCashInHaler,
-    savingsInHaler,
-    investmentsInHaler,
-    pensionInHaler
-  );
+    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
+      checkingAndCashInHaler = addHaler(checkingAndCashInHaler, balance);
+    } else if (acc.type === 'savings') {
+      savingsInHaler = addHaler(savingsInHaler, balance);
+    } else if (acc.type === 'investment') {
+      investmentsInHaler = addHaler(investmentsInHaler, balance);
+    } else if (acc.type === 'pension') {
+      pensionInHaler = addHaler(pensionInHaler, balance);
+    }
+    // Account groups show all active balances; only net worth uses this opt-in.
+    if (acc.isNetWorth) totalNetWorthInHaler = addHaler(totalNetWorthInHaler, balance);
+  }
 
   return {
     checkingAndCashInHaler,
