@@ -11,8 +11,7 @@ import { BudgetPeriod } from '../../types/finance';
 import {
   Calendar,
   ChevronRight,
-  ChevronDown,
-  AlertTriangle
+  ChevronDown
 } from 'lucide-react';
 
 interface OverviewScreenProps {
@@ -159,9 +158,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 <th className="py-3 px-4 text-right">Počáteční stav</th>
                 <th className="py-3 px-4 text-right text-emerald-600">Příjmy</th>
                 <th className="py-3 px-4 text-right text-red-600">Výdaje</th>
+                <th className="py-3 px-4 text-right text-sky-600">Převody</th>
                 <th className="py-3 px-4 text-right">Čistá změna</th>
                 <th className="py-3 px-4 text-right">Konečný stav</th>
-                <th className="py-3 px-4 text-center">Stav</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -203,6 +202,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <td className="py-3 px-4 text-right font-semibold text-red-600">
                       {p.expenseInHaler > 0 ? `−${formatCurrency(p.expenseInHaler)}` : '0 Kč'}
                     </td>
+                    <td className="py-3 px-4 text-right font-semibold text-sky-600">
+                      {p.transfersInHaler > 0 ? formatCurrency(p.transfersInHaler) : '0 Kč'}
+                    </td>
                     <td className={`py-3 px-4 text-right font-medium ${
                       change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-600'
                     }`}>
@@ -216,22 +218,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           : 'text-slate-900'
                     }`}>
                       {formatCurrency(closing)}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {isNegative ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700">
-                          <AlertTriangle className="w-3 h-3" />
-                          Záporný zůstatek
-                        </span>
-                      ) : isBelowReserve ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
-                          Pod kontokorentem
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-                          V pořádku
-                        </span>
-                      )}
                     </td>
                   </tr>
                 );
