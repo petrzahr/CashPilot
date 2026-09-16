@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatMonthsCount, getPreviousDayString } from '../../services/periodService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
+import { addHaler, subHaler } from '../../services/currencyService';
 import { BudgetPeriod } from '../../types/finance';
 import {
   Calendar,
@@ -295,8 +296,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             const accBal = p.accountBalances[acc.id];
                             if (!accBal) return null;
 
-                            const incoming = accBal.incomeInHaler + accBal.transfersInInHaler + (accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0);
-                            const outgoing = accBal.expenseInHaler + accBal.transfersOutInHaler + (accBal.correctionsInHaler < 0 ? Math.abs(accBal.correctionsInHaler) : 0);
+                            // Pro investiční/penzijní účty konečný stav zahrnuje i změnu tržní hodnoty,
+                            // kterou je nutné promítnout do pohybů, jinak počáteční + pohyby != konečný stav.
+                            const valuationChangeInHaler = (acc.type === 'investment' || acc.type === 'pension')
+                              ? subHaler(subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler), subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler))
+                              : 0;
+
+                            const incoming = addHaler(accBal.incomeInHaler, accBal.transfersInInHaler, accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0, valuationChangeInHaler > 0 ? valuationChangeInHaler : 0);
+                            const outgoing = addHaler(accBal.expenseInHaler, accBal.transfersOutInHaler, accBal.correctionsInHaler < 0 ? Math.abs(accBal.correctionsInHaler) : 0, valuationChangeInHaler < 0 ? Math.abs(valuationChangeInHaler) : 0);
 
                             return (
                               <tr key={acc.id} className="hover:bg-white/80">

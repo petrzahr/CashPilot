@@ -51,7 +51,14 @@ describe.each(['investment', 'pension'] as const)('Overview %s account history',
       const row = html.split(`<span>${name}</span>`)[1].split('</tr>')[0];
       return [...row.matchAll(/<td[^>]*>([^<]*)<\/td>/g)].map(match => match[1]);
     };
-    expect(cells(asset.name)).toEqual([formatCurrency(opening * 100), '0 Kč', '0 Kč', formatCurrency(closing * 100)]);
+    // Valuation change (gain/loss) must show up as a movement, otherwise opening + in - out != closing.
+    const valuationChange = closing - opening;
+    expect(cells(asset.name)).toEqual([
+      formatCurrency(opening * 100),
+      valuationChange > 0 ? `+${formatCurrency(valuationChange * 100)}` : '0 Kč',
+      valuationChange < 0 ? `−${formatCurrency(Math.abs(valuationChange) * 100)}` : '0 Kč',
+      formatCurrency(closing * 100),
+    ]);
     expect(cells(cash.name)).toEqual([formatCurrency(1000000), `+${formatCurrency(100000)}`, '0 Kč', formatCurrency(1100000)]);
     expect(html).toContain(`Zůstatek celkem: ${formatCurrency(closing * 100 + 1100000)}`);
     expect(JSON.stringify({ forecast, accounts, transactions, marketValueSnapshots })).toBe(before);
