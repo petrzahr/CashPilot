@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { formatMonthsCount, getPreviousDayString } from '../../services/periodService';
-import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
+import { formatMonthsCount } from '../../services/periodService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -33,28 +32,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     return forecast.periods.slice(0, forecastMonths);
   }, [forecast.forecastPeriods, forecast.periods, forecast.currentPeriod.key, forecastMonths]);
 
-  // Account history uses the state entering the period, independently of today's forecast anchor.
-  const accountPeriods = useMemo(() => displayPeriods.map(summary => {
-    const historical = { ...summary, accountBalances: { ...summary.accountBalances } };
-    const openingDate = getPreviousDayString(summary.period.startDate);
-    for (const acc of accounts) {
-      if (acc.type !== 'investment' && acc.type !== 'pension') continue;
-      const original = summary.accountBalances[acc.id];
-      if (!original) continue;
-      const opening = computeAssetAccountBalanceAtDate(acc, openingDate, transactions, marketValueSnapshots);
-      const closing = computeAssetAccountBalanceAtDate(acc, summary.period.endDate, transactions, marketValueSnapshots);
-      historical.accountBalances[acc.id] = {
-        ...original, openingBalanceInHaler: opening, closingBalanceInHaler: closing,
-      };
-      historical.openingBalanceInHaler += opening - original.openingBalanceInHaler;
-      historical.closingBalanceInHaler += closing - original.closingBalanceInHaler;
-      if (acc.isNetWorth) {
-        historical.netWorthOpeningInHaler += opening - original.openingBalanceInHaler;
-        historical.netWorthClosingInHaler += closing - original.closingBalanceInHaler;
-      }
-    }
-    return historical;
-  }), [displayPeriods, accounts, transactions, marketValueSnapshots]);
+  const accountPeriods = displayPeriods;
 
   // Režimy zobrazení hlavní forecast tabulky
   const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('usable');

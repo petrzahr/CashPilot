@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
+import { AccountsScreen } from '../components/accounts/AccountsScreen';
 import { calculateForecast } from '../services/financialEngine';
+import { getAccountPeriodSummary } from '../services/accountSummaryService';
 import { createBudgetPeriod } from '../services/periodService';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
@@ -19,7 +21,7 @@ const cases = [
   { name: 'future valuation with no earlier snapshot', values: [['2026-09-15', 320000]], opening: 290000, closing: 290000 },
 ] as const;
 
-describe.each(['investment', 'pension'] as const)('Overview %s account history', type => {
+describe.each(['investment', 'pension'] as const)('Overview %s forecast', type => {
   it.each(cases)('$name', ({ values, opening, closing }) => {
     const period = createBudgetPeriod(2026, 8, 15);
     const last = values[values.length - 1];
@@ -51,10 +53,10 @@ describe.each(['investment', 'pension'] as const)('Overview %s account history',
       const row = html.split(`<span>${name}</span>`)[1].split('</tr>')[0];
       return [...row.matchAll(/<td[^>]*>([^<]*)<\/td>/g)].map(match => match[1]);
     };
-    // Valuation change (gain/loss) must show up as a movement, otherwise opening + in - out != closing.
-    const valuationChange = closing - opening;
+    // With no remaining transfers, the forecast stays at the current valuation.
+    const valuationChange = 0;
     expect(cells(asset.name)).toEqual([
-      formatCurrency(opening * 100),
+      formatCurrency(closing * 100),
       valuationChange > 0 ? `+${formatCurrency(valuationChange * 100)}` : '0 Kč',
       valuationChange < 0 ? `−${formatCurrency(Math.abs(valuationChange) * 100)}` : '0 Kč',
       formatCurrency(closing * 100),
@@ -63,4 +65,42 @@ describe.each(['investment', 'pension'] as const)('Overview %s account history',
     expect(html).toContain(`Zůstatek celkem: ${formatCurrency(closing * 100 + 1100000)}`);
     expect(JSON.stringify({ forecast, accounts, transactions, marketValueSnapshots })).toBe(before);
   });
+});
+
+it('uses the same asset totals for budget and forecast summaries as the account breakdown', () => {
+  const period = createBudgetPeriod(2026, 9, 15);
+  const cash: Account = { id: 'cash', name: 'Cash', type: 'checking', currency: 'CZK',
+    initialBalanceInHaler: 48334800, initialBalanceDate: '2026-01-01', isUsableCash: true,
+    isNetWorth: true, color: '', sortOrder: 0, status: 'active', createdAt: '', updatedAt: '' };
+  const asset: Account = { ...cash, id: 'asset', type: 'investment', isUsableCash: false,
+    initialBalanceInHaler: 82600000 };
+  const accounts = [cash, asset];
+  const transfer: Transaction = { id: 'transfer', title: 'Investment', type: 'transfer',
+    sourceAccountId: cash.id, targetAccountId: asset.id, date: '2026-09-25', sequence: 1,
+    amountInHaler: 650000, status: 'planned', createdAt: '', updatedAt: '' };
+  const forecast = calculateForecast([period], accounts, [transfer], [], [], [],
+    DEFAULT_SETTINGS, [], period.key, '2026-09-16');
+  const original = JSON.stringify(forecast);
+  const summary = getAccountPeriodSummary(forecast, period.key)!;
+  expect(summary).toBe(forecast.forecastPeriods![0]);
+  expect(summary.netWorthClosingInHaler).toBe(130934800);
+  expect(summary.accountBalances.asset.closingBalanceInHaler).toBe(83250000);
+  expect(summary.accountBalances.cash.closingBalanceInHaler).toBe(47684800);
+  expect(Object.values(summary.accountBalances).reduce((sum, a) => sum + a.closingBalanceInHaler, 0))
+    .toBe(summary.closingBalanceInHaler);
+  vi.mocked(useFinance).mockReturnValue({ forecast, accounts, transactions: [transfer],
+    corrections: [], marketValueSnapshots: [], settings: DEFAULT_SETTINGS,
+    selectedPeriod: period, currentPeriod: period, setSelectedPeriod: vi.fn(),
+  } as unknown as ReturnType<typeof useFinance>);
+  const html = renderToStaticMarkup(<AccountsScreen />);
+  expect(html).toContain(formatCurrency(83250000));
+  expect(html).toContain(formatCurrency(47684800));
+  expect(renderToStaticMarkup(<OverviewScreen onNavigateToBudget={vi.fn()} />))
+    .toContain(`Zůstatek celkem: ${formatCurrency(130934800)}`);
+
+  for (const excluded of [{ ...transfer, status: 'cancelled' as const }, { ...transfer, date: '2026-10-15' }]) {
+    const next = calculateForecast([period], accounts, [excluded], [], [], [], DEFAULT_SETTINGS, [], period.key, '2026-09-16');
+    expect(getAccountPeriodSummary(next, period.key)?.accountBalances.asset.closingBalanceInHaler).toBe(82600000);
+  }
+  expect(JSON.stringify(forecast)).toBe(original);
 });

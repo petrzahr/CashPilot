@@ -32,6 +32,7 @@ import {
   Repeat
 } from 'lucide-react';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
+import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
@@ -239,7 +240,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Souhrn pro vybranou periodu z forecastu
   const currentSummary = useMemo(() => {
-    return forecast.periods.find(p => p.period.key === selectedPeriod.key) || {
+    return getAccountPeriodSummary(forecast, selectedPeriod.key) || {
       period: selectedPeriod,
       openingBalanceInHaler: 0,
       incomeInHaler: 0,
@@ -258,7 +259,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       minUsableBalanceInHaler: 0,
       accountBalances: {},
     };
-  }, [forecast.periods, selectedPeriod.key]);
+  }, [forecast, selectedPeriod.key]);
 
   // Souhrnné ukazatele za všechny účty, respektující vybrané rozpočtové období
   const aggregateSummary = useMemo(() => {

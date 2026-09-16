@@ -961,7 +961,7 @@ export function calculateQuickFinancialOverview(
       ? getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr)
       : computeLiquidAccountBalanceAtDate(acc, todayStr, safeTxs, safeCorrections);
 
-    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
+    if (acc.type === 'checking' || acc.type === 'cash') {
       checkingAndCashInHaler = addHaler(checkingAndCashInHaler, balance);
     } else if (acc.type === 'savings') {
       savingsInHaler = addHaler(savingsInHaler, balance);
