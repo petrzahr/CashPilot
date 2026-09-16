@@ -73,8 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
                   CashPilot
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wide block mt-0.5 uppercase">
-                  Budget & Forecast
+                <span className="text-[10px] text-slate-400 font-medium tracking-wide block mt-0.5">
+                  Vaše osobní finance pod kontrolou
                 </span>
               </div>
             </div>
