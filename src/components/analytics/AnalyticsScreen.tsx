@@ -1,11 +1,12 @@
-import { PeriodRangeSelector } from '../shared/PeriodRangeSelector';
-import React, { useState, useMemo, useEffect } from 'react';
+import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
+import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types/finance';
 import {
-  AnalyticsPeriodPreset,
+  AnalyticsDateRange,
   AnalyticsFilters,
-  resolveAnalyticsDateRange,
+  DualPeriodRange,
+  resolveDualPeriodRange,
   getFilteredExecutedTransactions,
   calculateAnalyticsKPIs,
   calculateMonthlyCashFlow,
@@ -33,9 +34,7 @@ import {
   DollarSign,
   PiggyBank,
   Calendar,
-  AlertCircle,
   HelpCircle,
-  Clock,
   Layers,
   Receipt,
   Tag,
@@ -48,9 +47,7 @@ interface AnalyticsScreenProps {
 }
 
 // Držíme stav vybraného období a filtrů na úrovni modulu, aby zůstal zachován při přechodu do jiné sekce
-let savedPreset: AnalyticsPeriodPreset = '12m';
-let savedCustomFrom = '';
-let savedCustomTo = '';
+let savedRange: DualPeriodRange = { direction: 'past', months: 12 };
 let savedFilters: AnalyticsFilters = {
   accountId: null,
   categoryId: null,
@@ -77,12 +74,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   }, [todayStr, budgetStartDay]);
 
   // Stav výběru období
-  const [preset, setPreset] = useState<AnalyticsPeriodPreset>(() => savedPreset);
-  const [customFromInput, setCustomFromInput] = useState<string>(() => savedCustomFrom);
-  const [customToInput, setCustomToInput] = useState<string>(() => savedCustomTo);
-  const [appliedCustomFrom, setAppliedCustomFrom] = useState<string>(() => savedCustomFrom);
-  const [appliedCustomTo, setAppliedCustomTo] = useState<string>(() => savedCustomTo);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [range, setRange] = useState<DualPeriodRange>(() => savedRange);
 
   // Stav doplňkových filtrů
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => savedFilters.accountId || null);
@@ -90,33 +82,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(() => savedFilters.subcategoryId || null);
 
   // Aktualizace uloženého stavu
-  const updatePreset = (newPreset: AnalyticsPeriodPreset) => {
-    setPreset(newPreset);
-    savedPreset = newPreset;
-    setValidationError(null);
-  };
-
-  const handleApplyCustom = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!customFromInput || !customToInput) {
-      setValidationError('Vyberte prosím počáteční i koncový měsíc.');
-      return;
-    }
-    if (customFromInput > customToInput) {
-      setValidationError('Počáteční měsíc nesmí být pozdější než koncový měsíc.');
-      return;
-    }
-    if (customToInput > currentPeriod.key) {
-      setValidationError('Koncové rozpočtové období nesmí být v budoucnosti.');
-      return;
-    }
-
-    setValidationError(null);
-    setAppliedCustomFrom(customFromInput);
-    setAppliedCustomTo(customToInput);
-    savedCustomFrom = customFromInput;
-    savedCustomTo = customToInput;
-    updatePreset('custom');
+  const updateRange = (newRange: DualPeriodRange) => {
+    setRange(newRange);
+    savedRange = newRange;
   };
 
   // Synchronizace filtrů s persistencí
@@ -137,12 +105,11 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     savedFilters.subcategoryId = id;
   };
 
-  // Vyhodnocení rozsahu období
-  const dateRangeResult = useMemo(() => {
-    return resolveAnalyticsDateRange(
-      preset,
-      appliedCustomFrom,
-      appliedCustomTo,
+  // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Přehledy)
+  const periods = useMemo(() => {
+    return resolveDualPeriodRange(
+      range,
+      currentPeriod,
       {
         accounts,
         transactions,
@@ -152,21 +119,20 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       todayStr,
       budgetStartDay
     );
-  }, [preset, appliedCustomFrom, appliedCustomTo, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
+  }, [range, currentPeriod, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
 
-  const dateRange = dateRangeResult.range;
-
-  // Po použití rychlé volby nebo změně nastavení startovního dne aktualizujeme pole Od a Do na odpovídající měsíce
-  useEffect(() => {
-    if (preset !== 'custom') {
-      setCustomFromInput(dateRange.fromPeriodKey);
-      setCustomToInput(dateRange.toPeriodKey);
-      setAppliedCustomFrom(dateRange.fromPeriodKey);
-      setAppliedCustomTo(dateRange.toPeriodKey);
-      savedCustomFrom = dateRange.fromPeriodKey;
-      savedCustomTo = dateRange.toPeriodKey;
-    }
-  }, [preset, dateRange.fromPeriodKey, dateRange.toPeriodKey]);
+  const dateRange = useMemo<AnalyticsDateRange>(() => {
+    const first = periods[0];
+    const last = periods[periods.length - 1];
+    return {
+      preset: range.preset === 'custom' || range.preset === 'ytd' || range.preset === 'all' ? range.preset : '12m',
+      startDate: first ? first.startDate : todayStr,
+      endDate: last ? last.analysisEndDate : todayStr,
+      fromPeriodKey: first ? first.key : '',
+      toPeriodKey: last ? last.key : '',
+      periods,
+    };
+  }, [periods, range.preset, todayStr]);
 
   // Filtrované transakce
   const currentFilters = useMemo<AnalyticsFilters>(
@@ -271,121 +237,14 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
-      {/* 1. Panel pro výběr období */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Rychlé volby */}
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-              Analyzované období
-            </span>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => updatePreset('3m')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  preset === '3m'
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                }`}
-              >
-                Poslední 3 měsíce
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updatePreset('6m')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  preset === '6m'
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                }`}
-              >
-                Posledních 6 měsíců
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updatePreset('12m')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  preset === '12m'
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                }`}
-              >
-                Posledních 12 měsíců
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updatePreset('ytd')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  preset === 'ytd'
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                }`}
-              >
-                Tento rok (YTD)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => updatePreset('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  preset === 'all'
-                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
-                }`}
-              >
-                Celá historie
-              </button>
-            </div>
-          </div>
-
-          {/* Vlastní výběr Od - Do */}
-          <PeriodRangeSelector
-            from={customFromInput}
-            to={customToInput}
-            max={currentPeriod.key}
-            active={preset === 'custom'}
-            onFromChange={value => { setCustomFromInput(value); setValidationError(null); }}
-            onToChange={value => { setCustomToInput(value); setValidationError(null); }}
-            onSubmit={handleApplyCustom}
-          />
-        </div>
-
-        {/* Chybová validační zpráva */}
-        {validationError && (
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-            <span>{validationError}</span>
-          </div>
-        )}
-
-        {/* Aktivní zobrazený rozsah a stav období */}
-        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-900">
-              {dateRange.periods.length === 1
-                ? dateRange.periods[0]?.label
-                : `${dateRange.periods[0]?.label || ''} – ${dateRange.periods[dateRange.periods.length - 1]?.label || ''}`}
-            </span>
-            <span className="text-slate-500">•</span>
-            <span className="font-medium text-slate-500">
-              {formatCzechDate(dateRange.startDate)} – {formatCzechDate(dateRange.endDate)}
-            </span>
-          </div>
-
-          {dateRange.periods.some((p) => p.isCurrentPeriod) && (
-            <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg font-medium">
-              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>
-                Období probíhá (data k {formatCzechDate(todayStr)}) – měsíc ještě není uzavřen
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* 1. Hlavní filtr období (shodný se sekcí Přehledy) */}
+      <DualPeriodFilterPanel
+        range={range}
+        onRangeChange={updateRange}
+        periods={periods}
+        currentPeriodKey={currentPeriod.key}
+        ariaLabel="Analyzované období"
+      />
 
       {/* 2. Doplňkové filtry */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
