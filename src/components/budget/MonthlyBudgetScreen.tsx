@@ -281,6 +281,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const savedPct = income > 0 ? (savedInHaler / income) * 100 : null;
     const investedPct = income > 0 ? (investedInHaler / income) * 100 : null;
 
+    const actuallySavedInHaler = accounts
+      .filter(a => (a.type === 'checking' || a.type === 'cash') && a.status === 'active')
+      .reduce((sum, acc) => {
+        const bal = currentSummary.accountBalances[acc.id];
+        return bal ? addHaler(sum, addHaler(subHaler(bal.incomeInHaler, bal.expenseInHaler), bal.correctionsInHaler)) : sum;
+      }, 0);
+    const actuallySavedPct = income > 0 ? (actuallySavedInHaler / income) * 100 : null;
+
     const investmentChange = calculatePeriodInvestmentChange(
       accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay
     );
@@ -289,6 +297,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       usableClosingInHaler: currentSummary.usableClosingInHaler,
       netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
       savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
+      actuallySavedInHaler, actuallySavedPct,
     };
   }, [accounts, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
 
@@ -712,6 +721,23 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         </div>
       )}
 
+      {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
+          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+            {formatCurrency(aggregateSummary.usableClosingInHaler)}
+          </span>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
+          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+            {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
+          </span>
+        </div>
+      </div>
+
       {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2 px-0.5">
@@ -722,17 +748,19 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-            <span className="text-xs text-slate-500 block font-medium">Použitelný zůstatek</span>
-            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
-              {formatCurrency(aggregateSummary.usableClosingInHaler)}
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
+            <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno</span>
+            <span className={`text-base font-bold block mt-0.5 truncate ${
+              aggregateSummary.actuallySavedInHaler >= 0 ? 'text-emerald-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(aggregateSummary.actuallySavedInHaler, { showPlus: true })}
             </span>
           </div>
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
-            <span className="text-xs text-slate-500 block font-medium">Celkový majetek</span>
-            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
-              {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
+            <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno %</span>
+            <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
+              {formatPercent(aggregateSummary.actuallySavedPct)}
             </span>
           </div>
 
