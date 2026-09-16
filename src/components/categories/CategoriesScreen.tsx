@@ -222,7 +222,7 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
-                          className="p-1 rounded text-slate-500 hover:text-slate-600"
+                          className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -230,7 +230,7 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => archiveCategory(sub.id)}
                             title="Archivovat"
-                            className="p-1 rounded text-slate-500 hover:text-amber-600"
+                            className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
@@ -238,7 +238,7 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => restoreCategory(sub.id)}
                             title="Obnovit"
-                            className="p-1 rounded text-slate-500 hover:text-sky-600"
+                            className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
@@ -246,7 +246,7 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
-                          className="p-1 rounded text-slate-500 hover:text-red-600"
+                          className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
