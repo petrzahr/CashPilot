@@ -150,17 +150,17 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
         {/* Tabulka */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
+          <table className="w-full table-fixed text-left text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                <th className="py-3 px-4">Období</th>
-                <th className="py-3 px-4">Rozsah dat</th>
-                <th className="py-3 px-4 text-right">Počáteční stav</th>
-                <th className="py-3 px-4 text-right text-emerald-600">Příjmy</th>
-                <th className="py-3 px-4 text-right text-red-600">Výdaje</th>
-                <th className="py-3 px-4 text-right text-sky-600">Převody</th>
-                <th className="py-3 px-4 text-right">Čistá změna</th>
-                <th className="py-3 px-4 text-right">Konečný stav</th>
+                <th className="py-3 px-4 w-[160px]">Období</th>
+                <th className="py-3 px-4 w-[200px]">Rozsah dat</th>
+                <th className="py-3 px-4 w-[140px] text-right">Počáteční stav</th>
+                <th className="py-3 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
+                <th className="py-3 px-4 w-[120px] text-right text-red-600">Výdaje</th>
+                <th className="py-3 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                <th className="py-3 px-4 w-[130px] text-right">Čistá změna</th>
+                <th className="py-3 px-4 w-[140px] text-right">Konečný stav</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -193,28 +193,28 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <td className="py-3 px-4 text-xs text-slate-500">
                       {p.period.startDate} až {p.period.endDate}
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-700 font-medium">
+                    <td className="py-3 px-4 w-[140px] text-right text-slate-700 font-medium">
                       {formatCurrency(opening)}
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-emerald-600">
+                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-emerald-600">
                       {p.incomeInHaler > 0 ? `+${formatCurrency(p.incomeInHaler)}` : '0 Kč'}
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-red-600">
+                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-red-600">
                       {p.expenseInHaler > 0 ? `−${formatCurrency(p.expenseInHaler)}` : '0 Kč'}
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-sky-600">
+                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-sky-600">
                       {p.transfersInHaler > 0 ? formatCurrency(p.transfersInHaler) : '0 Kč'}
                     </td>
-                    <td className={`py-3 px-4 text-right font-medium ${
+                    <td className={`py-3 px-4 w-[130px] text-right font-medium ${
                       change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-600'
                     }`}>
                       {formatCurrency(change, { showPlus: true })}
                     </td>
-                    <td className={`py-3 px-4 text-right font-bold ${
-                      isNegative 
-                        ? 'text-red-600' 
-                        : isBelowReserve 
-                          ? 'text-amber-600' 
+                    <td className={`py-3 px-4 w-[140px] text-right font-bold ${
+                      isNegative
+                        ? 'text-red-600'
+                        : isBelowReserve
+                          ? 'text-amber-600'
                           : 'text-slate-900'
                     }`}>
                       {formatCurrency(closing)}
@@ -284,16 +284,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
                   {isExpanded && (
                     <div className="px-4 pb-4 bg-slate-50/50 overflow-x-auto">
-                      <table className="w-full text-xs text-left">
+                      <table className="w-full table-fixed text-xs text-left">
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-400 font-semibold">
-                            <th className="py-2">Účet</th>
-                            <th className="py-2 text-right">Počáteční stav</th>
-                            <th className="py-2 text-right text-emerald-600">Příjmy</th>
-                            <th className="py-2 text-right text-red-600">Výdaje</th>
-                            <th className="py-2 text-right text-sky-600">Převody</th>
-                            <th className="py-2 text-right">Čistá změna</th>
-                            <th className="py-2 text-right font-bold text-slate-900">Konečný stav</th>
+                            <th className="py-2 px-4 w-[220px]">Účet</th>
+                            <th className="py-2 px-4 w-[140px] text-right">Počáteční stav</th>
+                            <th className="py-2 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
+                            <th className="py-2 px-4 w-[120px] text-right text-red-600">Výdaje</th>
+                            <th className="py-2 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                            <th className="py-2 px-4 w-[130px] text-right">Čistá změna</th>
+                            <th className="py-2 px-4 w-[140px] text-right font-bold text-slate-900">Konečný stav</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -314,31 +314,31 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
                             return (
                               <tr key={acc.id} className="hover:bg-white/80">
-                                <td className="py-2.5 font-medium text-slate-900 flex items-center gap-2">
+                                <td className="py-2.5 px-4 font-medium text-slate-900 flex items-center gap-2">
                                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
                                   <span>{acc.name}</span>
                                   {acc.institution && <span className="text-slate-400 text-[10px]">({acc.institution})</span>}
                                 </td>
-                                <td className="py-2.5 text-right text-slate-600">
+                                <td className="py-2.5 px-4 w-[140px] text-right text-slate-600">
                                   {formatCurrency(accBal.openingBalanceInHaler)}
                                 </td>
-                                <td className="py-2.5 text-right font-medium text-emerald-600">
+                                <td className="py-2.5 px-4 w-[120px] text-right font-medium text-emerald-600">
                                   {incoming > 0 ? `+${formatCurrency(incoming)}` : '0 Kč'}
                                 </td>
-                                <td className="py-2.5 text-right font-medium text-red-600">
+                                <td className="py-2.5 px-4 w-[120px] text-right font-medium text-red-600">
                                   {outgoing > 0 ? `−${formatCurrency(outgoing)}` : '0 Kč'}
                                 </td>
-                                <td className={`py-2.5 text-right font-medium ${
+                                <td className={`py-2.5 px-4 w-[120px] text-right font-medium ${
                                   netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-500'
                                 }`}>
                                   {formatCurrency(netTransfers, { showPlus: true })}
                                 </td>
-                                <td className={`py-2.5 text-right font-medium ${
+                                <td className={`py-2.5 px-4 w-[130px] text-right font-medium ${
                                   netChange > 0 ? 'text-emerald-600' : netChange < 0 ? 'text-red-600' : 'text-slate-600'
                                 }`}>
                                   {formatCurrency(netChange, { showPlus: true })}
                                 </td>
-                                <td className={`py-2.5 text-right font-bold ${
+                                <td className={`py-2.5 px-4 w-[140px] text-right font-bold ${
                                   accBal.closingBalanceInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                                 }`}>
                                   {formatCurrency(accBal.closingBalanceInHaler)}
