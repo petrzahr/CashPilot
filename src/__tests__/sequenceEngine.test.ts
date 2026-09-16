@@ -210,4 +210,30 @@ describe('CashPilot - Pořadí položek (1, 2, 3...) a řazení gridu', () => {
     expect(goodIntraDay.steps[1].isTemporaryNegative).toBe(false);
     expect(goodIntraDay.endOfDayBalanceInHaler).toBe(700000);
   });
+
+  // 9. Agregovaný (bez accountId) průběžný zůstatek respektuje hranici "použitelných" účtů u převodů
+  it('Agregovaný průběžný zůstatek zohledňuje převod mimo skupinu použitelných účtů', () => {
+    const startBalance = 1000000; // 10 000 Kč napříč použitelnými účty
+    const usableAccountIds = new Set(['acc_checking']);
+
+    const transferOut: Transaction = {
+      id: 'tr_out', title: 'Do spoření', date: '2026-09-20', sequence: 1, type: 'transfer',
+      amountInHaler: 200000, sourceAccountId: 'acc_checking', targetAccountId: 'acc_savings',
+      status: 'executed', createdAt: '', updatedAt: '',
+    };
+
+    // Bez znalosti množiny použitelných účtů (starší volání) se převod nezapočítá vůbec (neutrální chování).
+    const withoutSet = calculateIntraDayRunningBalances(startBalance, [transferOut]);
+    expect(withoutSet.endOfDayBalanceInHaler).toBe(startBalance);
+
+    // Se znalostí množiny se odchozí převod z použitelného účtu do nepoužitelného odečte.
+    const withSet = calculateIntraDayRunningBalances(startBalance, [transferOut], undefined, usableAccountIds);
+    expect(withSet.endOfDayBalanceInHaler).toBe(800000);
+
+    // Převod mezi dvěma použitelnými účty se v souhrnu vyruší (žádná změna).
+    const transferInternal: Transaction = { ...transferOut, id: 'tr_internal', targetAccountId: 'acc_cash' };
+    const internalUsableIds = new Set(['acc_checking', 'acc_cash']);
+    const internal = calculateIntraDayRunningBalances(startBalance, [transferInternal], undefined, internalUsableIds);
+    expect(internal.endOfDayBalanceInHaler).toBe(startBalance);
+  });
 });
