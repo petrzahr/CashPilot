@@ -76,14 +76,7 @@ export const CategoriesScreen: React.FC = () => {
     <div className="space-y-6 pb-12">
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Správa kategorií rozpočtu</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Dvouúrovňová struktura: hlavní kategorie a podkategorie pro přehledné třídění
-            </p>
-          </div>
-
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3">
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
               <input
