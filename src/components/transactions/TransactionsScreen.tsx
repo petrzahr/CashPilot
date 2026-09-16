@@ -398,7 +398,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={accountFilter}
               onChange={(e) => setAccountFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny účty</option>
               {sortedAccounts.map(a => (
@@ -459,7 +459,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny typy</option>
               {TYPE_OPTIONS.map(t => (
@@ -473,7 +473,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny stavy</option>
               {STATUS_OPTIONS.map(s => (

@@ -402,7 +402,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               <select
                 value={selectedAccountId || ''}
                 onChange={(e) => handleSelectAccount(e.target.value || null)}
-                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
               >
                 <option value="">Všechny účty</option>
                 {sortedAccounts.map((a) => (
@@ -426,7 +426,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               <select
                 value={selectedCategoryId || ''}
                 onChange={(e) => handleSelectCategory(e.target.value || null)}
-                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
               >
                 <option value="">Všechny kategorie</option>
                 {mainCategories.map((c) => (
@@ -451,10 +451,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 disabled={!selectedCategoryId || availableSubcategories.length === 0}
                 value={selectedSubcategoryId || ''}
                 onChange={(e) => handleSelectSubcategory(e.target.value || null)}
-                className={`w-full px-3 py-2 border rounded-xl text-xs font-semibold transition-all appearance-none ${
+                className={`w-full px-3 py-2 border rounded-xl text-xs transition-all appearance-none ${
                   !selectedCategoryId || availableSubcategories.length === 0
                     ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
-                    : 'bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500'
+                    : 'bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-slate-200 text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500'
                 }`}
               >
                 <option value="">Všechny podkategorie</option>

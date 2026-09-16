@@ -163,7 +163,7 @@ export const AccountsScreen: React.FC = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as AccountType | '')}
-            className="w-full h-8 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className="w-full h-8 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
           >
             <option value="">Všechny účty</option>
             <option value="checking">{getTypeLabel('checking')}</option>
