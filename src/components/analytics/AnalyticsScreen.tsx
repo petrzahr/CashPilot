@@ -620,7 +620,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       <CashFlowBarChart data={monthlyCashFlow} />
 
       {/* 5. Rozpad kategorií (Výdaje & Příjmy) ve dvousloupcovém rozložení */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CategoryBarChart
           title="Výdaje podle kategorií"
           subtitle="Seřazeno podle výše útrat s možností rozbalení podkategorií"
@@ -643,7 +643,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       />
 
       {/* 7. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div>
