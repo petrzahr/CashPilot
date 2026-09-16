@@ -3,25 +3,13 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
+import { COLOR_PALETTE } from '../../constants/colors';
 
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   accountToEdit?: Account | null;
 }
-
-const ACCOUNT_COLORS = [
-  '#0284c7', // Sky blue
-  '#0d9488', // Teal
-  '#10b981', // Emerald
-  '#84cc16', // Lime
-  '#f59e0b', // Amber
-  '#ea580c', // Orange
-  '#dc2626', // Red
-  '#8b5cf6', // Violet
-  '#6366f1', // Indigo
-  '#64748b', // Slate
-];
 
 export const AccountModal: React.FC<AccountModalProps> = ({
   isOpen,
@@ -39,7 +27,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [isNetWorth, setIsNetWorth] = useState(true);
   const [isDefault, setIsDefault] = useState(false);
   const [institution, setInstitution] = useState('');
-  const [color, setColor] = useState(ACCOUNT_COLORS[0]);
+  const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isEditing = !!accountToEdit;
@@ -56,7 +44,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       setIsNetWorth(accountToEdit.isNetWorth);
       setIsDefault(Boolean(accountToEdit.isDefault));
       setInstitution(accountToEdit.institution || '');
-      setColor(accountToEdit.color || ACCOUNT_COLORS[0]);
+      setColor(accountToEdit.color || COLOR_PALETTE[0]);
     } else {
       setName('');
       setType('checking');
@@ -67,7 +55,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       setIsNetWorth(true);
       setIsDefault(false);
       setInstitution('');
-      setColor(ACCOUNT_COLORS[accounts.length % ACCOUNT_COLORS.length]);
+      setColor(COLOR_PALETTE[accounts.length % COLOR_PALETTE.length]);
     }
   }, [accountToEdit, isOpen, accounts.length]);
 
@@ -267,7 +255,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             Barva účtu
           </label>
           <div className="flex items-center gap-2 flex-wrap">
-            {ACCOUNT_COLORS.map((c) => (
+            {COLOR_PALETTE.map((c) => (
               <button
                 key={c}
                 type="button"

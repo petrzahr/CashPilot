@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
+import { COLOR_PALETTE } from '../../constants/colors';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -12,19 +13,6 @@ interface CategoryModalProps {
   defaultParentId?: string | null;
   mode?: 'main' | 'sub' | 'edit';
 }
-
-const CATEGORY_COLORS = [
-  '#16a34a', // Green
-  '#0284c7', // Blue
-  '#0d9488', // Teal
-  '#6366f1', // Indigo
-  '#8b5cf6', // Violet
-  '#ea580c', // Orange
-  '#dc2626', // Red
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#64748b', // Slate
-];
 
 export const CategoryModal: React.FC<CategoryModalProps> = ({
   isOpen,
@@ -44,7 +32,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>(defaultType);
   const [parentId, setParentId] = useState<string | null>(isMainCategoryMode ? null : defaultParentId);
-  const [color, setColor] = useState(CATEGORY_COLORS[0]);
+  const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [updateHistorical, setUpdateHistorical] = useState(false);
 
   // Hlavní kategorie stejného typu pro výběr nadřazené kategorie (seřazeno A–Z)
@@ -57,13 +45,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       setName(categoryToEdit.name);
       setType(categoryToEdit.type);
       setParentId(categoryToEdit.parentId || null);
-      setColor(categoryToEdit.color || CATEGORY_COLORS[0]);
+      setColor(categoryToEdit.color || COLOR_PALETTE[0]);
       setUpdateHistorical(false);
     } else {
       setName('');
       setType(defaultType);
       setParentId(isMainCategoryMode ? null : defaultParentId);
-      setColor(CATEGORY_COLORS[0]);
+      setColor(COLOR_PALETTE[0]);
       setUpdateHistorical(false);
     }
   }, [categoryToEdit, isOpen, defaultType, defaultParentId, isMainCategoryMode]);
@@ -239,7 +227,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             Barva kategorie
           </label>
           <div className="flex items-center gap-2 flex-wrap">
-            {CATEGORY_COLORS.map((c) => (
+            {COLOR_PALETTE.map((c) => (
               <button
                 key={c}
                 type="button"

@@ -1468,10 +1468,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [addCategory]);
 
   const updateCategory = useCallback((cat: Category) => {
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => c.id === cat.id ? { ...cat, updatedAt: new Date().toISOString() } : c)
-    }));
+    setData(prev => {
+      const nowIso = new Date().toISOString();
+      const original = prev.categories.find(c => c.id === cat.id);
+      const isMainCategory = !cat.parentId;
+      const colorChanged = !!original && original.color !== cat.color;
+      const shouldPropagateColor = isMainCategory && colorChanged;
+
+      return {
+        ...prev,
+        categories: prev.categories.map(c => {
+          if (c.id === cat.id) return { ...cat, updatedAt: nowIso };
+          if (shouldPropagateColor && c.parentId === cat.id) {
+            return { ...c, color: cat.color, updatedAt: nowIso };
+          }
+          return c;
+        })
+      };
+    });
     showToast(`Kategorie „${cat.name}“ byla upravena.`);
   }, [showToast]);
 
