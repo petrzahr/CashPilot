@@ -28,7 +28,8 @@ import {
   Eye,
   SlidersHorizontal,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Repeat
 } from 'lucide-react';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
@@ -1088,6 +1089,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       {tx.title}
                                     </span>
                                   )}
+                                  {tx.recurringRuleId && (
+                                    <span title="Pravidelná položka" className="shrink-0 inline-flex">
+                                      <Repeat className="w-3.5 h-3.5 text-slate-400" />
+                                    </span>
+                                  )}
                                   {isCorrection ? (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                                       Korekce
@@ -1236,12 +1242,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         ) : (
           /* 2. REŽIM: KLASICKÁ TABULKA POLOŽEK */
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs whitespace-nowrap">
+            <table className="w-full text-left text-xs whitespace-nowrap table-fixed">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
                   <th
                     onClick={toggleDateSort}
-                    className="py-2.5 px-4 cursor-pointer hover:text-slate-900 select-none transition-colors"
+                    className="w-[110px] py-2.5 px-4 cursor-pointer hover:text-slate-900 select-none transition-colors"
                     title={`Řazení podle data a pořadí (${dateSortOrder === 'asc' ? 'Vzestupně: od nejstarších, v rámci dne 1, 2, 3…' : 'Sestupně: od nejnovějších, v rámci dne …3, 2, 1'})`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -1253,13 +1259,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       )}
                     </div>
                   </th>
-                  <th className="py-2.5 px-3 text-center" title="Pořadí v rámci dne">Pořadí</th>
-                <th className="py-2.5 px-4">Název položky</th>
-                <th className="py-2.5 px-4">Kategorie</th>
-                <th className="py-2.5 px-4">Účet</th>
-                <th className="py-2.5 px-4">Stav</th>
-                <th className="py-2.5 px-4 text-right">Částka</th>
-                <th className="py-2.5 px-4 text-right">Akce</th>
+                  <th className="w-[70px] py-2.5 px-3 text-center" title="Pořadí v rámci dne">Pořadí</th>
+                <th className="min-w-[160px] py-2.5 px-4">Název položky</th>
+                <th className="w-[160px] py-2.5 px-4">Kategorie</th>
+                <th className="w-[150px] py-2.5 px-4">Účet</th>
+                <th className="w-[140px] py-2.5 px-4">Stav</th>
+                <th className="w-[120px] py-2.5 px-4 text-right">Částka</th>
+                <th className="w-[170px] py-2.5 px-4 text-right">Akce</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1296,51 +1302,51 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         isCancelled ? 'opacity-50 line-through' : isCorrection ? 'bg-amber-50/30' : ''
                       }`}
                     >
-                      <td className="py-3 px-4 text-slate-500">
+                      <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-700">
+                      <td className="py-3 px-3 text-center font-bold text-slate-700 overflow-hidden">
                         <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-100">
                           #{tx.sequence || 1}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        <div className="flex items-center gap-1.5">
+                      <td className="py-3 px-4 font-semibold text-slate-900 overflow-hidden">
+                        <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
                           {isCorrection ? (
                             <button
                               type="button"
                               onClick={() => setSelectedCorrection(tx)}
-                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5"
+                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0 flex-1"
                             >
-                              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700" />
-                              {tx.title}
+                              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
-                            <span>{tx.title}</span>
+                            <span className="truncate min-w-0 flex-1">{tx.title}</span>
                           )}
                           {tx.recurringRuleId && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500" title="Pravidelná položka">
-                              Opakovaná
+                            <span title="Pravidelná položka" className="shrink-0 inline-flex">
+                              <Repeat className="w-3.5 h-3.5 text-slate-400" />
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
                         </div>
-                        {tx.note && <span className="text-[10px] text-slate-400 block font-normal">{tx.note}</span>}
+                        {tx.note && <span className="text-[10px] text-slate-400 block font-normal truncate">{tx.note}</span>}
                       </td>
-                      <td className="py-3 px-4 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600 overflow-hidden">
                         {isCorrection ? (
                           <span className="text-amber-800 font-medium text-[11px] bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
                             Korekce zůstatku
                           </span>
                         ) : cat ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                            <span>{cat.name}</span>
-                            {subCat && <span className="text-slate-400">› {subCat.name}</span>}
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                            <span className="truncate">{cat.name}</span>
+                            {subCat && <span className="text-slate-400 truncate">› {subCat.name}</span>}
                           </div>
                         ) : tx.type === 'transfer' ? (
                           <span className="text-sky-600 font-medium">Převod</span>
@@ -1348,15 +1354,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           <span className="text-slate-400 italic text-xs">Bez kategorie</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600 overflow-hidden">
                         {sourceAcc ? (
                           <span className="flex items-center gap-1">
-                            {sourceAcc.name}
-                            {targetAcc && <span className="text-sky-600">→ {targetAcc.name}</span>}
+                            <span className="truncate">{sourceAcc.name}</span>
+                            {targetAcc && <span className="text-sky-600 shrink-0">→ {targetAcc.name}</span>}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 overflow-hidden">
                         {isCorrection ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <Check className="w-3 h-3" /> Uskutečněná
@@ -1365,7 +1371,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           renderStatusBadge(tx)
                         )}
                       </td>
-                      <td className={`py-3 px-4 text-right font-bold ${
+                      <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
                         isCorrection
                           ? (diff >= 0 ? 'text-emerald-700' : 'text-amber-700')
                           : tx.type === 'income' 
@@ -1378,7 +1384,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           ? formatCurrency(diff, { showPlus: true })
                           : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 text-right overflow-hidden">
                         <div className="flex items-center justify-end gap-1">
                           {isCorrection ? (
                             <>
