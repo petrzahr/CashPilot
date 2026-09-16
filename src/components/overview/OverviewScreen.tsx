@@ -289,8 +289,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <tr className="border-b border-slate-200 text-slate-400 font-semibold">
                             <th className="py-2">Účet</th>
                             <th className="py-2 text-right">Počáteční stav</th>
-                            <th className="py-2 text-right text-emerald-600">Příchozí pohyby</th>
-                            <th className="py-2 text-right text-red-600">Odchozí pohyby</th>
+                            <th className="py-2 text-right text-emerald-600">Příjmy</th>
+                            <th className="py-2 text-right text-red-600">Výdaje</th>
+                            <th className="py-2 text-right text-sky-600">Převody</th>
+                            <th className="py-2 text-right">Čistá změna</th>
                             <th className="py-2 text-right font-bold text-slate-900">Konečný stav</th>
                           </tr>
                         </thead>
@@ -305,8 +307,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                               ? subHaler(subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler), subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler))
                               : 0;
 
-                            const incoming = addHaler(accBal.incomeInHaler, accBal.transfersInInHaler, accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0, valuationChangeInHaler > 0 ? valuationChangeInHaler : 0);
-                            const outgoing = addHaler(accBal.expenseInHaler, accBal.transfersOutInHaler, accBal.correctionsInHaler < 0 ? Math.abs(accBal.correctionsInHaler) : 0, valuationChangeInHaler < 0 ? Math.abs(valuationChangeInHaler) : 0);
+                            const incoming = addHaler(accBal.incomeInHaler, accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0, valuationChangeInHaler > 0 ? valuationChangeInHaler : 0);
+                            const outgoing = addHaler(accBal.expenseInHaler, accBal.correctionsInHaler < 0 ? Math.abs(accBal.correctionsInHaler) : 0, valuationChangeInHaler < 0 ? Math.abs(valuationChangeInHaler) : 0);
+                            const netTransfers = subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler);
+                            const netChange = subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler);
 
                             return (
                               <tr key={acc.id} className="hover:bg-white/80">
@@ -323,6 +327,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                 </td>
                                 <td className="py-2.5 text-right font-medium text-red-600">
                                   {outgoing > 0 ? `−${formatCurrency(outgoing)}` : '0 Kč'}
+                                </td>
+                                <td className={`py-2.5 text-right font-medium ${
+                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-500'
+                                }`}>
+                                  {formatCurrency(netTransfers, { showPlus: true })}
+                                </td>
+                                <td className={`py-2.5 text-right font-medium ${
+                                  netChange > 0 ? 'text-emerald-600' : netChange < 0 ? 'text-red-600' : 'text-slate-600'
+                                }`}>
+                                  {formatCurrency(netChange, { showPlus: true })}
                                 </td>
                                 <td className={`py-2.5 text-right font-bold ${
                                   accBal.closingBalanceInHaler < 0 ? 'text-red-600' : 'text-slate-900'
