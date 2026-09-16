@@ -397,7 +397,6 @@ export function calculateForecast(
     budgetStartDay: 15,
     overdraftLimitInHaler: 2000000,
     minReserveInHaler: 2000000,
-    forecastMonths: 12,
     roundAmounts: false
   },
   marketValueSnapshots: MarketValueSnapshot[] = [],
@@ -769,7 +768,7 @@ export function calculateForecast(
   const currentSummary = periodSummaries.find(p => p.period.key === resolvedCurrentPeriod.key) || periodSummaries[0];
 
   const currentPeriodIdx = periodSummaries.findIndex(p => p.period.key === resolvedCurrentPeriod.key);
-  const forecastMonths = settings.forecastMonths || 12;
+  const forecastMonths = 12;
   const historicalForecastPeriods = currentPeriodIdx >= 0
     ? periodSummaries.slice(currentPeriodIdx, currentPeriodIdx + forecastMonths)
     : periodSummaries.slice(0, forecastMonths);

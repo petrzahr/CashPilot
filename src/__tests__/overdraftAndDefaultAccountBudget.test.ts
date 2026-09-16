@@ -70,7 +70,6 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
     budgetStartDay: 15,
     overdraftLimitInHaler: 2000000, // 20 000 Kč
     minReserveInHaler: 2000000,
-    forecastMonths: 12,
     roundAmounts: false,
   };
 
@@ -133,7 +132,6 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
         currency: 'CZK',
         budgetStartDay: 15,
         minReserveInHaler: 3500000, // 35 000 Kč
-        forecastMonths: 12,
         roundAmounts: false,
       },
       accounts: [defaultAccount],

@@ -9,7 +9,6 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     currency: 'CZK',
     budgetStartDay: 15,
     minReserveInHaler: 5000000,
-    forecastMonths: 12,
     roundAmounts: false,
   };
 

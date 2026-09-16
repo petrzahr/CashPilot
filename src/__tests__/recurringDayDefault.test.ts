@@ -28,7 +28,6 @@ const defaultSettings: AppSettings = {
   currency: 'CZK',
   budgetStartDay: 15,
   minReserveInHaler: 0,
-  forecastMonths: 12,
   roundAmounts: false,
 };
 

@@ -8,7 +8,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   budgetStartDay: 15,
   overdraftLimitInHaler: 2000000, // Výše kontokorentu: 20 000 Kč
   minReserveInHaler: 2000000, // Pro zpětnou kompatibilitu
-  forecastMonths: 12,
   roundAmounts: false,
 };
 

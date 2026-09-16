@@ -16,7 +16,6 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { DataLoadErrorScreen } from './components/common/DataLoadErrorScreen';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
-import { formatMonthsCount } from './services/periodService';
 
 const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'transactions', 'accounts', 'categories', 'settings'];
 
@@ -31,10 +30,8 @@ function parseScreenFromUrl(): NavScreen {
 
 const MainLayout: React.FC = () => {
   const {
-    settings,
     data,
   } = useFinance();
-  const forecastMonths = settings.forecastMonths || 12;
 
   const [currentScreen, setCurrentScreen] = useState<NavScreen>(() => parseScreenFromUrl());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -79,7 +76,7 @@ const MainLayout: React.FC = () => {
   const getScreenTitle = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
-      case 'overview': return `Přehledy & výhled na ${formatMonthsCount(forecastMonths)}`;
+      case 'overview': return 'Přehledy';
       case 'analytics': return 'Analýza & trendy';
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Správa účtů';

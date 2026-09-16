@@ -514,7 +514,6 @@ describe('googleDriveService', () => {
         budgetStartDay: 20,
         overdraftLimitInHaler: 3500000,
         minReserveInHaler: 3500000,
-        forecastMonths: 12,
         roundAmounts: false,
       };
 
@@ -524,7 +523,6 @@ describe('googleDriveService', () => {
         budgetStartDay: 1,
         overdraftLimitInHaler: 1000000,
         minReserveInHaler: 1000000,
-        forecastMonths: 6,
         roundAmounts: true,
       };
 

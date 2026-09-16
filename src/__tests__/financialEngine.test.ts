@@ -8,7 +8,6 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
     currency: 'CZK',
     budgetStartDay: 15,
     minReserveInHaler: 5000000, // 50 000 Kč
-    forecastMonths: 12,
     roundAmounts: false,
   };
 

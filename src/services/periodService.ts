@@ -216,6 +216,20 @@ export function getPreviousPeriod(period: BudgetPeriod, startDay: number = 15): 
   return createBudgetPeriod(prevYear, prevMonth, startDay);
 }
 
+export interface OverviewRange {
+  direction: 'future' | 'past';
+  months: 3 | 6 | 12;
+}
+
+/** Like Analytics presets, both directions include the current budget period. */
+export function getOverviewPeriods(current: BudgetPeriod, range: OverviewRange, startDay: number): BudgetPeriod[] {
+  let first = current;
+  if (range.direction === 'past') {
+    for (let i = 1; i < range.months; i++) first = getPreviousPeriod(first, startDay);
+  }
+  return generatePeriodsSequence(first.year, first.month, range.months, startDay);
+}
+
 /**
  * Vrátí správný tvar slova "měsíc" podle českých gramatických pravidel a specifikace:
  * - 1 měsíc
