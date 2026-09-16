@@ -145,6 +145,20 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     samplePension,
   ];
 
+  it.each(allAccounts)('includes $type balances even when excluded from net worth', (account) => {
+    const excluded = { ...account, isNetWorth: false };
+    const overview = calculateQuickFinancialOverview([excluded], [], [], [], today);
+    const group = account.type === 'savings' ? 'savingsInHaler'
+      : account.type === 'investment' ? 'investmentsInHaler'
+      : account.type === 'pension' ? 'pensionInHaler' : 'checkingAndCashInHaler';
+    expect(overview[group]).toBe(account.initialBalanceInHaler);
+    expect(overview.totalNetWorthInHaler).toBe(0);
+
+    const included = calculateQuickFinancialOverview([account], [], [], [], today);
+    expect(included[group]).toBe(overview[group]);
+    expect(included.totalNetWorthInHaler).toBe(account.initialBalanceInHaler);
+  });
+
   it('1. Původní položky "Použitelné peníze" a "Celkový majetek" již nejsou v postranním menu zobrazeny', () => {
     const html = renderToStaticMarkup(
       <FinanceProvider>
