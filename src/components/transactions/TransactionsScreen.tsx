@@ -57,11 +57,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     categories,
     selectedPeriod,
     duplicateTransaction,
-    markTransactionExecuted,
-    cancelTransaction,
+    setTransactionStatus,
     deleteTransaction,
     exportCSV,
     dataConflicts,
+    showToast,
   } = useFinance();
 
   // Stav mazání položky
@@ -70,6 +70,23 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
+
+  // Stav probíhající změny stavu položky (Akce sloupec)
+  const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
+
+  const handleStatusChange = async (txId: string, newStatus: TransactionStatus) => {
+    if (updatingStatusTxId) return;
+    setUpdatingStatusTxId(txId);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 60));
+      setTransactionStatus(txId, newStatus);
+    } catch (err) {
+      console.error(err);
+      showToast('Při změně stavu položky došlo k chybě.', 'error');
+    } finally {
+      setUpdatingStatusTxId(null);
+    }
+  };
 
   const deletingTxHasExecutedHistorical = useMemo(() => {
     if (!deletingTx) return false;
@@ -662,13 +679,23 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             </>
                           ) : (
                             <>
-                              {!isExecuted && !isCancelled && (
+                              {!isExecuted ? (
                                 <button
-                                  onClick={() => markTransactionExecuted(tx.id)}
+                                  onClick={() => handleStatusChange(tx.id, 'executed')}
+                                  disabled={updatingStatusTxId === tx.id}
                                   title="Označit jako uskutečněnou"
-                                  className="p-1 rounded text-emerald-600 hover:bg-emerald-50"
+                                  className="p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <Check className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusChange(tx.id, 'planned')}
+                                  disabled={updatingStatusTxId === tx.id}
+                                  title="Vrátit do plánovaných"
+                                  className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                >
+                                  <Clock className="w-4 h-4" />
                                 </button>
                               )}
                               <button
@@ -685,13 +712,23 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               >
                                 <Copy className="w-4 h-4" />
                               </button>
-                              {!isCancelled && (
+                              {!isCancelled ? (
                                 <button
-                                  onClick={() => cancelTransaction(tx.id)}
+                                  onClick={() => handleStatusChange(tx.id, 'cancelled')}
+                                  disabled={updatingStatusTxId === tx.id}
                                   title="Zrušit položku"
-                                  className="p-1 rounded text-amber-600 hover:bg-amber-50"
+                                  className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Ban className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusChange(tx.id, 'planned')}
+                                  disabled={updatingStatusTxId === tx.id}
+                                  title="Obnovit položku (do plánovaných)"
+                                  className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                >
+                                  <Clock className="w-4 h-4" />
                                 </button>
                               )}
                               <button
