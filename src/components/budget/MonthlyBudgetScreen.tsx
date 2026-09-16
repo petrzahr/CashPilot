@@ -619,6 +619,23 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
+          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+            {formatCurrency(aggregateSummary.usableClosingInHaler)}
+          </span>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
+          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+            {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
+          </span>
+        </div>
+      </div>
+
       {/* Finanční bilance období (Souhrnný panel výchozího účtu) */}
       {!defaultAccount ? (
         <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
@@ -721,32 +738,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         </div>
       )}
 
-      {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
-          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
-            {formatCurrency(aggregateSummary.usableClosingInHaler)}
-          </span>
-        </div>
-
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
-          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
-            {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
-          </span>
-        </div>
-      </div>
-
       {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between gap-2 px-0.5">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200/70 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
-            Souhrnně: <strong>všechny účty</strong>
-          </span>
-        </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
             <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno</span>
