@@ -13,7 +13,7 @@ interface PeriodRangeSelectorProps {
 export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, to, max, active, onFromChange, onToChange, onSubmit }) => (
   <form
     onSubmit={onSubmit}
-    className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 lg:border-l lg:border-slate-200/80 lg:pl-4"
+    className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0"
   >
     <label className="flex items-center gap-1.5 text-xs">
       <span className="text-slate-500 font-medium">Od:</span>
@@ -24,7 +24,7 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onFromChange(e.target.value);
         }}
-        className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
       />
     </label>
 
@@ -37,7 +37,7 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onToChange(e.target.value);
         }}
-        className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
       />
     </label>
 

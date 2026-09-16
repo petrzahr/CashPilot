@@ -76,7 +76,7 @@ beforeEach(() => {
 });
 
 it.each([3, 18, 24])('applies the %i-month future preset to both sections', count => {
-  click(`Příští ${count} ${count === 3 ? 'měsíce' : 'měsíců'}`);
+  click(`${count === 3 ? 'Příští' : 'Příštích'} ${count} ${count === 3 ? 'měsíce' : 'měsíců'}`);
   const last = generatePeriodsSequence(2026, 8, count, 31)[count - 1];
   expectRange('2026-08', last.key, count);
   expect(selector('future')).toMatchObject({ from: '2026-08', to: last.key, active: false });
