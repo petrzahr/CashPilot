@@ -286,14 +286,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <div className="pb-4 bg-slate-50/50 overflow-x-auto">
                       <table className="w-full table-fixed text-xs text-left">
                         <thead>
-                          <tr className="border-b border-slate-200 text-slate-400 font-semibold">
+                          <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
                             <th className="py-2 px-4 w-[360px]">Účet</th>
                             <th className="py-2 px-4 w-[140px] text-right">Počáteční stav</th>
                             <th className="py-2 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                             <th className="py-2 px-4 w-[120px] text-right text-red-600">Výdaje</th>
                             <th className="py-2 px-4 w-[120px] text-right text-sky-600">Převody</th>
                             <th className="py-2 px-4 w-[130px] text-right">Čistá změna</th>
-                            <th className="py-2 px-4 w-[140px] text-right font-bold text-slate-900">Konečný stav</th>
+                            <th className="py-2 px-4 w-[140px] text-right">Konečný stav</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -319,17 +319,17 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                   <span>{acc.name}</span>
                                   {acc.institution && <span className="text-slate-400 text-[10px]">({acc.institution})</span>}
                                 </td>
-                                <td className="py-2.5 px-4 w-[140px] text-right text-slate-600">
+                                <td className="py-2.5 px-4 w-[140px] text-right text-slate-700 font-medium">
                                   {formatCurrency(accBal.openingBalanceInHaler)}
                                 </td>
-                                <td className="py-2.5 px-4 w-[120px] text-right font-medium text-emerald-600">
+                                <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-emerald-600">
                                   {incoming > 0 ? `+${formatCurrency(incoming)}` : '0 Kč'}
                                 </td>
-                                <td className="py-2.5 px-4 w-[120px] text-right font-medium text-red-600">
+                                <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-red-600">
                                   {outgoing > 0 ? `−${formatCurrency(outgoing)}` : '0 Kč'}
                                 </td>
-                                <td className={`py-2.5 px-4 w-[120px] text-right font-medium ${
-                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-500'
+                                <td className={`py-2.5 px-4 w-[120px] text-right font-semibold ${
+                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-600'
                                 }`}>
                                   {formatCurrency(netTransfers, { showPlus: true })}
                                 </td>
