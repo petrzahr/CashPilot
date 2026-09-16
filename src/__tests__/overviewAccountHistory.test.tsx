@@ -59,9 +59,11 @@ describe.each(['investment', 'pension'] as const)('Overview %s forecast', type =
       formatCurrency(closing * 100),
       valuationChange > 0 ? `+${formatCurrency(valuationChange * 100)}` : '0 Kč',
       valuationChange < 0 ? `−${formatCurrency(Math.abs(valuationChange) * 100)}` : '0 Kč',
+      '0 Kč',
+      '0 Kč',
       formatCurrency(closing * 100),
     ]);
-    expect(cells(cash.name)).toEqual([formatCurrency(1000000), `+${formatCurrency(100000)}`, '0 Kč', formatCurrency(1100000)]);
+    expect(cells(cash.name)).toEqual([formatCurrency(1000000), `+${formatCurrency(100000)}`, '0 Kč', '0 Kč', formatCurrency(100000, { showPlus: true }), formatCurrency(1100000)]);
     expect(html).toContain(`Zůstatek celkem: ${formatCurrency(closing * 100 + 1100000)}`);
     expect(JSON.stringify({ forecast, accounts, transactions, marketValueSnapshots })).toBe(before);
   });
