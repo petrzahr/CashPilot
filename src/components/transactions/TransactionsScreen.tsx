@@ -321,11 +321,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Všechny finanční položky</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Přehled všech příjmů, výdajů a převodů včetně pořadí v rámci dne
-            </p>
-            <div className="flex items-center gap-2 flex-wrap mt-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-bold text-slate-900">Položky</h3>
               <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
                 {filteredTransactions.length}
