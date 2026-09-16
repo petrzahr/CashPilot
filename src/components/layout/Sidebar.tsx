@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Spodní rychlý finanční přehled k dnešnímu dni */}
+        {/* Spodní finanční přehled ze stejných hodnot jako karty účtů */}
         <div className="p-3.5 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-600">

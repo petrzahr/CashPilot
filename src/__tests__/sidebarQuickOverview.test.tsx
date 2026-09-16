@@ -13,6 +13,10 @@ import {
   MarketValueSnapshot,
 } from '../types/finance';
 import { saveStoredAuth, clearStoredAuth } from '../services/googleDriveService';
+import { createResetAppData } from '../constants/defaultData';
+import { SyncController } from '../services/syncController';
+import { accountStorageKey } from '../services/syncModel';
+import { AccountsScreen } from '../components/accounts/AccountsScreen';
 
 const storageMock = (() => {
   let store: Record<string, string> = {};
@@ -144,6 +148,51 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     sampleInvestment,
     samplePension,
   ];
+
+  it('matches account cards including planned balances and keeps other accounts out of checking/cash', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-16T12:00:00Z'));
+    const data = createResetAppData();
+    data.accounts = [
+      { ...sampleChecking, initialBalanceInHaler: 8000000 },
+      { ...sampleCash, initialBalanceInHaler: 1888200 },
+      { ...sampleSavings, initialBalanceInHaler: 22000000 },
+      { ...sampleSavings, id: 'savings2', initialBalanceInHaler: 6012000 },
+      { ...sampleInvestment, initialBalanceInHaler: 33300000 },
+      { ...sampleInvestment, id: 'investment2', initialBalanceInHaler: 24600000 },
+      { ...samplePension, initialBalanceInHaler: 25300000 },
+      { ...sampleChecking, id: 'term-deposit', type: 'other', initialBalanceInHaler: 10000000 },
+    ];
+    data.transactions = [{ id: 'planned', title: 'Planned expense', type: 'expense',
+      sourceAccountId: sampleChecking.id, date: '2026-09-20', sequence: 1,
+      amountInHaler: 815400, status: 'planned', createdAt: '', updatedAt: '' }];
+    localStorage.setItem(accountStorageKey('sidebar-cards'), JSON.stringify({
+      data, pending: [], generation: 0, cloudRevision: 0,
+    }));
+    const session = new SyncController('sidebar-cards', () => null, () => {});
+    const Probe = () => {
+      const { quickOverview, displayedAccountBalances } = useFinance();
+      expect(displayedAccountBalances[sampleChecking.id]).toBe(7184600);
+      expect(quickOverview).toEqual({ checkingAndCashInHaler: 9072800, savingsInHaler: 28012000,
+        investmentsInHaler: 57900000, pensionInHaler: 25300000, totalNetWorthInHaler: 130284800 });
+      return null;
+    };
+    try {
+      for (const screen of ['accounts', 'budget', 'overview'] as const) {
+        const html = renderToStaticMarkup(<FinanceProvider syncSession={session}>
+          <Probe />
+          <Sidebar currentScreen={screen} onSelectScreen={() => {}} mobileOpen={false}
+            onCloseMobile={() => {}} onOpenTransactionModal={() => {}} />
+          <AccountsScreen />
+        </FinanceProvider>);
+        expect(html.replace(/\s/g, ' ')).toContain('90 728');
+        expect(html.replace(/\s/g, ' ')).toContain('71 846');
+      }
+    } finally {
+      session.stop();
+      vi.useRealTimers();
+    }
+  });
 
   it.each(allAccounts)('includes $type balances even when excluded from net worth', (account) => {
     const excluded = { ...account, isNetWorth: false };
