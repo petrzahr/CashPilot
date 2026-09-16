@@ -633,7 +633,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
-              <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+              <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
                 {formatCurrency(defaultOpeningBalance)}
               </span>
             </div>
@@ -656,7 +656,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-xs text-sky-600 block font-semibold">Převody</span>
               <span
                 className={`text-base font-bold block mt-0.5 truncate ${
-                  defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-800'
+                  defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-900'
                 }`}
                 title={`Příchozí: ${formatCurrency(defaultTransfersIn)}, Odchozí: ${formatCurrency(defaultTransfersOut)}`}
               >
@@ -724,7 +724,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-500 block font-medium">Použitelný zůstatek</span>
-            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
@@ -910,7 +910,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterAccount}
               onChange={(e) => setFilterAccount(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny účty</option>
               {sortedAccounts.map(a => (
@@ -962,7 +962,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny typy</option>
               {TYPE_OPTIONS.map(t => (
@@ -973,7 +973,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny stavy</option>
               {STATUS_OPTIONS.map(s => (
@@ -1077,7 +1077,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 <GripVertical className="w-4 h-4" />
                               </div>
 
-                              <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-500 shrink-0">
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 shrink-0">
                                 #{tx.sequence || 1}
                               </span>
 
@@ -1146,7 +1146,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   Zůstatek po položce:
                                 </span>
                                 <span className={`font-bold block ${
-                                  isTemporaryNegative ? 'text-red-600' : 'text-slate-800'
+                                  isTemporaryNegative ? 'text-red-600' : 'text-slate-900'
                                 }`}>
                                   {formatCurrency(runningBalanceInHaler)}
                                 </span>
@@ -1159,7 +1159,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       type="button"
                                       onClick={() => setSelectedCorrection(tx)}
                                       title="Detail a poznámka korekce"
-                                      className="p-1 rounded text-slate-500 hover:text-slate-600"
+                                      className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Eye className="w-3.5 h-3.5" />
                                     </button>
@@ -1314,8 +1314,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-500 overflow-hidden">
-                        <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-100">
+                      <td className="py-3 px-3 text-center overflow-hidden">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
                           #{tx.sequence || 1}
                         </span>
                       </td>

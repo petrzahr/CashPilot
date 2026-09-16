@@ -126,7 +126,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           {/* Počáteční stav */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500 shrink-0">
             <span>Počáteční evidenční stav:</span>
-            <span className="font-semibold text-slate-800 text-sm">
+            <span className="font-semibold text-slate-900 text-sm">
               {formatCurrency(account.initialBalanceInHaler)}
             </span>
           </div>
@@ -263,7 +263,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             {typeBadge}
                           </span>
                           {tx.sequence !== undefined && (
-                            <span className="text-[10px] text-slate-500 font-medium">
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 shrink-0">
                               #{tx.sequence}
                             </span>
                           )}

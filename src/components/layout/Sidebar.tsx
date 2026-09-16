@@ -128,25 +128,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty + hotovost">Běžné účty + hotovost</span>
-              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingAndCashInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingAndCashInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                 {formatCurrency(quickOverview.checkingAndCashInHaler)}
               </span>
             </div>
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Spořicí účty">Spořicí účty</span>
-              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.savingsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.savingsInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                 {formatCurrency(quickOverview.savingsInHaler)}
               </span>
             </div>
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Investice">Investice</span>
-              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.investmentsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.investmentsInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                 {formatCurrency(quickOverview.investmentsInHaler)}
               </span>
             </div>
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Penzijní účty">Penzijní účty</span>
-              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.pensionInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.pensionInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                 {formatCurrency(quickOverview.pensionInHaler)}
               </span>
             </div>

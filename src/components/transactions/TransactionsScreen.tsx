@@ -398,7 +398,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={accountFilter}
               onChange={(e) => setAccountFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny účty</option>
               {sortedAccounts.map(a => (
@@ -459,7 +459,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny typy</option>
               {TYPE_OPTIONS.map(t => (
@@ -473,7 +473,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
             >
               <option value="">Všechny stavy</option>
               {STATUS_OPTIONS.map(s => (
@@ -562,8 +562,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-500 overflow-hidden">
-                        <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-100">
+                      <td className="py-3 px-3 text-center overflow-hidden">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
                           #{tx.sequence || 1}
                         </span>
                       </td>

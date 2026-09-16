@@ -163,7 +163,7 @@ export const AccountsScreen: React.FC = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as AccountType | '')}
-            className="w-full h-8 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className="w-full h-8 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
           >
             <option value="">Všechny účty</option>
             <option value="checking">{getTypeLabel('checking')}</option>
@@ -257,7 +257,7 @@ export const AccountsScreen: React.FC = () => {
                     onMouseUp={() => setDragHandleAccountId(null)}
                     onTouchStart={() => setDragHandleAccountId(acc.id)}
                     onTouchEnd={() => setDragHandleAccountId(null)}
-                    className="-ml-1.5 p-0.5 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                    className="-ml-1.5 p-0.5 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
                   >
                     <GripVertical className="w-4 h-4" />
                   </button>

@@ -99,7 +99,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Vložené prostředky:</span>
-            <span className="font-semibold text-slate-800">{correctionKnown ? formatCurrency(investedHaler) : 'Neznámé'}</span>
+            <span className="font-semibold text-slate-900">{correctionKnown ? formatCurrency(investedHaler) : 'Neznámé'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Nerealizovaný výnos / ztráta:</span>

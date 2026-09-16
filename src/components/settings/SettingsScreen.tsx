@@ -160,7 +160,7 @@ export const SettingsScreen: React.FC = () => {
               <select
                 value={budgetStartDay}
                 onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-800"
+                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
@@ -332,7 +332,7 @@ export const SettingsScreen: React.FC = () => {
         {/* Informační obsah */}
         {!isDriveConnected ? (
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-500 space-y-2">
-            <p className="font-semibold text-slate-800">
+            <p className="font-semibold text-slate-900">
               Proč připojit Google Disk?
             </p>
             <ul className="list-disc list-inside space-y-1 text-slate-500">

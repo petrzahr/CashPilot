@@ -93,7 +93,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
         {/* Volby pro pravidelné položky */}
         {isRecurring && (
           <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
               <Repeat className="w-4 h-4 text-sky-600" />
               <span>Tato položka patří do pravidelné série. Vyberte rozsah:</span>
             </div>

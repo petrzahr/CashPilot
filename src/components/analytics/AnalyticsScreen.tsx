@@ -356,8 +356,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
         {/* Chybová validační zpráva */}
         {validationError && (
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{validationError}</span>
           </div>
         )}
@@ -365,7 +365,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         {/* Aktivní zobrazený rozsah a stav období */}
         <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-800">
+            <span className="font-bold text-slate-900">
               {dateRange.periods.length === 1
                 ? dateRange.periods[0]?.label
                 : `${dateRange.periods[0]?.label || ''} – ${dateRange.periods[dateRange.periods.length - 1]?.label || ''}`}
@@ -402,7 +402,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               <select
                 value={selectedAccountId || ''}
                 onChange={(e) => handleSelectAccount(e.target.value || null)}
-                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
               >
                 <option value="">Všechny účty</option>
                 {sortedAccounts.map((a) => (
@@ -426,7 +426,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               <select
                 value={selectedCategoryId || ''}
                 onChange={(e) => handleSelectCategory(e.target.value || null)}
-                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
+                className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 rounded-xl text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all appearance-none"
               >
                 <option value="">Všechny kategorie</option>
                 {mainCategories.map((c) => (
@@ -451,10 +451,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 disabled={!selectedCategoryId || availableSubcategories.length === 0}
                 value={selectedSubcategoryId || ''}
                 onChange={(e) => handleSelectSubcategory(e.target.value || null)}
-                className={`w-full px-3 py-2 border rounded-xl text-xs font-semibold transition-all appearance-none ${
+                className={`w-full px-3 py-2 border rounded-xl text-xs transition-all appearance-none ${
                   !selectedCategoryId || availableSubcategories.length === 0
                     ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
-                    : 'bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500'
+                    : 'bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-slate-200 text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500'
                 }`}
               >
                 <option value="">Všechny podkategorie</option>
@@ -494,7 +494,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-1.5">
             <span className="text-xs font-semibold">Celkové výdaje</span>
-            <div className="p-1.5 rounded-lg bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-lg bg-red-50 text-red-600">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
@@ -633,7 +633,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800">{t.label}</span>
+                    <span className="font-bold text-slate-900">{t.label}</span>
                     {t.isCurrentMonth && (
                       <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium" title="Srovnání ke stejnému dni období">
                         Probíhající
@@ -652,7 +652,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                           isDecrease
                             ? 'bg-emerald-100 text-emerald-700'
                             : isIncrease
-                            ? 'bg-rose-100 text-rose-700'
+                            ? 'bg-red-100 text-red-700'
                             : 'bg-slate-100 text-slate-500'
                         }`}
                         title={
@@ -704,16 +704,16 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             </div>
 
             {/* Nejvyšší výdaje */}
-            <div className="p-3 bg-rose-50/70 border border-rose-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-rose-800">
+            <div className="p-3 bg-red-50/70 border border-red-100 rounded-xl space-y-1">
+              <span className="text-[11px] font-medium text-red-800">
                 Nejvyšší výdaje za období
               </span>
-              <div className="text-sm font-bold text-rose-900 tabular-nums">
+              <div className="text-sm font-bold text-red-900 tabular-nums">
                 {extremes.highestExpenseMonth
                   ? formatCurrency(extremes.highestExpenseMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-rose-600 font-medium truncate">
+              <p className="text-[10px] text-red-600 font-medium truncate">
                 {extremes.highestExpenseMonth?.label || 'Žádná data'}
               </p>
             </div>

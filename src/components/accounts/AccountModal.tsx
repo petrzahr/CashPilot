@@ -128,7 +128,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium leading-relaxed">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium leading-relaxed">
             {errorMessage}
           </div>
         )}
@@ -221,7 +221,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               onChange={(e) => setIsDefault(e.target.checked)}
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
-            <span className="text-sm font-medium text-slate-800">
+            <span className="text-sm font-medium text-slate-900">
               Nastavit jako výchozí účet
             </span>
           </label>
@@ -232,7 +232,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               onChange={(e) => setIsUsableCash(e.target.checked)}
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
-            <span className="text-sm font-medium text-slate-800">
+            <span className="text-sm font-medium text-slate-900">
               Zahrnout do „Použitelných peněz“ (provozní likvidita)
             </span>
           </label>
@@ -243,7 +243,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               onChange={(e) => setIsNetWorth(e.target.checked)}
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
-            <span className="text-sm font-medium text-slate-800">
+            <span className="text-sm font-medium text-slate-900">
               Zahrnout do „Celkového majetku“ (Net Worth)
             </span>
           </label>

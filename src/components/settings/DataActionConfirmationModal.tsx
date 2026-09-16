@@ -163,7 +163,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
             ref={cancelButtonRef}
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
             Zrušit
           </button>

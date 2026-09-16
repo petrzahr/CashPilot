@@ -83,11 +83,11 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-slate-500">Datum kontroly:</span>
-              <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-slate-500" />
                 {dateStr ? formatCzechDate(dateStr) : '—'}
                 {sequence !== undefined && (
-                  <span className="ml-1 text-xs px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full font-medium">
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
                     #{sequence}. v dni
                   </span>
                 )}
