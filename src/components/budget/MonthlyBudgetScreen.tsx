@@ -1097,9 +1097,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   )}
                                 </div>
 
-                                <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
                                   {isCorrection ? (
-                                    <span className="text-amber-700 font-medium">Korekce zůstatku</span>
+                                    <span className="text-amber-700 font-medium text-[11px]">Korekce zůstatku</span>
                                   ) : cat ? (
                                     <span>{cat.name} {subCat && `› ${subCat.name}`}</span>
                                   ) : tx.type !== 'transfer' ? (
@@ -1167,7 +1167,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         title="Označit jako uskutečněnou"
                                         className="p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                       >
-                                        <Check className="w-3.5 h-3.5" />
+                                        <Check className="w-4 h-4" />
                                       </button>
                                     ) : (
                                       <button
@@ -1176,7 +1176,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         title="Vrátit do plánovaných"
                                         className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
-                                        <Clock className="w-3.5 h-3.5" />
+                                        <Clock className="w-4 h-4" />
                                       </button>
                                     )}
                                     <button
@@ -1184,14 +1184,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       title="Upravit"
                                       className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
-                                      <Edit3 className="w-3.5 h-3.5" />
+                                      <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button
                                       onClick={() => duplicateTransaction(tx)}
                                       title="Duplikovat"
                                       className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
-                                      <Copy className="w-3.5 h-3.5" />
+                                      <Copy className="w-4 h-4" />
                                     </button>
                                     {tx.status !== 'cancelled' ? (
                                       <button
@@ -1200,7 +1200,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         title="Zrušit položku"
                                         className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
-                                        <Ban className="w-3.5 h-3.5" />
+                                        <Ban className="w-4 h-4" />
                                       </button>
                                     ) : (
                                       <button
@@ -1209,7 +1209,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         title="Obnovit položku (do plánovaných)"
                                         className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                       >
-                                        <Clock className="w-3.5 h-3.5" />
+                                        <Clock className="w-4 h-4" />
                                       </button>
                                     )}
                                     <button
@@ -1218,7 +1218,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       title="Smazat"
                                       className="p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-4 h-4" />
                                     </button>
                                   </>
                                 )}
