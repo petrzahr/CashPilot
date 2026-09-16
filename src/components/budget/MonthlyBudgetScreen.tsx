@@ -1253,8 +1253,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       )}
                     </div>
                   </th>
-                  <th className="py-2.5 px-3 text-center">Pořadí</th>
-                <th className="py-2.5 px-4">Název</th>
+                  <th className="py-2.5 px-3 text-center" title="Pořadí v rámci dne">Pořadí</th>
+                <th className="py-2.5 px-4">Název položky</th>
                 <th className="py-2.5 px-4">Kategorie</th>
                 <th className="py-2.5 px-4">Účet</th>
                 <th className="py-2.5 px-4">Stav</th>
