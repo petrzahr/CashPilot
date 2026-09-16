@@ -128,7 +128,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               onClick={() => setForecastScope('usable')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 forecastScope === 'usable'
-                  ? 'bg-white text-sky-700 shadow-sm'
+                  ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -139,11 +139,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               onClick={() => setForecastScope('all')}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 forecastScope === 'all'
-                  ? 'bg-white text-purple-700 shadow-sm'
+                  ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Všechny účty (Celkem)
+              Celkový majetek
             </button>
           </div>
         </div>
@@ -236,7 +236,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('period')}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                  accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Podle období
@@ -245,7 +245,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                  accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Matice účtů
