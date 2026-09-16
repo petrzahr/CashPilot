@@ -813,7 +813,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
       {/* Seznam všech položek tohoto období */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 space-y-3">
+        <div className="p-5 border-b border-slate-100 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -865,22 +865,22 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           </div>
 
           {/* Filtry položek (stejné jako v sekci Položky, bez filtru období) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 pt-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-3 border-t border-slate-100 text-xs">
             <div className="relative sm:col-span-2 lg:col-span-2">
               <input
                 type="text"
                 placeholder="Vyhledat v názvu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2" />
             </div>
 
             <select
               value={filterAccount}
               onChange={(e) => setFilterAccount(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="">Všechny účty</option>
               {sortedAccounts.map(a => (
@@ -893,7 +893,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterMainCategory}
               onChange={(e) => handleMainCategoryChange(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700"
             >
               <option value="">Všechny kategorie</option>
               {availableMainCategories.map(c => (
@@ -907,10 +907,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               value={filterSubCategory}
               disabled={!filterMainCategory || availableSubCategories.length === 0}
               onChange={(e) => setFilterSubCategory(e.target.value)}
-              className={`w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 ${
+              className={`w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
                 !filterMainCategory || availableSubCategories.length === 0
                   ? 'opacity-50 cursor-not-allowed text-slate-400'
-                  : ''
+                  : 'text-slate-700'
               }`}
             >
               {!filterMainCategory ? (
@@ -932,7 +932,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="">Všechny typy</option>
               {TYPE_OPTIONS.map(t => (
@@ -943,7 +943,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="">Všechny stavy</option>
               {STATUS_OPTIONS.map(s => (
