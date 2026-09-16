@@ -86,7 +86,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'}`}
                 >
-                  {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? 'Příští' : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
+                  {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
                 </button>;
               })}
             </div>
