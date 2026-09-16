@@ -283,11 +283,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   </div>
 
                   {isExpanded && (
-                    <div className="px-4 pb-4 bg-slate-50/50 overflow-x-auto">
+                    <div className="pb-4 bg-slate-50/50 overflow-x-auto">
                       <table className="w-full table-fixed text-xs text-left">
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-400 font-semibold">
-                            <th className="py-2 px-4 w-[220px]">Účet</th>
+                            <th className="py-2 px-4 w-[360px]">Účet</th>
                             <th className="py-2 px-4 w-[140px] text-right">Počáteční stav</th>
                             <th className="py-2 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                             <th className="py-2 px-4 w-[120px] text-right text-red-600">Výdaje</th>
