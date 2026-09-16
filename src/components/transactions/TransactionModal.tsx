@@ -347,8 +347,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Upravit položku' : 'Nová finanční položka'}
-      subtitle={isEditing ? 'Změna okamžitě přepočítá navazující forecast i denní zůstatek' : 'Zadejte plánovaný příjem, výdaj nebo převod'}
+      title={isEditing ? 'Upravit položku' : 'Nová položka'}
       maxWidth="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

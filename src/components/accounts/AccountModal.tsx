@@ -135,7 +135,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Upravit účet' : 'Přidat nový účet'}
-      subtitle={isEditing ? 'Úprava parametrů účtu' : 'Založte běžný, spořicí nebo investiční účet'}
+      subtitle={isEditing ? 'Úprava parametrů účtu' : undefined}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">

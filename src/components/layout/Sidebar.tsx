@@ -96,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
           >
             <Plus className="w-4 h-4" />
-            <span>Nová finanční položka</span>
+            <span>Nová položka</span>
           </button>
 
           {/* Navigační položky */}
