@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
 import { getEffectiveInvestedAmount } from '../../services/accountService';
 import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
+import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
@@ -30,7 +31,6 @@ export const AccountsScreen: React.FC = () => {
   const {
     accounts,
     forecast,
-    displayedAccountBalances,
     selectedPeriod,
     currentPeriod,
     transactions,
@@ -208,7 +208,11 @@ export const AccountsScreen: React.FC = () => {
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
           const isCurrentInvestment = isInvestment && selectedPeriod.key === currentPeriod.key;
           const today = getTodayInPrague();
-          const marketValue = displayedAccountBalances[acc.id];
+          const marketValue = isCurrentInvestment
+            ? computeAssetAccountBalanceAtDate(acc, today, transactions, marketValueSnapshots)
+            : isInvestment && selectedPeriod.endDate < currentPeriod.startDate
+            ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
+            : acc.currentMarketValueInHaler || closingBalance;
           let investedPrincipal = selectedPeriod.endDate < currentPeriod.startDate
             ? accBal?.investedPrincipalInHaler
             : accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
@@ -323,7 +327,7 @@ export const AccountsScreen: React.FC = () => {
                 <div className={`text-xl font-extrabold truncate ${
                   closingBalance < 0 ? 'text-red-600' : 'text-slate-900'
                 }`}>
-                  {formatCurrency(displayedAccountBalances[acc.id])}
+                  {formatCurrency(isInvestment ? marketValue : closingBalance)}
                 </div>
 
                 {isInvestment && (

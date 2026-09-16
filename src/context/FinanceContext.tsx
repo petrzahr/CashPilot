@@ -52,7 +52,6 @@ import {
   formatCzechDate
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
-import { computeAssetAccountBalanceAtDate } from '../services/analyticsEngine';
 import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../services/investmentPerformanceService';
 import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
@@ -107,7 +106,6 @@ interface FinanceContextType {
   forecastSequence: BudgetPeriod[];
   forecast: ForecastResult;
   quickOverview: QuickFinancialOverview;
-  displayedAccountBalances: Record<string, number>;
 
   // Notifikace
   toasts: ToastMessage[];
@@ -438,31 +436,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     );
   }, [forecast.forecastPeriods, currentPeriod.year, currentPeriod.month, data.settings.forecastMonths, data.settings.budgetStartDay]);
 
-  const displayedAccountBalances = useMemo(() => {
-    const summary = forecast.periods.find(p => p.period.key === selectedPeriod.key);
-    return Object.fromEntries(data.accounts.map(account => {
-      const closing = summary?.accountBalances[account.id]?.closingBalanceInHaler ?? account.initialBalanceInHaler;
-      const isAsset = account.type === 'investment' || account.type === 'pension';
-      const balance = !isAsset ? closing
-        : selectedPeriod.key === currentPeriod.key
-        ? computeAssetAccountBalanceAtDate(account, todayStr, data.transactions, data.marketValueSnapshots)
-        : selectedPeriod.endDate < currentPeriod.startDate
-        ? computeAssetAccountBalanceAtDate(account, selectedPeriod.endDate, data.transactions, data.marketValueSnapshots)
-        : account.currentMarketValueInHaler || closing;
-      return [account.id, balance];
-    }));
-  }, [forecast, selectedPeriod, currentPeriod, todayStr, data.accounts, data.transactions, data.marketValueSnapshots]);
-
   const quickOverview = useMemo(() => {
     return calculateQuickFinancialOverview(
       data.accounts,
       data.transactions,
       data.corrections,
       data.marketValueSnapshots,
-      todayStr,
-      displayedAccountBalances
+      todayStr
     );
-  }, [data.accounts, data.transactions, data.corrections, data.marketValueSnapshots, todayStr, displayedAccountBalances]);
+  }, [data.accounts, data.transactions, data.corrections, data.marketValueSnapshots, todayStr]);
 
   // ------------------- TRANSAKCE & POŘADÍ -------------------
 
@@ -1922,7 +1904,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     forecastSequence,
     forecast,
     quickOverview,
-    displayedAccountBalances,
 
     toasts,
     showToast,

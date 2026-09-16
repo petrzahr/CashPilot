@@ -937,15 +937,13 @@ export interface QuickFinancialOverview {
  * Spočítá aktuální finanční přehled k danému kalendářnímu dni (výchozí: dnešek v Praze).
  * Nezahrnuje budoucí plánované položky, budoucí tržní hodnoty, archivované účty ani kontokorent.
  * Skupiny zahrnují všechny aktivní účty; celkové jmění pouze účty s isNetWorth.
- * Pokud jsou předány displayedBalances, sčítá stejné hodnoty jako karty účtů ve vybraném období.
  */
 export function calculateQuickFinancialOverview(
   accounts: Account[] = [],
   transactions: Transaction[] = [],
   corrections: BalanceCorrection[] = [],
   marketValueSnapshots: MarketValueSnapshot[] = [],
-  todayStr: string = getTodayInPrague(),
-  displayedBalances?: Record<string, number>
+  todayStr: string = getTodayInPrague()
 ): QuickFinancialOverview {
   const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived') : [];
   const safeTxs = Array.isArray(transactions) ? transactions : [];
@@ -959,9 +957,9 @@ export function calculateQuickFinancialOverview(
   let totalNetWorthInHaler = 0;
 
   for (const acc of safeAccounts) {
-    const balance = displayedBalances?.[acc.id] ?? (acc.type === 'investment' || acc.type === 'pension'
+    const balance = acc.type === 'investment' || acc.type === 'pension'
       ? getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr)
-      : computeLiquidAccountBalanceAtDate(acc, todayStr, safeTxs, safeCorrections));
+      : computeLiquidAccountBalanceAtDate(acc, todayStr, safeTxs, safeCorrections);
 
     if (acc.type === 'checking' || acc.type === 'cash') {
       checkingAndCashInHaler = addHaler(checkingAndCashInHaler, balance);

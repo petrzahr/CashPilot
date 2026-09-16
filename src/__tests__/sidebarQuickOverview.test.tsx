@@ -149,7 +149,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     samplePension,
   ];
 
-  it('matches account cards including planned balances and keeps other accounts out of checking/cash', () => {
+  it('shows today rather than projected card balances and keeps other accounts out of checking/cash', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-16T12:00:00Z'));
     const data = createResetAppData();
@@ -171,10 +171,9 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     }));
     const session = new SyncController('sidebar-cards', () => null, () => {});
     const Probe = () => {
-      const { quickOverview, displayedAccountBalances } = useFinance();
-      expect(displayedAccountBalances[sampleChecking.id]).toBe(7184600);
-      expect(quickOverview).toEqual({ checkingAndCashInHaler: 9072800, savingsInHaler: 28012000,
-        investmentsInHaler: 57900000, pensionInHaler: 25300000, totalNetWorthInHaler: 130284800 });
+      const { quickOverview } = useFinance();
+      expect(quickOverview).toEqual({ checkingAndCashInHaler: 9888200, savingsInHaler: 28012000,
+        investmentsInHaler: 57900000, pensionInHaler: 25300000, totalNetWorthInHaler: 131100200 });
       return null;
     };
     try {
@@ -185,7 +184,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
             onCloseMobile={() => {}} onOpenTransactionModal={() => {}} />
           <AccountsScreen />
         </FinanceProvider>);
-        expect(html.replace(/\s/g, ' ')).toContain('90 728');
+        expect(html.replace(/\s/g, ' ')).toContain('98 882');
         expect(html.replace(/\s/g, ' ')).toContain('71 846');
       }
     } finally {
