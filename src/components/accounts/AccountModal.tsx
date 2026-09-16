@@ -128,7 +128,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errorMessage && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium leading-relaxed">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium leading-relaxed">
             {errorMessage}
           </div>
         )}

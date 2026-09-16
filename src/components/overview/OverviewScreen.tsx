@@ -111,7 +111,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             </div>
           </div>
         ))}
-        {validationError && <p role="alert" className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">{validationError}</p>}
+        {validationError && <p role="alert" className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">{validationError}</p>}
         <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
           <Calendar className="w-3.5 h-3.5" />
           {formatCzechDate(selectedPeriods[0].startDate)} – {formatCzechDate(selectedPeriods[selectedPeriods.length - 1].endDate)}

@@ -356,8 +356,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
         {/* Chybová validační zpráva */}
         {validationError && (
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{validationError}</span>
           </div>
         )}
@@ -494,7 +494,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-1.5">
             <span className="text-xs font-semibold">Celkové výdaje</span>
-            <div className="p-1.5 rounded-lg bg-rose-50 text-rose-600">
+            <div className="p-1.5 rounded-lg bg-red-50 text-red-600">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
@@ -652,7 +652,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                           isDecrease
                             ? 'bg-emerald-100 text-emerald-700'
                             : isIncrease
-                            ? 'bg-rose-100 text-rose-700'
+                            ? 'bg-red-100 text-red-700'
                             : 'bg-slate-100 text-slate-500'
                         }`}
                         title={
@@ -704,16 +704,16 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             </div>
 
             {/* Nejvyšší výdaje */}
-            <div className="p-3 bg-rose-50/70 border border-rose-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-rose-800">
+            <div className="p-3 bg-red-50/70 border border-red-100 rounded-xl space-y-1">
+              <span className="text-[11px] font-medium text-red-800">
                 Nejvyšší výdaje za období
               </span>
-              <div className="text-sm font-bold text-rose-900 tabular-nums">
+              <div className="text-sm font-bold text-red-900 tabular-nums">
                 {extremes.highestExpenseMonth
                   ? formatCurrency(extremes.highestExpenseMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-rose-600 font-medium truncate">
+              <p className="text-[10px] text-red-600 font-medium truncate">
                 {extremes.highestExpenseMonth?.label || 'Žádná data'}
               </p>
             </div>

@@ -79,7 +79,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
             <span>Příjmy</span>
           </div>
           <div className="flex items-center gap-1.5 text-slate-500">
-            <span className="w-3 h-3 rounded-sm bg-rose-500" />
+            <span className="w-3 h-3 rounded-sm bg-red-500" />
             <span>Výdaje</span>
           </div>
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -164,7 +164,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                   y={expenseY}
                   width={singleBarWidth}
                   height={expenseH}
-                  fill="#f43f5e"
+                  fill="#ef4444"
                   rx="3"
                   className="transition-all hover:opacity-90"
                 />
@@ -225,7 +225,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                 cx={slotCenterX}
                 cy={netY}
                 r={isHovered ? 6 : 4}
-                fill={item.netChangeInHaler >= 0 ? '#0284c7' : '#e11d48'}
+                fill={item.netChangeInHaler >= 0 ? '#0284c7' : '#dc2626'}
                 stroke="#ffffff"
                 strokeWidth="2"
                 className="transition-all pointer-events-none"
@@ -276,7 +276,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
               </span>
 
               <span className="text-slate-400">Výdaje:</span>
-              <span className="font-semibold text-rose-400 text-right tabular-nums">
+              <span className="font-semibold text-red-400 text-right tabular-nums">
                 {formatCurrency(hoveredItem.expenseInHaler)}
               </span>
 

@@ -529,7 +529,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               required
               value={sourceAccountId}
               onChange={(e) => setSourceAccountId(e.target.value)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${sourceAccError ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${sourceAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
             >
               <option value="">-- Žádný --</option>
               {activeAccounts.map((acc) => {
@@ -542,7 +542,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               })}
             </select>
             {sourceAccError && (
-              <p className="text-xs text-rose-600 font-medium mt-1">{sourceAccError}</p>
+              <p className="text-xs text-red-600 font-medium mt-1">{sourceAccError}</p>
             )}
           </div>
 
@@ -555,7 +555,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 required
                 value={targetAccountId}
                 onChange={(e) => setTargetAccountId(e.target.value)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border ${targetAccError ? 'border-rose-500 ring-1 ring-rose-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${targetAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
               >
                 <option value="">-- Žádný --</option>
                 {activeAccounts
@@ -570,7 +570,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   })}
               </select>
               {targetAccError && (
-                <p className="text-xs text-rose-600 font-medium mt-1">{targetAccError}</p>
+                <p className="text-xs text-red-600 font-medium mt-1">{targetAccError}</p>
               )}
             </div>
           ) : (
