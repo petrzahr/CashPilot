@@ -26,7 +26,9 @@ import {
   Clock,
   Loader2,
   Eye,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
@@ -77,6 +79,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Režim zobrazení: po dnech s drag & drop vs klasický seznam
   const [viewMode, setViewMode] = useState<'daily' | 'list'>('daily');
   const [draggedTxId, setDraggedTxId] = useState<string | null>(null);
+
+  // Řazení v klasickém seznamu - výchozí vzestupně (stejné jako v sekci Položky)
+  const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
+  const toggleDateSort = () => {
+    setDateSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  };
 
   // Stav probíhající změny stavu položky a otevřeného menu
   const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
@@ -424,6 +432,20 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       return addHaler(sum, effectiveAmount);
     }, 0);
   }, [periodTransactions]);
+
+  // Řazení pro klasický seznam podle data a pořadí (stejné jako v sekci Položky);
+  // režim po dnech má vlastní pevné řazení kvůli přetahování, proto samostatné pole
+  const sortedListTransactions = useMemo(() => {
+    return [...periodTransactions].sort((a, b) => {
+      const cmp = a.date.localeCompare(b.date);
+      if (cmp !== 0) {
+        return dateSortOrder === 'asc' ? cmp : -cmp;
+      }
+      const seqA = a.sequence !== undefined ? a.sequence : 1;
+      const seqB = b.sequence !== undefined ? b.sequence : 1;
+      return dateSortOrder === 'asc' ? seqA - seqB : seqB - seqA;
+    });
+  }, [periodTransactions, dateSortOrder]);
 
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
   const dayGroups = useMemo(() => {
@@ -1216,8 +1238,21 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold">
-                  <th className="py-2.5 px-4">Datum</th>
+                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
+                  <th
+                    onClick={toggleDateSort}
+                    className="py-2.5 px-4 cursor-pointer hover:text-slate-900 select-none transition-colors"
+                    title={`Řazení podle data a pořadí (${dateSortOrder === 'asc' ? 'Vzestupně: od nejstarších, v rámci dne 1, 2, 3…' : 'Sestupně: od nejnovějších, v rámci dne …3, 2, 1'})`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Datum</span>
+                      {dateSortOrder === 'asc' ? (
+                        <ArrowUp className="w-3.5 h-3.5 text-sky-600" />
+                      ) : (
+                        <ArrowDown className="w-3.5 h-3.5 text-sky-600" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-2.5 px-3 text-center">Pořadí</th>
                 <th className="py-2.5 px-4">Název</th>
                 <th className="py-2.5 px-4">Kategorie</th>
@@ -1228,14 +1263,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {periodTransactions.length === 0 ? (
+              {sortedListTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
                     Pro zadané filtry nebyly nalezeny žádné položky.
                   </td>
                 </tr>
               ) : (
-                periodTransactions.map((tx) => {
+                sortedListTransactions.map((tx) => {
                   const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                   const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                   const cat = categories.find(c => c.id === tx.categoryId);
