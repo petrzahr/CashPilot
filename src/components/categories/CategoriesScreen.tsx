@@ -77,7 +77,7 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs">
+        <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs shrink-0">
           <button
             onClick={() => setActiveTab('income')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
