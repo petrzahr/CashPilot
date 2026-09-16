@@ -15,7 +15,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-400 text-xs">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-500 text-xs">
         Žádná data pro zobrazení grafu cash flow.
       </div>
     );
@@ -74,15 +74,15 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
         </div>
 
         <div className="flex items-center gap-4 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-slate-600">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <span className="w-3 h-3 rounded-sm bg-emerald-500" />
             <span>Příjmy</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-600">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <span className="w-3 h-3 rounded-sm bg-rose-500" />
             <span>Výdaje</span>
           </div>
-          <div className="flex items-center gap-1.5 text-slate-600">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <span className="w-3 h-0.5 bg-sky-500 rounded-full" />
             <span className="w-2 h-2 rounded-full bg-sky-500 -ml-1" />
             <span>Čistá změna</span>

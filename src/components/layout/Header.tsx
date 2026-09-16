@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={connectGoogleDrive}
             disabled={driveSyncStatus === 'syncing'}
             title="Připojit Google Disk pro automatické zálohování a synchronizaci"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
           >
             <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">
@@ -89,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setMenuOpen(prev => !prev)}
               title="Google Disk připojen – klikněte pro podrobnosti a synchronizaci"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="relative flex h-2 w-2">
@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {/* Informace o synchronizaci */}
                 <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-[11px]">
-                  <div className="flex items-center justify-between text-slate-600">
+                  <div className="flex items-center justify-between text-slate-500">
                     <span>Stav:</span>
                     <span className="font-semibold flex items-center gap-1">
                       {driveSyncStatus === 'syncing' ? (
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                   <div className="flex items-center justify-between text-slate-500">
                     <span>Poslední uložení:</span>
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-slate-500">
                       {lastDriveSyncTime
                         ? lastDriveSyncTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                         : 'Při této relaci'}
@@ -216,8 +216,8 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label={isCurrentPeriodSelected ? 'Aktuální rozpočtové období je již vybrané.' : 'Přejít na aktuální rozpočtové období'}
           className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
             isCurrentPeriodSelected
-              ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-              : 'bg-white text-slate-700 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-sm hover:border-sky-300 active:scale-[0.98] cursor-pointer'
+              ? 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-60'
+              : 'bg-white text-slate-500 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-sm hover:border-sky-300 active:scale-[0.98] cursor-pointer'
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-sky-600 shrink-0" />

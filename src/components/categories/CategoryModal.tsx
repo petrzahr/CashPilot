@@ -132,7 +132,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             Název kategorie *
           </label>
           <input
@@ -148,7 +148,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Typ kategorie (pouze pro hlavní kategorie) */}
         {(isMainCategoryMode || (isEditMode && !categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Typ kategorie
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
@@ -156,7 +156,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 onClick={() => setType('expense')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-600'
+                  type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
                 Výdajová
@@ -165,7 +165,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 onClick={() => setType('income')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-600'
+                  type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
                 Příjmová
@@ -177,7 +177,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Výběr nadřazené kategorie - pouze pro vytváření podkategorie nebo editaci existující podkategorie */}
         {(isSubcategoryMode || (isEditMode && categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Nadřazená hlavní kategorie *
             </label>
             <select
@@ -223,7 +223,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Barva */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva kategorie
           </label>
           <div className="flex items-center gap-2 flex-wrap">
@@ -245,7 +245,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
           >
             Zrušit
           </button>

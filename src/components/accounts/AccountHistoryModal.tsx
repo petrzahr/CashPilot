@@ -124,7 +124,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       >
         <div className="space-y-4 max-h-[70vh] flex flex-col">
           {/* Počáteční stav */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-600 shrink-0">
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500 shrink-0">
             <span>Počáteční evidenční stav:</span>
             <span className="font-semibold text-slate-800 text-sm">
               {formatCurrency(account.initialBalanceInHaler)}
@@ -134,7 +134,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           {/* Seznam položek */}
           <div className="overflow-y-auto space-y-2 pr-1 flex-1 min-h-[200px]">
             {historyItems.length === 0 ? (
-              <div className="text-center py-10 text-slate-400 text-sm">
+              <div className="text-center py-10 text-slate-500 text-sm">
                 Na tomto účtu zatím nejsou žádné zaznamenané pohyby.
               </div>
             ) : (
@@ -171,7 +171,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <div className="text-[11px] text-purple-600 font-medium">Tržní hodnota</div>
                         <div className="flex justify-end gap-1 mt-1">
                           <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní ocenění" aria-label="Upravit tržní ocenění"
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní ocenění" aria-label="Smazat tržní ocenění"
@@ -258,12 +258,12 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
                             isCorrection
                               ? 'bg-amber-100 text-amber-800'
-                              : 'bg-slate-100 text-slate-600'
+                              : 'bg-slate-100 text-slate-500'
                           }`}>
                             {typeBadge}
                           </span>
                           {tx.sequence !== undefined && (
-                            <span className="text-[10px] text-slate-400 font-medium">
+                            <span className="text-[10px] text-slate-500 font-medium">
                               #{tx.sequence}
                             </span>
                           )}
@@ -283,7 +283,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setSelectedCorrection(tx)}
-                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Detail korekce"
                         >
                           <Eye className="w-4 h-4" />
@@ -300,7 +300,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
             >
               Zavřít
             </button>

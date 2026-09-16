@@ -83,7 +83,7 @@ export const CategoriesScreen: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'expense'
                 ? 'bg-white text-red-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <TrendingDown className="w-4 h-4" />
@@ -94,7 +94,7 @@ export const CategoriesScreen: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <TrendingUp className="w-4 h-4" />
@@ -103,7 +103,7 @@ export const CategoriesScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-500 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
@@ -150,7 +150,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-600 rounded">
+                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaná
                         </span>
                       )}
@@ -169,7 +169,7 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleOpenEdit(mainCat)}
                     title="Upravit kategorii"
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -177,7 +177,7 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => archiveCategory(mainCat.id)}
                       title="Archivovat"
-                      className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -185,7 +185,7 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => restoreCategory(mainCat.id)}
                       title="Obnovit"
-                      className="p-1 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                      className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -193,7 +193,7 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleDelete(mainCat)}
                     title="Smazat"
-                    className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -203,18 +203,18 @@ export const CategoriesScreen: React.FC = () => {
               {/* Seznam podkategorií */}
               <div className="space-y-1.5 pl-2">
                 {subcategories.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic py-1">Žádné podkategorie</p>
+                  <p className="text-xs text-slate-500 italic py-1">Žádné podkategorie</p>
                 ) : (
                   subcategories.map((sub) => (
                     <div
                       key={sub.id}
-                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors text-xs text-slate-700"
+                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors text-xs text-slate-500"
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color || mainCat.color }} />
                         <span className="font-medium">{sub.name}</span>
                         {sub.status === 'archived' && (
-                          <span className="text-[10px] text-slate-400">(archiv)</span>
+                          <span className="text-[10px] text-slate-500">(archiv)</span>
                         )}
                       </div>
 
@@ -222,7 +222,7 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
-                          className="p-1 rounded text-slate-400 hover:text-slate-600"
+                          className="p-1 rounded text-slate-500 hover:text-slate-600"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -230,7 +230,7 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => archiveCategory(sub.id)}
                             title="Archivovat"
-                            className="p-1 rounded text-slate-400 hover:text-amber-600"
+                            className="p-1 rounded text-slate-500 hover:text-amber-600"
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
@@ -238,7 +238,7 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => restoreCategory(sub.id)}
                             title="Obnovit"
-                            className="p-1 rounded text-slate-400 hover:text-sky-600"
+                            className="p-1 rounded text-slate-500 hover:text-sky-600"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
@@ -246,7 +246,7 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
-                          className="p-1 rounded text-slate-400 hover:text-red-600"
+                          className="p-1 rounded text-slate-500 hover:text-red-600"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

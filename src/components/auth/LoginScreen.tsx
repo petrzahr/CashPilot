@@ -54,13 +54,13 @@ export const LoginScreen: React.FC = () => {
               Vaše osobní finance pod kontrolou
             </p>
           </div>
-          <p className="text-sm text-slate-600 pt-1 leading-relaxed">
+          <p className="text-sm text-slate-500 pt-1 leading-relaxed">
             Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou. Data jsou bezpečně uložena v soukromém prostoru vašeho účtu Google.
           </p>
         </div>
 
         {/* Přehled výhod */}
-        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/60 space-y-3 text-xs text-slate-600">
+        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/60 space-y-3 text-xs text-slate-500">
           <div className="flex items-start gap-3">
             <div className="p-1 rounded-lg bg-sky-100 text-sky-700 shrink-0 mt-0.5">
               <ShieldCheck className="w-4 h-4" />
@@ -124,7 +124,7 @@ export const LoginScreen: React.FC = () => {
             )}
           </button>
 
-          <p className="text-[11px] text-center text-slate-400">
+          <p className="text-[11px] text-center text-slate-500">
             Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.
           </p>
         </div>
@@ -132,7 +132,7 @@ export const LoginScreen: React.FC = () => {
         {/* Oddělovač */}
         <div className="relative flex items-center py-0.5">
           <div className="flex-grow border-t border-slate-200" />
-          <span className="flex-shrink mx-3 text-xs font-medium text-slate-400">nebo</span>
+          <span className="flex-shrink mx-3 text-xs font-medium text-slate-500">nebo</span>
           <div className="flex-grow border-t border-slate-200" />
         </div>
 
@@ -149,7 +149,7 @@ export const LoginScreen: React.FC = () => {
             href={buildGmailComposeUrl()}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
           >
             <Mail className="w-4 h-4 text-slate-500 shrink-0" />
             <span>Požádat o přístup přes Gmail</span>
@@ -177,7 +177,7 @@ export const LoginScreen: React.FC = () => {
       </div>
 
       {/* Patička */}
-      <footer className="mt-8 text-center text-xs text-slate-400 font-medium">
+      <footer className="mt-8 text-center text-xs text-slate-500 font-medium">
         CashPilot &bull; Vaše osobní finance pod kontrolou
       </footer>
     </div>

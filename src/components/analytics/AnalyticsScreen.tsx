@@ -276,7 +276,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Rychlé volby */}
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
               Analyzované období
             </span>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -286,7 +286,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   preset === '3m'
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
                 }`}
               >
                 Poslední 3 měsíce
@@ -298,7 +298,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   preset === '6m'
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
                 }`}
               >
                 Posledních 6 měsíců
@@ -310,7 +310,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   preset === '12m'
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
                 }`}
               >
                 Posledních 12 měsíců
@@ -322,7 +322,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   preset === 'ytd'
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
                 }`}
               >
                 Tento rok (YTD)
@@ -334,7 +334,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   preset === 'all'
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'
                 }`}
               >
                 Celá historie
@@ -370,8 +370,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 ? dateRange.periods[0]?.label
                 : `${dateRange.periods[0]?.label || ''} – ${dateRange.periods[dateRange.periods.length - 1]?.label || ''}`}
             </span>
-            <span className="text-slate-400">•</span>
-            <span className="font-medium text-slate-600">
+            <span className="text-slate-500">•</span>
+            <span className="font-medium text-slate-500">
               {formatCzechDate(dateRange.startDate)} – {formatCzechDate(dateRange.endDate)}
             </span>
           </div>
@@ -389,7 +389,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
       {/* 2. Doplňkové filtry */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2.5">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2.5">
           Filtrovat zobrazená data
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -411,7 +411,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   </option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-500">
                 <Landmark className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -435,7 +435,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   </option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-500">
                 <Layers className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -453,7 +453,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 onChange={(e) => handleSelectSubcategory(e.target.value || null)}
                 className={`w-full px-3 py-2 border rounded-xl text-xs font-semibold transition-all appearance-none ${
                   !selectedCategoryId || availableSubcategories.length === 0
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                    ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
                     : 'bg-slate-50 hover:bg-slate-100/80 focus:bg-white border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500'
                 }`}
               >
@@ -464,7 +464,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   </option>
                 ))}
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-500">
                 <Tag className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -485,7 +485,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className="text-lg font-bold text-slate-900 truncate tabular-nums">
             {formatCurrency(kpis.totalIncomeInHaler)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
+          <p className="text-[11px] text-slate-500 mt-1 truncate">
             Za zvolené období
           </p>
         </div>
@@ -501,7 +501,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className="text-lg font-bold text-slate-900 truncate tabular-nums">
             {formatCurrency(kpis.totalExpenseInHaler)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
+          <p className="text-[11px] text-slate-500 mt-1 truncate">
             Bez interních převodů
           </p>
         </div>
@@ -517,7 +517,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className={`text-lg font-bold truncate tabular-nums ${kpis.netChangeInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
             {formatCurrency(kpis.netChangeInHaler)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
+          <p className="text-[11px] text-slate-500 mt-1 truncate">
             Příjmy − výdaje
           </p>
         </div>
@@ -533,7 +533,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className="text-lg font-bold text-slate-900 truncate tabular-nums">
             {kpis.savingsRate !== null ? `${kpis.savingsRate.toFixed(1)} %` : '—'}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate" title={kpis.savingsRate === null ? 'Míru úspor nelze bez příjmů vypočítat' : 'Podíl úspor na příjmech'}>
+          <p className="text-[11px] text-slate-500 mt-1 truncate" title={kpis.savingsRate === null ? 'Míru úspor nelze bez příjmů vypočítat' : 'Podíl úspor na příjmech'}>
             {kpis.savingsRate !== null ? 'Podíl na příjmech' : 'Bez příjmů'}
           </p>
         </div>
@@ -550,7 +550,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             {formatCurrency(kpis.avgMonthlyExpenseInHaler)}
           </div>
           <p
-            className="text-[11px] text-slate-400 mt-1 truncate flex items-center gap-1"
+            className="text-[11px] text-slate-500 mt-1 truncate flex items-center gap-1"
             title={kpis.hasPartialCurrentMonth ? 'Aktuální rozpočtové období ještě není uzavřené' : 'Průměr za zahrnutá rozpočtová období'}
           >
             <span>/ období</span>
@@ -577,7 +577,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className={`text-lg font-bold truncate tabular-nums ${kpis.netWorthChangeInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
             {formatCurrency(kpis.netWorthChangeInHaler, { showPlus: true })}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
+          <p className="text-[11px] text-slate-500 mt-1 truncate">
             {selectedAccountObj ? selectedAccountObj.name : 'Za všechny účty'}
           </p>
         </div>
@@ -653,7 +653,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                             ? 'bg-emerald-100 text-emerald-700'
                             : isIncrease
                             ? 'bg-rose-100 text-rose-700'
-                            : 'bg-slate-100 text-slate-600'
+                            : 'bg-slate-100 text-slate-500'
                         }`}
                         title={
                           t.isSameDayComparison
@@ -665,7 +665,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                         {t.changePercent.toFixed(1)} %
                       </span>
                     ) : (
-                      <span className="text-[11px] font-medium text-slate-400 px-2 py-0.5">
+                      <span className="text-[11px] font-medium text-slate-500 px-2 py-0.5">
                         —
                       </span>
                     )}
@@ -750,18 +750,18 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
             {/* Průměrný příjem */}
             <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-slate-600">
+              <span className="text-[11px] font-medium text-slate-500">
                 Průměrný příjem za období
               </span>
               <div className="text-sm font-bold text-slate-900 tabular-nums">
                 {formatCurrency(extremes.avgMonthlyIncomeInHaler)}
               </div>
-              <p className="text-[10px] text-slate-400">Za zvolené období</p>
+              <p className="text-[10px] text-slate-500">Za zvolené období</p>
             </div>
 
             {/* Průměrná čistá změna */}
             <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-slate-600">
+              <span className="text-[11px] font-medium text-slate-500">
                 Průměrná čistá bilance
               </span>
               <div
@@ -773,7 +773,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               >
                 {formatCurrency(extremes.avgMonthlyNetChangeInHaler)}
               </div>
-              <p className="text-[10px] text-slate-400">/ období</p>
+              <p className="text-[10px] text-slate-500">/ období</p>
             </div>
           </div>
         </div>
@@ -794,7 +794,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-slate-200/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
                   <th className="py-2.5 pr-4">Datum</th>
                   <th className="py-2.5 pr-4">Položka</th>
                   <th className="py-2.5 pr-4">Kategorie</th>
@@ -816,13 +816,13 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                     <td className="py-2.5 pr-4 font-bold text-slate-900 group-hover:text-sky-600 transition-colors">
                       {item.transaction.title}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-600 font-medium">
+                    <td className="py-2.5 pr-4 text-slate-500 font-medium">
                       {item.categoryName}
                     </td>
                     <td className="py-2.5 pr-4 text-slate-500">
                       {item.subcategoryName || '—'}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-600 font-medium">
+                    <td className="py-2.5 pr-4 text-slate-500 font-medium">
                       {item.accountName}
                     </td>
                     <td className="py-2.5 text-right font-extrabold text-slate-900 tabular-nums whitespace-nowrap">
@@ -838,7 +838,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             </table>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-slate-400">
+          <div className="py-8 text-center text-xs text-slate-500">
             Ve vybraném období nebyly nalezeny žádné výdajové položky.
           </div>
         )}

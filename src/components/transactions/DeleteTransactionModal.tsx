@@ -83,7 +83,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
           <div className="p-2.5 rounded-xl shrink-0 bg-red-50 text-red-600 border border-red-100">
             <Trash2 className="w-5 h-5" />
           </div>
-          <div className="text-sm text-slate-700 leading-relaxed">
+          <div className="text-sm text-slate-500 leading-relaxed">
             <p>
               Položka „<strong className="text-slate-900">{transaction.title}</strong>“ bude trvale odstraněna. Tato akce ovlivní zůstatky aktuálního a všech následujících období.
             </p>
@@ -104,7 +104,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                   recurringMode === 'occurrence'
                     ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
                 }`}
               >
                 <input
@@ -129,7 +129,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                   recurringMode === 'future'
                     ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
                 }`}
               >
                 <input
@@ -154,7 +154,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                   recurringMode === 'series'
                     ? 'border-red-500 bg-red-50/50 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
                 }`}
               >
                 <input
@@ -182,7 +182,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   <span>Série obsahuje již uskutečněné historické položky</span>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={deleteHistoricalExecuted}
@@ -208,7 +208,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
             Zrušit
           </button>

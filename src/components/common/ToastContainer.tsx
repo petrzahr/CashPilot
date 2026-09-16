@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
@@ -35,7 +35,7 @@ export const ToastContainer: React.FC = () => {
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="ml-3 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+              className="ml-3 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

@@ -133,7 +133,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         )}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             Název účtu *
           </label>
           <input
@@ -148,7 +148,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Typ účtu *
             </label>
             <select
@@ -166,7 +166,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Finanční instituce (banka / broker)
             </label>
             <input
@@ -181,7 +181,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Počáteční zůstatek (Kč) *
             </label>
             <div className="relative">
@@ -194,12 +194,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 onChange={(e) => setBalanceStr(e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
               />
-              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-400">Kč</span>
+              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Datum počátečního stavu *
             </label>
             <input
@@ -251,7 +251,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         {/* Barva účtu */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva účtu
           </label>
           <div className="flex items-center gap-2 flex-wrap">
@@ -273,7 +273,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
           >
             Zrušit
           </button>
