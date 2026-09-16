@@ -821,8 +821,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
                   {periodTransactions.length}
                 </span>
+                <h3 className="text-sm font-bold text-slate-900">Suma položek</h3>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
-                  Suma položek: {formatCurrency(periodTransactionsSum, { showPlus: true })}
+                  {formatCurrency(periodTransactionsSum, { showPlus: true })}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
