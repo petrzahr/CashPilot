@@ -4,6 +4,7 @@ import { Account, AccountType } from '../../types/finance';
 import { getEffectiveInvestedAmount } from '../../services/accountService';
 import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
+import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
@@ -61,7 +62,7 @@ export const AccountsScreen: React.FC = () => {
     .filter(a => showArchived ? true : a.status === 'active')
     .filter(a => typeFilter ? a.type === typeFilter : true);
 
-  const currentSummary = forecast.periods.find(p => p.period.key === selectedPeriod.key);
+  const currentSummary = getAccountPeriodSummary(forecast, selectedPeriod.key);
 
   const resetDragState = () => {
     setDragHandleAccountId(null);
@@ -322,12 +323,12 @@ export const AccountsScreen: React.FC = () => {
               {/* Finanční zůstatek */}
               <div className="p-3.5 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
                 <span className="text-[11px] text-slate-500 font-medium block">
-                  {isInvestment ? 'Tržní hodnota portfolia' : `Očekávaný stav k ${selectedPeriod.name}`}
+                  {`Očekávaný stav k ${selectedPeriod.name}`}
                 </span>
                 <div className={`text-xl font-extrabold truncate ${
                   closingBalance < 0 ? 'text-red-600' : 'text-slate-900'
                 }`}>
-                  {formatCurrency(isInvestment ? marketValue : closingBalance)}
+                  {formatCurrency(closingBalance)}
                 </div>
 
                 {isInvestment && (

@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatMonthsCount } from '../../services/periodService';
-import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -33,9 +32,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     return forecast.periods.slice(0, forecastMonths);
   }, [forecast.forecastPeriods, forecast.periods, forecast.currentPeriod.key, forecastMonths]);
 
-  const accountPeriods = useMemo(() => displayPeriods.map(summary =>
-    getAccountPeriodSummary(summary, accounts, transactions, marketValueSnapshots)
-  ), [displayPeriods, accounts, transactions, marketValueSnapshots]);
+  const accountPeriods = displayPeriods;
 
   // Režimy zobrazení hlavní forecast tabulky
   const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('usable');
@@ -108,7 +105,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {(forecastScope === 'all' ? accountPeriods : displayPeriods).map((p, idx) => {
+              {displayPeriods.map((p, idx) => {
                 const isCurrent = p.period.key === forecast.currentPeriod.key;
                 
                 const opening = forecastScope === 'usable' ? p.usableOpeningInHaler : p.openingBalanceInHaler;

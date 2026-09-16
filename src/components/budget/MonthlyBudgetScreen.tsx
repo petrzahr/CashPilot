@@ -240,7 +240,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Souhrn pro vybranou periodu z forecastu
   const currentSummary = useMemo(() => {
-    return forecast.periods.find(p => p.period.key === selectedPeriod.key) || {
+    return getAccountPeriodSummary(forecast, selectedPeriod.key) || {
       period: selectedPeriod,
       openingBalanceInHaler: 0,
       incomeInHaler: 0,
@@ -259,7 +259,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       minUsableBalanceInHaler: 0,
       accountBalances: {},
     };
-  }, [forecast.periods, selectedPeriod.key]);
+  }, [forecast, selectedPeriod.key]);
 
   // Souhrnné ukazatele za všechny účty, respektující vybrané rozpočtové období
   const aggregateSummary = useMemo(() => {
@@ -287,10 +287,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
     return {
       usableClosingInHaler: currentSummary.usableClosingInHaler,
-      netWorthClosingInHaler: getAccountPeriodSummary(currentSummary, accounts, transactions, marketValueSnapshots).netWorthClosingInHaler,
+      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
       savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
     };
-  }, [accounts, currentSummary, transactions, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
+  }, [accounts, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
 
   const formatPercent = (value: number | null) => value === null
     ? '—'
