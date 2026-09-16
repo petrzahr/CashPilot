@@ -8,6 +8,7 @@ import {
 } from '../services/financialEngine';
 import {
   Account,
+  BalanceCorrection,
   Transaction,
   MarketValueSnapshot,
 } from '../types/finance';
@@ -179,7 +180,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     expect(html).toContain('Spořicí účty');
     expect(html).toContain('Investice');
     expect(html).toContain('Penzijní účty');
-    expect(html).toContain('Celkové jmění');
+    expect(html).toContain('Celkový majetek');
   });
 
   it('3. Běžné účty + hotovost správně sčítají zůstatky aktivních účtů checking a cash k dnešku včetně pohybů a korekcí', () => {
@@ -551,6 +552,44 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     expect(overview.totalNetWorthInHaler).toBe(-500000);
 
     expect(overview.checkingAndCashInHaler < 0).toBe(true);
+  });
+
+  it('17. Legacy korekce jednoho účtu se nezahodí kvůli shodnému datu/rozdílu korekce na jiném účtu', () => {
+    // Starší (legacy) korekce zůstatku pro běžný účet, bez navázané transakce (importovaná z dřívější verze dat).
+    const legacyCorrection: BalanceCorrection = {
+      id: 'legacy_corr_checking',
+      accountId: sampleChecking.id,
+      checkDate: '2026-09-10',
+      sequence: 1,
+      type: 'balance_adjustment',
+      calculatedBalanceInHaler: 5000000,
+      actualBalanceInHaler: 5500000,
+      diffInHaler: 500000, // +5 000 Kč
+      note: '',
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    // Nesouvisející reálná korekční transakce na JINÉM účtu, náhodou se stejným datem a rozdílem.
+    const unrelatedTx: Transaction = {
+      id: 'tx_corr_savings',
+      title: 'Korekce spořáku',
+      amountInHaler: 500000,
+      date: '2026-09-10',
+      sequence: 1,
+      type: 'balance_adjustment',
+      sourceAccountId: sampleSavings.id,
+      status: 'executed',
+      diffInHaler: 500000,
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    const res = calculateQuickFinancialOverview(allAccounts, [unrelatedTx], [legacyCorrection], [], today);
+    // Běžný účet + hotovost musí zahrnout i legacy korekci (50 000 + 3 000 + 5 000 = 58 000 Kč)
+    expect(res.checkingAndCashInHaler).toBe(5800000);
+    // Spořicí účet musí zahrnout svou vlastní korekční transakci (150 000 + 5 000 = 155 000 Kč)
+    expect(res.savingsInHaler).toBe(15500000);
   });
 
   it('16. Vizuální integrita: oddělovač a formátování částek v české měně', () => {
