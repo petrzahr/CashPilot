@@ -43,6 +43,7 @@ export const AccountsScreen: React.FC = () => {
   } = useFinance();
 
   const [showArchived, setShowArchived] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<AccountType | 'all'>('all');
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
@@ -56,7 +57,9 @@ export const AccountsScreen: React.FC = () => {
   const [draggedAccountId, setDraggedAccountId] = useState<string | null>(null);
   const [dropTargetAccountId, setDropTargetAccountId] = useState<string | null>(null);
 
-  const displayedAccounts = accounts.filter(a => showArchived ? true : a.status === 'active');
+  const displayedAccounts = accounts
+    .filter(a => showArchived ? true : a.status === 'active')
+    .filter(a => typeFilter === 'all' ? true : a.type === typeFilter);
 
   const currentSummary = forecast.periods.find(p => p.period.key === selectedPeriod.key);
 
@@ -156,13 +159,19 @@ export const AccountsScreen: React.FC = () => {
       {/* Hlavička správy účtů */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Správa finančních účtů</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Běžné, spořicí, hotovostní a investiční účty s možností kontroly skutečného zůstatku
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            Pořadí účtů změníte přetažením karty za úchyt. Stejné pořadí se použije i v nastavení.
-          </p>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as AccountType | 'all')}
+            className="text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+          >
+            <option value="all">Všechny účty</option>
+            <option value="checking">{getTypeLabel('checking')}</option>
+            <option value="cash">{getTypeLabel('cash')}</option>
+            <option value="savings">{getTypeLabel('savings')}</option>
+            <option value="investment">{getTypeLabel('investment')}</option>
+            <option value="pension">{getTypeLabel('pension')}</option>
+            <option value="other">{getTypeLabel('other')}</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-3">
