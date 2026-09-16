@@ -302,9 +302,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       transactions,
       recurringRules,
       recurringExceptions,
-      settings.budgetStartDay
+      settings.budgetStartDay,
+      undefined,
+      accounts
     );
-  }, [selectedPeriod, transactions, recurringRules, recurringExceptions, settings.budgetStartDay]);
+  }, [selectedPeriod, transactions, recurringRules, recurringExceptions, settings.budgetStartDay, accounts]);
 
   // Seznam účtů seřazený abecedně A–Z (včetně archivovaných, pokud mají záznam v tomto období)
   const sortedAccounts = useMemo(() => {
