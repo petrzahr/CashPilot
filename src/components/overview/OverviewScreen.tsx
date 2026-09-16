@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { formatMonthsCount } from '../../services/periodService';
+import { formatMonthsCount, formatCzechDate, getOverviewPeriods, OverviewRange } from '../../services/periodService';
+import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -18,19 +19,13 @@ interface OverviewScreenProps {
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
   const { forecast, settings, accounts, setSelectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
-  const forecastMonths = settings.forecastMonths || 12;
-
-  // Filtrované periody pro zobrazení forecastu (od aktuálního období dál podle horizontu)
-  const displayPeriods = useMemo(() => {
-    if (forecast.forecastPeriods && forecast.forecastPeriods.length > 0) {
-      return forecast.forecastPeriods;
-    }
-    const currentIdx = forecast.periods.findIndex(p => p.period.key === forecast.currentPeriod.key);
-    if (currentIdx >= 0) {
-      return forecast.periods.slice(currentIdx, currentIdx + forecastMonths);
-    }
-    return forecast.periods.slice(0, forecastMonths);
-  }, [forecast.forecastPeriods, forecast.periods, forecast.currentPeriod.key, forecastMonths]);
+  const [range, setRange] = useState<OverviewRange>({ direction: 'future', months: 12 });
+  const selectedPeriods = useMemo(() => getOverviewPeriods(forecast.currentPeriod, range, settings.budgetStartDay),
+    [forecast.currentPeriod, range, settings.budgetStartDay]);
+  const displayPeriods = useMemo(() => selectedPeriods.flatMap(period => {
+    const summary = getAccountPeriodSummary(forecast, period.key);
+    return summary ? [summary] : [];
+  }), [forecast, selectedPeriods]);
 
   const accountPeriods = displayPeriods;
 
@@ -52,16 +47,36 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
   return (
     <div className="space-y-6 pb-12">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label="Období přehledů">
+        {(['future', 'past'] as const).map(direction => (
+          <div key={direction} className="flex flex-wrap items-center gap-2" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
+            <span className="text-xs font-semibold text-slate-500 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+            {([3, 6, 12] as const).map(months => (
+              <button
+                key={months}
+                type="button"
+                aria-pressed={range.direction === direction && range.months === months}
+                onClick={() => setRange({ direction, months })}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  range.direction === direction && range.months === months
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
+                }`}
+              >
+                {direction === 'future' ? 'Příští' : months === 3 ? 'Poslední' : 'Posledních'} {formatMonthsCount(months)}
+              </button>
+            ))}
+          </div>
+        ))}
+        <p className="text-xs text-slate-500 flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5" />
+          {formatCzechDate(selectedPeriods[0].startDate)} – {formatCzechDate(selectedPeriods[selectedPeriods.length - 1].endDate)}
+          <span>· Včetně aktuálního rozpočtového období</span>
+        </p>
+      </div>
       {/* Hlavní tabulka forecastu */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Finanční forecast na {formatMonthsCount(forecastMonths)}</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Kliknutím na řádek otevřete detailní měsíční rozpočet daného období
-            </p>
-          </div>
-
           {/* Přepínač: Použitelné peníze vs Všechny účty */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
             <button
@@ -184,13 +199,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       {/* Přehled účtů */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Přehled všech účtů na {formatMonthsCount(forecastMonths)}</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Rozpad zůstatků a pohybů jednotlivých účtů v čase
-            </p>
-          </div>
-
           <div className="flex items-center gap-2">
             {accountViewMode === 'matrix' && (
               <div className="hidden sm:flex items-center gap-2.5 px-3 py-1 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-500">

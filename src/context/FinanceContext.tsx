@@ -44,6 +44,7 @@ import {
   createBudgetPeriod,
   generatePeriodsSequence,
   generatePeriodsBetween,
+  getOverviewPeriods,
   getNextPeriod,
   getPeriodForDate,
   getPreviousPeriod,
@@ -314,7 +315,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const allPeriodsSequence = useMemo(() => {
     const startDay = data.settings.budgetStartDay || 15;
-    const forecastMonths = data.settings.forecastMonths || 12;
+    const forecastMonths = 12;
 
     const baseForecastPeriods = generatePeriodsSequence(
       currentPeriod.year,
@@ -324,7 +325,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     );
     const lastForecastPeriod = baseForecastPeriods[baseForecastPeriods.length - 1];
 
-    let earliestPeriod = currentPeriod;
+    // Include every historical preset even when there are no recorded movements.
+    let earliestPeriod = getOverviewPeriods(currentPeriod, { direction: 'past', months: 12 }, startDay)[0];
     let latestPeriod = lastForecastPeriod;
 
     if (selectedPeriod.startDate < earliestPeriod.startDate) {
@@ -397,8 +399,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     data.marketValueSnapshots,
     data.recurringRules,
     data.accounts,
-    data.settings.budgetStartDay,
-    data.settings.forecastMonths
+    data.settings.budgetStartDay
   ]);
 
   const forecast = useMemo(() => {
@@ -431,10 +432,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return forecast.forecastPeriods?.map(p => p.period) || generatePeriodsSequence(
       currentPeriod.year,
       currentPeriod.month,
-      data.settings.forecastMonths || 12,
+      12,
       data.settings.budgetStartDay
     );
-  }, [forecast.forecastPeriods, currentPeriod.year, currentPeriod.month, data.settings.forecastMonths, data.settings.budgetStartDay]);
+  }, [forecast.forecastPeriods, currentPeriod.year, currentPeriod.month, data.settings.budgetStartDay]);
 
   const quickOverview = useMemo(() => {
     return calculateQuickFinancialOverview(

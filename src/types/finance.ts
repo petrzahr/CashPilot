@@ -164,7 +164,6 @@ export interface AppSettings {
   budgetStartDay: number; // Výchozí: 15
   overdraftLimitInHaler?: number; // Výše kontokorentu v haléřích (např. 20 000 Kč = 2 000 000)
   minReserveInHaler?: number; // @deprecated Pro zpětnou kompatibilitu původních dat
-  forecastMonths: number; // Výchozí: 12
   roundAmounts: boolean;
   accountUsableOverrides?: Record<string, boolean>;
 }

@@ -10,7 +10,6 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     currency: 'CZK',
     budgetStartDay: 15,
     minReserveInHaler: 5000000,
-    forecastMonths: 12,
     roundAmounts: false,
   };
 

@@ -319,6 +319,7 @@ export function validateAndParseBackup(jsonStr: string): AppData {
   if (parsed.resetMarker && (typeof parsed.resetMarker.operationId !== 'string' || typeof parsed.resetMarker.deviceId !== 'string' ||
     !Number.isFinite(Date.parse(parsed.resetMarker.resetAt)))) throw new Error('Poškozený reset marker.');
   parsed.settings ??= { ...DEFAULT_SETTINGS };
+  delete (parsed.settings as AppSettings & { forecastMonths?: number }).forecastMonths;
   if (typeof parsed.settings.overdraftLimitInHaler !== 'number') {
     parsed.settings = { ...parsed.settings, overdraftLimitInHaler: parsed.settings.minReserveInHaler ?? DEFAULT_SETTINGS.overdraftLimitInHaler };
   }

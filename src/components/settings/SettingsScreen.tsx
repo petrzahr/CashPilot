@@ -61,7 +61,6 @@ export const SettingsScreen: React.FC = () => {
   const [overdraftLimitStr, setOverdraftLimitStr] = useState(
     halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
   );
-  const [forecastMonths, setForecastMonths] = useState(settings.forecastMonths || 12);
   const [roundAmounts, setRoundAmounts] = useState(settings.roundAmounts);
 
   // Potvrzovací dialogy
@@ -80,9 +79,8 @@ export const SettingsScreen: React.FC = () => {
     setOverdraftLimitStr(
       halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
     );
-    setForecastMonths(settings.forecastMonths || 12);
     setRoundAmounts(settings.roundAmounts);
-  }, [settings.budgetStartDay, settings.overdraftLimitInHaler, settings.minReserveInHaler, settings.forecastMonths, settings.roundAmounts]);
+  }, [settings.budgetStartDay, settings.overdraftLimitInHaler, settings.minReserveInHaler, settings.roundAmounts]);
 
   const handleStartDayChange = (newDay: number) => {
     if (isNaN(newDay) || newDay < 1 || newDay > 31 || !Number.isInteger(newDay)) return;
@@ -117,7 +115,6 @@ export const SettingsScreen: React.FC = () => {
     updateSettings({
       overdraftLimitInHaler: overdraftHaler,
       minReserveInHaler: overdraftHaler, // Pro zpětnou kompatibilitu
-      forecastMonths,
       roundAmounts,
     });
   };
@@ -197,23 +194,6 @@ export const SettingsScreen: React.FC = () => {
               <p className="text-[11px] text-slate-500 mt-1">
                 Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
               </p>
-            </div>
-
-            {/* Horizont forecastu */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Horizont forecastu (počet měsíců)
-              </label>
-              <select
-                value={forecastMonths}
-                onChange={(e) => setForecastMonths(parseInt(e.target.value, 10))}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
-              >
-                <option value={6}>6 měsíců</option>
-                <option value={12}>12 měsíců (doporučeno)</option>
-                <option value={18}>18 měsíců</option>
-                <option value={24}>24 měsíců</option>
-              </select>
             </div>
 
             {/* Měna */}

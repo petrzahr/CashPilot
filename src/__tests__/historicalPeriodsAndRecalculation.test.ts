@@ -13,7 +13,6 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     currency: 'CZK',
     budgetStartDay: 1, // standardní kalendářní měsíc pro většinu testů
     minReserveInHaler: 2000000, // 20 000 Kč
-    forecastMonths: 12,
     roundAmounts: false,
   };
 

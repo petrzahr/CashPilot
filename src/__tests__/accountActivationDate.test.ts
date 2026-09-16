@@ -11,7 +11,6 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     currency: 'CZK',
     budgetStartDay: 1,
     minReserveInHaler: 2000000,
-    forecastMonths: 12,
     roundAmounts: false,
   };
 

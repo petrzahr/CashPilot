@@ -8,7 +8,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
     currency: 'CZK',
     budgetStartDay: 15,
     minReserveInHaler: 5000000,
-    forecastMonths: 12,
     roundAmounts: false,
   };
 
