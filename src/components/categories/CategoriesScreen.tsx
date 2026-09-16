@@ -75,59 +75,61 @@ export const CategoriesScreen: React.FC = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Hlavička správy kategorií */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">Správa kategorií rozpočtu</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Dvouúrovňová struktura: hlavní kategorie a podkategorie pro přehledné třídění
-          </p>
+      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Správa kategorií rozpočtu</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Dvouúrovňová struktura: hlavní kategorie a podkategorie pro přehledné třídění
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              />
+              <span>Zobrazit archivované</span>
+            </label>
+
+            <button
+              onClick={handleOpenAddMain}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nová hlavní kategorie</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
-            />
-            <span>Zobrazit archivované</span>
-          </label>
-
+        {/* Přepínač záložek: Příjmy vs Výdaje */}
+        <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs">
           <button
-            onClick={handleOpenAddMain}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            onClick={() => setActiveTab('income')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+              activeTab === 'income'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>Nová hlavní kategorie</span>
+            <TrendingUp className="w-4 h-4" />
+            <span>Příjmy</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('expense')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+              activeTab === 'expense'
+                ? 'bg-white text-red-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <TrendingDown className="w-4 h-4" />
+            <span>Výdaje</span>
           </button>
         </div>
-      </div>
-
-      {/* Přepínač záložek: Příjmy vs Výdaje */}
-      <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs">
-        <button
-          onClick={() => setActiveTab('income')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTab === 'income'
-              ? 'bg-white text-emerald-600 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>Příjmy</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('expense')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
-            activeTab === 'expense'
-              ? 'bg-white text-red-600 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <TrendingDown className="w-4 h-4" />
-          <span>Výdaje</span>
-        </button>
       </div>
 
       {/* Strom kategorií */}
