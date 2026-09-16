@@ -263,7 +263,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             {typeBadge}
                           </span>
                           {tx.sequence !== undefined && (
-                            <span className="text-[10px] text-slate-500 font-medium">
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 shrink-0">
                               #{tx.sequence}
                             </span>
                           )}

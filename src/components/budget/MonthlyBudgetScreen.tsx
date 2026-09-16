@@ -1077,7 +1077,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 <GripVertical className="w-4 h-4" />
                               </div>
 
-                              <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-500 shrink-0">
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 shrink-0">
                                 #{tx.sequence || 1}
                               </span>
 
@@ -1314,8 +1314,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-slate-500 overflow-hidden">
-                        <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-100">
+                      <td className="py-3 px-3 text-center overflow-hidden">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
                           #{tx.sequence || 1}
                         </span>
                       </td>
