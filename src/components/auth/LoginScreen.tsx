@@ -66,7 +66,7 @@ export const LoginScreen: React.FC = () => {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Soukromé úložiště Google Disk</span>
+              <span className="font-semibold text-slate-900 block">Soukromé úložiště Google Disk</span>
               <span>Vaše finanční data jsou bezpečně uložena v neveřejném aplikačním prostoru vašeho účtu Google.</span>
             </div>
           </div>
@@ -76,7 +76,7 @@ export const LoginScreen: React.FC = () => {
               <Zap className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Automatická synchronizace</span>
+              <span className="font-semibold text-slate-900 block">Automatická synchronizace</span>
               <span>Aplikace pracuje rychle s místní mezipamětí a všechny změny průběžně ukládá na pozadí.</span>
             </div>
           </div>
@@ -86,7 +86,7 @@ export const LoginScreen: React.FC = () => {
               <TrendingUp className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-800 block">Plánování a statistiky</span>
+              <span className="font-semibold text-slate-900 block">Plánování a statistiky</span>
               <span>Plánujte budoucí příjmy a výdaje a sledujte vývoj svých financí v přehledných statistikách.</span>
             </div>
           </div>
@@ -109,7 +109,7 @@ export const LoginScreen: React.FC = () => {
             type="button"
             onClick={connectGoogleDrive}
             disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-bold border border-slate-300 shadow-md shadow-slate-200/50 hover:border-sky-300 hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm"
+            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-300 shadow-md shadow-slate-200/50 hover:border-sky-300 hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm"
           >
             {isSyncing ? (
               <>
@@ -139,7 +139,7 @@ export const LoginScreen: React.FC = () => {
         {/* Žádost o přístup do testovacího režimu */}
         <div className="space-y-3 text-center sm:text-left">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-800">Nemáte přístup?</h3>
+            <h3 className="text-sm font-bold text-slate-900">Nemáte přístup?</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.
             </p>

@@ -277,7 +277,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         <span className="text-xs text-slate-500 ml-2">({p.period.startDate} – {p.period.endDate})</span>
                       </div>
                     </div>
-                    <div className="text-xs font-semibold text-slate-800">
+                    <div className="text-xs font-semibold text-slate-900">
                       Zůstatek celkem: {formatCurrency(p.closingBalanceInHaler)}
                     </div>
                   </div>

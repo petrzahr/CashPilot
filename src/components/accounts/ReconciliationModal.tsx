@@ -87,7 +87,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <div className="flex justify-between items-center text-sm">
             <span className="text-slate-500">Vypočítaný stav v aplikaci:</span>
-            <span className="font-semibold text-slate-800">
+            <span className="font-semibold text-slate-900">
               {formatCurrency(calculatedBalanceInHaler)}
             </span>
           </div>

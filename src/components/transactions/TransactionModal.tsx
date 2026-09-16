@@ -634,7 +634,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 }}
                 className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
               />
-              <span className="text-sm font-medium text-slate-800">
+              <span className="text-sm font-medium text-slate-900">
                 Pravidelná položka (opakovat v dalších měsících)
               </span>
             </label>

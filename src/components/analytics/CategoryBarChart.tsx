@@ -73,7 +73,7 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
                       className="w-3 h-3 rounded-md shrink-0"
                       style={{ backgroundColor: cat.color }}
                     />
-                    <span className="font-bold text-slate-800 truncate" title={cat.name}>
+                    <span className="font-bold text-slate-900 truncate" title={cat.name}>
                       {cat.name}
                     </span>
                     {hasSubcategories && (
@@ -124,7 +124,7 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
                         </span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-semibold text-slate-800 tabular-nums">
+                        <span className="font-semibold text-slate-900 tabular-nums">
                           {formatCurrency(sub.totalInHaler)}
                         </span>
                         <span className="text-[10px] text-slate-500 tabular-nums min-w-[38px] text-right">

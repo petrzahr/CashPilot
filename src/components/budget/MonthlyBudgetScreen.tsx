@@ -633,7 +633,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
-              <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+              <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
                 {formatCurrency(defaultOpeningBalance)}
               </span>
             </div>
@@ -656,7 +656,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-xs text-sky-600 block font-semibold">Převody</span>
               <span
                 className={`text-base font-bold block mt-0.5 truncate ${
-                  defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-800'
+                  defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-900'
                 }`}
                 title={`Příchozí: ${formatCurrency(defaultTransfersIn)}, Odchozí: ${formatCurrency(defaultTransfersOut)}`}
               >
@@ -724,7 +724,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
             <span className="text-xs text-slate-500 block font-medium">Použitelný zůstatek</span>
-            <span className="text-base font-bold text-slate-800 block mt-0.5 truncate">
+            <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
@@ -1146,7 +1146,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   Zůstatek po položce:
                                 </span>
                                 <span className={`font-bold block ${
-                                  isTemporaryNegative ? 'text-red-600' : 'text-slate-800'
+                                  isTemporaryNegative ? 'text-red-600' : 'text-slate-900'
                                 }`}>
                                   {formatCurrency(runningBalanceInHaler)}
                                 </span>

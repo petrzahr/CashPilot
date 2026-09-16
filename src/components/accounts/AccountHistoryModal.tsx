@@ -126,7 +126,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           {/* Počáteční stav */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500 shrink-0">
             <span>Počáteční evidenční stav:</span>
-            <span className="font-semibold text-slate-800 text-sm">
+            <span className="font-semibold text-slate-900 text-sm">
               {formatCurrency(account.initialBalanceInHaler)}
             </span>
           </div>
