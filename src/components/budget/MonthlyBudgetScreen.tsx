@@ -1316,13 +1316,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => setSelectedCorrection(tx)}
-                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0 flex-1"
+                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
                             >
                               <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                               <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
-                            <span className="truncate min-w-0 flex-1">{tx.title}</span>
+                            <span className="truncate min-w-0">{tx.title}</span>
                           )}
                           {tx.recurringRuleId && (
                             <span title="Pravidelná položka" className="shrink-0 inline-flex">
