@@ -124,14 +124,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   let modalTitle = 'Nová hlavní kategorie';
-  let modalSubtitle = 'Struktura pro organizaci rozpočtu';
+  let modalSubtitle: string | undefined = undefined;
 
   if (isEditMode) {
-    modalTitle = 'Upravit kategorii';
-    modalSubtitle = categoryToEdit?.parentId ? 'Úprava podkategorie' : 'Úprava hlavní kategorie';
+    modalTitle = categoryToEdit?.parentId ? 'Upravit podkategorii' : 'Upravit hlavní kategorii';
+    modalSubtitle = undefined;
   } else if (isSubcategoryMode) {
     modalTitle = 'Nová podkategorie';
-    modalSubtitle = 'Vytvoření podkategorie v rámci hlavní sekce';
+    modalSubtitle = undefined;
   }
 
   return (
