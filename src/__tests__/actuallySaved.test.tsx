@@ -129,7 +129,7 @@ describe('MonthlyBudgetScreen — nové rozvržení karet', () => {
     return { html, forecast };
   };
 
-  it('karty "Použitelný zůstatek" a "Celkový majetek" se vykreslují úplně nahoře, nad výchozím účtem i blokem "Souhrnně: všechny účty", se správnými hodnotami', () => {
+  it('karty "Použitelný zůstatek" a "Celkový majetek" se vykreslují úplně nahoře, nad výchozím účtem i kartou "Skutečně uspořeno", se správnými hodnotami', () => {
     const txs = [
       makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 500000, date: '2026-09-16' }),
     ];
@@ -139,19 +139,19 @@ describe('MonthlyBudgetScreen — nové rozvržení karet', () => {
     const usableIdx = html.indexOf('Použitelný zůstatek');
     const netWorthIdx = html.indexOf('Celkový majetek');
     const defaultAccountBadgeIdx = html.indexOf('Výchozí účet:');
-    const souhrnneBadgeIdx = html.indexOf('Souhrnně:');
     const actuallySavedIdx = html.indexOf('Skutečně uspořeno');
 
     expect(usableIdx).toBeGreaterThan(-1);
     expect(netWorthIdx).toBeGreaterThan(-1);
     expect(defaultAccountBadgeIdx).toBeGreaterThan(-1);
-    expect(souhrnneBadgeIdx).toBeGreaterThan(-1);
     // Zvýrazněné karty jsou úplně nahoře - nad panelem výchozího účtu i nad
-    // celým blokem "Souhrnně: všechny účty" (badge i grid).
+    // souhrnnými kartami za všechny účty.
     expect(usableIdx).toBeLessThan(defaultAccountBadgeIdx);
     expect(netWorthIdx).toBeLessThan(defaultAccountBadgeIdx);
-    expect(defaultAccountBadgeIdx).toBeLessThan(souhrnneBadgeIdx);
-    expect(souhrnneBadgeIdx).toBeLessThan(actuallySavedIdx);
+    expect(defaultAccountBadgeIdx).toBeLessThan(actuallySavedIdx);
+
+    // Štítek "Souhrnně: všechny účty" byl odstraněn.
+    expect(html).not.toContain('Souhrnně:');
 
     expect(html).toContain(formatCurrency(p0.usableClosingInHaler));
     expect(html).toContain(formatCurrency(p0.netWorthClosingInHaler));

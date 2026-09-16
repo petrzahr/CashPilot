@@ -740,13 +740,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
       {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between gap-2 px-0.5">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200/70 text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
-            Souhrnně: <strong>všechny účty</strong>
-          </span>
-        </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
             <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno</span>
