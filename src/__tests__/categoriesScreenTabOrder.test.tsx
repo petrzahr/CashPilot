@@ -51,7 +51,7 @@ describe('CategoriesScreen - Přepínač typu kategorií [Výdaje] [Příjmy]', 
     );
 
     // Přepínač záložek existuje
-    const switcherIndex = html.indexOf('bg-slate-200/60 rounded-xl max-w-xs');
+    const switcherIndex = html.indexOf('bg-slate-200/60 rounded-xl');
     expect(switcherIndex).toBeGreaterThan(0);
 
     // Index "Výdaje" v přepínači musí být PŘED indexem "Příjmy"
@@ -99,7 +99,7 @@ describe('CategoriesScreen - Přepínač typu kategorií [Výdaje] [Příjmy]', 
       </FinanceProvider>
     );
 
-    const switcherIndex = html.indexOf('bg-slate-200/60 rounded-xl max-w-xs');
+    const switcherIndex = html.indexOf('bg-slate-200/60 rounded-xl');
     expect(switcherIndex).toBeGreaterThan(0);
     const switcherHtml = html.slice(switcherIndex, switcherIndex + 800);
 

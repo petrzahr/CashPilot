@@ -77,10 +77,10 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs w-full shrink-0">
+        <div className="h-9 w-full sm:w-56 flex gap-2 p-1 bg-slate-200/60 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('expense')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'expense'
                 ? 'bg-white text-red-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -91,7 +91,7 @@ export const CategoriesScreen: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('income')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -115,7 +115,7 @@ export const CategoriesScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAddMain}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            className="h-9 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nová hlavní kategorie</span>
