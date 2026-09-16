@@ -811,9 +811,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         </div>
       </div>
 
-      {/* Seznam všech položek tohoto období */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 space-y-4">
+      {/* Filtry položek tohoto období */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -951,8 +950,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               ))}
             </select>
           </div>
-        </div>
+      </div>
 
+      {/* Seznam všech položek tohoto období */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         {/* 1. REŽIM: PO DNECH S DRAG-AND-DROP A PRŮBĚŽNÝM ZŮSTATKEM */}
         {viewMode === 'daily' ? (
           <div className="divide-y divide-slate-100">
@@ -1437,6 +1438,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           </table>
         </div>
       )}
+      </div>
 
       {/* Potvrzovací modální okno pro smazání položky */}
       <DeleteTransactionModal
@@ -1465,6 +1467,5 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         correctionItem={selectedCorrection}
       />
     </div>
-  </div>
 );
 };
