@@ -20,7 +20,7 @@ import {
 export const CategoriesScreen: React.FC = () => {
   const { categories, archiveCategory, restoreCategory, deleteCategory } = useFinance();
 
-  const [activeTab, setActiveTab] = useState<CategoryType>('income');
+  const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showArchived, setShowArchived] = useState(false);
 
   // Modální dialog
@@ -79,17 +79,6 @@ export const CategoriesScreen: React.FC = () => {
         {/* Přepínač záložek: Příjmy vs Výdaje */}
         <div className="flex gap-2 p-1 bg-slate-200/60 rounded-xl max-w-xs w-full shrink-0">
           <button
-            onClick={() => setActiveTab('income')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'income'
-                ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>Příjmy</span>
-          </button>
-          <button
             onClick={() => setActiveTab('expense')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'expense'
@@ -99,6 +88,17 @@ export const CategoriesScreen: React.FC = () => {
           >
             <TrendingDown className="w-4 h-4" />
             <span>Výdaje</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('income')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+              activeTab === 'income'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span>Příjmy</span>
           </button>
         </div>
 
