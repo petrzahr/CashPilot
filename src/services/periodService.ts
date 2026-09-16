@@ -218,7 +218,7 @@ export function getPreviousPeriod(period: BudgetPeriod, startDay: number = 15): 
 
 export interface OverviewRange {
   direction: 'future' | 'past';
-  months: 3 | 6 | 12;
+  months: 3 | 6 | 12 | 18 | 24;
 }
 
 /** Like Analytics presets, both directions include the current budget period. */

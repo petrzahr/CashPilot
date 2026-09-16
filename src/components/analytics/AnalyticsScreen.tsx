@@ -1,3 +1,4 @@
+import { PeriodRangeSelector } from '../shared/PeriodRangeSelector';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types/finance';
@@ -342,49 +343,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           </div>
 
           {/* Vlastní výběr Od - Do */}
-          <form
+          <PeriodRangeSelector
+            from={customFromInput}
+            to={customToInput}
+            max={currentPeriod.key}
+            active={preset === 'custom'}
+            onFromChange={value => { setCustomFromInput(value); setValidationError(null); }}
+            onToChange={value => { setCustomToInput(value); setValidationError(null); }}
             onSubmit={handleApplyCustom}
-            className="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 lg:border-l lg:border-slate-200/80 lg:pl-4"
-          >
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-500 font-medium">Od:</span>
-              <input
-                type="month"
-                max={currentPeriod.key}
-                value={customFromInput}
-                onChange={(e) => {
-                  setCustomFromInput(e.target.value);
-                  setValidationError(null);
-                }}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-slate-500 font-medium">Do:</span>
-              <input
-                type="month"
-                max={currentPeriod.key}
-                value={customToInput}
-                onChange={(e) => {
-                  setCustomToInput(e.target.value);
-                  setValidationError(null);
-                }}
-                className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                preset === 'custom'
-                  ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-                  : 'bg-slate-800 hover:bg-slate-900 text-white border-slate-800'
-              }`}
-            >
-              OK
-            </button>
-          </form>
+          />
         </div>
 
         {/* Chybová validační zpráva */}

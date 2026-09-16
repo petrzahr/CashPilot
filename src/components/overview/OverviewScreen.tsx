@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatMonthsCount, formatCzechDate, getOverviewPeriods, OverviewRange } from '../../services/periodService';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
+import { PeriodRangeSelector } from '../shared/PeriodRangeSelector';
+import { resolveAnalyticsDateRange } from '../../services/analyticsEngine';
+import { createBudgetPeriod, generatePeriodsBetween, getTodayInPrague } from '../../services/periodService';
 import { BudgetPeriod } from '../../types/finance';
 import {
   Calendar,
   ChevronRight,
   ChevronDown,
-  Eye,
   AlertTriangle
 } from 'lucide-react';
 
@@ -18,10 +20,31 @@ interface OverviewScreenProps {
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
-  const [range, setRange] = useState<OverviewRange>({ direction: 'future', months: 12 });
-  const selectedPeriods = useMemo(() => getOverviewPeriods(forecast.currentPeriod, range, settings.budgetStartDay),
-    [forecast.currentPeriod, range, settings.budgetStartDay]);
+  const { forecast, settings, accounts, setSelectedPeriod, setOverviewPeriodBounds, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
+  type Range = { direction: 'future' | 'past'; months?: OverviewRange['months']; preset?: 'ytd' | 'all' | 'custom'; from?: string; to?: string };
+  const [range, setRange] = useState<Range>({ direction: 'future', months: 12 });
+  const [drafts, setDrafts] = useState({ future: { from: '', to: '' }, past: { from: '', to: '' } });
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const selectedPeriods = useMemo(() => {
+    if (range.preset === 'custom') {
+      const [fy, fm] = range.from!.split('-').map(Number);
+      const [ty, tm] = range.to!.split('-').map(Number);
+      return generatePeriodsBetween(createBudgetPeriod(fy, fm, settings.budgetStartDay), createBudgetPeriod(ty, tm, settings.budgetStartDay), settings.budgetStartDay);
+    }
+    if (range.preset) return resolveAnalyticsDateRange(range.preset, undefined, undefined,
+      { accounts, transactions, corrections, snapshots: marketValueSnapshots }, getTodayInPrague(), settings.budgetStartDay).range.periods.map(info => info.period);
+    return getOverviewPeriods(forecast.currentPeriod, range as OverviewRange, settings.budgetStartDay);
+  }, [forecast.currentPeriod, range, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
+  const firstPeriod = selectedPeriods[0];
+  const lastPeriod = selectedPeriods[selectedPeriods.length - 1];
+  useEffect(() => {
+    setOverviewPeriodBounds?.([firstPeriod, lastPeriod]);
+  }, [firstPeriod.key, lastPeriod.key, settings.budgetStartDay, setOverviewPeriodBounds]);
+  useEffect(() => () => setOverviewPeriodBounds?.(null), [setOverviewPeriodBounds]);
+  useEffect(() => {
+    setDrafts(previous => ({ ...previous, [range.direction]: { from: firstPeriod.key, to: lastPeriod.key } }));
+  }, [range.direction, firstPeriod.key, lastPeriod.key]);
+
   const displayPeriods = useMemo(() => selectedPeriods.flatMap(period => {
     const summary = getAccountPeriodSummary(forecast, period.key);
     return summary ? [summary] : [];
@@ -49,29 +72,51 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     <div className="space-y-6 pb-12">
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label="Období přehledů">
         {(['future', 'past'] as const).map(direction => (
-          <div key={direction} className="flex flex-wrap items-center gap-2" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
-            <span className="text-xs font-semibold text-slate-500 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
-            {([3, 6, 12] as const).map(months => (
-              <button
-                key={months}
-                type="button"
-                aria-pressed={range.direction === direction && range.months === months}
-                onClick={() => setRange({ direction, months })}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  range.direction === direction && range.months === months
+          <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+              {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
+                const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
+                return <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => { setRange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'
-                }`}
-              >
-                {direction === 'future' ? 'Příští' : months === 3 ? 'Poslední' : 'Posledních'} {formatMonthsCount(months)}
-              </button>
-            ))}
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'}`}
+                >
+                  {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? 'Příští' : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
+                </button>;
+              })}
+            </div>
+            <div className="ml-auto max-w-full">
+              <PeriodRangeSelector
+                from={drafts[direction].from}
+                to={drafts[direction].to}
+                max={direction === 'past' ? forecast.currentPeriod.key : undefined}
+                active={range.direction === direction && range.preset === 'custom'}
+                onFromChange={from => { setDrafts(previous => ({ ...previous, [direction]: { ...previous[direction], from } })); setValidationError(null); }}
+                onToChange={to => { setDrafts(previous => ({ ...previous, [direction]: { ...previous[direction], to } })); setValidationError(null); }}
+                onSubmit={event => {
+                  event.preventDefault();
+                  const { from, to } = drafts[direction];
+                  if (!from || !to) { setValidationError('Vyberte prosím počáteční i koncový měsíc.'); return; }
+                  if (from > to) { setValidationError('Počáteční měsíc nesmí být pozdější než koncový měsíc.'); return; }
+                  if (direction === 'past' && to > forecast.currentPeriod.key) { setValidationError('Koncové rozpočtové období nesmí být v budoucnosti.'); return; }
+                  if (direction === 'future' && to < forecast.currentPeriod.key) { setValidationError('Koncové rozpočtové období nesmí být v minulosti.'); return; }
+                  setValidationError(null);
+                  setRange({ direction, preset: 'custom', from, to });
+                }}
+              />
+            </div>
           </div>
         ))}
-        <p className="text-xs text-slate-500 flex items-center gap-2">
+        {validationError && <p role="alert" className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">{validationError}</p>}
+        <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
           <Calendar className="w-3.5 h-3.5" />
           {formatCzechDate(selectedPeriods[0].startDate)} – {formatCzechDate(selectedPeriods[selectedPeriods.length - 1].endDate)}
-          <span>· Včetně aktuálního rozpočtového období</span>
+          {selectedPeriods.some(period => period.key === forecast.currentPeriod.key) && <span>· Včetně aktuálního rozpočtového období</span>}
         </p>
       </div>
       {/* Hlavní tabulka forecastu */}
@@ -106,7 +151,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
         {/* Tabulka */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-left text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
                 <th className="py-3 px-4">Období</th>
@@ -200,20 +245,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {accountViewMode === 'matrix' && (
-              <div className="hidden sm:flex items-center gap-2.5 px-3 py-1 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-500">
-                <span className="flex items-center gap-1 cursor-help" title="P – počáteční stav na začátku období">
-                  <span className="text-[10px] font-semibold text-slate-400 select-none">P</span>
-                  <span className="text-[11px] text-slate-500 font-normal">počáteční</span>
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="flex items-center gap-1 cursor-help" title="K – konečný stav na konci období">
-                  <span className="text-[10px] font-bold text-slate-700 select-none">K</span>
-                  <span className="text-[11px] font-semibold text-slate-800">konečný</span>
-                </span>
-              </div>
-            )}
-
             <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
@@ -247,7 +278,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 <div key={p.period.key} className="transition-colors">
                   <div
                     onClick={() => setExpandedPeriodKey(isExpanded ? null : p.period.key)}
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 select-none"
+                    className="p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 select-none"
                   >
                     <div className="flex items-center gap-3">
                       {isExpanded ? (
@@ -256,11 +287,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         <ChevronRight className="w-4 h-4 text-slate-400" />
                       )}
                       <div>
-                        <span className="text-sm font-bold text-slate-900">{p.period.name}</span>
+                        <span className="text-xs font-semibold text-slate-900">{p.period.name}</span>
                         <span className="text-xs text-slate-400 ml-2">({p.period.startDate} – {p.period.endDate})</span>
                       </div>
                     </div>
-                    <div className="text-sm font-semibold text-slate-800">
+                    <div className="text-xs font-semibold text-slate-800">
                       Zůstatek celkem: {formatCurrency(p.closingBalanceInHaler)}
                     </div>
                   </div>
