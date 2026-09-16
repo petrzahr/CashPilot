@@ -126,7 +126,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('usable')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'usable'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -137,7 +137,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('all')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -235,7 +235,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('period')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -244,7 +244,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
