@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { addHaler, formatCurrency, halerToCzk, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
@@ -32,6 +32,19 @@ import { getEffectiveTransactionsForPeriod } from '../../services/financialEngin
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
+
+const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
+  { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
+  { value: 'income' as MovementType, label: 'Příjem' },
+  { value: 'transfer' as MovementType, label: 'Převod' },
+  { value: 'expense' as MovementType, label: 'Výdaj' },
+].sort((a, b) => czechStringCompare(a.label, b.label));
+
+const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
+  { value: 'planned' as TransactionStatus, label: 'Plánovaná' },
+  { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
+  { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
+].sort((a, b) => czechStringCompare(a.label, b.label));
 
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
@@ -205,9 +218,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Filtry v rámci období
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAccount, setFilterAccount] = useState<string>('');
-  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterMainCategory, setFilterMainCategory] = useState<string>('');
+  const [filterSubCategory, setFilterSubCategory] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
+
+  const handleMainCategoryChange = (newMainId: string) => {
+    setFilterMainCategory(newMainId);
+    setFilterSubCategory('');
+  };
 
   // Souhrn pro vybranou periodu z forecastu
   const currentSummary = useMemo(() => {
@@ -278,17 +297,95 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     );
   }, [selectedPeriod, transactions, recurringRules, recurringExceptions, settings.budgetStartDay]);
 
+  // Seznam účtů seřazený abecedně A–Z (včetně archivovaných, pokud mají záznam v tomto období)
+  const sortedAccounts = useMemo(() => {
+    return [...accounts]
+      .filter(a => a.status === 'active' || allPeriodTransactions.some(t => t.sourceAccountId === a.id || t.targetAccountId === a.id))
+      .sort((a, b) => czechStringCompare(a.name, b.name));
+  }, [accounts, allPeriodTransactions]);
+
+  // Množina ID kategorií použitých v tomto období
+  const usedCategoryIdsInPeriod = useMemo(() => {
+    const ids = new Set<string>();
+    for (const tx of allPeriodTransactions) {
+      if (tx.categoryId) ids.add(tx.categoryId);
+      if (tx.subcategoryId) ids.add(tx.subcategoryId);
+    }
+    return ids;
+  }, [allPeriodTransactions]);
+
+  // Hlavní kategorie (příjmové i výdajové dohromady), seřazené abecedně A–Z
+  const availableMainCategories = useMemo(() => {
+    return categories
+      .filter(c => {
+        if (c.parentId) return false;
+        if (c.status === 'active') return true;
+        if (usedCategoryIdsInPeriod.has(c.id)) return true;
+        return categories.some(sub => sub.parentId === c.id && usedCategoryIdsInPeriod.has(sub.id));
+      })
+      .sort((a, b) => czechStringCompare(a.name, b.name));
+  }, [categories, usedCategoryIdsInPeriod]);
+
+  // Podkategorie pro vybranou hlavní kategorii, seřazené abecedně A–Z
+  const availableSubCategories = useMemo(() => {
+    if (!filterMainCategory) return [];
+    return categories
+      .filter(c => {
+        if (c.parentId !== filterMainCategory) return false;
+        if (c.status === 'active') return true;
+        return usedCategoryIdsInPeriod.has(c.id);
+      })
+      .sort((a, b) => czechStringCompare(a.name, b.name));
+  }, [categories, filterMainCategory, usedCategoryIdsInPeriod]);
+
+  // ID všech podkategorií patřících pod aktuálně vybranou hlavní kategorii
+  const childSubCategoryIds = useMemo(() => {
+    if (!filterMainCategory) return new Set<string>();
+    return new Set(categories.filter(c => c.parentId === filterMainCategory).map(c => c.id));
+  }, [categories, filterMainCategory]);
+
+  // Bezpečný reset filtrů, pokud se vybraná hodnota stane neplatnou
+  useEffect(() => {
+    if (filterAccount && !sortedAccounts.some(a => a.id === filterAccount)) {
+      setFilterAccount('');
+    }
+  }, [sortedAccounts, filterAccount]);
+
+  useEffect(() => {
+    if (filterMainCategory && !availableMainCategories.some(c => c.id === filterMainCategory)) {
+      setFilterMainCategory('');
+      setFilterSubCategory('');
+    }
+  }, [availableMainCategories, filterMainCategory]);
+
+  useEffect(() => {
+    if (filterSubCategory && !availableSubCategories.some(c => c.id === filterSubCategory)) {
+      setFilterSubCategory('');
+    }
+  }, [availableSubCategories, filterSubCategory]);
+
   // Filtrované položky v tomto období (pro tabulku a denní seskupení)
   const periodTransactions = useMemo(() => {
     return allPeriodTransactions.filter(tx => {
-      if (searchQuery.trim() && !tx.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
+      if (searchQuery.trim()) {
+        const s = searchQuery.toLowerCase();
+        const matchTitle = tx.title.toLowerCase().includes(s);
+        const matchNote = tx.note?.toLowerCase().includes(s);
+        if (!matchTitle && !matchNote) return false;
       }
       if (filterAccount && tx.sourceAccountId !== filterAccount && tx.targetAccountId !== filterAccount) {
         return false;
       }
-      if (filterCategory && tx.categoryId !== filterCategory && tx.subcategoryId !== filterCategory) {
-        return false;
+      if (filterMainCategory) {
+        if (filterSubCategory) {
+          const matchesSub = tx.subcategoryId === filterSubCategory || tx.categoryId === filterSubCategory;
+          if (!matchesSub) return false;
+        } else {
+          const matchesMain = tx.categoryId === filterMainCategory;
+          const matchesChildSub = (tx.subcategoryId && childSubCategoryIds.has(tx.subcategoryId)) ||
+                                  (tx.categoryId && childSubCategoryIds.has(tx.categoryId));
+          if (!matchesMain && !matchesChildSub) return false;
+        }
       }
       if (filterType && tx.type !== filterType) {
         return false;
@@ -302,10 +399,31 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     allPeriodTransactions,
     searchQuery,
     filterAccount,
-    filterCategory,
+    filterMainCategory,
+    filterSubCategory,
+    childSubCategoryIds,
     filterType,
     filterStatus
   ]);
+
+  // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
+  const periodTransactionsSum = useMemo(() => {
+    return periodTransactions.reduce((sum, tx) => {
+      const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
+        ? tx.actualAmountInHaler
+        : tx.amountInHaler;
+      if (tx.type === 'balance_adjustment') {
+        const diff = tx.diffInHaler ?? (
+          tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
+            ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
+            : tx.amountInHaler
+        );
+        return addHaler(sum, diff);
+      }
+      if (tx.type === 'expense') return subHaler(sum, effectiveAmount);
+      return addHaler(sum, effectiveAmount);
+    }, 0);
+  }, [periodTransactions]);
 
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
   const dayGroups = useMemo(() => {
@@ -698,10 +816,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="p-4 sm:p-5 border-b border-slate-100 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900">Položky období</h3>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
                   {periodTransactions.length}
+                </span>
+                <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-600 rounded-md">
+                  Suma položek: {formatCurrency(periodTransactionsSum, { showPlus: true })}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -747,12 +868,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
           </div>
 
-          {/* Filtry položek */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 pt-2 text-xs">
-            <div className="relative">
+          {/* Filtry položek (stejné jako v sekci Položky, bez filtru období) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 pt-2 text-xs">
+            <div className="relative sm:col-span-2 lg:col-span-2">
               <input
                 type="text"
-                placeholder="Hledat podle názvu..."
+                placeholder="Vyhledat v názvu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
@@ -766,20 +887,50 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
               <option value="">Všechny účty</option>
-              {accounts.map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+              {sortedAccounts.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.name}{a.status === 'archived' ? ' (archivovaný)' : ''}
+                </option>
               ))}
             </select>
 
             <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
+              value={filterMainCategory}
+              onChange={(e) => handleMainCategoryChange(e.target.value)}
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
               <option value="">Všechny kategorie</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {availableMainCategories.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.status === 'archived' ? ' (archivovaná)' : ''}
+                </option>
               ))}
+            </select>
+
+            <select
+              value={filterSubCategory}
+              disabled={!filterMainCategory || availableSubCategories.length === 0}
+              onChange={(e) => setFilterSubCategory(e.target.value)}
+              className={`w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500 ${
+                !filterMainCategory || availableSubCategories.length === 0
+                  ? 'opacity-50 cursor-not-allowed text-slate-400'
+                  : ''
+              }`}
+            >
+              {!filterMainCategory ? (
+                <option value="">Nejprve vyberte hlavní kategorii</option>
+              ) : availableSubCategories.length === 0 ? (
+                <option value="">Žádné podkategorie</option>
+              ) : (
+                <>
+                  <option value="">Všechny podkategorie</option>
+                  {availableSubCategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}{sub.status === 'archived' ? ' (archivovaná)' : ''}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
 
             <select
@@ -788,10 +939,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
               <option value="">Všechny typy</option>
-              <option value="expense">Výdaje</option>
-              <option value="income">Příjmy</option>
-              <option value="transfer">Převody</option>
-              <option value="balance_adjustment">Korekce zůstatku</option>
+              {TYPE_OPTIONS.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
             </select>
 
             <select
@@ -800,9 +950,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
               <option value="">Všechny stavy</option>
-              <option value="planned">Plánované</option>
-              <option value="executed">Uskutečněné</option>
-              <option value="cancelled">Zrušené</option>
+              {STATUS_OPTIONS.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
             </select>
           </div>
         </div>
