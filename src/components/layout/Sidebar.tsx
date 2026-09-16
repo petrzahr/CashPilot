@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between">
-            <span className="font-bold text-slate-700 truncate pr-2" title="Celkové jmění">Celkové jmění</span>
+            <span className="font-bold text-slate-700 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
             <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}
             </span>

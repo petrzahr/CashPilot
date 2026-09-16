@@ -180,7 +180,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     expect(html).toContain('Spořicí účty');
     expect(html).toContain('Investice');
     expect(html).toContain('Penzijní účty');
-    expect(html).toContain('Celkové jmění');
+    expect(html).toContain('Celkový majetek');
   });
 
   it('3. Běžné účty + hotovost správně sčítají zůstatky aktivních účtů checking a cash k dnešku včetně pohybů a korekcí', () => {
