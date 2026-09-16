@@ -79,7 +79,7 @@ const MainLayout: React.FC = () => {
   const getScreenTitle = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
-      case 'overview': return `Přehled & výhled na ${formatMonthsCount(forecastMonths)}`;
+      case 'overview': return `Přehledy & výhled na ${formatMonthsCount(forecastMonths)}`;
       case 'analytics': return 'Analýza & trendy';
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Správa účtů';

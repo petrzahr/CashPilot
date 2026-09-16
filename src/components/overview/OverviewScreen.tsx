@@ -1,22 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { OverviewChart } from './OverviewChart';
 import { formatCurrency } from '../../services/currencyService';
-import { formatMonthsCount, getTodayInPrague, getPreviousDayString } from '../../services/periodService';
-import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
+import { formatMonthsCount, getPreviousDayString } from '../../services/periodService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { BudgetPeriod } from '../../types/finance';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  ShieldAlert, 
-  PieChart, 
-  Calendar, 
-  ChevronRight, 
-  ChevronDown, 
-  Eye, 
-  AlertTriangle 
+import {
+  Calendar,
+  ChevronRight,
+  ChevronDown,
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 
 interface OverviewScreenProps {
@@ -25,8 +18,6 @@ interface OverviewScreenProps {
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
   const { forecast, settings, accounts, setSelectedPeriod, transactions = [], marketValueSnapshots = [] } = useFinance();
-  const investmentPeriod = forecast.currentPeriod;
-  const investmentChange = calculatePeriodInvestmentChange(accounts, marketValueSnapshots, investmentPeriod, settings.budgetStartDay);
   const forecastMonths = settings.forecastMonths || 12;
 
   // Filtrované periody pro zobrazení forecastu (od aktuálního období dál podle horizontu)
@@ -64,8 +55,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     return historical;
   }), [displayPeriods, accounts, transactions, marketValueSnapshots]);
 
-  const expectedNetWorth = displayPeriods.find(p => p.period.key === forecast.currentPeriod.key)?.netWorthClosingInHaler ?? 0;
-
   // Režimy zobrazení hlavní forecast tabulky
   const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('usable');
 
@@ -84,149 +73,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Souhrnné KPI karty */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-        {/* 1. Počáteční stav */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Počáteční stav</span>
-            <div className="p-1.5 rounded-lg bg-sky-50 text-sky-600">
-              <Wallet className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-bold text-slate-900 truncate">
-            {formatCurrency(forecast.usableCashNowInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            Běžné a okamžitě dostupné účty
-          </p>
-        </div>
-
-        {/* 2. Očekávaný stav na konci měsíce */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Očekávaný stav</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className={`text-xl font-bold truncate ${
-            forecast.expectedClosingCurrentPeriodInHaler < 0 
-              ? 'text-red-600' 
-              : forecast.expectedClosingCurrentPeriodInHaler < overdraftLimit 
-                ? 'text-amber-600' 
-                : 'text-slate-900'
-          }`}>
-            {formatCurrency(forecast.expectedClosingCurrentPeriodInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            {forecast.currentPeriod.name}
-          </p>
-        </div>
-
-        {/* 3. Celkový majetek */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Celkový majetek</span>
-            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-              <PieChart className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-bold text-slate-900 truncate">
-            {formatCurrency(expectedNetWorth)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            Včetně investic a penzijka
-          </p>
-        </div>
-
-        {/* 4. Plánované příjmy */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Příjmy období</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-bold text-emerald-600 truncate">
-            +{formatCurrency(forecast.plannedIncomeCurrentPeriodInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            Mzda a plánované příjmy
-          </p>
-        </div>
-
-        {/* 5. Plánované výdaje */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Výdaje období</span>
-            <div className="p-1.5 rounded-lg bg-red-50 text-red-600">
-              <TrendingDown className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-bold text-red-600 truncate">
-            −{formatCurrency(forecast.plannedExpenseCurrentPeriodInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            Plánované platby a rozpočet
-          </p>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all"
-          title="Rozdíl nerealizovaného zisku / ztráty oproti předchozímu finančnímu období. Pro každý zahrnutý investiční a penzijní účet používá poslední známé ocenění do konce období spolu s tehdy zachyceným kapitálem včetně korekce.">
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold">Změna investic</span>
-            <div className="p-1.5 rounded-lg bg-purple-50 text-purple-600"><TrendingUp className="w-4 h-4" /></div>
-          </div>
-          <div className={`text-xl font-bold truncate ${investmentChange === null ? 'text-slate-400' : investmentChange < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-            {investmentChange === null ? '—' : formatCurrency(investmentChange, { showPlus: true })}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">{investmentPeriod.name} oproti předchozímu období</p>
-          {investmentChange === null && <p className="text-[11px] text-slate-400 mt-1">{investmentPeriod.startDate > getTodayInPrague() ? 'Budoucí období nelze vyhodnotit' : 'Pro srovnání chybí historické ocenění nebo zachycený vložený kapitál'}</p>}
-        </div>
-
-        {/* 6. Nejnižší zůstatek za daný počet měsíců */}
-        <div 
-          className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all"
-          title={`Nejnižší očekávaný zůstatek během ${formatMonthsCount(forecastMonths)}`}
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold" title={`Nejnižší očekávaný zůstatek během ${formatMonthsCount(forecastMonths)}`}>
-              Min. zůstatek ({forecastMonths}m)
-            </span>
-            <div className={`p-1.5 rounded-lg ${
-              forecast.overallMinBalanceInHaler < 0 
-                ? 'bg-red-50 text-red-600' 
-                : forecast.overallMinBalanceInHaler < overdraftLimit 
-                  ? 'bg-amber-50 text-amber-600' 
-                  : 'bg-slate-100 text-slate-600'
-            }`}>
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-          </div>
-          <div className={`text-xl font-bold truncate ${
-            forecast.overallMinBalanceInHaler < 0 
-              ? 'text-red-600' 
-              : forecast.overallMinBalanceInHaler < overdraftLimit 
-                ? 'text-amber-600' 
-                : 'text-slate-900'
-          }`}>
-            {formatCurrency(forecast.overallMinBalanceInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1 truncate">
-            {forecast.earliestShortagePeriod ? `Riziko: ${forecast.earliestShortagePeriod.name}` : 'Kontokorent v pořádku'}
-          </p>
-        </div>
-      </div>
-
-      {/* Graf vývoje zůstatků */}
-      <OverviewChart 
-        periods={displayPeriods} 
-        overdraftLimitInHaler={overdraftLimit}
-        minReserveInHaler={overdraftLimit} 
-        forecastMonths={forecastMonths}
-      />
-
       {/* Hlavní tabulka forecastu */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

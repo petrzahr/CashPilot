@@ -944,7 +944,7 @@ export function calculateQuickFinancialOverview(
   marketValueSnapshots: MarketValueSnapshot[] = [],
   todayStr: string = getTodayInPrague()
 ): QuickFinancialOverview {
-  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived') : [];
+  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a.status !== 'archived' && a.isNetWorth) : [];
   const safeTxs = Array.isArray(transactions) ? transactions : [];
   const safeCorrections = Array.isArray(corrections) ? corrections : [];
   const safeSnapshots = Array.isArray(marketValueSnapshots) ? marketValueSnapshots : [];
