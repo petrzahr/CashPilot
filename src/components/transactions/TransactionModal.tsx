@@ -359,7 +359,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             className={`py-2 text-sm font-medium rounded-lg transition-all ${
               type === 'expense'
                 ? 'bg-white text-red-600 shadow-sm font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Výdaj
@@ -370,7 +370,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             className={`py-2 text-sm font-medium rounded-lg transition-all ${
               type === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Příjem
@@ -381,7 +381,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             className={`py-2 text-sm font-medium rounded-lg transition-all ${
               type === 'transfer'
                 ? 'bg-white text-sky-600 shadow-sm font-semibold'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             Převod
@@ -395,7 +395,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <Repeat className="w-4 h-4" />
               <span>Tato položka je součástí pravidelné série</span>
             </div>
-            <div className="space-y-1 text-xs text-slate-700">
+            <div className="space-y-1 text-xs text-slate-500">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -436,7 +436,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Název a částka */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Název položky *
             </label>
             <input
@@ -450,7 +450,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Částka v Kč *
             </label>
             <div className="relative">
@@ -464,7 +464,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 onChange={(e) => setAmountStr(e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
               />
-              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-400 pointer-events-none">
+              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500 pointer-events-none">
                 Kč
               </span>
             </div>
@@ -474,7 +474,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Datum, Pořadí v rámci dne a Stav */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Datum *
             </label>
             <input
@@ -487,7 +487,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
               <Hash className="w-3.5 h-3.5 text-sky-600" />
               <span>Pořadí v dni *</span>
             </label>
@@ -504,7 +504,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Stav položky
             </label>
             <select
@@ -522,7 +522,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Účty */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               {type === 'transfer' ? 'Zdrojový účet (odkud) *' : 'Účet *'}
             </label>
             <select
@@ -548,7 +548,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
           {type === 'transfer' ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">
                 Cílový účet (kam) *
               </label>
               <select
@@ -576,7 +576,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
                   Kategorie
                 </label>
                 <select
@@ -594,7 +594,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
                   Podkategorie
                 </label>
                 <select
@@ -643,7 +643,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className={`grid ${frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">
                       Frekvence opakování
                     </label>
                     <select
@@ -660,7 +660,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </div>
                   {frequency !== 'custom' && (
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      <label className="block text-xs font-semibold text-slate-500 mb-1">
                         Den opakování v měsíci
                       </label>
                       <input
@@ -687,7 +687,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Poznámka */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             Poznámka (volitelné)
           </label>
           <input
@@ -704,7 +704,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
           >
             Zrušit
           </button>

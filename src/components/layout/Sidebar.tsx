@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
                   CashPilot
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wide block mt-0.5">
+                <span className="text-[10px] text-slate-500 font-medium tracking-wide block mt-0.5">
                   Vaše osobní finance pod kontrolou
                 </span>
               </div>
@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={onCloseMobile}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 md:hidden"
+              className="p-1 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
             >
               <X className="w-5 h-5" />
             </button>
@@ -110,10 +110,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-sky-50 text-sky-700 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <span className={isActive ? 'text-sky-600' : 'text-slate-400'}>
+                  <span className={isActive ? 'text-sky-600' : 'text-slate-500'}>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -126,25 +126,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="p-3.5 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty + hotovost">Běžné účty + hotovost</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingAndCashInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
                 {formatCurrency(quickOverview.checkingAndCashInHaler)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Spořicí účty">Spořicí účty</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.savingsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
                 {formatCurrency(quickOverview.savingsInHaler)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Investice">Investice</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.investmentsInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
                 {formatCurrency(quickOverview.investmentsInHaler)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Penzijní účty">Penzijní účty</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.pensionInHaler < 0 ? 'text-red-600' : 'text-slate-800'}`}>
                 {formatCurrency(quickOverview.pensionInHaler)}
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between">
-            <span className="font-bold text-slate-700 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
+            <span className="font-bold text-slate-500 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
             <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}
             </span>

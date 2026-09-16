@@ -24,7 +24,7 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onFromChange(e.target.value);
         }}
-        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-500 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
       />
     </label>
 
@@ -37,7 +37,7 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onToChange(e.target.value);
         }}
-        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className="w-32 shrink-0 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-500 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
       />
     </label>
 

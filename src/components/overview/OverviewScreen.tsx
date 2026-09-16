@@ -83,7 +83,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   onClick={() => { setRange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/80'}`}
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'}`}
                 >
                   {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
                 </button>;
@@ -129,7 +129,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'usable'
                   ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Použitelné peníze
@@ -140,7 +140,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Celkový majetek
@@ -193,7 +193,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <td className="py-3 px-4 text-xs text-slate-500">
                       {p.period.startDate} až {p.period.endDate}
                     </td>
-                    <td className="py-3 px-4 w-[140px] text-right text-slate-700 font-medium">
+                    <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
                       {formatCurrency(opening)}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-emerald-600">
@@ -206,7 +206,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       {p.transfersInHaler > 0 ? formatCurrency(p.transfersInHaler) : '0 Kč'}
                     </td>
                     <td className={`py-3 px-4 w-[130px] text-right font-medium ${
-                      change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-600'
+                      change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-500'
                     }`}>
                       {formatCurrency(change, { showPlus: true })}
                     </td>
@@ -236,7 +236,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('period')}
                 className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                  accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 Podle období
@@ -245,7 +245,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
                 className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                  accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 Matice účtů
@@ -268,13 +268,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   >
                     <div className="flex items-center gap-3">
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                        <ChevronDown className="w-4 h-4 text-slate-500" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                        <ChevronRight className="w-4 h-4 text-slate-500" />
                       )}
                       <div>
                         <span className="text-xs font-semibold text-slate-900">{p.period.name}</span>
-                        <span className="text-xs text-slate-400 ml-2">({p.period.startDate} – {p.period.endDate})</span>
+                        <span className="text-xs text-slate-500 ml-2">({p.period.startDate} – {p.period.endDate})</span>
                       </div>
                     </div>
                     <div className="text-xs font-semibold text-slate-800">
@@ -317,9 +317,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                 <td className="py-2.5 px-4 font-medium text-slate-900 flex items-center gap-2">
                                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
                                   <span>{acc.name}</span>
-                                  {acc.institution && <span className="text-slate-400 text-[10px]">({acc.institution})</span>}
+                                  {acc.institution && <span className="text-slate-500 text-[10px]">({acc.institution})</span>}
                                 </td>
-                                <td className="py-2.5 px-4 w-[140px] text-right text-slate-700 font-medium">
+                                <td className="py-2.5 px-4 w-[140px] text-right text-slate-500 font-medium">
                                   {formatCurrency(accBal.openingBalanceInHaler)}
                                 </td>
                                 <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-emerald-600">
@@ -329,12 +329,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                   {outgoing > 0 ? `−${formatCurrency(outgoing)}` : '0 Kč'}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[120px] text-right font-semibold ${
-                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-600'
+                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-500'
                                 }`}>
                                   {formatCurrency(netTransfers, { showPlus: true })}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[130px] text-right font-medium ${
-                                  netChange > 0 ? 'text-emerald-600' : netChange < 0 ? 'text-red-600' : 'text-slate-600'
+                                  netChange > 0 ? 'text-emerald-600' : netChange < 0 ? 'text-red-600' : 'text-slate-500'
                                 }`}>
                                   {formatCurrency(netChange, { showPlus: true })}
                                 </td>
@@ -370,10 +370,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       className="py-2.5 px-3 text-right min-w-[125px] cursor-pointer hover:bg-slate-100/80 transition-colors"
                       title={`Přejít do rozpočtu: ${p.period.name}`}
                     >
-                      <span className="block text-slate-700 font-bold hover:text-sky-700">
+                      <span className="block text-slate-500 font-bold hover:text-sky-700">
                         {p.period.name.split(' ')[0]} '{p.period.year.toString().slice(-2)}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-normal block">
+                      <span className="text-[10px] text-slate-500 font-normal block">
                         {p.period.startDate.slice(5)} – {p.period.endDate.slice(5)}
                       </span>
                     </th>
@@ -389,7 +389,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         <div className="min-w-0">
                           <span className="truncate max-w-[140px] block text-xs font-semibold text-slate-900">{acc.name}</span>
                           {acc.institution && (
-                            <span className="text-[10px] text-slate-400 truncate block font-normal leading-tight">{acc.institution}</span>
+                            <span className="text-[10px] text-slate-500 truncate block font-normal leading-tight">{acc.institution}</span>
                           )}
                         </div>
                       </div>
@@ -415,7 +415,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <div className="flex items-center justify-end gap-1.5 leading-tight">
                               <span
                                 title="P – počáteční stav"
-                                className="text-[10px] font-medium text-slate-400 select-none uppercase tracking-wider cursor-help"
+                                className="text-[10px] font-medium text-slate-500 select-none uppercase tracking-wider cursor-help"
                               >
                                 P
                               </span>
@@ -437,7 +437,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                     ? 'text-red-600'
                                     : isClosingBelowReserve
                                       ? 'text-amber-600'
-                                      : 'text-slate-600'
+                                      : 'text-slate-500'
                                 }`}
                               >
                                 K
@@ -466,7 +466,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-10">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-900">Celkový majetek</span>
-                      <span className="text-[10px] font-normal text-slate-400">Zahrnuté účty</span>
+                      <span className="text-[10px] font-normal text-slate-500">Zahrnuté účty</span>
                     </div>
                   </td>
                   {accountPeriods.map((p) => {
@@ -482,13 +482,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <div className="flex items-center justify-end gap-1.5 leading-tight">
                             <span
                               title="P – počáteční stav"
-                              className="text-[10px] font-semibold text-slate-400 select-none uppercase tracking-wider cursor-help"
+                              className="text-[10px] font-semibold text-slate-500 select-none uppercase tracking-wider cursor-help"
                             >
                               P
                             </span>
                             <span
                               className={`text-[11px] font-medium whitespace-nowrap ${
-                                isOpeningNegative ? 'text-red-500' : 'text-slate-600'
+                                isOpeningNegative ? 'text-red-500' : 'text-slate-500'
                               }`}
                             >
                               {formatCurrency(totalOpening)}
@@ -498,7 +498,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <span
                               title="K – konečný stav"
                               className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
-                                isClosingNegative ? 'text-red-600' : isClosingBelowReserve ? 'text-amber-600' : 'text-slate-600'
+                                isClosingNegative ? 'text-red-600' : isClosingBelowReserve ? 'text-amber-600' : 'text-slate-500'
                               }`}
                             >
                               K

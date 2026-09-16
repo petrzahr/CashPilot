@@ -176,7 +176,7 @@ export const AccountsScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-500 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
@@ -274,12 +274,12 @@ export const AccountsScreen: React.FC = () => {
                         </span>
                       )}
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-600 rounded">
+                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaný
                         </span>
                       )}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-500">
                       {getTypeLabel(acc.type)} {acc.institution && `• ${acc.institution}`}
                     </p>
                   </div>
@@ -289,7 +289,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     onClick={() => handleOpenEdit(acc)}
                     title="Upravit účet"
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -297,7 +297,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       onClick={() => handleArchive(acc)}
                       title="Archivovat účet"
-                      className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -305,7 +305,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       onClick={() => restoreAccount(acc.id)}
                       title="Obnovit z archivu"
-                      className="p-1 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                      className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -313,7 +313,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     onClick={() => handleDelete(acc)}
                     title="Smazat účet"
-                    className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -349,7 +349,7 @@ export const AccountsScreen: React.FC = () => {
                       <Clock className="w-3.5 h-3.5 text-purple-400" />
                       Poslední tržní ocenění:
                     </span>
-                    <span className="font-medium text-slate-700">
+                    <span className="font-medium text-slate-500">
                       {acc.marketValueUpdatedAt ? formatCzechDate(acc.marketValueUpdatedAt) : 'Zatím neověřeno'}
                     </span>
                   </div>
@@ -357,15 +357,15 @@ export const AccountsScreen: React.FC = () => {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
                         Poslední kontrola zůstatku:
                       </span>
-                      <span className="font-medium text-slate-700">
+                      <span className="font-medium text-slate-500">
                         {lastCorrection ? formatCzechDate(lastCorrection.checkDate) : 'Zatím neověřeno'}
                       </span>
                     </div>
                     {lastCorrection && (
-                      <div className="flex items-center justify-between text-slate-400">
+                      <div className="flex items-center justify-between text-slate-500">
                         <span>Poslední korekce:</span>
                         <span className={lastCorrection.diffInHaler >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
                           {formatCurrency(lastCorrection.diffInHaler, { showPlus: true })}
@@ -404,7 +404,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setReconcileAccount(acc)}
-                    className="flex-1 py-2 px-3 text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                    className="flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
                   >
                     Aktualizovat skutečný stav
                   </button>
@@ -413,7 +413,7 @@ export const AccountsScreen: React.FC = () => {
                   type="button"
                   onClick={() => setHistoryAccount(acc)}
                   title="Historie účtu"
-                  className="py-2 px-3 text-xs font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
+                  className="py-2 px-3 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
                 >
                   <History className="w-3.5 h-3.5 text-slate-500" />
                   <span>Historie</span>

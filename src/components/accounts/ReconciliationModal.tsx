@@ -117,7 +117,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-500 mb-1">
             Skutečný zůstatek na výpisu / v bance (Kč) *
           </label>
           <div className="relative">
@@ -129,13 +129,13 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
               onChange={(e) => setActualBalanceStr(e.target.value)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
             />
-            <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-400">Kč</span>
+            <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Datum kontroly *
             </label>
             <input
@@ -149,7 +149,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
               Poznámka ke kontrole
             </label>
             <input
@@ -171,7 +171,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50"
           >
             Zrušit
           </button>

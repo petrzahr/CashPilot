@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Modal } from './Modal';
 import { AlertTriangle } from 'lucide-react';
 
@@ -29,7 +29,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className={`p-2 rounded-xl shrink-0 ${isDestructive ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
           <AlertTriangle className="w-6 h-6" />
         </div>
-        <div className="text-sm text-slate-600 space-y-2">
+        <div className="text-sm text-slate-500 space-y-2">
           <p>{message}</p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
         >
           {cancelText}
         </button>

@@ -73,7 +73,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-lg">
-      <div className="space-y-4 text-sm text-slate-600" onKeyDown={handleKeyDown}>
+      <div className="space-y-4 text-sm text-slate-500" onKeyDown={handleKeyDown}>
         {/* Varování a popis */}
         <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
@@ -94,12 +94,12 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
                 key={idx}
                 className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
               >
-                <span className="font-medium text-slate-700">{item.label}</span>
+                <span className="font-medium text-slate-500">{item.label}</span>
                 <span
                   className={`font-bold px-2 py-0.5 rounded-md ${
                     item.count > 0
                       ? 'bg-red-100 text-red-800'
-                      : 'bg-slate-200 text-slate-600'
+                      : 'bg-slate-200 text-slate-500'
                   }`}
                 >
                   {item.count}
@@ -123,7 +123,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
               backupDownloaded
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+                : 'bg-white text-slate-500 border border-slate-300 hover:bg-slate-100'
             }`}
           >
             {backupDownloaded ? (
@@ -143,7 +143,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         {/* Potvrzovací fráze pro kompletní reset */}
         {requiresConfirmationPhrase && (
           <div className="space-y-1.5 pt-1">
-            <label className="block text-xs font-semibold text-slate-700">
+            <label className="block text-xs font-semibold text-slate-500">
               Pro potvrzení zadejte přesný text: <span className="font-mono font-bold text-red-600 select-all">{confirmationPhrase}</span>
             </label>
             <input
@@ -163,7 +163,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
             ref={cancelButtonRef}
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
             Zrušit
           </button>

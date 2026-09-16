@@ -35,7 +35,7 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-2">
         <h3 className="text-sm font-bold text-slate-900">{title}</h3>
         <p className="text-xs text-slate-500">{subtitle}</p>
-        <div className="py-8 text-center text-xs text-slate-400">
+        <div className="py-8 text-center text-xs text-slate-500">
           {emptyMessage}
         </div>
       </div>
@@ -77,7 +77,7 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
                       {cat.name}
                     </span>
                     {hasSubcategories && (
-                      <span className="text-slate-400 group-hover:text-slate-600 transition-colors">
+                      <span className="text-slate-500 group-hover:text-slate-600 transition-colors">
                         {isExpanded ? (
                           <ChevronDown className="w-3.5 h-3.5" />
                         ) : (
@@ -118,8 +118,8 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
                       className="p-1.5 rounded-lg bg-slate-50/50 hover:bg-slate-100/60 transition-colors text-[11px] flex items-center justify-between gap-2"
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <Tag className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="text-slate-700 font-medium truncate" title={sub.name}>
+                        <Tag className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span className="text-slate-500 font-medium truncate" title={sub.name}>
                           {sub.name}
                         </span>
                       </div>
@@ -127,7 +127,7 @@ export const CategoryBarChart: React.FC<CategoryBarChartProps> = ({
                         <span className="font-semibold text-slate-800 tabular-nums">
                           {formatCurrency(sub.totalInHaler)}
                         </span>
-                        <span className="text-[10px] text-slate-400 tabular-nums min-w-[38px] text-right">
+                        <span className="text-[10px] text-slate-500 tabular-nums min-w-[38px] text-right">
                           {sub.percentage.toFixed(1)} %
                         </span>
                       </div>

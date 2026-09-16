@@ -21,7 +21,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-400 text-xs">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-500 text-xs">
         Žádná data pro zobrazení vývoje celkového jmění.
       </div>
     );
@@ -110,7 +110,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
                 showChecking
                   ? 'bg-sky-50 text-sky-700 border-sky-200 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${showChecking ? 'bg-sky-500' : 'bg-slate-300'}`} />
@@ -123,7 +123,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
                 showSavings
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${showSavings ? 'bg-emerald-500' : 'bg-slate-300'}`} />
@@ -136,7 +136,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
                 showInvestments
                   ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${showInvestments ? 'bg-purple-500' : 'bg-slate-300'}`} />
@@ -149,7 +149,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
                 showPension
                   ? 'bg-pink-50 text-pink-700 border-pink-200 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${showPension ? 'bg-pink-500' : 'bg-slate-300'}`} />
@@ -162,7 +162,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
                 showTotal
                   ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                  : 'bg-slate-50 text-slate-400 border-slate-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${showTotal ? 'bg-white' : 'bg-slate-300'}`} />
