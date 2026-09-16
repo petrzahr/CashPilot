@@ -1182,14 +1182,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     <button
                                       onClick={() => onEditTransaction(tx)}
                                       title="Upravit"
-                                      className="p-1 rounded text-slate-400 hover:text-slate-600"
+                                      className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Edit3 className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       onClick={() => duplicateTransaction(tx)}
                                       title="Duplikovat"
-                                      className="p-1 rounded text-slate-400 hover:text-slate-600"
+                                      className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Copy className="w-3.5 h-3.5" />
                                     </button>
@@ -1198,7 +1198,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         onClick={() => handleStatusChange(tx.id, 'cancelled')}
                                         disabled={updatingStatusTxId === tx.id}
                                         title="Zrušit položku"
-                                        className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                        className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
                                         <Ban className="w-3.5 h-3.5" />
                                       </button>
@@ -1207,7 +1207,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         onClick={() => handleStatusChange(tx.id, 'planned')}
                                         disabled={updatingStatusTxId === tx.id}
                                         title="Obnovit položku (do plánovaných)"
-                                        className="p-1 rounded text-slate-400 hover:text-sky-600 hover:bg-sky-50 disabled:opacity-50"
+                                        className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                       >
                                         <Clock className="w-3.5 h-3.5" />
                                       </button>
@@ -1216,7 +1216,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       onClick={() => setDeletingTx(tx)}
                                       disabled={isDeletingTx}
                                       title="Smazat"
-                                      className="p-1 rounded text-red-400 hover:text-red-600 disabled:opacity-50"
+                                      className="p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
