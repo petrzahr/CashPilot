@@ -166,7 +166,7 @@ export const AnalyticsScreen: React.FC = () => {
               return (
                 <div
                   key={t.monthKey}
-                  className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"
+                  className="p-3 rounded-xl bg-white border border-slate-200/80 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">{t.label}</span>
@@ -179,12 +179,12 @@ export const AnalyticsScreen: React.FC = () => {
 
                     {t.changePercent !== null ? (
                       <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full tabular-nums flex items-center gap-0.5 ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border tabular-nums ${
                           isDecrease
-                            ? 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : isIncrease
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-slate-100 text-slate-500'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
                         }`}
                         title={
                           t.isSameDayComparison
@@ -196,7 +196,7 @@ export const AnalyticsScreen: React.FC = () => {
                         {t.changePercent.toFixed(1)} %
                       </span>
                     ) : (
-                      <span className="text-[11px] font-medium text-slate-500 px-2 py-0.5">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                         —
                       </span>
                     )}
@@ -319,7 +319,7 @@ export const AnalyticsScreen: React.FC = () => {
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+                <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
                   <th className="py-2.5 pr-4">Datum</th>
                   <th className="py-2.5 pr-4">Položka</th>
                   <th className="py-2.5 pr-4">Kategorie</th>

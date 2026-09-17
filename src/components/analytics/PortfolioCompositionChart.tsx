@@ -13,7 +13,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-400 text-xs">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-500 text-xs">
         Žádná data pro zobrazení rozložení celkového majetku.
       </div>
     );
@@ -81,7 +81,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   const hoveredItem = hoveredIdx !== null ? data[hoveredIdx] : null;
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
+    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
       {/* Hlavička karty */}
       <div>
         <h3 className="text-sm font-bold text-slate-900">Rozložení celkového majetku</h3>
@@ -280,7 +280,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
       <div className="overflow-x-auto -mx-5 px-5 pt-1">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-t border-slate-100 text-slate-500 font-semibold text-xs">
+            <tr className="bg-slate-50/75 border-t border-slate-200/80 text-slate-500 font-semibold text-xs">
               <th className="py-2.5 pr-4">Účet</th>
               {data.map((d) => (
                 <th key={d.periodKey} className="py-2.5 pr-4 text-right whitespace-nowrap">
