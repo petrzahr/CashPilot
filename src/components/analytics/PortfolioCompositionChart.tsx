@@ -23,6 +23,13 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   // v tabulce se zobrazují v obráceném pořadí (graf zůstává skládaný v pořadí účtů z Účty)
   const tableSegments = [...data[0].segments].reverse();
 
+  // Segment je "záporný" jen pokud jeho zůstatek po zaokrouhlení na celé koruny skutečně
+  // vychází záporně (stejné pravidlo jako formatCurrency). Bez toho by i haléřová
+  // zaokrouhlovací nepřesnost (zobrazující se jako "0 Kč") vynucovala zbytečné záporné
+  // pásmo na ose.
+  const isEffectivelyNegative = (seg: { balanceInHaler: number; pct: number | null }) =>
+    (seg.pct ?? 0) < 0 && Math.round(seg.balanceInHaler / 100) !== 0;
+
   // Dominantní strana (kladná nebo záporná, podle výpočtu v analyticsEngine) je vždy
   // přesně 100 %, resp. -100 % - to je definice % základny, takže osa nikdy nemusí
   // přesáhnout tuto hranici. Rozsah osy se ale přizpůsobuje SKUTEČNÝM hodnotám napříč
@@ -36,8 +43,8 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
     let negSum = 0;
     for (const s of d.segments) {
       const pct = s.pct ?? 0;
-      if (pct >= 0) posSum += pct;
-      else negSum += pct;
+      if (isEffectivelyNegative(s)) negSum += pct;
+      else posSum += pct;
     }
     if (posSum > maxPositive) maxPositive = posSum;
     if (negSum < minNegative) minNegative = negSum;
@@ -136,14 +143,14 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                   let y0: number;
                   let y1: number;
 
-                  if (pct >= 0) {
-                    y0 = posCum;
-                    posCum += pct;
-                    y1 = posCum;
-                  } else {
+                  if (isEffectivelyNegative(seg)) {
                     y1 = negCum;
                     negCum += pct;
                     y0 = negCum;
+                  } else {
+                    y0 = posCum;
+                    posCum += pct;
+                    y1 = posCum;
                   }
 
                   const rectY = getY(clampPct(y1));
@@ -268,7 +275,10 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                   <span className="font-semibold tabular-nums text-white whitespace-nowrap">
                     {formatCurrency(seg.balanceInHaler)}
                     {seg.pct !== null && (
-                      <span className="text-slate-400 font-normal"> ({seg.pct.toFixed(1)} %)</span>
+                      <span className="text-slate-400 font-normal">
+                        {' '}
+                        ({(isEffectivelyNegative(seg) ? seg.pct : Math.abs(seg.pct)).toFixed(1)} %)
+                      </span>
                     )}
                   </span>
                 </div>

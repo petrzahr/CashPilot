@@ -9,6 +9,7 @@ import {
 import { createBudgetPeriod } from '../services/periodService';
 import { Account, BalanceCorrection, MarketValueSnapshot, Transaction } from '../types/finance';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
+import { PortfolioCompositionChart } from '../components/analytics/PortfolioCompositionChart';
 import { FinanceProvider } from '../context/FinanceContext';
 import { saveStoredAuth, clearStoredAuth } from '../services/googleDriveService';
 
@@ -305,6 +306,26 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     const result = calculatePortfolioComposition(periods, allAccounts, [], [], []);
     const chkSeg = result[0].segments.find((s) => s.key === checking.id)!;
     expect(chkSeg.label).toBe(checking.name);
+  });
+
+  it('10b. Haléřová zaokrouhlovací nepřesnost (zobrazí se jako 0 Kč) nevynucuje záporné pásmo na ose grafu', () => {
+    // Účet s -1 haléřem (zaokrouhlí se na "0 Kč" ve formatCurrency), ostatní jasně kladné
+    const dustChecking: Account = { ...checking, initialBalanceInHaler: -1 };
+    const periods = buildPeriods();
+    const result = calculatePortfolioComposition(
+      periods,
+      [dustChecking, savings, pension, investment],
+      [],
+      [],
+      []
+    );
+
+    const html = renderToStaticMarkup(
+      React.createElement(PortfolioCompositionChart, { data: result })
+    );
+
+    // Graf nemá viditelně jít do mínusu - žádná záporná osa (-20 %, -40 %, ...)
+    expect(html).not.toMatch(/>-\d+%</);
   });
 
   it('11. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {

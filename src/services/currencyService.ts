@@ -15,18 +15,23 @@ export function czkToHaler(czk: number): number {
  * Formátuje haléře do české měny, např. "125 400 Kč"
  */
 export function formatCurrency(
-  haler: number, 
+  haler: number,
   options: { showHaler?: boolean; showPlus?: boolean; currency?: string } = {}
 ): string {
   const { showHaler = false, showPlus = false, currency = 'Kč' } = options;
-  const isNegative = haler < 0;
-  const absHaler = Math.abs(haler);
-  const czk = absHaler / 100;
+  const absCzk = Math.abs(haler) / 100;
+
+  // Zaokrouhlení na zobrazovanou přesnost PŘED určením znaménka, aby se částka
+  // zaokrouhlená na "0" nikdy nezobrazila jako "− 0 Kč".
+  const roundedAbsCzk = showHaler
+    ? Math.round(absCzk * 100) / 100
+    : Math.round(absCzk);
+  const isNegative = haler < 0 && roundedAbsCzk !== 0;
 
   const formattedNumber = new Intl.NumberFormat('cs-CZ', {
     minimumFractionDigits: showHaler ? 2 : 0,
     maximumFractionDigits: showHaler ? 2 : 0,
-  }).format(czk);
+  }).format(roundedAbsCzk);
 
   let prefix = '';
   if (isNegative) {
