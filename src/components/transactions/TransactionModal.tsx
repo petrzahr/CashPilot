@@ -28,6 +28,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     accounts,
     categories,
     transactions,
+    recurringRules,
     selectedPeriod,
     addTransaction,
     updateTransaction,
@@ -51,6 +52,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly');
   const [dayOfMonth, setDayOfMonth] = useState<number>(1);
+  const [recurringEndDate, setRecurringEndDate] = useState('');
 
   // Dialog úpravy pravidelné položky
   const [recurringEditMode, setRecurringEditMode] = useState<'occurrence' | 'future' | 'series'>('occurrence');
@@ -58,6 +60,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const isEditing = !!transactionToEdit;
   const isLinkedToRecurring = !!transactionToEdit?.recurringRuleId;
+  const linkedRule = isLinkedToRecurring
+    ? recurringRules.find(r => r.id === transactionToEdit?.recurringRuleId)
+    : undefined;
 
   const activeAccounts = accounts
     .filter(a => isEditing ? (a.status === 'active' || a.id === sourceAccountId || a.id === targetAccountId) : a.status === 'active')
@@ -97,6 +102,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsRecurring(false);
       setFrequency('monthly');
       setDayOfMonth(parseInt(transactionToEdit.date.split('-')[2], 10) || 1);
+      setRecurringEndDate('');
     } else {
       const defaultDate = initialDate || getDefaultDateForPeriod(selectedPeriod);
       const defaultDay = parseInt(defaultDate.split('-')[2], 10) || 1;
@@ -122,6 +128,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsRecurring(false);
       setFrequency('monthly');
       setDayOfMonth(defaultDay);
+      setRecurringEndDate('');
     }
   }, [transactionToEdit, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate, transactions, accounts]);
 
@@ -216,6 +223,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         return;
       }
     }
+    if (isRecurring && !isLinkedToRecurring && recurringEndDate && recurringEndDate < date) {
+      alert('Datum konce opakování nemůže být dříve než datum první platby.');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -228,6 +239,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           type,
           frequency,
           dayOfMonth: chosenDay,
+          endDate: recurringEndDate || null,
           startDate: date,
           sourceAccountId,
           targetAccountId: type === 'transfer' ? targetAccountId : undefined,
@@ -386,6 +398,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <Repeat className="w-4 h-4" />
               <span>Tato položka je součástí pravidelné série</span>
             </div>
+            {linkedRule && (
+              <div className="text-[11px] text-slate-500 space-y-0.5">
+                <p>
+                  Opakuje se od {formatCzechDate(linkedRule.startDate)} do{' '}
+                  {linkedRule.endDate ? formatCzechDate(linkedRule.endDate) : 'neomezeno'}
+                </p>
+                <p className="font-mono">ID pravidla: {linkedRule.id}</p>
+              </div>
+            )}
             <div className="space-y-1 text-xs text-slate-500">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -667,6 +688,21 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       />
                     </div>
                   )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Platí do (nepovinné)
+                  </label>
+                  <input
+                    type="date"
+                    value={recurringEndDate}
+                    min={date}
+                    onChange={(e) => setRecurringEndDate(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Prázdné pole = opakování bez konce.
+                  </p>
                 </div>
                 <p className="text-xs text-slate-500">
                   Budoucí výskyty se dynamicky generují do forecastu bez zahlcení databáze fyzickými řádky.
