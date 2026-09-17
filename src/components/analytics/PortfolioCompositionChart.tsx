@@ -213,11 +213,6 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                 >
                   {item.periodShortLabel || item.periodLabel}
                 </span>
-                {item.isCurrentMonth && (
-                  <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md whitespace-nowrap">
-                    Aktuální
-                  </span>
-                )}
               </div>
             );
           })}
@@ -242,11 +237,6 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
             <div className="font-bold text-slate-200 border-b border-slate-700/80 pb-1.5 space-y-0.5">
               <div className="flex items-center justify-between gap-4">
                 <span>{hoveredItem.periodLabel}</span>
-                {hoveredItem.isCurrentMonth && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-500/20 text-sky-300 rounded-md">
-                    Aktuální
-                  </span>
-                )}
               </div>
             </div>
 

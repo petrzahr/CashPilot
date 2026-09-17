@@ -291,26 +291,6 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
                   {item.shortLabel || item.label}
                 </text>
 
-                {item.isCurrentMonth && (
-                  <g>
-                    <rect
-                      x={cx - 31}
-                      y={height - margin.bottom + 19}
-                      width={62}
-                      height={14}
-                      rx={4}
-                      className="fill-sky-100"
-                    />
-                    <text
-                      x={cx}
-                      y={height - margin.bottom + 29}
-                      textAnchor="middle"
-                      className="text-[10px] fill-sky-700 font-bold"
-                    >
-                      Aktuální
-                    </text>
-                  </g>
-                )}
               </g>
             );
           })}
@@ -332,11 +312,6 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
             <div className="font-bold text-slate-200 border-b border-slate-700/80 pb-1.5 space-y-0.5">
               <div className="flex items-center justify-between gap-4">
                 <span>{hoveredItem.label}</span>
-                {hoveredItem.isCurrentMonth && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-500/20 text-sky-300 rounded-md">
-                    Aktuální
-                  </span>
-                )}
               </div>
             </div>
 
