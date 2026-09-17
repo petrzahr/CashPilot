@@ -262,7 +262,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-normal text-slate-400 pt-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-normal text-slate-500 pt-1">
         {legendSegments.map((seg) => (
           <div key={seg.key} className="flex items-center gap-1">
             <span
