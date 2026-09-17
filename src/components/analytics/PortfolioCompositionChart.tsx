@@ -19,8 +19,9 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
     );
   }
 
-  // Legenda a řádky tabulky vycházejí z pořadí segmentů, které je konzistentní napříč obdobími
-  const legendSegments = data[0].segments;
+  // Řádky tabulky vycházejí z pořadí segmentů, které je konzistentní napříč obdobími;
+  // v tabulce se zobrazují v obráceném pořadí (graf zůstává skládaný v pořadí účtů z Účty)
+  const tableSegments = [...data[0].segments].reverse();
 
   // Výpočet rozsahu kladné/záporné části skládaného sloupce (v procentech)
   let maxPositive = 0;
@@ -261,20 +262,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
         )}
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-medium text-slate-500 pt-1">
-        {legendSegments.map((seg) => (
-          <div key={seg.key} className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: seg.color }}
-            />
-            <span>{seg.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabulka s absolutními částkami po účtech a obdobích */}
+      {/* Tabulka s absolutními částkami po účtech a obdobích (slouží zároveň jako legenda barev) */}
       <div className="overflow-x-auto -mx-5 px-5 pt-1">
         <table className="w-full text-left text-xs">
           <thead>
@@ -288,7 +276,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {legendSegments.map((seg) => (
+            {tableSegments.map((seg) => (
               <tr key={seg.key}>
                 <td className="py-2 pr-4 font-medium text-slate-700 whitespace-nowrap">
                   <span className="flex items-center gap-1.5">
