@@ -138,18 +138,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       const nextSeq = getNextSequenceForDate(newDate, transactions);
       setSequenceStr(nextSeq.toString());
       setStatus(getStatusForDate(newDate));
-      if (sourceAccountId) {
-        const srcAcc = accounts.find(a => a.id === sourceAccountId);
-        if (srcAcc?.initialBalanceDate && newDate < srcAcc.initialBalanceDate) {
-          setSourceAccountId('');
-        }
-      }
-      if (targetAccountId) {
-        const tgtAcc = accounts.find(a => a.id === targetAccountId);
-        if (tgtAcc?.initialBalanceDate && newDate < tgtAcc.initialBalanceDate) {
-          setTargetAccountId('');
-        }
-      }
+      // Účet se u nového data nemaže - pokud je pro dané datum neplatný, na to
+      // upozorní sourceAccError/targetAccError a odešle se odeslání formuláře.
     } else {
       if (newDate === transactionToEdit?.date) {
         setSequenceStr((transactionToEdit.sequence || 1).toString());
@@ -297,7 +287,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 categoryId: type !== 'transfer' && categoryId ? categoryId : null,
                 subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
                 note
-              }
+              },
+              transactionToEdit.id
             );
           }
         } else {
