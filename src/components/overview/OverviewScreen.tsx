@@ -153,7 +153,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           <table className="w-full table-fixed text-left text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                <th className="py-3 px-4 w-[160px]">Období</th>
+                <th className="py-3 px-4 w-[360px]">Období</th>
                 <th className="py-3 px-4 w-[140px] text-right">Počáteční stav</th>
                 <th className="py-3 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                 <th className="py-3 px-4 w-[120px] text-right text-red-600">Výdaje</th>
