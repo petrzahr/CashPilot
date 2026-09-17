@@ -98,7 +98,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                 x={margin.left - 6}
                 y={getY(v) + 3}
                 textAnchor="end"
-                className="text-[11px] font-medium fill-slate-500"
+                className="text-[10px] font-medium fill-slate-500"
               >
                 {v}%
               </text>
@@ -171,7 +171,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                   x={slotCenterX}
                   y={height - margin.bottom + 18}
                   textAnchor="middle"
-                  className={`text-[11px] font-medium transition-colors ${
+                  className={`text-[10px] font-medium transition-colors ${
                     isHovered ? 'fill-slate-900 font-bold' : 'fill-slate-500'
                   }`}
                 >
