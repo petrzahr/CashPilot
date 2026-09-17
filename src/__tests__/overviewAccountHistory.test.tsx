@@ -13,6 +13,39 @@ import { Account, Transaction } from '../types/finance';
 
 vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 
+// OverviewScreen no longer auto-expands any period's account breakdown by
+// default (it used to auto-expand the current period). This test needs that
+// breakdown table rendered to check per-account computed values, and the
+// project has no jsdom/testing-library set up to click the accordion open,
+// so when explicitly enabled we force the 6th useState call
+// (expandedPeriodKey, in source order) to the desired key instead of its
+// normal `null` default. Disabled by default so it never touches any other
+// component's hooks (e.g. AccountsScreen, rendered elsewhere in this file).
+const expandOverride = vi.hoisted(() => ({ enabled: false, key: null as string | null }));
+let useStateCallIndex = 0;
+vi.mock('react', async importOriginal => {
+  const actual = await importOriginal<typeof import('react')>();
+  return {
+    ...actual,
+    useState: (initial: unknown) => {
+      if (!expandOverride.enabled) return actual.useState(initial);
+      useStateCallIndex += 1;
+      return actual.useState(useStateCallIndex === 6 ? expandOverride.key : initial);
+    },
+  };
+});
+
+function renderOverviewWithExpandedPeriod(periodKey: string, props: React.ComponentProps<typeof OverviewScreen>) {
+  expandOverride.enabled = true;
+  expandOverride.key = periodKey;
+  useStateCallIndex = 0;
+  try {
+    return renderToStaticMarkup(<OverviewScreen {...props} />);
+  } finally {
+    expandOverride.enabled = false;
+  }
+}
+
 const cases = [
   { name: 'valuation during period', values: [['2026-08-10', 300000], ['2026-08-25', 305000]], opening: 300000, closing: 305000 },
   { name: 'multiple valuations and a future update', values: [['2026-08-10', 300000], ['2026-08-25', 305000], ['2026-09-10', 310000], ['2026-09-15', 320000]], opening: 300000, closing: 310000 },
@@ -48,7 +81,7 @@ describe.each(['investment', 'pension'] as const)('Overview %s forecast', type =
     vi.mocked(useFinance).mockReturnValue({ forecast, accounts, transactions, settings,
       selectedPeriod: period, marketValueSnapshots, setSelectedPeriod: vi.fn(),
     } as unknown as ReturnType<typeof useFinance>);
-    const html = renderToStaticMarkup(<OverviewScreen onNavigateToBudget={vi.fn()} />);
+    const html = renderOverviewWithExpandedPeriod(period.key, { onNavigateToBudget: vi.fn() });
     const cells = (name: string) => {
       const row = html.split(`<span>${name}</span>`)[1].split('</tr>')[0];
       return [...row.matchAll(/<td[^>]*>([^<]*)<\/td>/g)].map(match => match[1]);

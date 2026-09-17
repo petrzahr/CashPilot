@@ -56,7 +56,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
   // Režimy zobrazení přehledu účtů
   const [accountViewMode, setAccountViewMode] = useState<'period' | 'matrix'>('period');
-  const [expandedPeriodKey, setExpandedPeriodKey] = useState<string | null>(forecast.currentPeriod?.key || displayPeriods[0]?.period.key || null);
+  const [expandedPeriodKey, setExpandedPeriodKey] = useState<string | null>(null);
 
   const activeAccounts = accounts.filter(a => a.status === 'active');
 
