@@ -171,8 +171,8 @@ export const AnalyticsScreen: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">{t.label}</span>
                     {t.isCurrentMonth && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium" title="Srovnání ke stejnému dni období">
-                        Probíhající
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md" title="Srovnání ke stejnému dni období">
+                        Aktuální
                       </span>
                     )}
                   </div>
