@@ -30,7 +30,6 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowUpRight,
-  ArrowDownRight,
   DollarSign,
   PiggyBank,
   Calendar,
@@ -248,9 +247,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
       {/* 2. Doplňkové filtry */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2.5">
-          Filtrovat zobrazená data
-        </span>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Filtr účtu */}
           <div>
@@ -331,25 +327,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         </div>
       </div>
 
-      {/* 3. Šest souhrnných KPI karet */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-        {/* Karta 1: Celkové příjmy */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-xs font-semibold">Celkové příjmy</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <ArrowDownRight className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-lg font-bold text-slate-900 truncate tabular-nums">
-            {formatCurrency(kpis.totalIncomeInHaler)}
-          </div>
-          <p className="text-[11px] text-slate-500 mt-1 truncate">
-            Za zvolené období
-          </p>
-        </div>
-
-        {/* Karta 2: Celkové výdaje */}
+      {/* 3. Pět souhrnných KPI karet */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+        {/* Karta 1: Celkové výdaje */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between text-slate-500 mb-1.5">
             <span className="text-xs font-semibold">Celkové výdaje</span>
