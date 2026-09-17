@@ -261,20 +261,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
         )}
       </div>
 
-      {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-normal text-slate-500 pt-1">
-        {legendSegments.map((seg) => (
-          <div key={seg.key} className="flex items-center gap-1">
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: seg.color }}
-            />
-            <span>{seg.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabulka s absolutními částkami po účtech a obdobích */}
+      {/* Tabulka s absolutními částkami po účtech a obdobích (slouží zároveň jako legenda barev) */}
       <div className="overflow-x-auto -mx-5 px-5 pt-1">
         <table className="w-full text-left text-xs">
           <thead>
