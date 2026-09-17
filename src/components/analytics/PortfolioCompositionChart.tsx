@@ -14,7 +14,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   if (!data || data.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-400 text-xs">
-        Žádná data pro zobrazení rozložení portfolia.
+        Žádná data pro zobrazení rozložení celkového majetku.
       </div>
     );
   }
@@ -70,10 +70,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
     <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-3">
       {/* Hlavička karty */}
       <div>
-        <h3 className="text-sm font-bold text-slate-900">Rozložení portfolia</h3>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Procentuální podíl jednotlivých účtů na celkovém majetku za vybrané období
-        </p>
+        <h3 className="text-sm font-bold text-slate-900">Rozložení celkového majetku</h3>
       </div>
 
       {/* SVG Canvas */}
@@ -100,7 +97,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                 x={margin.left - 6}
                 y={getY(v) + 3}
                 textAnchor="end"
-                className="text-[9px] fill-slate-400 font-medium"
+                className="text-[11px] font-medium fill-slate-500"
               >
                 {v}%
               </text>
@@ -254,7 +251,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
               ))}
 
               <div className="border-t border-slate-700/80 pt-1.5 flex items-center justify-between gap-4 font-bold">
-                <span className="text-slate-100">Celkové jmění:</span>
+                <span className="text-slate-100">Celkový majetek:</span>
                 <span className="text-sm font-extrabold text-white tabular-nums">
                   {formatCurrency(hoveredItem.totalNetWorthInHaler)}
                 </span>
@@ -265,14 +262,14 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
       </div>
 
       {/* Legenda */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 pt-1">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-medium text-slate-500 pt-1">
         {legendSegments.map((seg) => (
           <div key={seg.key} className="flex items-center gap-1.5">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ backgroundColor: seg.color }}
             />
-            <span className="font-medium">{seg.label}</span>
+            <span>{seg.label}</span>
           </div>
         ))}
       </div>
@@ -316,7 +313,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
               </tr>
             ))}
             <tr>
-              <td className="py-2.5 pr-4 font-bold text-slate-900">Celkem</td>
+              <td className="py-2.5 pr-4 font-bold text-slate-900">Celkový majetek</td>
               {data.map((d) => (
                 <td
                   key={d.periodKey}

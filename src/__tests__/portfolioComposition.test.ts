@@ -34,7 +34,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
 });
 
-describe('Rozložení portfolia (calculatePortfolioComposition)', () => {
+describe('Rozložení celkového majetku (calculatePortfolioComposition)', () => {
   const today = '2026-09-13';
 
   const checking: Account = {
@@ -201,7 +201,7 @@ describe('Rozložení portfolia (calculatePortfolioComposition)', () => {
     expect(keys).not.toContain(archivedAccount.id);
   });
 
-  it('6. Pořadí segmentů je napříč obdobími konzistentní', () => {
+  it('6. Pořadí segmentů je napříč obdobími konzistentní a odpovídá řazení účtů v Účty (sortOrder)', () => {
     const p1 = createBudgetPeriod(2026, 6, 15);
     const p2 = createBudgetPeriod(2026, 7, 15);
     const periods = [createBudgetPeriodInfo(p1, today), createBudgetPeriodInfo(p2, today)];
@@ -210,14 +210,72 @@ describe('Rozložení portfolia (calculatePortfolioComposition)', () => {
     const keysA = result[0].segments.map((s) => s.key);
     const keysB = result[1].segments.map((s) => s.key);
     expect(keysA).toEqual(keysB);
-    // Zůstatek první, pak spořicí, pak penzijní, pak investiční
+    // V testovacích datech mají checking/savings/pension/investment postupně rostoucí sortOrder (1-4)
     expect(keysA[0]).toBe('cash-and-checking');
     expect(keysA[1]).toBe(savings.id);
     expect(keysA[2]).toBe(pension.id);
     expect(keysA[3]).toBe(investment.id);
   });
 
-  it('7. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {
+  it('7. Pořadí segmentů respektuje skutečné sortOrder účtů, ne pevné pořadí podle typu', () => {
+    const periods = buildPeriods();
+    // Penzijní účet má nižší sortOrder než spořicí, takže se musí zobrazit PŘED ním,
+    // přestože "pevné" pořadí podle typu (savings -> pension -> investment) by bylo opačné.
+    const reorderedPension: Account = { ...pension, sortOrder: 1 };
+    const reorderedSavings: Account = { ...savings, sortOrder: 2 };
+    const reorderedInvestment: Account = { ...investment, sortOrder: 3 };
+    const reorderedChecking: Account = { ...checking, sortOrder: 4 };
+
+    const result = calculatePortfolioComposition(
+      periods,
+      [reorderedChecking, reorderedSavings, reorderedPension, reorderedInvestment],
+      [],
+      [],
+      []
+    );
+
+    const keys = result[0].segments.map((s) => s.key);
+    expect(keys).toEqual([pension.id, savings.id, investment.id, 'cash-and-checking']);
+  });
+
+  it('8. Barva segmentu "Konečný stav" odpovídá barvě prvního zahrnutého běžného/hotovostního účtu', () => {
+    const periods = buildPeriods();
+    const firstChecking: Account = { ...checking, id: 'acc_chk_1', sortOrder: 1, color: '#123456' };
+    const secondCash: Account = { ...checking, id: 'acc_cash_2', type: 'cash', sortOrder: 2, color: '#abcdef' };
+
+    const result = calculatePortfolioComposition(
+      periods,
+      [firstChecking, secondCash],
+      [],
+      [],
+      []
+    );
+
+    const cashSegment = result[0].segments.find((s) => s.key === 'cash-and-checking')!;
+    expect(cashSegment.color).toBe('#123456');
+  });
+
+  it('9. Barvy segmentů spořicích/penzijních/investičních účtů odpovídají barvám daných účtů', () => {
+    const periods = buildPeriods();
+    const result = calculatePortfolioComposition(periods, allAccounts, [], [], []);
+
+    const savSeg = result[0].segments.find((s) => s.key === savings.id)!;
+    const penSeg = result[0].segments.find((s) => s.key === pension.id)!;
+    const invSeg = result[0].segments.find((s) => s.key === investment.id)!;
+
+    expect(savSeg.color).toBe(savings.color);
+    expect(penSeg.color).toBe(pension.color);
+    expect(invSeg.color).toBe(investment.color);
+  });
+
+  it('10. Segment "Konečný stav" se jmenuje "Konečný stav" (ne "Zůstatek")', () => {
+    const periods = buildPeriods();
+    const result = calculatePortfolioComposition(periods, allAccounts, [], [], []);
+    const cashSegment = result[0].segments.find((s) => s.key === 'cash-and-checking')!;
+    expect(cashSegment.label).toBe('Konečný stav');
+  });
+
+  it('11. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {
     saveStoredAuth({
       accessToken: 'mock_token',
       expiresAt: Date.now() + 3600000,
@@ -233,7 +291,7 @@ describe('Rozložení portfolia (calculatePortfolioComposition)', () => {
     );
 
     const idxFilter = html.indexOf('Analyzované období');
-    const idxPortfolio = html.indexOf('Rozložení portfolia');
+    const idxPortfolio = html.indexOf('Rozložení celkového majetku');
     const idxTrend = html.indexOf('Trend výdajů mezi obdobími');
 
     expect(idxFilter).toBeGreaterThan(-1);
@@ -241,6 +299,9 @@ describe('Rozložení portfolia (calculatePortfolioComposition)', () => {
     expect(idxTrend).toBeGreaterThan(-1);
     expect(idxFilter).toBeLessThan(idxPortfolio);
     expect(idxPortfolio).toBeLessThan(idxTrend);
+
+    // Popisek karty už neobsahuje odstraněný pomocný text
+    expect(html).not.toContain('Procentuální podíl jednotlivých účtů na celkovém majetku za vybrané období');
 
     clearStoredAuth();
   });
