@@ -182,14 +182,24 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                 </text>
 
                 {item.isCurrentMonth && (
-                  <text
-                    x={slotCenterX}
-                    y={height - margin.bottom + 30}
-                    textAnchor="middle"
-                    className="text-[9px] fill-sky-600 font-bold uppercase tracking-wider"
-                  >
-                    Aktuální
-                  </text>
+                  <g>
+                    <rect
+                      x={slotCenterX - 29}
+                      y={height - margin.bottom + 20}
+                      width={58}
+                      height={13}
+                      rx={4}
+                      className="fill-sky-100"
+                    />
+                    <text
+                      x={slotCenterX}
+                      y={height - margin.bottom + 29}
+                      textAnchor="middle"
+                      className="text-[9px] fill-sky-700 font-bold"
+                    >
+                      Aktuální
+                    </text>
+                  </g>
                 )}
               </g>
             );
