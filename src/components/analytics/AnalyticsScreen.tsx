@@ -148,9 +148,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             <h3 className="text-sm font-bold text-slate-900">
               Trend výdajů mezi obdobími
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Porovnání výdajů oproti předcházejícímu rozpočtovému období
-            </p>
           </div>
 
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -213,9 +210,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             <h3 className="text-sm font-bold text-slate-900">
               Průměry a finanční extrémy
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Nejlepší a nejnáročnější rozpočtová období
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -316,9 +310,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <h3 className="text-sm font-bold text-slate-900">
             Nejvyšší výdaje ve vybraném období
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            10 nejvyšších uskutečněných výdajových položek (kliknutím položku upravíte)
-          </p>
         </div>
 
         {topExpenses.length > 0 ? (
