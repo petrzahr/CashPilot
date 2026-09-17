@@ -1731,12 +1731,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const importJSON = useCallback((jsonStr: string): boolean => {
     try {
       const parsed = validateAndParseBackup(jsonStr);
-      // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3...
-      const rawTxs = (parsed.transactions || []).map((t: Transaction, i: number) => ({
-        ...t,
-        sequence: t.sequence !== undefined ? t.sequence : (i + 1)
-      }));
-      const txs = normalizeDaySequences(rawTxs);
+      // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3... zvlášť pro každý kalendářní den
+      const rawTxs: Transaction[] = parsed.transactions || [];
+      const byDate = new Map<string, Transaction[]>();
+      for (const t of rawTxs) {
+        const list = byDate.get(t.date) || [];
+        list.push(t);
+        byDate.set(t.date, list);
+      }
+      const txs = Array.from(byDate.values()).flatMap(dayTxs => normalizeDaySequences(dayTxs));
       setData({
         ...parsed,
         transactions: sortTransactionsByDateAndSequence(txs)
