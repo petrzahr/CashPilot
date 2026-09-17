@@ -995,11 +995,11 @@ export function calculateNetWorthHistory(
  * majetku) podle rozpočtových period. Úplně všechny způsobilé účty (běžné, hotovostní,
  * "jiné", spořicí, penzijní i investiční) se zobrazují jako samostatné segmenty se svou
  * vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí a barvám účtů v sekci Účty
- * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % je součet zůstatků
- * všech účtů s KLADNÝM zůstatkem (= 100 %, y=100 %) - pokud je nějaký účet v mínusu,
- * zobrazí se jako záporný výřez pod nulou vůči této základně, místo aby snižoval základnu
- * samotnou. Pokud jsou všechny zůstatky nezáporné, je tato základna totožná s celkovým
- * majetkem.
+ * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % (= 100 %, y=100 %,
+ * resp. y=-100 % pro zápornou stranu) je VĚTŠÍ z dvojice: součet kladných zůstatků, nebo
+ * absolutní hodnota součtu záporných zůstatků. Díky tomu je dominantní strana (typicky
+ * kladná, ale u záporného celkového jmění záporná) vždy přesně na 100 % a ta menší strana
+ * je vůči ní poměrově menší, místo aby přesahovala hranici grafu.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -1029,13 +1029,18 @@ export function calculatePortfolioComposition(
       0
     );
 
-    // % základna = součet pouze KLADNÝCH zůstatků (= 100 %). Záporný účet se tak projeví
-    // jako výřez pod nulou vůči této základně, aniž by ji sám snižoval. Když je vše
-    // nezáporné, tato základna je totožná s totalNetWorthInHaler.
-    const pctBaseInHaler = rawSegments.reduce(
+    // % základna = větší z dvojice (součet kladných zůstatků, |součet záporných zůstatků|).
+    // Dominantní strana je tak vždy přesně 100 % (resp. -100 %), menší strana je vůči ní
+    // poměrově menší.
+    const positiveSumInHaler = rawSegments.reduce(
       (sum, s) => (s.balanceInHaler > 0 ? addHaler(sum, s.balanceInHaler) : sum),
       0
     );
+    const negativeSumInHaler = rawSegments.reduce(
+      (sum, s) => (s.balanceInHaler < 0 ? addHaler(sum, s.balanceInHaler) : sum),
+      0
+    );
+    const pctBaseInHaler = Math.max(positiveSumInHaler, Math.abs(negativeSumInHaler));
 
     const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
       ...s,
