@@ -162,6 +162,31 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(sumPct).toBeLessThan(100);
   });
 
+  it('2b. Pokud |součet záporných účtů| PŘEVÝŠÍ součet kladných účtů, základnou (100 %) se stane záporná strana', () => {
+    const periods = buildPeriods();
+    // Checking hluboko v mínusu (300 000 Kč), jediný kladný účet má jen 50 000 Kč
+    const deepOverdraftChecking: Account = { ...checking, initialBalanceInHaler: -30000000 };
+    const smallSavings: Account = { ...savings, initialBalanceInHaler: 5000000 };
+
+    const result = calculatePortfolioComposition(
+      periods,
+      [deepOverdraftChecking, smallSavings],
+      [],
+      [],
+      []
+    );
+    const point = result[0];
+
+    const checkingSegment = point.segments.find((s) => s.key === checking.id)!;
+    const savingsSegment = point.segments.find((s) => s.key === savings.id)!;
+
+    // Záporná strana (300 000) je základna, tedy přesně -100 %
+    expect(checkingSegment.pct).toBeCloseTo(-100, 6);
+    // Kladná strana (50 000) je vůči této základně poměrově menší: 50000/300000*100 ≈ 16.67 %
+    expect(savingsSegment.pct).toBeCloseTo((5000000 / 30000000) * 100, 6);
+    expect(savingsSegment.pct!).toBeLessThan(100);
+  });
+
   it('3. pct je null u všech segmentů, když totalNetWorthInHaler === 0', () => {
     const periods = buildPeriods();
     const zeroChecking: Account = { ...checking, initialBalanceInHaler: 0 };

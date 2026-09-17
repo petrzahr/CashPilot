@@ -23,25 +23,21 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   // v tabulce se zobrazují v obráceném pořadí (graf zůstává skládaný v pořadí účtů z Účty)
   const tableSegments = [...data[0].segments].reverse();
 
-  // Výpočet rozsahu kladné/záporné části skládaného sloupce (v procentech)
-  let maxPositive = 0;
-  let minNegative = 0;
-
+  // Osa je vždy pevně -100 % až 100 % (součet kladných segmentů je vždy přesně 100 %
+  // - to je definice základny). Sloupec se nikdy neroztahuje kvůli extrémní hodnotě
+  // jednoho záporného účtu - takový segment se místo toho na ose ořízne na -100 %.
+  let hasNegative = false;
   for (const d of data) {
-    let posSum = 0;
-    let negSum = 0;
     for (const s of d.segments) {
-      const pct = s.pct ?? 0;
-      if (pct >= 0) posSum += pct;
-      else negSum += pct;
+      if ((s.pct ?? 0) < 0) hasNegative = true;
     }
-    if (posSum > maxPositive) maxPositive = posSum;
-    if (negSum < minNegative) minNegative = negSum;
   }
 
-  const effectiveMax = Math.max(100, Math.ceil(maxPositive / 20) * 20);
-  const effectiveMin = minNegative < 0 ? Math.floor(minNegative / 20) * 20 : 0;
+  const effectiveMax = 100;
+  const effectiveMin = hasNegative ? -100 : 0;
   const range = effectiveMax - effectiveMin || 1;
+
+  const clampPct = (v: number) => Math.max(effectiveMin, Math.min(effectiveMax, v));
 
   const gridValues: number[] = [];
   for (let v = 0; v <= effectiveMax; v += 20) gridValues.push(v);
@@ -140,8 +136,8 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                     y0 = negCum;
                   }
 
-                  const rectY = getY(y1);
-                  const rectHeight = Math.max(0, getY(y0) - getY(y1));
+                  const rectY = getY(clampPct(y1));
+                  const rectHeight = Math.max(0, getY(clampPct(y0)) - getY(clampPct(y1)));
 
                   if (rectHeight <= 0) return null;
 
