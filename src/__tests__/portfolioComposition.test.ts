@@ -134,7 +134,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(sumPct).toBeCloseTo(100, 6);
   });
 
-  it('2. Záporný zůstatek (checking v mínusu) se projeví jako záporná hodnota, ale součet pct zůstává přesně 100 %', () => {
+  it('2. Záporný zůstatek (checking v mínusu) se projeví jako záporná hodnota vůči základně = součtu kladných zůstatků (100 %)', () => {
     const periods = buildPeriods();
     const overdraftChecking: Account = {
       ...checking,
@@ -150,10 +150,16 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(checkingSegment.pct).not.toBeNull();
     expect(checkingSegment.pct!).toBeLessThan(0);
 
-    // Ostatní (kladné) segmenty proto musí dohromady přesáhnout 100 %, aby součet se
-    // zápornou hotovostí vyšel přesně na 100 % - celkový majetek je vždy 100 % základna.
+    // Součet POUZE kladných segmentů (savings + pension + investment) musí být přesně
+    // 100 % - to je základna. Záporný checking do ní nepočítá, jen z ní "ukusuje" pod nulou,
+    // takže celkový součet všech segmentů (kladných i záporného) je proto pod 100 %.
+    const positiveSumPct = point.segments
+      .filter((s) => s.key !== checking.id)
+      .reduce((s, seg) => s + (seg.pct ?? 0), 0);
+    expect(positiveSumPct).toBeCloseTo(100, 6);
+
     const sumPct = point.segments.reduce((s, seg) => s + (seg.pct ?? 0), 0);
-    expect(sumPct).toBeCloseTo(100, 6);
+    expect(sumPct).toBeLessThan(100);
   });
 
   it('3. pct je null u všech segmentů, když totalNetWorthInHaler === 0', () => {

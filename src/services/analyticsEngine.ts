@@ -995,8 +995,11 @@ export function calculateNetWorthHistory(
  * majetku) podle rozpočtových period. Úplně všechny způsobilé účty (běžné, hotovostní,
  * "jiné", spořicí, penzijní i investiční) se zobrazují jako samostatné segmenty se svou
  * vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí a barvám účtů v sekci Účty
- * (sortAccountsByOrder), konzistentně napříč obdobími. Celkový majetek daného měsíce je
- * vždy brán jako 100 % (základna pro % zahrnuje úplně všechny segmenty bez výjimky).
+ * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % je součet zůstatků
+ * všech účtů s KLADNÝM zůstatkem (= 100 %, y=100 %) - pokud je nějaký účet v mínusu,
+ * zobrazí se jako záporný výřez pod nulou vůči této základně, místo aby snižoval základnu
+ * samotnou. Pokud jsou všechny zůstatky nezáporné, je tato základna totožná s celkovým
+ * majetkem.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -1026,11 +1029,17 @@ export function calculatePortfolioComposition(
       0
     );
 
-    // Celkový majetek daného období je vždy 100 % - % základna je součet úplně
-    // všech segmentů, bez výjimky.
+    // % základna = součet pouze KLADNÝCH zůstatků (= 100 %). Záporný účet se tak projeví
+    // jako výřez pod nulou vůči této základně, aniž by ji sám snižoval. Když je vše
+    // nezáporné, tato základna je totožná s totalNetWorthInHaler.
+    const pctBaseInHaler = rawSegments.reduce(
+      (sum, s) => (s.balanceInHaler > 0 ? addHaler(sum, s.balanceInHaler) : sum),
+      0
+    );
+
     const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
       ...s,
-      pct: totalNetWorthInHaler !== 0 ? (s.balanceInHaler / totalNetWorthInHaler) * 100 : null,
+      pct: pctBaseInHaler !== 0 ? (s.balanceInHaler / pctBaseInHaler) * 100 : null,
     }));
 
     return {
