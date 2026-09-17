@@ -1,7 +1,6 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Transaction } from '../../types/finance';
 import {
   AnalyticsDateRange,
   AnalyticsFilters,
@@ -20,10 +19,6 @@ import {
   getPeriodForDate,
 } from '../../services/periodService';
 
-interface AnalyticsScreenProps {
-  onEditTransaction?: (tx: Transaction) => void;
-}
-
 // Držíme stav vybraného období na úrovni modulu, aby zůstal zachován při přechodu do jiné sekce
 let savedRange: DualPeriodRange = { direction: 'past', months: 12 };
 
@@ -33,9 +28,7 @@ const noFilters: AnalyticsFilters = {
   subcategoryId: null,
 };
 
-export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
-  onEditTransaction,
-}) => {
+export const AnalyticsScreen: React.FC = () => {
   const {
     accounts,
     categories,
@@ -327,15 +320,11 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {topExpenses.map((item) => (
-                  <tr
-                    key={item.transaction.id}
-                    onClick={() => onEditTransaction && onEditTransaction(item.transaction)}
-                    className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
-                  >
+                  <tr key={item.transaction.id}>
                     <td className="py-2.5 pr-4 font-medium text-slate-500 whitespace-nowrap">
                       {formatCzechDate(item.transaction.date)}
                     </td>
-                    <td className="py-2.5 pr-4 font-bold text-slate-900 group-hover:text-sky-600 transition-colors">
+                    <td className="py-2.5 pr-4 font-bold text-slate-900">
                       {item.transaction.title}
                     </td>
                     <td className="py-2.5 pr-4 text-slate-500 font-medium">

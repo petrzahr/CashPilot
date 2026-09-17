@@ -122,9 +122,7 @@ const MainLayout: React.FC = () => {
             )}
 
             {currentScreen === 'analytics' && (
-              <AnalyticsScreen
-                onEditTransaction={handleEditTx}
-              />
+              <AnalyticsScreen />
             )}
 
             {currentScreen === 'transactions' && (
