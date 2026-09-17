@@ -294,10 +294,10 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
                 {item.isCurrentMonth && (
                   <g>
                     <rect
-                      x={cx - 29}
-                      y={height - margin.bottom + 20}
-                      width={58}
-                      height={13}
+                      x={cx - 31}
+                      y={height - margin.bottom + 19}
+                      width={62}
+                      height={14}
                       rx={4}
                       className="fill-sky-100"
                     />
@@ -305,7 +305,7 @@ export const NetWorthHistoryChart: React.FC<NetWorthHistoryChartProps> = ({
                       x={cx}
                       y={height - margin.bottom + 29}
                       textAnchor="middle"
-                      className="text-[9px] fill-sky-700 font-bold"
+                      className="text-[10px] fill-sky-700 font-bold"
                     >
                       Aktuální
                     </text>

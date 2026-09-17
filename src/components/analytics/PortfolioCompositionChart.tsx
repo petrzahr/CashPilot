@@ -214,7 +214,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                   {item.periodShortLabel || item.periodLabel}
                 </span>
                 {item.isCurrentMonth && (
-                  <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold bg-sky-100 text-sky-700 rounded-md whitespace-nowrap">
+                  <span className="mt-0.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md whitespace-nowrap">
                     Aktuální
                   </span>
                 )}
