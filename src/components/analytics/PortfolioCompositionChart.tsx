@@ -19,8 +19,9 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
     );
   }
 
-  // Legenda a řádky tabulky vycházejí z pořadí segmentů, které je konzistentní napříč obdobími
-  const legendSegments = data[0].segments;
+  // Řádky tabulky vycházejí z pořadí segmentů, které je konzistentní napříč obdobími;
+  // v tabulce se zobrazují v obráceném pořadí (graf zůstává skládaný v pořadí účtů z Účty)
+  const tableSegments = [...data[0].segments].reverse();
 
   // Výpočet rozsahu kladné/záporné části skládaného sloupce (v procentech)
   let maxPositive = 0;
@@ -275,7 +276,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {legendSegments.map((seg) => (
+            {tableSegments.map((seg) => (
               <tr key={seg.key}>
                 <td className="py-2 pr-4 font-medium text-slate-700 whitespace-nowrap">
                   <span className="flex items-center gap-1.5">
