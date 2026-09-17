@@ -714,7 +714,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
             idsToDelete.add(id);
           }
 
-          const updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
+          let updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
+
+          // Pokud po smazání budoucích výskytů zůstává v sérii nejvýše jedna položka,
+          // pravidlo už nemá smysl udržovat jako opakující se - převést zbylou položku
+          // na běžnou (nepravidelnou) a pravidlo odstranit.
+          const remainingInRule = updatedTxs.filter(t => t.recurringRuleId === ruleId);
+          if (remainingInRule.length <= 1) {
+            updatedTxs = updatedTxs.map(t =>
+              t.recurringRuleId === ruleId
+                ? { ...t, recurringRuleId: undefined, isException: false, updatedAt: nowIso }
+                : t
+            );
+            success = true;
+            return {
+              ...prev,
+              recurringRules: prev.recurringRules.filter(r => r.id !== ruleId),
+              recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== ruleId),
+              transactions: updatedTxs,
+            };
+          }
 
           success = true;
           return {
