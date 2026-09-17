@@ -308,45 +308,45 @@ export const AnalyticsScreen: React.FC = () => {
       </div>
 
       {/* 4. Tabulka Nejvyšší výdaje */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
-        <div>
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100">
           <h3 className="text-sm font-bold text-slate-900">
             Nejvyšší výdaje ve vybraném období
           </h3>
         </div>
 
         {topExpenses.length > 0 ? (
-          <div className="overflow-x-auto -mx-5 px-5">
+          <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
                 <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
-                  <th className="py-2.5 pr-4">Datum</th>
-                  <th className="py-2.5 pr-4">Položka</th>
-                  <th className="py-2.5 pr-4">Kategorie</th>
-                  <th className="py-2.5 pr-4">Podkategorie</th>
-                  <th className="py-2.5 pr-4">Účet</th>
-                  <th className="py-2.5 text-right">Částka</th>
+                  <th className="py-2.5 px-4">Datum</th>
+                  <th className="py-2.5 px-4">Položka</th>
+                  <th className="py-2.5 px-4">Kategorie</th>
+                  <th className="py-2.5 px-4">Podkategorie</th>
+                  <th className="py-2.5 px-4">Účet</th>
+                  <th className="py-2.5 px-4 text-right">Částka</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {topExpenses.map((item) => (
                   <tr key={item.transaction.id}>
-                    <td className="py-2.5 pr-4 font-medium text-slate-500 whitespace-nowrap">
+                    <td className="py-2.5 px-4 font-medium text-slate-500 whitespace-nowrap">
                       {formatCzechDate(item.transaction.date)}
                     </td>
-                    <td className="py-2.5 pr-4 font-bold text-slate-900">
+                    <td className="py-2.5 px-4 font-bold text-slate-900">
                       {item.transaction.title}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-500 font-medium">
+                    <td className="py-2.5 px-4 text-slate-500 font-medium">
                       {item.categoryName}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-500">
+                    <td className="py-2.5 px-4 text-slate-500">
                       {item.subcategoryName || '—'}
                     </td>
-                    <td className="py-2.5 pr-4 text-slate-500 font-medium">
+                    <td className="py-2.5 px-4 text-slate-500 font-medium">
                       {item.accountName}
                     </td>
-                    <td className="py-2.5 text-right font-extrabold text-slate-900 tabular-nums whitespace-nowrap">
+                    <td className="py-2.5 px-4 text-right font-extrabold text-slate-900 tabular-nums whitespace-nowrap">
                       {formatCurrency(
                         item.transaction.actualAmountInHaler !== undefined
                           ? item.transaction.actualAmountInHaler

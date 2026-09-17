@@ -81,7 +81,8 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   const hoveredItem = hoveredIdx !== null ? data[hoveredIdx] : null;
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="p-5 space-y-4">
       {/* Hlavička karty */}
       <div>
         <h3 className="text-sm font-bold text-slate-900">Rozložení celkového majetku</h3>
@@ -275,15 +276,16 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
           </div>
         )}
       </div>
+      </div>
 
       {/* Tabulka s absolutními částkami po účtech a obdobích (slouží zároveň jako legenda barev) */}
-      <div className="overflow-x-auto -mx-5 px-5 pt-1">
+      <div className="overflow-x-auto border-t border-slate-100">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-slate-50/75 border-t border-slate-200/80 text-slate-500 font-semibold text-xs">
-              <th className="py-2.5 pr-4">Účet</th>
+            <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+              <th className="py-2.5 px-4">Účet</th>
               {data.map((d) => (
-                <th key={d.periodKey} className="py-2.5 pr-4 text-right whitespace-nowrap">
+                <th key={d.periodKey} className="py-2.5 px-4 text-right whitespace-nowrap">
                   {d.periodShortLabel || d.periodLabel}
                 </th>
               ))}
@@ -292,7 +294,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
           <tbody className="divide-y divide-slate-100">
             {tableSegments.map((seg) => (
               <tr key={seg.key}>
-                <td className="py-2 pr-4 font-medium text-slate-700 whitespace-nowrap">
+                <td className="py-2 px-4 font-medium text-slate-700 whitespace-nowrap">
                   <span className="flex items-center gap-1.5">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
@@ -306,7 +308,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                   return (
                     <td
                       key={d.periodKey}
-                      className="py-2 pr-4 text-right tabular-nums text-slate-600 whitespace-nowrap"
+                      className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap"
                     >
                       {match ? formatCurrency(match.balanceInHaler) : '—'}
                     </td>
@@ -315,11 +317,11 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
               </tr>
             ))}
             <tr>
-              <td className="py-2.5 pr-4 font-bold text-slate-900">Celkový majetek</td>
+              <td className="py-2.5 px-4 font-bold text-slate-900">Celkový majetek</td>
               {data.map((d) => (
                 <td
                   key={d.periodKey}
-                  className="py-2.5 pr-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap"
+                  className="py-2.5 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap"
                 >
                   {formatCurrency(d.totalNetWorthInHaler)}
                 </td>
