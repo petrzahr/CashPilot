@@ -280,7 +280,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
       <div className="overflow-x-auto -mx-5 px-5 pt-1">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-t border-slate-100 text-slate-500 font-semibold text-[10px] tracking-wider">
+            <tr className="border-t border-slate-100 text-slate-500 font-semibold text-xs">
               <th className="py-2.5 pr-4">Účet</th>
               {data.map((d) => (
                 <th key={d.periodKey} className="py-2.5 pr-4 text-right whitespace-nowrap">
