@@ -175,8 +175,8 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               </label>
             </div>
 
-            {/* Ochrana historických uskutečněných položek při mazání celé série */}
-            {recurringMode === 'series' && hasExecutedHistorical && (
+            {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}
+            {(recurringMode === 'future' || recurringMode === 'series') && hasExecutedHistorical && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
