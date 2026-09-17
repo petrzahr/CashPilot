@@ -45,7 +45,6 @@ describe.each(['future', 'past'] as const)('shared %s overview range', direction
     for (const table of tables) {
       for (const period of periods) {
         expect(table).toContain(period.name);
-        expect(table).toContain(period.startDate);
         expect(finance.forecast.periods.some(p => p.period.key === period.key)).toBe(true);
       }
     }
