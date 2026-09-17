@@ -110,8 +110,8 @@ export interface NetWorthHistoryPoint {
 }
 
 export interface PortfolioCompositionSegment {
-  key: string;            // 'cash-and-checking' nebo accountId
-  label: string;          // 'Konečný stav' nebo název konkrétního účtu
+  key: string;            // accountId
+  label: string;          // název konkrétního účtu
   color: string;
   balanceInHaler: number;
   pct: number | null;     // % podíl na celkovém majetku daného období (null, pokud total === 0)
@@ -992,11 +992,10 @@ export function calculateNetWorthHistory(
 
 /**
  * Spočítá procentuální rozložení celkového majetku (podíl jednotlivých účtů na celkovém
- * majetku) podle rozpočtových period. Běžné, hotovostní a "jiné" účty jsou sloučeny do
- * jednoho segmentu "Konečný stav" (stejné seskupení jako v NetWorthHistoryChart), na pozici
- * prvního takového účtu a s jeho barvou; spořicí, penzijní a investiční účty zůstávají jako
- * samostatné segmenty se svou vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí
- * a barvám účtů v sekci Účty (sortAccountsByOrder), konzistentně napříč obdobími.
+ * majetku) podle rozpočtových period. Úplně všechny způsobilé účty (běžné, hotovostní,
+ * "jiné", spořicí, penzijní i investiční) se zobrazují jako samostatné segmenty se svou
+ * vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí a barvám účtů v sekci Účty
+ * (sortAccountsByOrder), konzistentně napříč obdobími.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -1009,43 +1008,24 @@ export function calculatePortfolioComposition(
     (a) => a.isNetWorth && a.status === 'active'
   );
 
-  interface SegmentDef {
-    key: string;
-    label: string;
-    color: string;
-    accounts: Account[];
-  }
-
-  const segmentDefs: SegmentDef[] = [];
-  let cashSegmentDef: SegmentDef | null = null;
-
-  for (const acc of eligibleAccounts) {
-    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
-      if (!cashSegmentDef) {
-        cashSegmentDef = { key: 'cash-and-checking', label: 'Konečný stav', color: acc.color, accounts: [] };
-        segmentDefs.push(cashSegmentDef);
-      }
-      cashSegmentDef.accounts.push(acc);
-    } else {
-      segmentDefs.push({ key: acc.id, label: acc.name, color: acc.color, accounts: [acc] });
-    }
-  }
+  const isLiquidType = (type: Account['type']) =>
+    type === 'checking' || type === 'cash' || type === 'other';
 
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
 
-    let cashAndCheckingBalance = 0;
-    const rawSegments = segmentDefs.map((def) => {
-      let balanceInHaler = 0;
-      for (const acc of def.accounts) {
-        const accBalance =
-          acc.type === 'investment' || acc.type === 'pension'
-            ? computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
-            : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections);
-        balanceInHaler = addHaler(balanceInHaler, accBalance);
+    let liquidBalanceInHaler = 0;
+    const rawSegments = eligibleAccounts.map((acc) => {
+      const balanceInHaler =
+        acc.type === 'investment' || acc.type === 'pension'
+          ? computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
+          : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections);
+
+      if (isLiquidType(acc.type)) {
+        liquidBalanceInHaler = addHaler(liquidBalanceInHaler, balanceInHaler);
       }
-      if (def.key === 'cash-and-checking') cashAndCheckingBalance = balanceInHaler;
-      return { key: def.key, label: def.label, color: def.color, balanceInHaler };
+
+      return { key: acc.id, label: acc.name, color: acc.color, balanceInHaler };
     });
 
     const totalNetWorthInHaler = rawSegments.reduce(
@@ -1053,10 +1033,11 @@ export function calculatePortfolioComposition(
       0
     );
 
-    // Základna pro výpočet % je součet BEZ segmentu "Konečný stav" (běžné + hotovost).
-    // Díky tomu se záporný/kladný zůstatek projeví jako výřez pod/nad 100 % sloupce
-    // (přesně jako ve vzorovém Excel grafu), místo aby se % vždy sečetla na přesných 100 %.
-    const pctBaseInHaler = subHaler(totalNetWorthInHaler, cashAndCheckingBalance);
+    // Základna pro výpočet % je součet BEZ běžných/hotovostních/"jiných" účtů.
+    // Díky tomu se záporný/kladný zůstatek na takovém účtu projeví jako výřez pod/nad
+    // 100 % sloupce (přesně jako ve vzorovém Excel grafu), místo aby se % vždy sečetla
+    // na přesných 100 %.
+    const pctBaseInHaler = subHaler(totalNetWorthInHaler, liquidBalanceInHaler);
 
     const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
       ...s,

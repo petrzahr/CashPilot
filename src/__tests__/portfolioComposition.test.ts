@@ -150,10 +150,10 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     const result = calculatePortfolioComposition(periods, accounts, [], [], []);
     const point = result[0];
 
-    const cashSegment = point.segments.find((s) => s.key === 'cash-and-checking')!;
-    expect(cashSegment.balanceInHaler).toBeLessThan(0);
-    expect(cashSegment.pct).not.toBeNull();
-    expect(cashSegment.pct!).toBeLessThan(0);
+    const checkingSegment = point.segments.find((s) => s.key === checking.id)!;
+    expect(checkingSegment.balanceInHaler).toBeLessThan(0);
+    expect(checkingSegment.pct).not.toBeNull();
+    expect(checkingSegment.pct!).toBeLessThan(0);
 
     const sumPct = point.segments.reduce((s, seg) => s + (seg.pct ?? 0), 0);
     expect(sumPct).toBeLessThan(100);
@@ -201,7 +201,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(keys).not.toContain(archivedAccount.id);
   });
 
-  it('6. Pořadí segmentů je napříč obdobími konzistentní a odpovídá řazení účtů v Účty (sortOrder)', () => {
+  it('6. Úplně všechny způsobilé účty se zobrazí jako samostatné segmenty (žádné slučování), pořadí konzistentní napříč obdobími', () => {
     const p1 = createBudgetPeriod(2026, 6, 15);
     const p2 = createBudgetPeriod(2026, 7, 15);
     const periods = [createBudgetPeriodInfo(p1, today), createBudgetPeriodInfo(p2, today)];
@@ -210,17 +210,14 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     const keysA = result[0].segments.map((s) => s.key);
     const keysB = result[1].segments.map((s) => s.key);
     expect(keysA).toEqual(keysB);
-    // V testovacích datech mají checking/savings/pension/investment postupně rostoucí sortOrder (1-4)
-    expect(keysA[0]).toBe('cash-and-checking');
-    expect(keysA[1]).toBe(savings.id);
-    expect(keysA[2]).toBe(pension.id);
-    expect(keysA[3]).toBe(investment.id);
+    // Každý účet (i běžný) je vlastní segment, žádné sloučení do "cash-and-checking"
+    expect(keysA).toEqual([checking.id, savings.id, pension.id, investment.id]);
   });
 
-  it('7. Pořadí segmentů respektuje skutečné sortOrder účtů, ne pevné pořadí podle typu', () => {
+  it('7. Pořadí segmentů respektuje skutečné sortOrder účtů z Účty, ne pevné pořadí podle typu', () => {
     const periods = buildPeriods();
-    // Penzijní účet má nižší sortOrder než spořicí, takže se musí zobrazit PŘED ním,
-    // přestože "pevné" pořadí podle typu (savings -> pension -> investment) by bylo opačné.
+    // Penzijní účet má nižší sortOrder než spořicí a běžný, takže se musí zobrazit
+    // PŘED nimi, přestože "pevné" pořadí podle typu by bylo jiné.
     const reorderedPension: Account = { ...pension, sortOrder: 1 };
     const reorderedSavings: Account = { ...savings, sortOrder: 2 };
     const reorderedInvestment: Account = { ...investment, sortOrder: 3 };
@@ -235,13 +232,13 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     );
 
     const keys = result[0].segments.map((s) => s.key);
-    expect(keys).toEqual([pension.id, savings.id, investment.id, 'cash-and-checking']);
+    expect(keys).toEqual([pension.id, savings.id, investment.id, checking.id]);
   });
 
-  it('8. Barva segmentu "Konečný stav" odpovídá barvě prvního zahrnutého běžného/hotovostního účtu', () => {
+  it('8. Každý běžný/hotovostní účet má vlastní segment se svou vlastní barvou (žádné slučování do jednoho řádku)', () => {
     const periods = buildPeriods();
     const firstChecking: Account = { ...checking, id: 'acc_chk_1', sortOrder: 1, color: '#123456' };
-    const secondCash: Account = { ...checking, id: 'acc_cash_2', type: 'cash', sortOrder: 2, color: '#abcdef' };
+    const secondCash: Account = { ...checking, id: 'acc_cash_2', type: 'cash', name: 'Hotovost', sortOrder: 2, color: '#abcdef' };
 
     const result = calculatePortfolioComposition(
       periods,
@@ -251,28 +248,35 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
       []
     );
 
-    const cashSegment = result[0].segments.find((s) => s.key === 'cash-and-checking')!;
-    expect(cashSegment.color).toBe('#123456');
+    const keys = result[0].segments.map((s) => s.key);
+    expect(keys).toEqual([firstChecking.id, secondCash.id]);
+
+    const seg1 = result[0].segments.find((s) => s.key === firstChecking.id)!;
+    const seg2 = result[0].segments.find((s) => s.key === secondCash.id)!;
+    expect(seg1.color).toBe('#123456');
+    expect(seg2.color).toBe('#abcdef');
   });
 
-  it('9. Barvy segmentů spořicích/penzijních/investičních účtů odpovídají barvám daných účtů', () => {
+  it('9. Barvy všech segmentů (běžný, spořicí, penzijní, investiční) odpovídají barvám daných účtů', () => {
     const periods = buildPeriods();
     const result = calculatePortfolioComposition(periods, allAccounts, [], [], []);
 
+    const chkSeg = result[0].segments.find((s) => s.key === checking.id)!;
     const savSeg = result[0].segments.find((s) => s.key === savings.id)!;
     const penSeg = result[0].segments.find((s) => s.key === pension.id)!;
     const invSeg = result[0].segments.find((s) => s.key === investment.id)!;
 
+    expect(chkSeg.color).toBe(checking.color);
     expect(savSeg.color).toBe(savings.color);
     expect(penSeg.color).toBe(pension.color);
     expect(invSeg.color).toBe(investment.color);
   });
 
-  it('10. Segment "Konečný stav" se jmenuje "Konečný stav" (ne "Zůstatek")', () => {
+  it('10. Segment běžného účtu se jmenuje podle skutečného názvu účtu', () => {
     const periods = buildPeriods();
     const result = calculatePortfolioComposition(periods, allAccounts, [], [], []);
-    const cashSegment = result[0].segments.find((s) => s.key === 'cash-and-checking')!;
-    expect(cashSegment.label).toBe('Konečný stav');
+    const chkSeg = result[0].segments.find((s) => s.key === checking.id)!;
+    expect(chkSeg.label).toBe(checking.name);
   });
 
   it('11. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {
