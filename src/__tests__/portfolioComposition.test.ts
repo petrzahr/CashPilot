@@ -123,23 +123,18 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     return seq;
   };
 
-  it('1. Součet pct všech segmentů odpovídá přibližně 100 % při kladných zůstatcích s malou hotovostní rezervou', () => {
+  it('1. Součet pct všech segmentů je vždy přesně 100 %, protože celkový majetek daného měsíce je vždy brán jako 100 %', () => {
     const periods = buildPeriods();
-    // % základna je součet BEZ segmentu Zůstatek (savings 20M + pension 30M + investment 50M = 100M),
-    // proto malý kladný zůstatek (1M, tj. 1 % základny) posune součet těsně NAD 100 %, ne přesně na 100 %
-    // (stejné chování jako ve vzorovém Excel grafu, kde měsíce s kladným zůstatkem mírně přesahují 100 %).
-    const smallCashChecking: Account = { ...checking, initialBalanceInHaler: 1000000 };
-    const accounts = [smallCashChecking, savings, pension, investment];
+    const accounts = [checking, savings, pension, investment];
 
     const result = calculatePortfolioComposition(periods, accounts, [], [], []);
     expect(result.length).toBe(1);
 
     const sumPct = result[0].segments.reduce((s, seg) => s + (seg.pct ?? 0), 0);
-    expect(sumPct).toBeGreaterThan(99);
-    expect(sumPct).toBeLessThan(102);
+    expect(sumPct).toBeCloseTo(100, 6);
   });
 
-  it('2. Záporný zůstatek (checking v mínusu) sníží celkový součet pct pod 100 % a projeví se jako záporná hodnota', () => {
+  it('2. Záporný zůstatek (checking v mínusu) se projeví jako záporná hodnota, ale součet pct zůstává přesně 100 %', () => {
     const periods = buildPeriods();
     const overdraftChecking: Account = {
       ...checking,
@@ -155,8 +150,10 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(checkingSegment.pct).not.toBeNull();
     expect(checkingSegment.pct!).toBeLessThan(0);
 
+    // Ostatní (kladné) segmenty proto musí dohromady přesáhnout 100 %, aby součet se
+    // zápornou hotovostí vyšel přesně na 100 % - celkový majetek je vždy 100 % základna.
     const sumPct = point.segments.reduce((s, seg) => s + (seg.pct ?? 0), 0);
-    expect(sumPct).toBeLessThan(100);
+    expect(sumPct).toBeCloseTo(100, 6);
   });
 
   it('3. pct je null u všech segmentů, když totalNetWorthInHaler === 0', () => {
