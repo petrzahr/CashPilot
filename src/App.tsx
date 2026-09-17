@@ -1,5 +1,5 @@
 import { SYNC_LABELS } from './services/syncController';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/layout/Header';
 import { Sidebar, NavScreen } from './components/layout/Sidebar';
@@ -35,6 +35,13 @@ const MainLayout: React.FC = () => {
 
   const [currentScreen, setCurrentScreen] = useState<NavScreen>(() => parseScreenFromUrl());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Při přepnutí obrazovky vždy začínáme odshora - scroll kontejner jinak
+  // zůstává na pozici z předchozí obrazovky, protože se nepřekresluje.
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo(0, 0);
+  }, [currentScreen]);
 
   // Globální správa modálu pro položky
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -103,7 +110,7 @@ const MainLayout: React.FC = () => {
           onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           {/* Upozorňovací banner na rizika a pokles rezervy */}
           <AlertBanner />
 
