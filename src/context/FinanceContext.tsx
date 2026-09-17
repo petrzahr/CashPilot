@@ -140,10 +140,11 @@ interface FinanceContextType {
     existingTransactionId?: string
   ) => RecurringRule;
   updateRecurringRule: (
-    ruleId: string, 
-    mode: 'occurrence' | 'future' | 'series', 
+    ruleId: string,
+    mode: 'occurrence' | 'future' | 'series',
     periodKey: string,
-    overrideData: Partial<Transaction>
+    overrideData: Partial<Transaction>,
+    originalTransactionId?: string
   ) => void;
   deleteRecurringRule: (id: string) => void;
 
@@ -714,7 +715,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
             idsToDelete.add(id);
           }
 
-          const updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
+          let updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
+
+          // Pokud po smazání budoucích výskytů zůstává v sérii nejvýše jedna položka,
+          // pravidlo už nemá smysl udržovat jako opakující se - převést zbylou položku
+          // na běžnou (nepravidelnou) a pravidlo odstranit.
+          const remainingInRule = updatedTxs.filter(t => t.recurringRuleId === ruleId);
+          if (remainingInRule.length <= 1) {
+            updatedTxs = updatedTxs.map(t =>
+              t.recurringRuleId === ruleId
+                ? { ...t, recurringRuleId: undefined, isException: false, updatedAt: nowIso }
+                : t
+            );
+            success = true;
+            return {
+              ...prev,
+              recurringRules: prev.recurringRules.filter(r => r.id !== ruleId),
+              recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== ruleId),
+              transactions: updatedTxs,
+            };
+          }
 
           success = true;
           return {
@@ -994,7 +1014,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     ruleId: string,
     mode: 'occurrence' | 'future' | 'series',
     periodKey: string,
-    overrideData: Partial<Transaction>
+    overrideData: Partial<Transaction>,
+    originalTransactionId?: string
   ) => {
     setData(prev => {
       const rule = prev.recurringRules.find(r => r.id === ruleId);
@@ -1022,31 +1043,66 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         return { ...prev, recurringExceptions: newExceptions };
       }
 
+      const nowIso = new Date().toISOString();
+
       if (mode === 'future') {
-        const nowIso = new Date().toISOString();
+        const originalTx = originalTransactionId
+          ? prev.transactions.find(t => t.id === originalTransactionId)
+          : undefined;
+        const effectiveDate = overrideData.date || originalTx?.date || periodKey + '-15';
+        const cutOffDate = getPreviousDay(effectiveDate);
+        const willBeActive = cutOffDate >= rule.startDate;
+
         const updatedRule: RecurringRule = {
           ...rule,
-          endDate: overrideData.date ? overrideData.date : periodKey + '-14',
+          endDate: cutOffDate,
+          isActive: willBeActive ? rule.isActive : false,
           updatedAt: nowIso
         };
 
+        const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
         const newFutureRule: RecurringRule = {
           ...rule,
           id: `rec_${Date.now()}_split`,
           title: overrideData.title || rule.title,
           amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
-          startDate: overrideData.date || periodKey + '-15',
+          dayOfMonth: newDayOfMonth,
+          startDate: effectiveDate,
           sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
           targetAccountId: overrideData.targetAccountId || rule.targetAccountId,
           categoryId: overrideData.categoryId || rule.categoryId,
           subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
+          note: overrideData.note !== undefined ? overrideData.note : rule.note,
           updatedAt: nowIso,
           createdAt: nowIso
         };
 
+        // Přepsat již materializované reálné transakce od editovaného výskytu dále,
+        // ať se změna projeví okamžitě i u položek, které už nejsou pouze virtuální.
+        const updatedTxs = prev.transactions.map(t => {
+          if (t.recurringRuleId !== ruleId || t.date < effectiveDate) return t;
+          const isEditedOccurrence = originalTransactionId
+            ? t.id === originalTransactionId
+            : t.date === effectiveDate;
+          return {
+            ...t,
+            recurringRuleId: newFutureRule.id,
+            title: newFutureRule.title,
+            amountInHaler: newFutureRule.amountInHaler,
+            sourceAccountId: newFutureRule.sourceAccountId,
+            targetAccountId: newFutureRule.targetAccountId,
+            categoryId: newFutureRule.categoryId,
+            subcategoryId: newFutureRule.subcategoryId,
+            note: newFutureRule.note,
+            date: isEditedOccurrence ? effectiveDate : t.date,
+            updatedAt: nowIso,
+          };
+        });
+
         return {
           ...prev,
-          recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedRule : r), newFutureRule]
+          recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedRule : r), newFutureRule],
+          transactions: updatedTxs,
         };
       }
 
@@ -1059,12 +1115,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         categoryId: overrideData.categoryId || rule.categoryId,
         subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
         note: overrideData.note !== undefined ? overrideData.note : rule.note,
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
+
+      // "Včetně minulých" - promítnout změnu i do už materializovaných transakcí série.
+      const updatedTxs = prev.transactions.map(t => {
+        if (t.recurringRuleId !== ruleId) return t;
+        return {
+          ...t,
+          title: updatedSeries.title,
+          amountInHaler: updatedSeries.amountInHaler,
+          sourceAccountId: updatedSeries.sourceAccountId,
+          targetAccountId: updatedSeries.targetAccountId,
+          categoryId: updatedSeries.categoryId,
+          subcategoryId: updatedSeries.subcategoryId,
+          note: updatedSeries.note,
+          updatedAt: nowIso,
+        };
+      });
 
       return {
         ...prev,
-        recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedSeries : r)
+        recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedSeries : r),
+        transactions: updatedTxs,
       };
     });
 
