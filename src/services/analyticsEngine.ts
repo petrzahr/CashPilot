@@ -22,6 +22,7 @@ import {
   generatePeriodsBetween,
 } from './periodService';
 import { czechStringCompare } from './categoryService';
+import { sortAccountsByOrder } from './accountService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
 
@@ -110,7 +111,7 @@ export interface NetWorthHistoryPoint {
 
 export interface PortfolioCompositionSegment {
   key: string;            // 'cash-and-checking' nebo accountId
-  label: string;          // 'Zůstatek' nebo název konkrétního účtu
+  label: string;          // 'Konečný stav' nebo název konkrétního účtu
   color: string;
   balanceInHaler: number;
   pct: number | null;     // % podíl na celkovém majetku daného období (null, pokud total === 0)
@@ -990,10 +991,12 @@ export function calculateNetWorthHistory(
 }
 
 /**
- * Spočítá procentuální rozložení portfolia (podíl jednotlivých účtů na celkovém majetku)
- * podle rozpočtových period. Běžné, hotovostní a "jiné" účty jsou sloučeny do jednoho
- * segmentu "Zůstatek" (stejné seskupení jako v NetWorthHistoryChart), spořicí, penzijní
- * a investiční účty zůstávají jako samostatné segmenty, seřazené konzistentně napříč obdobími.
+ * Spočítá procentuální rozložení celkového majetku (podíl jednotlivých účtů na celkovém
+ * majetku) podle rozpočtových period. Běžné, hotovostní a "jiné" účty jsou sloučeny do
+ * jednoho segmentu "Konečný stav" (stejné seskupení jako v NetWorthHistoryChart), na pozici
+ * prvního takového účtu a s jeho barvou; spořicí, penzijní a investiční účty zůstávají jako
+ * samostatné segmenty se svou vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí
+ * a barvám účtů v sekci Účty (sortAccountsByOrder), konzistentně napříč obdobími.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -1002,64 +1005,55 @@ export function calculatePortfolioComposition(
   corrections: BalanceCorrection[],
   snapshots: MarketValueSnapshot[]
 ): PortfolioCompositionPoint[] {
-  const eligibleAccounts = accounts.filter((a) => a.isNetWorth && a.status === 'active');
-
-  const liquidGroupAccounts = eligibleAccounts.filter(
-    (a) => a.type === 'checking' || a.type === 'cash' || a.type === 'other'
+  const eligibleAccounts = sortAccountsByOrder(accounts).filter(
+    (a) => a.isNetWorth && a.status === 'active'
   );
-  const byType = (type: Account['type']) =>
-    eligibleAccounts
-      .filter((a) => a.type === type)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const savingsAccounts = byType('savings');
-  const pensionAccounts = byType('pension');
-  const investmentAccounts = byType('investment');
+  interface SegmentDef {
+    key: string;
+    label: string;
+    color: string;
+    accounts: Account[];
+  }
+
+  const segmentDefs: SegmentDef[] = [];
+  let cashSegmentDef: SegmentDef | null = null;
+
+  for (const acc of eligibleAccounts) {
+    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
+      if (!cashSegmentDef) {
+        cashSegmentDef = { key: 'cash-and-checking', label: 'Konečný stav', color: acc.color, accounts: [] };
+        segmentDefs.push(cashSegmentDef);
+      }
+      cashSegmentDef.accounts.push(acc);
+    } else {
+      segmentDefs.push({ key: acc.id, label: acc.name, color: acc.color, accounts: [acc] });
+    }
+  }
 
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
 
     let cashAndCheckingBalance = 0;
-    for (const acc of liquidGroupAccounts) {
-      cashAndCheckingBalance = addHaler(
-        cashAndCheckingBalance,
-        computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections)
-      );
-    }
-
-    const rawSegments: { key: string; label: string; color: string; balanceInHaler: number }[] = [
-      {
-        key: 'cash-and-checking',
-        label: 'Zůstatek',
-        color: '#0284c7',
-        balanceInHaler: cashAndCheckingBalance,
-      },
-      ...savingsAccounts.map((acc) => ({
-        key: acc.id,
-        label: acc.name,
-        color: acc.color,
-        balanceInHaler: computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections),
-      })),
-      ...pensionAccounts.map((acc) => ({
-        key: acc.id,
-        label: acc.name,
-        color: acc.color,
-        balanceInHaler: computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots),
-      })),
-      ...investmentAccounts.map((acc) => ({
-        key: acc.id,
-        label: acc.name,
-        color: acc.color,
-        balanceInHaler: computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots),
-      })),
-    ];
+    const rawSegments = segmentDefs.map((def) => {
+      let balanceInHaler = 0;
+      for (const acc of def.accounts) {
+        const accBalance =
+          acc.type === 'investment' || acc.type === 'pension'
+            ? computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
+            : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections);
+        balanceInHaler = addHaler(balanceInHaler, accBalance);
+      }
+      if (def.key === 'cash-and-checking') cashAndCheckingBalance = balanceInHaler;
+      return { key: def.key, label: def.label, color: def.color, balanceInHaler };
+    });
 
     const totalNetWorthInHaler = rawSegments.reduce(
       (sum, s) => addHaler(sum, s.balanceInHaler),
       0
     );
 
-    // Základna pro výpočet % je součet BEZ segmentu "Zůstatek" (běžné + hotovost).
+    // Základna pro výpočet % je součet BEZ segmentu "Konečný stav" (běžné + hotovost).
     // Díky tomu se záporný/kladný zůstatek projeví jako výřez pod/nad 100 % sloupce
     // (přesně jako ve vzorovém Excel grafu), místo aby se % vždy sečetla na přesných 100 %.
     const pctBaseInHaler = subHaler(totalNetWorthInHaler, cashAndCheckingBalance);

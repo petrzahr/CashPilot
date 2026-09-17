@@ -145,7 +145,7 @@ export const AnalyticsScreen: React.FC = () => {
         ariaLabel="Analyzované období"
       />
 
-      {/* 2. Rozložení portfolia napříč účty za vybrané období */}
+      {/* 2. Rozložení celkového majetku napříč účty za vybrané období */}
       <PortfolioCompositionChart data={portfolioComposition} />
 
       {/* 3. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
