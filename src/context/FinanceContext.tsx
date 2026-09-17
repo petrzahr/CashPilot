@@ -1128,9 +1128,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           };
         });
 
+        // Výjimky pro periody od rozštěpení dál patří nově pod nové pravidlo -
+        // jinak by se hledaly pod starým (už useknutým) ruleId a nikdy by se nenašly.
+        const cutoffPeriodKey = getPeriodForDate(effectiveDate, prev.settings.budgetStartDay).key;
+        const updatedExceptions = prev.recurringExceptions.map(e =>
+          e.ruleId === ruleId && e.periodKey >= cutoffPeriodKey
+            ? { ...e, ruleId: newFutureRule.id }
+            : e
+        );
+
         return {
           ...prev,
           recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedRule : r), newFutureRule],
+          recurringExceptions: updatedExceptions,
           transactions: updatedTxs,
         };
       }
