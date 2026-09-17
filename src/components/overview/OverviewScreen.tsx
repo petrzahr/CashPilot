@@ -182,14 +182,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     }`}
                   >
                     <td className="py-3 px-4 font-semibold text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <span>{p.period.name}</span>
-                        {isCurrent && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
-                            Aktuální
-                          </span>
-                        )}
-                      </div>
+                      {p.period.name}
                     </td>
                     <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
                       {formatCurrency(opening)}
@@ -257,7 +250,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           <div className="divide-y divide-slate-100">
             {accountPeriods.map((p) => {
               const isExpanded = expandedPeriodKey === p.period.key;
-              const isCurrent = p.period.key === forecast.currentPeriod.key;
 
               return (
                 <div key={p.period.key} className="transition-colors">
@@ -271,14 +263,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       ) : (
                         <ChevronRight className="w-4 h-4 text-slate-500" />
                       )}
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-900">{p.period.name}</span>
-                        {isCurrent && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
-                            Aktuální
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-xs font-semibold text-slate-900">{p.period.name}</span>
                     </div>
                     <div className="text-xs font-semibold text-slate-900">
                       Zůstatek celkem: {formatCurrency(p.closingBalanceInHaler)}
@@ -368,26 +353,18 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="py-3 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
-                  {accountPeriods.map((p) => {
-                    const isCurrent = p.period.key === forecast.currentPeriod.key;
-                    return (
-                      <th
-                        key={p.period.key}
-                        onClick={() => handlePeriodClick(p.period)}
-                        className="py-2.5 px-3 text-right min-w-[125px] cursor-pointer hover:bg-slate-100/80 transition-colors"
-                        title={`Přejít do rozpočtu: ${p.period.name}`}
-                      >
-                        <span className="block text-slate-500 font-bold hover:text-sky-700">
-                          {p.period.name.split(' ')[0]} '{p.period.year.toString().slice(-2)}
-                        </span>
-                        {isCurrent && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
-                            Aktuální
-                          </span>
-                        )}
-                      </th>
-                    );
-                  })}
+                  {accountPeriods.map((p) => (
+                    <th
+                      key={p.period.key}
+                      onClick={() => handlePeriodClick(p.period)}
+                      className="py-2.5 px-3 text-right min-w-[125px] cursor-pointer hover:bg-slate-100/80 transition-colors"
+                      title={`Přejít do rozpočtu: ${p.period.name}`}
+                    >
+                      <span className="block text-slate-500 font-bold hover:text-sky-700">
+                        {p.period.name.split(' ')[0]} '{p.period.year.toString().slice(-2)}
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
