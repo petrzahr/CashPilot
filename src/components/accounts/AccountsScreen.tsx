@@ -266,7 +266,7 @@ export const AccountsScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.isDefault && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-sky-100 text-sky-700 rounded">
+                        <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
                           Výchozí
                         </span>
                       )}
