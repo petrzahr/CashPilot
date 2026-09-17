@@ -153,13 +153,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           <table className="w-full table-fixed text-left text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                <th className="py-3 px-4 w-[360px]">Období</th>
-                <th className="py-3 px-4 w-[140px] text-right">Počáteční stav</th>
-                <th className="py-3 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
-                <th className="py-3 px-4 w-[120px] text-right text-red-600">Výdaje</th>
-                <th className="py-3 px-4 w-[120px] text-right text-sky-600">Převody</th>
-                <th className="py-3 px-4 w-[130px] text-right">Čistá změna</th>
-                <th className="py-3 px-4 w-[140px] text-right">Konečný stav</th>
+                <th className="py-2.5 px-4 w-[360px]">Období</th>
+                <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
+                <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
+                <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
+                <th className="py-2.5 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                <th className="py-2.5 px-4 w-[130px] text-right">Čistá změna</th>
+                <th className="py-2.5 px-4 w-[140px] text-right">Konečný stav</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -275,13 +275,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       <table className="w-full table-fixed text-xs text-left">
                         <thead>
                           <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                            <th className="py-2 px-4 w-[360px]">Účet</th>
-                            <th className="py-2 px-4 w-[140px] text-right">Počáteční stav</th>
-                            <th className="py-2 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
-                            <th className="py-2 px-4 w-[120px] text-right text-red-600">Výdaje</th>
-                            <th className="py-2 px-4 w-[120px] text-right text-sky-600">Převody</th>
-                            <th className="py-2 px-4 w-[130px] text-right">Čistá změna</th>
-                            <th className="py-2 px-4 w-[140px] text-right">Konečný stav</th>
+                            <th className="py-2.5 px-4 w-[360px]">Účet</th>
+                            <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
+                            <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
+                            <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
+                            <th className="py-2.5 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                            <th className="py-2.5 px-4 w-[130px] text-right">Čistá změna</th>
+                            <th className="py-2.5 px-4 w-[140px] text-right">Konečný stav</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -352,7 +352,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <table className="w-full text-xs text-left whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                  <th className="py-3 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
+                  <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
                   {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
