@@ -1,4 +1,5 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
+import { PortfolioCompositionChart } from './PortfolioCompositionChart';
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
@@ -11,6 +12,7 @@ import {
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
+  calculatePortfolioComposition,
 } from '../../services/analyticsEngine';
 import { formatCurrency } from '../../services/currencyService';
 import {
@@ -122,6 +124,16 @@ export const AnalyticsScreen: React.FC = () => {
     return calculateFinancialExtremes(monthlyCashFlow);
   }, [monthlyCashFlow]);
 
+  const portfolioComposition = useMemo(() => {
+    return calculatePortfolioComposition(
+      dateRange.periods,
+      accounts,
+      transactions,
+      corrections,
+      marketValueSnapshots
+    );
+  }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots]);
+
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* 1. Hlavní filtr období (shodný se sekcí Přehledy) */}
@@ -133,7 +145,10 @@ export const AnalyticsScreen: React.FC = () => {
         ariaLabel="Analyzované období"
       />
 
-      {/* 2. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
+      {/* 2. Rozložení portfolia napříč účty za vybrané období */}
+      <PortfolioCompositionChart data={portfolioComposition} />
+
+      {/* 3. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
@@ -297,7 +312,7 @@ export const AnalyticsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Tabulka Nejvyšší výdaje */}
+      {/* 4. Tabulka Nejvyšší výdaje */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
         <div>
           <h3 className="text-sm font-bold text-slate-900">

@@ -108,6 +108,24 @@ export interface NetWorthHistoryPoint {
   isCurrentMonth: boolean;
 }
 
+export interface PortfolioCompositionSegment {
+  key: string;            // 'cash-and-checking' nebo accountId
+  label: string;          // 'Zůstatek' nebo název konkrétního účtu
+  color: string;
+  balanceInHaler: number;
+  pct: number | null;     // % podíl na celkovém majetku daného období (null, pokud total === 0)
+}
+
+export interface PortfolioCompositionPoint {
+  periodKey: string;
+  periodLabel: string;
+  periodShortLabel: string;
+  dateRangeStr: string;
+  totalNetWorthInHaler: number;
+  isCurrentMonth: boolean;
+  segments: PortfolioCompositionSegment[];
+}
+
 export interface ExpenseTrendItem {
   monthKey: string;
   label: string;
@@ -967,6 +985,98 @@ export function calculateNetWorthHistory(
       pensionInHaler: nw.pensionInHaler,
       totalNetWorthInHaler: nw.totalNetWorthInHaler,
       isCurrentMonth: p.isCurrentPeriod,
+    };
+  });
+}
+
+/**
+ * Spočítá procentuální rozložení portfolia (podíl jednotlivých účtů na celkovém majetku)
+ * podle rozpočtových period. Běžné, hotovostní a "jiné" účty jsou sloučeny do jednoho
+ * segmentu "Zůstatek" (stejné seskupení jako v NetWorthHistoryChart), spořicí, penzijní
+ * a investiční účty zůstávají jako samostatné segmenty, seřazené konzistentně napříč obdobími.
+ */
+export function calculatePortfolioComposition(
+  periods: BudgetPeriodInfo[],
+  accounts: Account[],
+  transactions: Transaction[],
+  corrections: BalanceCorrection[],
+  snapshots: MarketValueSnapshot[]
+): PortfolioCompositionPoint[] {
+  const eligibleAccounts = accounts.filter((a) => a.isNetWorth && a.status === 'active');
+
+  const liquidGroupAccounts = eligibleAccounts.filter(
+    (a) => a.type === 'checking' || a.type === 'cash' || a.type === 'other'
+  );
+  const byType = (type: Account['type']) =>
+    eligibleAccounts
+      .filter((a) => a.type === type)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const savingsAccounts = byType('savings');
+  const pensionAccounts = byType('pension');
+  const investmentAccounts = byType('investment');
+
+  return periods.map((p) => {
+    const pointDate = p.analysisEndDate;
+
+    let cashAndCheckingBalance = 0;
+    for (const acc of liquidGroupAccounts) {
+      cashAndCheckingBalance = addHaler(
+        cashAndCheckingBalance,
+        computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections)
+      );
+    }
+
+    const rawSegments: { key: string; label: string; color: string; balanceInHaler: number }[] = [
+      {
+        key: 'cash-and-checking',
+        label: 'Zůstatek',
+        color: '#0284c7',
+        balanceInHaler: cashAndCheckingBalance,
+      },
+      ...savingsAccounts.map((acc) => ({
+        key: acc.id,
+        label: acc.name,
+        color: acc.color,
+        balanceInHaler: computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections),
+      })),
+      ...pensionAccounts.map((acc) => ({
+        key: acc.id,
+        label: acc.name,
+        color: acc.color,
+        balanceInHaler: computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots),
+      })),
+      ...investmentAccounts.map((acc) => ({
+        key: acc.id,
+        label: acc.name,
+        color: acc.color,
+        balanceInHaler: computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots),
+      })),
+    ];
+
+    const totalNetWorthInHaler = rawSegments.reduce(
+      (sum, s) => addHaler(sum, s.balanceInHaler),
+      0
+    );
+
+    // Základna pro výpočet % je součet BEZ segmentu "Zůstatek" (běžné + hotovost).
+    // Díky tomu se záporný/kladný zůstatek projeví jako výřez pod/nad 100 % sloupce
+    // (přesně jako ve vzorovém Excel grafu), místo aby se % vždy sečetla na přesných 100 %.
+    const pctBaseInHaler = subHaler(totalNetWorthInHaler, cashAndCheckingBalance);
+
+    const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
+      ...s,
+      pct: pctBaseInHaler !== 0 ? (s.balanceInHaler / pctBaseInHaler) * 100 : null,
+    }));
+
+    return {
+      periodKey: p.key,
+      periodLabel: p.label,
+      periodShortLabel: p.shortLabel,
+      dateRangeStr: p.dateRangeStr,
+      totalNetWorthInHaler,
+      isCurrentMonth: p.isCurrentPeriod,
+      segments,
     };
   });
 }
