@@ -81,28 +81,20 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
           className="w-full h-auto overflow-visible select-none"
           onMouseLeave={() => setHoveredIdx(null)}
         >
-          {/* Vodorovné mřížkové linky */}
+          {/* Vodorovné mřížkové linky (popisky % jsou vykreslené jako HTML overlay níže,
+              aby jejich velikost písma odpovídala tabulce bez ohledu na škálování SVG) */}
           {gridValues.map((v) => (
-            <g key={`grid-${v}`}>
-              <line
-                x1={margin.left}
-                y1={getY(v)}
-                x2={width - margin.right}
-                y2={getY(v)}
-                stroke="#cbd5e1"
-                strokeWidth={v === 0 ? '1.5' : '1'}
-                strokeDasharray={v === 0 ? undefined : '4 4'}
-                opacity={v === 0 ? 1 : 0.6}
-              />
-              <text
-                x={margin.left - 6}
-                y={getY(v) + 3}
-                textAnchor="end"
-                className="text-[10px] font-medium fill-slate-500"
-              >
-                {v}%
-              </text>
-            </g>
+            <line
+              key={`grid-${v}`}
+              x1={margin.left}
+              y1={getY(v)}
+              x2={width - margin.right}
+              y2={getY(v)}
+              stroke="#cbd5e1"
+              strokeWidth={v === 0 ? '1.5' : '1'}
+              strokeDasharray={v === 0 ? undefined : '4 4'}
+              opacity={v === 0 ? 1 : 0.6}
+            />
           ))}
 
           {/* Skládané sloupce */}
@@ -165,33 +157,58 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
                     />
                   );
                 })}
-
-                {/* Popisek období na ose X */}
-                <text
-                  x={slotCenterX}
-                  y={height - margin.bottom + 18}
-                  textAnchor="middle"
-                  className={`text-[10px] font-medium transition-colors ${
-                    isHovered ? 'fill-slate-900 font-bold' : 'fill-slate-500'
-                  }`}
-                >
-                  {item.periodShortLabel || item.periodLabel}
-                </text>
-
-                {item.isCurrentMonth && (
-                  <text
-                    x={slotCenterX}
-                    y={height - margin.bottom + 30}
-                    textAnchor="middle"
-                    className="text-[9px] fill-amber-600 font-bold uppercase tracking-wider"
-                  >
-                    Probíhá
-                  </text>
-                )}
               </g>
             );
           })}
         </svg>
+
+        {/* Popisky os vykreslené jako HTML overlay (ne uvnitř škálovaného SVG),
+            aby velikost písma odpovídala tabulce bez ohledu na šířku karty */}
+        <div className="absolute inset-0 pointer-events-none">
+          {gridValues.map((v) => (
+            <span
+              key={`grid-label-${v}`}
+              className="absolute text-[8px] font-medium text-slate-500 whitespace-nowrap"
+              style={{
+                left: `${((margin.left - 6) / width) * 100}%`,
+                top: `${(getY(v) / height) * 100}%`,
+                transform: 'translate(-100%, -50%)',
+              }}
+            >
+              {v}%
+            </span>
+          ))}
+
+          {data.map((item, idx) => {
+            const slotCenterX = margin.left + idx * slotWidth + slotWidth / 2;
+            const isHovered = hoveredIdx === idx;
+
+            return (
+              <div
+                key={`x-label-${item.periodKey}`}
+                className="absolute flex flex-col items-center"
+                style={{
+                  left: `${(slotCenterX / width) * 100}%`,
+                  top: `${((height - margin.bottom + 10) / height) * 100}%`,
+                  transform: 'translate(-50%, 0)',
+                }}
+              >
+                <span
+                  className={`text-[8px] font-medium whitespace-nowrap transition-colors ${
+                    isHovered ? 'text-slate-900 font-bold' : 'text-slate-500'
+                  }`}
+                >
+                  {item.periodShortLabel || item.periodLabel}
+                </span>
+                {item.isCurrentMonth && (
+                  <span className="text-[9px] font-bold text-amber-600 uppercase tracking-wider whitespace-nowrap">
+                    Probíhá
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
         {/* Hover Tooltip */}
         {hoveredItem && hoveredIdx !== null && (
