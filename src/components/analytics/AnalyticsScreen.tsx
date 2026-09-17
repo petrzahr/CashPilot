@@ -319,7 +319,7 @@ export const AnalyticsScreen: React.FC = () => {
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200/80 text-slate-500 font-semibold text-[10px] tracking-wider">
+                <tr className="border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
                   <th className="py-2.5 pr-4">Datum</th>
                   <th className="py-2.5 pr-4">Položka</th>
                   <th className="py-2.5 pr-4">Kategorie</th>
