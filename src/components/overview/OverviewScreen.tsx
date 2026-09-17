@@ -181,13 +181,15 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       isCurrent ? 'bg-sky-50/40 hover:bg-sky-50/70' : 'hover:bg-slate-50/70'
                     }`}
                   >
-                    <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                      <span>{p.period.name}</span>
-                      {isCurrent && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
-                          Aktuální
-                        </span>
-                      )}
+                    <td className="py-3 px-4 font-semibold text-slate-900">
+                      <div className="flex items-center gap-2">
+                        <span>{p.period.name}</span>
+                        {isCurrent && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-700 rounded-md">
+                            Aktuální
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
                       {formatCurrency(opening)}
@@ -315,10 +317,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
                             return (
                               <tr key={acc.id} className="hover:bg-white/80">
-                                <td className="py-2.5 px-4 font-medium text-slate-900 flex items-center gap-2">
-                                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: acc.color }} />
-                                  <span>{acc.name}</span>
-                                  {acc.institution && <span className="text-slate-500 text-[10px]">({acc.institution})</span>}
+                                <td className="py-2.5 px-4 font-medium text-slate-900">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
+                                    <span>{acc.name}</span>
+                                    {acc.institution && <span className="text-slate-500 text-[10px]">({acc.institution})</span>}
+                                  </div>
                                 </td>
                                 <td className="py-2.5 px-4 w-[140px] text-right text-slate-500 font-medium">
                                   {formatCurrency(accBal.openingBalanceInHaler)}
