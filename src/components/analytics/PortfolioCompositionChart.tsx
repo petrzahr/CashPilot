@@ -23,18 +23,28 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
   // v tabulce se zobrazují v obráceném pořadí (graf zůstává skládaný v pořadí účtů z Účty)
   const tableSegments = [...data[0].segments].reverse();
 
-  // Osa je vždy pevně -100 % až 100 % (součet kladných segmentů je vždy přesně 100 %
-  // - to je definice základny). Sloupec se nikdy neroztahuje kvůli extrémní hodnotě
-  // jednoho záporného účtu - takový segment se místo toho na ose ořízne na -100 %.
-  let hasNegative = false;
+  // Dominantní strana (kladná nebo záporná, podle výpočtu v analyticsEngine) je vždy
+  // přesně 100 %, resp. -100 % - to je definice % základny, takže osa nikdy nemusí
+  // přesáhnout tuto hranici. Rozsah osy se ale přizpůsobuje SKUTEČNÝM hodnotám napříč
+  // obdobími (zaokrouhleno nahoru/dolů na nejbližší násobek 20), aby se nezobrazoval
+  // prázdný prostor až do -100 %/100 %, když to žádné období nepotřebuje.
+  let maxPositive = 0;
+  let minNegative = 0;
+
   for (const d of data) {
+    let posSum = 0;
+    let negSum = 0;
     for (const s of d.segments) {
-      if ((s.pct ?? 0) < 0) hasNegative = true;
+      const pct = s.pct ?? 0;
+      if (pct >= 0) posSum += pct;
+      else negSum += pct;
     }
+    if (posSum > maxPositive) maxPositive = posSum;
+    if (negSum < minNegative) minNegative = negSum;
   }
 
-  const effectiveMax = 100;
-  const effectiveMin = hasNegative ? -100 : 0;
+  const effectiveMax = Math.min(100, Math.max(20, Math.ceil(maxPositive / 20) * 20));
+  const effectiveMin = minNegative < 0 ? Math.max(-100, Math.floor(minNegative / 20) * 20) : 0;
   const range = effectiveMax - effectiveMin || 1;
 
   const clampPct = (v: number) => Math.max(effectiveMin, Math.min(effectiveMax, v));
