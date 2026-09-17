@@ -26,6 +26,7 @@ import {
   STORAGE_KEY_PRODUCTION,
   isDemoModeEnabled,
   createOperationRecoveryBackup,
+  repairRecurringRuleSplitOverlaps,
 } from '../services/storageService';
 import {
   DEFAULT_CATEGORIES,
@@ -255,6 +256,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   useEffect(() => {
     runAutoExecute();
   }, [runAutoExecute]);
+
+  // Jednorázová oprava starších dat poškozených dřívějším bugem v rozštěpení
+  // pravidla (endDate staré části == startDate nové části, viz repairRecurringRuleSplitOverlaps).
+  useEffect(() => {
+    setData(prev => {
+      const { rules, fixedCount } = repairRecurringRuleSplitOverlaps(prev.recurringRules);
+      if (fixedCount === 0) return prev;
+      console.info(`[CashPilot] Opraveno ${fixedCount} pravidel s překryvem endDate/startDate po rozštěpení série.`);
+      return { ...prev, recurringRules: rules };
+    });
+  }, []);
 
   // 2. Návrat aplikace z neaktivního stavu (visibilitychange, focus)
   useEffect(() => {

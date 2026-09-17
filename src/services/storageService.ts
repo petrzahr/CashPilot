@@ -17,7 +17,7 @@ import {
   createResetAppData
 } from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
-import { formatCzechDate } from './periodService';
+import { formatCzechDate, getPreviousDay } from './periodService';
 
 export interface AppData {
   deletions: DeletionRecord[];
@@ -154,6 +154,27 @@ export function sanitizeCorrections(
     cleanedCorrections,
     hasCorrectionsRemoved: cleanedCorrections.length !== initialCount
   };
+}
+
+/**
+ * Opravuje starší data poškozená bugem v rozštěpení pravidla při úpravě
+ * "tato a všechny budoucí": endDate ukončovaného pravidla se dříve ukládalo
+ * shodné se startDate nově odštěpeného pravidla, takže se pro ten den mohl
+ * vygenerovat výskyt z obou pravidel zároveň. Posune endDate o den zpět.
+ */
+export function repairRecurringRuleSplitOverlaps(
+  rules: RecurringRule[] = []
+): { rules: RecurringRule[]; fixedCount: number } {
+  let fixedCount = 0;
+  const repaired = rules.map(rule => {
+    if (!rule.endDate) return rule;
+    const overlaps = rules.some(other => other.id !== rule.id && other.startDate === rule.endDate);
+    if (!overlaps) return rule;
+    fixedCount += 1;
+    return { ...rule, endDate: getPreviousDay(rule.endDate) };
+  });
+
+  return { rules: repaired, fixedCount };
 }
 
 export interface LoadDataResult {
