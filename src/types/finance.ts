@@ -100,6 +100,8 @@ export interface RecurringRule {
   subcategoryId?: string | null;
   note?: string;
   isActive: boolean;
+  orderHint?: number;          // Požadovaná pozice v rámci dne při generování výskytu (bez hintu = dnešní chování)
+  orderHintUpdatedAt?: string; // Čas poslední změny orderHint - tie-break při kolizi dvou pravidel
   createdAt: string;
   updatedAt: string;
 }
@@ -115,6 +117,7 @@ export interface RecurringException {
   overrideTargetAccountId?: string;
   overrideCategoryId?: string | null;
   overrideSubcategoryId?: string | null;
+  overrideSequence?: number; // Požadovaná pozice v rámci dne jen pro tuto periodu
   isCancelled?: boolean;
   createdAt: string;
 }
