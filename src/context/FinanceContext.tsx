@@ -79,7 +79,6 @@ import {
   deleteTransactionsAndReorder,
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
-  normalizeDaySequences,
   reorderDayTransactions as reorderDayTxsService,
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
@@ -1848,18 +1847,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       // possibly-stale `data` snapshot from this closure's render.
       setData(prev => {
         const merged = mergeBackupData(prev, parsed);
-        // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3... zvlášť pro každý kalendářní den
-        const rawTxs: Transaction[] = merged.transactions || [];
-        const byDate = new Map<string, Transaction[]>();
-        for (const t of rawTxs) {
-          const list = byDate.get(t.date) || [];
+        const prevIds = new Set(prev.transactions.map(t => t.id));
+        // Pořadí (sequence) v zálože je jen lokální v rámci importovaného souboru. Existující
+        // transakce daného dne se nesmí přeřazovat - nově přidané se do řady připojí až za ně,
+        // ve stejném vzájemném pořadí, v jakém byly v souboru.
+        const addedByDate = new Map<string, Transaction[]>();
+        for (const t of merged.transactions) {
+          if (prevIds.has(t.id)) continue;
+          const list = addedByDate.get(t.date) || [];
           list.push(t);
-          byDate.set(t.date, list);
+          addedByDate.set(t.date, list);
         }
-        const txs = Array.from(byDate.values()).flatMap(dayTxs => normalizeDaySequences(dayTxs));
+        const transactions = merged.transactions.filter(t => prevIds.has(t.id));
+        for (const added of addedByDate.values()) {
+          const ordered = [...added].sort((a, b) =>
+            (a.sequence ?? 1) - (b.sequence ?? 1) ||
+            (a.createdAt || '').localeCompare(b.createdAt || '') ||
+            (a.id || '').localeCompare(b.id || ''));
+          for (const t of ordered) {
+            transactions.push({ ...t, sequence: getNextSequenceForDate(t.date, transactions) });
+          }
+        }
         return {
           ...merged,
-          transactions: sortTransactionsByDateAndSequence(txs)
+          transactions: sortTransactionsByDateAndSequence(transactions)
         };
       });
       showToast('Záloha byla úspěšně sloučena se stávajícími daty.');

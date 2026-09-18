@@ -715,4 +715,40 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(typeof ctx.exportCSV).toBe('function');
     expect(typeof ctx.importJSON).toBe('function');
   });
+
+  // 22. Import zálohy do dne s existujícími transakcemi je nepřeřadí, nové se připojí za ně
+  it('22. Import zálohy na den s existující transakcí ji ponechá na místě a nové položky připojí za ni', async () => {
+    const existingOnDay: Transaction = {
+      id: 'tx_existing_915', title: 'Mzda', amountInHaler: 4500000, date: '2026-09-15', sequence: 1,
+      type: 'income', sourceAccountId: 'acc_checking_1', categoryId: 'cat_income', subcategoryId: 'sub_income_salary',
+      status: 'executed', actualAmountInHaler: 4500000, createdAt: '2026-09-15T08:00:00Z', updatedAt: '2026-09-15T08:00:00Z',
+    };
+    populateTestStorage({ transactions: [...sampleTransactions, existingOnDay] });
+    const ctx = await getContextHandle();
+
+    const backup = {
+      version: 2, deletions: [], sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
+      settings: { ...DEFAULT_SETTINGS }, accounts: [...sampleAccounts], categories: [...DEFAULT_CATEGORIES],
+      transactions: [
+        { id: 'tx_new_1', title: 'ChatGPT', amountInHaler: 50000, date: '2026-09-15', sequence: 1, type: 'expense',
+          sourceAccountId: 'acc_checking_1', categoryId: 'cat_personal', subcategoryId: 'sub_pers_it', status: 'executed',
+          actualAmountInHaler: 50000, createdAt: '2026-09-15T12:00:00Z', updatedAt: '2026-09-15T12:00:00Z' },
+        { id: 'tx_new_2', title: 'Claude', amountInHaler: 60000, date: '2026-09-15', sequence: 2, type: 'expense',
+          sourceAccountId: 'acc_checking_1', categoryId: 'cat_personal', subcategoryId: 'sub_pers_it', status: 'executed',
+          actualAmountInHaler: 60000, createdAt: '2026-09-15T12:00:00Z', updatedAt: '2026-09-15T12:00:00Z' },
+      ],
+      recurringRules: [], recurringExceptions: [], corrections: [], marketValueSnapshots: [],
+    };
+    const ok = ctx.importJSON(JSON.stringify(backup));
+    expect(ok).toBe(true);
+
+    const dayTxs = loadStoredDataResult().data.transactions
+      .filter((t: Transaction) => t.date === '2026-09-15')
+      .sort((a: Transaction, b: Transaction) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    expect(dayTxs.map((t: Transaction) => [t.id, t.sequence])).toEqual([
+      ['tx_existing_915', 1],
+      ['tx_new_1', 2],
+      ['tx_new_2', 3],
+    ]);
+  });
 });
