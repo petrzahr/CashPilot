@@ -7,7 +7,7 @@ import type { AppData } from './storageService';
  * nesmí selháním přerušit synchronizaci ani načtení dat.
  */
 
-const BACKUP_FOLDER_NAME = 'CashPilot zálohy';
+const BACKUP_FOLDER_NAME = 'CashPilot zalohy';
 const BACKUP_FILENAME_PREFIX = 'cashpilot_zaloha_';
 export const DRIVE_BACKUP_MAX_COUNT = 30;
 export const DRIVE_BACKUP_MIN_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hodin

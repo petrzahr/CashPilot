@@ -426,7 +426,7 @@ export const SettingsScreen: React.FC = () => {
                 <h4 className="text-sm font-bold text-slate-900">Automatické JSON zálohy</h4>
                 <p className="text-[11px] text-slate-500 mt-0.5 max-w-md">
                   Při startu appky (max. jednou za 24 h) uloží časově označenou kopii dat do viditelné
-                  složky <strong>„CashPilot zálohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
+                  složky <strong>„CashPilot zalohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
                   Při častém spouštění během vývoje se hodí dočasně vypnout.
                 </p>
                 <p className="text-[11px] text-slate-500 mt-1">
