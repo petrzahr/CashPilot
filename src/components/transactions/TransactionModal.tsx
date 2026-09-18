@@ -130,7 +130,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setDayOfMonth(defaultDay);
       setRecurringEndDate('');
     }
-  }, [transactionToEdit, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate, transactions, accounts]);
+    // Formulář se má znovu naplnit jen při otevření modálu nebo přepnutí na jinou položku -
+    // ne pokaždé, když se (i referenčně) změní transactions/accounts kdekoli jinde v appce
+    // (např. periodická kontrola splatných položek na pozadí), jinak by to za běhu smazalo
+    // rozepsaný formulář uživateli pod rukama.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactionToEdit?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
 
   // Při změně data v editačním formuláři ihned přepočti a předvyplň pořadí pro nově zvolený den
   const handleDateChange = (newDate: string) => {
