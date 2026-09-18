@@ -34,6 +34,7 @@ import {
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
+import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
@@ -76,12 +77,22 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     cancelTransaction,
     deleteTransaction,
     reorderDayTransactions,
+    reorderRecurringItem,
     showToast,
   } = useFinance();
 
   // Režim zobrazení: po dnech s drag & drop vs klasický seznam
   const [viewMode, setViewMode] = useState<'daily' | 'list'>('daily');
   const [draggedTxId, setDraggedTxId] = useState<string | null>(null);
+
+  // Přeuspořádání opakující se položky čeká na volbu rozsahu (jen tento výskyt / budoucí / celá série)
+  const [pendingRecurringReorder, setPendingRecurringReorder] = useState<{
+    ruleId: string;
+    ruleTitle: string;
+    date: string;
+    orderedIds: string[];
+    movedTransactionId: string;
+  } | null>(null);
 
   // Řazení v klasickém seznamu - výchozí vzestupně (stejné jako v sekci Položky)
   const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -530,8 +541,32 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const [movedItem] = newOrderedIds.splice(draggedIdx, 1);
     newOrderedIds.splice(targetIdx, 0, movedItem);
 
-    reorderDayTransactions(date, newOrderedIds);
+    const draggedTx = dayGroup.txs.find(t => t.id === draggedTxId);
+    if (draggedTx?.recurringRuleId) {
+      setPendingRecurringReorder({
+        ruleId: draggedTx.recurringRuleId,
+        ruleTitle: draggedTx.title,
+        date,
+        orderedIds: newOrderedIds,
+        movedTransactionId: draggedTxId,
+      });
+    } else {
+      reorderDayTransactions(date, newOrderedIds);
+    }
     setDraggedTxId(null);
+  };
+
+  const handleConfirmRecurringReorder = (mode: 'occurrence' | 'future' | 'series') => {
+    if (!pendingRecurringReorder) return;
+    reorderRecurringItem(
+      pendingRecurringReorder.ruleId,
+      mode,
+      pendingRecurringReorder.date,
+      selectedPeriod.key,
+      pendingRecurringReorder.orderedIds,
+      pendingRecurringReorder.movedTransactionId
+    );
+    setPendingRecurringReorder(null);
   };
 
   // Dynamické seskupení rozpočtu podle hlavních kategorií:
@@ -1514,6 +1549,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             setIsDeletingTx(false);
           }
         }}
+      />
+
+      <ReorderScopeDialog
+        isOpen={Boolean(pendingRecurringReorder)}
+        onClose={() => setPendingRecurringReorder(null)}
+        transactionTitle={pendingRecurringReorder?.ruleTitle || ''}
+        onConfirm={handleConfirmRecurringReorder}
       />
 
       {/* Detail korekce pro zobrazení a editaci poznámky */}

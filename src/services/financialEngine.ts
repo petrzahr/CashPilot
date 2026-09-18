@@ -205,36 +205,101 @@ export function getEffectiveTransactionsForPeriod(
     return a.id.localeCompare(b.id);
   });
 
-  const virtualTransactions: Transaction[] = [];
+  // Nashromáždit výskyty, které se pro tuto periodu ještě nemají zhmotnit jako reálná transakce,
+  // seskupené podle dne a doplněné o případný požadovaný hint pořadí (výjimka nebo pravidlo).
+  const pendingByDate = new Map<string, { virtual: Transaction; hint?: number; hintUpdatedAt?: string }[]>();
   for (const rule of sortedRules) {
-    if (doesRuleApplyInPeriod(rule, period, startDay)) {
-      const virtual = generateOccurrenceForPeriod(rule, period, safeExceptions, startDay, 1, today, accounts);
-      if (virtual) {
-        const txsForRule = periodManual.filter(t => t.recurringRuleId === rule.id);
-        let alreadyInstantiated = false;
-        if (txsForRule.length > 0) {
-          if (txsForRule.some(t => t.date === virtual.date)) {
-            alreadyInstantiated = true;
-          } else if (virtual.date > rule.startDate && txsForRule.every(t => t.date === rule.startDate)) {
-            alreadyInstantiated = false;
-          } else {
-            alreadyInstantiated = true;
-          }
-        }
+    if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
+    const virtual = generateOccurrenceForPeriod(rule, period, safeExceptions, startDay, 1, today, accounts);
+    if (!virtual) continue;
 
-        if (!alreadyInstantiated) {
-          const occDate = virtual.date;
-          const currentMax = dayMaxSeq.get(occDate) || 0;
-          const nextSeq = currentMax + 1;
-          dayMaxSeq.set(occDate, nextSeq);
-          virtual.sequence = nextSeq;
-          virtualTransactions.push(virtual);
-        }
+    const txsForRule = periodManual.filter(t => t.recurringRuleId === rule.id);
+    let alreadyInstantiated = false;
+    if (txsForRule.length > 0) {
+      if (txsForRule.some(t => t.date === virtual.date)) {
+        alreadyInstantiated = true;
+      } else if (virtual.date > rule.startDate && txsForRule.every(t => t.date === rule.startDate)) {
+        alreadyInstantiated = false;
+      } else {
+        alreadyInstantiated = true;
       }
     }
+    if (alreadyInstantiated) continue;
+
+    const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
+    const hint = ex?.overrideSequence ?? rule.orderHint;
+    const list = pendingByDate.get(virtual.date) || [];
+    list.push({ virtual, hint, hintUpdatedAt: rule.orderHintUpdatedAt });
+    pendingByDate.set(virtual.date, list);
   }
 
-  return sortTransactionsByDateAndSequence([...periodManual, ...virtualTransactions]);
+  const virtualTransactions: Transaction[] = [];
+  const adjustedManualByDate = new Map<string, Transaction[]>();
+
+  for (const [occDate, pending] of pendingByDate.entries()) {
+    const hinted = pending.filter(p => p.hint !== undefined);
+    const unhinted = pending.filter(p => p.hint === undefined);
+
+    if (hinted.length === 0) {
+      // Beze změny oproti dřívějšímu chování: postupné přidávání na konec dne.
+      for (const { virtual } of unhinted) {
+        const currentMax = dayMaxSeq.get(occDate) || 0;
+        const nextSeq = currentMax + 1;
+        dayMaxSeq.set(occDate, nextSeq);
+        virtual.sequence = nextSeq;
+        virtualTransactions.push(virtual);
+      }
+      continue;
+    }
+
+    // Alespoň jeden výskyt v tomto dni má požadovanou pozici - sestavíme den znovu
+    // od manuálních položek a vložíme hintované výskyty na jejich požadovaná místa.
+    hinted.sort((a, b) => {
+      if (a.hint !== b.hint) return (a.hint as number) - (b.hint as number);
+      const timeA = a.hintUpdatedAt ? new Date(a.hintUpdatedAt).getTime() : 0;
+      const timeB = b.hintUpdatedAt ? new Date(b.hintUpdatedAt).getTime() : 0;
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.virtual.recurringRuleId || '').localeCompare(b.virtual.recurringRuleId || '');
+    });
+
+    const dayItems: Transaction[] = periodManual
+      .filter(t => t.date === occDate)
+      .sort((a, b) => {
+        const seqA = a.sequence ?? 1;
+        const seqB = b.sequence ?? 1;
+        if (seqA !== seqB) return seqA - seqB;
+        return (a.id || '').localeCompare(b.id || '');
+      })
+      .map(t => ({ ...t }));
+
+    for (const { virtual, hint } of hinted) {
+      const clampedIndex = Math.max(0, Math.min((hint as number) - 1, dayItems.length));
+      dayItems.splice(clampedIndex, 0, virtual);
+    }
+    for (const { virtual } of unhinted) {
+      dayItems.push(virtual);
+    }
+
+    const renumbered = dayItems.map((item, idx) => ({ ...item, sequence: idx + 1 }));
+
+    const manualForDate: Transaction[] = [];
+    for (const item of renumbered) {
+      if (item.id.startsWith('virtual_')) {
+        virtualTransactions.push(item);
+      } else {
+        manualForDate.push(item);
+      }
+    }
+    adjustedManualByDate.set(occDate, manualForDate);
+  }
+
+  const finalManual = periodManual.map(t => {
+    const adjusted = adjustedManualByDate.get(t.date);
+    if (!adjusted) return t;
+    return adjusted.find(a => a.id === t.id) || t;
+  });
+
+  return sortTransactionsByDateAndSequence([...finalManual, ...virtualTransactions]);
 }
 
 /**

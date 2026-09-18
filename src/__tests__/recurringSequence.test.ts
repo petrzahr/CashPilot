@@ -402,4 +402,93 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     expect(period0Txs.find(t => t.recurringRuleId === 'rule_sal')?.sequence).toBe(1);
     expect(period0Txs.find(t => t.recurringRuleId === 'rule_rent')?.sequence).toBe(1);
   });
+
+  // Test 12: Pravidlo s orderHint vloží virtuál na požadovanou pozici, pravidlo bez hintu se řadí za
+  it('12. Pravidlo s orderHint vloží virtuál před manuální položky, sourozenecké pravidlo bez hintu za', () => {
+    const period = createBudgetPeriod(2026, 10, 15);
+    const targetDay = '2026-10-15';
+    const tx1: Transaction = { id: 'tx1', title: 'Manuální 1', amountInHaler: 100, date: targetDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
+    const tx2: Transaction = { id: 'tx2', title: 'Manuální 2', amountInHaler: 200, date: targetDay, sequence: 2, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
+
+    const hintedRule: RecurringRule = {
+      id: 'rule_hinted', title: 'Hintovaná', amountInHaler: 300, type: 'expense', frequency: 'monthly',
+      dayOfMonth: 15, startDate: '2026-09-15', sourceAccountId: 'acc_main', isActive: true,
+      orderHint: 1, orderHintUpdatedAt: '2026-10-01T10:00:00.000Z',
+      createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z',
+    };
+    const plainRule: RecurringRule = {
+      id: 'rule_plain', title: 'Nehintovaná', amountInHaler: 400, type: 'expense', frequency: 'monthly',
+      dayOfMonth: 15, startDate: '2026-09-15', sourceAccountId: 'acc_main', isActive: true,
+      createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '2026-09-01T11:00:00.000Z',
+    };
+
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [plainRule, hintedRule], [], 15);
+    const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
+
+    expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
+      { id: 'rule_hinted', seq: 1 },
+      { id: 'tx1', seq: 2 },
+      { id: 'tx2', seq: 3 },
+      { id: 'rule_plain', seq: 4 },
+    ]);
+  });
+
+  // Test 13: RecurringException.overrideSequence ovlivní pozici jen v dané periodě
+  it('13. overrideSequence z výjimky ovlivní pozici jen v jedné periodě, jinde platí výchozí chování', () => {
+    const period = createBudgetPeriod(2026, 10, 15);
+    const otherPeriod = createBudgetPeriod(2026, 11, 15);
+    const targetDay = '2026-10-15';
+    const tx1: Transaction = { id: 'tx1', title: 'Manuální 1', amountInHaler: 100, date: targetDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
+
+    const rule: RecurringRule = {
+      id: 'rule_ex', title: 'Předplatné', amountInHaler: 300, type: 'expense', frequency: 'monthly',
+      dayOfMonth: 15, startDate: '2026-09-15', sourceAccountId: 'acc_main', isActive: true,
+      createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z',
+    };
+    const exception: RecurringException = {
+      id: 'ex_seq', ruleId: 'rule_ex', periodKey: period.key, overrideSequence: 1,
+      createdAt: '2026-10-01T10:00:00.000Z',
+    };
+
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1], [rule], [exception], 15);
+    const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
+    expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
+      { id: 'rule_ex', seq: 1 },
+      { id: 'tx1', seq: 2 },
+    ]);
+
+    // Jiná perioda nemá výjimku - virtuál se řadí až za manuální položky (výchozí chování)
+    const otherDay = '2026-11-15';
+    const otherTx: Transaction = { id: 'other1', title: 'Manuální', amountInHaler: 50, date: otherDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
+    const otherEffectiveTxs = getEffectiveTransactionsForPeriod(otherPeriod, [otherTx], [rule], [exception], 15);
+    const otherDayTxs = otherEffectiveTxs.filter(t => t.date === otherDay);
+    expect(otherDayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
+      { id: 'other1', seq: 1 },
+      { id: 'rule_ex', seq: 2 },
+    ]);
+  });
+
+  // Test 14: Determinismus zůstává zachován i s hinty (nezávisle na pořadí vstupního pole pravidel)
+  it('14. Výsledek s hinty je deterministický nezávisle na pořadí vstupních pravidel', () => {
+    const period = createBudgetPeriod(2026, 10, 15);
+    const rule1: RecurringRule = {
+      id: 'r1', title: 'R1', amountInHaler: 100, type: 'expense', frequency: 'monthly', dayOfMonth: 18,
+      startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true,
+      orderHint: 2, orderHintUpdatedAt: '2026-10-01T10:00:00.000Z',
+      createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '',
+    };
+    const rule2: RecurringRule = {
+      id: 'r2', title: 'R2', amountInHaler: 200, type: 'expense', frequency: 'monthly', dayOfMonth: 18,
+      startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true,
+      orderHint: 1, orderHintUpdatedAt: '2026-10-01T09:00:00.000Z',
+      createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '',
+    };
+
+    const run1 = getEffectiveTransactionsForPeriod(period, [], [rule1, rule2], [], 15);
+    const run2 = getEffectiveTransactionsForPeriod(period, [], [rule2, rule1], [], 15);
+
+    expect(run1.map(t => ({ id: t.id, seq: t.sequence }))).toEqual(run2.map(t => ({ id: t.id, seq: t.sequence })));
+    expect(run1.find(t => t.recurringRuleId === 'r2')?.sequence).toBe(1);
+    expect(run1.find(t => t.recurringRuleId === 'r1')?.sequence).toBe(2);
+  });
 });
