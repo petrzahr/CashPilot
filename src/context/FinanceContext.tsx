@@ -66,6 +66,12 @@ import {
   loginToGoogle,
   logoutFromGoogle,
 } from '../services/googleDriveService';
+import {
+  getLastDriveBackupAt,
+  isDriveBackupEnabled,
+  setDriveBackupEnabled as persistDriveBackupEnabled,
+  tryRunDriveBackup,
+} from '../services/driveBackupService';
 
 
 import {
@@ -200,6 +206,11 @@ interface FinanceContextType {
   connectGoogleDrive: () => Promise<void>;
   disconnectGoogleDrive: () => Promise<void>;
   syncWithGoogleDrive: (forceDirection?: 'upload' | 'download') => Promise<void>;
+  // Automatické JSON zálohy do viditelné složky na Google Disku
+  driveBackupEnabled: boolean;
+  setDriveBackupEnabled: (enabled: boolean) => void;
+  lastDriveBackupTime: Date | null;
+  runDriveBackupNow: () => Promise<void>;
 }
 
 export type AppLoadState = 'loading' | 'ready' | 'loadError';
@@ -259,14 +270,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   // Jednorázová oprava starších dat poškozených dřívějším bugem v rozštěpení
   // pravidla (endDate staré části == startDate nové části, viz repairRecurringRuleSplitOverlaps).
+  // Nezávisí jen na loadState - u přihlášení přes Google Drive se `loadState`
+  // nastaví na 'ready' hned na startu (ještě s prázdnými daty) a podruhé už se
+  // nezmění, když až poté dorazí reálná data. Reference na `recurringRules` se
+  // ale při doručení reálných dat vždy vymění, takže na ni bezpečně navazujeme.
   useEffect(() => {
+    if (loadState !== 'ready') return;
     setData(prev => {
       const { rules, fixedCount } = repairRecurringRuleSplitOverlaps(prev.recurringRules);
       if (fixedCount === 0) return prev;
       console.info(`[CashPilot] Opraveno ${fixedCount} pravidel s překryvem endDate/startDate po rozštěpení série.`);
       return { ...prev, recurringRules: rules };
     });
-  }, []);
+  }, [loadState, data.recurringRules]);
 
   // 2. Návrat aplikace z neaktivního stavu (visibilitychange, focus)
   useEffect(() => {
@@ -1112,9 +1128,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           };
         });
 
+        // Výjimky pro periody od rozštěpení dál patří nově pod nové pravidlo -
+        // jinak by se hledaly pod starým (už useknutým) ruleId a nikdy by se nenašly.
+        const cutoffPeriodKey = getPeriodForDate(effectiveDate, prev.settings.budgetStartDay).key;
+        const updatedExceptions = prev.recurringExceptions.map(e =>
+          e.ruleId === ruleId && e.periodKey >= cutoffPeriodKey
+            ? { ...e, ruleId: newFutureRule.id }
+            : e
+        );
+
         return {
           ...prev,
           recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedRule : r), newFutureRule],
+          recurringExceptions: updatedExceptions,
           transactions: updatedTxs,
         };
       }
@@ -1850,6 +1876,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const [driveUser, setDriveUser] = useState<GoogleUser | null>(null);
   const [lastDriveSyncTime, setLastDriveSyncTime] = useState<Date | null>(null);
   const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveBackupEnabled, setDriveBackupEnabledState] = useState(() => isDriveBackupEnabled());
+  const [lastDriveBackupTime, setLastDriveBackupTime] = useState<Date | null>(null);
 
   const startCloudSession = useCallback(async (token: string, generation: number) => {
     setDriveSyncStatus('loading');
@@ -1867,6 +1895,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       setActiveStorageKey(accountStorageKey(user.permissionId));
       setDriveUser(user);
       setIsDriveConnected(true);
+      setLastDriveBackupTime(getLastDriveBackupAt(user.permissionId));
       const controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
         if (generation !== authGeneration.current) return;
         latestDataRef.current = next;
@@ -1879,6 +1908,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       });
       controllerRef.current = controller;
       await controller.sync();
+      if (generation !== authGeneration.current) return;
+      // Zálohy jsou nezávislé na sync frontě a nesmí ji svým selháním ovlivnit; spouští se jednou za relaci (start appky).
+      void tryRunDriveBackup(token, user.permissionId, controller.data).then((result) => {
+        if (generation === authGeneration.current && result.ran) setLastDriveBackupTime(new Date());
+      });
     } catch (error) {
       if (generation !== authGeneration.current) return;
       setDriveSyncStatus('error');
@@ -1948,6 +1982,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       else await connectGoogleDrive();
     }
   }, [startCloudSession, connectGoogleDrive]);
+
+  const setDriveBackupEnabled = useCallback((enabled: boolean) => {
+    persistDriveBackupEnabled(enabled);
+    setDriveBackupEnabledState(enabled);
+  }, []);
+
+  const runDriveBackupNow = useCallback(async () => {
+    const token = getValidAccessToken();
+    if (!token || !driveUser?.permissionId) {
+      showToast('Nejprve se přihlaste ke Google Disku.', 'error');
+      return;
+    }
+    const result = await tryRunDriveBackup(token, driveUser.permissionId, latestDataRef.current, { force: true });
+    if (result.ran) {
+      setLastDriveBackupTime(new Date());
+      showToast('Záloha byla úspěšně nahrána na Google Disk.');
+    } else {
+      showToast(`Zálohu se nepodařilo vytvořit: ${result.reason || 'neznámá chyba'}`, 'error');
+    }
+  }, [driveUser, showToast]);
 
   const dataConflicts = useMemo(() => {
     const conflicts: { transaction: Transaction; account: Account; reason: string }[] = [];
@@ -2071,6 +2125,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     connectGoogleDrive,
     disconnectGoogleDrive,
     syncWithGoogleDrive,
+    driveBackupEnabled,
+    setDriveBackupEnabled,
+    lastDriveBackupTime,
+    runDriveBackupNow,
   };
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;

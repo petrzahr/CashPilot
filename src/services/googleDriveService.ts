@@ -62,6 +62,9 @@ declare global {
 }
 
 export const GOOGLE_DRIVE_APP_DATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+// drive.file: přístup jen k souborům, které appka sama vytvoří – použito pro viditelnou složku se zálohami.
+export const GOOGLE_DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export const GOOGLE_DRIVE_SCOPES = `${GOOGLE_DRIVE_APP_DATA_SCOPE} ${GOOGLE_DRIVE_FILE_SCOPE}`;
 export const CASH_PILOT_DATA_FILENAME = 'cashpilot_data.json';
 const AUTH_STORAGE_KEY = 'cashpilot_google_auth_v1';
 
@@ -184,7 +187,7 @@ export async function getOrCreateTokenClient(): Promise<GoogleTokenClient> {
 
   cachedTokenClient = window.google.accounts.oauth2.initTokenClient({
     client_id: clientId,
-    scope: GOOGLE_DRIVE_APP_DATA_SCOPE,
+    scope: GOOGLE_DRIVE_SCOPES,
     callback: (response: GoogleTokenResponse) => {
       if (response.error) {
         console.error('Chyba při autorizaci Google účtu:', response.error, response.error_description);

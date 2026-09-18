@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { isDemoModeEnabled } from '../../services/storageService';
+import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
@@ -53,6 +54,10 @@ export const SettingsScreen: React.FC = () => {
     connectGoogleDrive,
     disconnectGoogleDrive,
     syncWithGoogleDrive,
+    driveBackupEnabled,
+    setDriveBackupEnabled,
+    lastDriveBackupTime,
+    runDriveBackupNow,
   } = useFinance();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -414,6 +419,38 @@ export const SettingsScreen: React.FC = () => {
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Stáhnout data z Google Disku</span>
               </button>
+            </div>
+
+            <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Automatické JSON zálohy</h4>
+                <p className="text-[11px] text-slate-500 mt-0.5 max-w-md">
+                  Při startu appky (max. jednou za 24 h) uloží časově označenou kopii dat do viditelné
+                  složky <strong>„CashPilot zálohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
+                  Při častém spouštění během vývoje se hodí dočasně vypnout.
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Poslední záloha: {lastDriveBackupTime ? lastDriveBackupTime.toLocaleString('cs-CZ') : 'Zatím žádná'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => void runDriveBackupNow()}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                >
+                  Zálohovat nyní
+                </button>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={driveBackupEnabled}
+                    onChange={(e) => setDriveBackupEnabled(e.target.checked)}
+                    className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                  />
+                  <span className="text-xs font-medium text-slate-500">Povoleno</span>
+                </label>
+              </div>
             </div>
           </div>
         )}
