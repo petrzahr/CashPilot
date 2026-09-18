@@ -1844,19 +1844,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const importJSON = useCallback((jsonStr: string): boolean => {
     try {
       const parsed = validateAndParseBackup(jsonStr);
-      const merged = mergeBackupData(data, parsed);
-      // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3... zvlášť pro každý kalendářní den
-      const rawTxs: Transaction[] = merged.transactions || [];
-      const byDate = new Map<string, Transaction[]>();
-      for (const t of rawTxs) {
-        const list = byDate.get(t.date) || [];
-        list.push(t);
-        byDate.set(t.date, list);
-      }
-      const txs = Array.from(byDate.values()).flatMap(dayTxs => normalizeDaySequences(dayTxs));
-      setData({
-        ...merged,
-        transactions: sortTransactionsByDateAndSequence(txs)
+      // Merges against the live controller state (via the functional setData form), never a
+      // possibly-stale `data` snapshot from this closure's render.
+      setData(prev => {
+        const merged = mergeBackupData(prev, parsed);
+        // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3... zvlášť pro každý kalendářní den
+        const rawTxs: Transaction[] = merged.transactions || [];
+        const byDate = new Map<string, Transaction[]>();
+        for (const t of rawTxs) {
+          const list = byDate.get(t.date) || [];
+          list.push(t);
+          byDate.set(t.date, list);
+        }
+        const txs = Array.from(byDate.values()).flatMap(dayTxs => normalizeDaySequences(dayTxs));
+        return {
+          ...merged,
+          transactions: sortTransactionsByDateAndSequence(txs)
+        };
       });
       showToast('Záloha byla úspěšně sloučena se stávajícími daty.');
       return true;
@@ -1864,7 +1868,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       showToast(`Chyba při obnově: ${err.message}`, 'error');
       return false;
     }
-  }, [data, showToast]);
+  }, [showToast]);
 
   const exportCSV = useCallback(() => {
     exportTransactionsCSV(data.transactions, data.accounts, data.categories);
