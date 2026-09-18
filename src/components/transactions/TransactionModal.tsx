@@ -4,7 +4,8 @@ import { Modal } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
 import { czkToHaler, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
-import { getDefaultDateForPeriod, formatCzechDate } from '../../services/periodService';
+import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
+import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../../services/periodService';
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
 import { AlertCircle, ArrowRightLeft, Calendar, Repeat, Hash, Loader2 } from 'lucide-react';
@@ -29,12 +30,32 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     categories,
     transactions,
     recurringRules,
+    recurringExceptions,
+    settings,
     selectedPeriod,
     addTransaction,
     updateTransaction,
     addRecurringRule,
     updateRecurringRule,
   } = useFinance();
+
+  // Další volné pořadí v daném dni musí počítat i s ještě nezhmotněnými (virtuálními)
+  // výskyty opakujících se položek, jinak by nová položka v budoucím dni, kde zatím
+  // existuje jen virtuální výskyt, dostala pořadí 1 místo posledního místa v tom dni.
+  const getEffectiveNextSequence = (targetDate: string, excludeId?: string): number => {
+    const baseTxs = excludeId ? transactions.filter(t => t.id !== excludeId) : transactions;
+    const period = getPeriodForDate(targetDate, settings.budgetStartDay);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(
+      period,
+      baseTxs,
+      recurringRules,
+      recurringExceptions,
+      settings.budgetStartDay,
+      undefined,
+      accounts
+    );
+    return getNextSequenceForDate(targetDate, effectiveTxs);
+  };
 
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
@@ -109,7 +130,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setTitle('');
       setAmountStr('');
       setDate(defaultDate);
-      const nextSeq = getNextSequenceForDate(defaultDate, transactions);
+      const nextSeq = getEffectiveNextSequence(defaultDate);
       setSequenceStr(nextSeq.toString());
       setType(initialType);
 
@@ -147,7 +168,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       }
     }
     if (!isEditing) {
-      const nextSeq = getNextSequenceForDate(newDate, transactions);
+      const nextSeq = getEffectiveNextSequence(newDate);
       setSequenceStr(nextSeq.toString());
       setStatus(getStatusForDate(newDate));
       // Účet se u nového data nemaže - pokud je pro dané datum neplatný, na to
@@ -156,8 +177,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       if (newDate === transactionToEdit?.date) {
         setSequenceStr((transactionToEdit.sequence || 1).toString());
       } else {
-        const otherTxs = transactions.filter(t => t.id !== transactionToEdit?.id);
-        const nextSeq = getNextSequenceForDate(newDate, otherTxs);
+        const nextSeq = getEffectiveNextSequence(newDate, transactionToEdit?.id);
         setSequenceStr(nextSeq.toString());
       }
     }
