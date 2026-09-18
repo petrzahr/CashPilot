@@ -83,6 +83,47 @@ import {
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
 
+/** ID pravidla z ID virtuálního výskytu (virtual_<ruleId>_<periodKey>); periodKey neobsahuje podtržítko. */
+function ruleIdFromVirtualId(id: string): string | null {
+  if (!id.startsWith('virtual_')) return null;
+  const rest = id.slice('virtual_'.length);
+  const cut = rest.lastIndexOf('_');
+  return cut > 0 ? rest.slice(0, cut) : null;
+}
+
+/** Pozice (1-based) každé opakující se položky v pořadí dne; klíčem je ID existujícího pravidla. */
+function ruleSequencesFromOrderedIds(
+  orderedIds: string[],
+  transactions: Transaction[],
+  rules: RecurringRule[]
+): Map<string, number> {
+  const positions = new Map<string, number>();
+  orderedIds.forEach((id, idx) => {
+    const ruleId = ruleIdFromVirtualId(id) ?? transactions.find(t => t.id === id)?.recurringRuleId;
+    if (ruleId && !positions.has(ruleId) && rules.some(r => r.id === ruleId)) {
+      positions.set(ruleId, idx + 1);
+    }
+  });
+  return positions;
+}
+
+/** Zapíše požadovanou pozici do výjimek dané periody (vytvoří je, pokud chybí). */
+function withSequenceExceptions(
+  exceptions: RecurringException[],
+  positions: Map<string, number>,
+  periodKey: string,
+  nowIso: string
+): RecurringException[] {
+  let result = exceptions;
+  positions.forEach((seq, ruleId) => {
+    const idx = result.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
+    result = idx >= 0
+      ? result.map((e, i) => i === idx ? { ...e, overrideSequence: seq, updatedAt: nowIso } : e)
+      : [...result, { id: `ex_${Date.now()}_${ruleId}`, ruleId, periodKey, overrideSequence: seq, createdAt: nowIso, updatedAt: nowIso }];
+  });
+  return result;
+}
+
 /**
  * Rozštěpí opakující se pravidlo na "starou" větev (končící den před effectiveDate)
  * a novou větev od effectiveDate dál, a přepojí na ni už materializované budoucí
@@ -97,7 +138,8 @@ function splitRecurringRuleForFuture(
   prevTransactions: Transaction[],
   prevExceptions: RecurringException[],
   budgetStartDay: number,
-  nowIso: string
+  nowIso: string,
+  idSuffix: string = ''
 ): {
   updatedOldRule: RecurringRule;
   newFutureRule: RecurringRule;
@@ -117,7 +159,7 @@ function splitRecurringRuleForFuture(
   const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
   const newFutureRule: RecurringRule = {
     ...rule,
-    id: `rec_${Date.now()}_split`,
+    id: `rec_${Date.now()}${idSuffix}_split`,
     title: overrideData.title || rule.title,
     amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
     dayOfMonth: newDayOfMonth,
@@ -694,9 +736,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const reorderDayTransactions = useCallback((date: string, orderedIds: string[]) => {
     setData(prev => {
       const updated = reorderDayTxsService(date, orderedIds, prev.transactions);
+      // Virtuální (ještě nezhmotněné) opakované výskyty v pořadí si pamatují pozici přes
+      // výjimku periody, jinak by se při dalším výpočtu vždy vrátily na konec dne.
+      const virtualPositions = new Map<string, number>();
+      orderedIds.forEach((id, idx) => {
+        const ruleId = ruleIdFromVirtualId(id);
+        if (ruleId && prev.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
+      });
+      const recurringExceptions = virtualPositions.size > 0
+        ? withSequenceExceptions(
+            prev.recurringExceptions,
+            virtualPositions,
+            getPeriodForDate(date, prev.settings.budgetStartDay).key,
+            new Date().toISOString()
+          )
+        : prev.recurringExceptions;
       return {
         ...prev,
         transactions: updated,
+        recurringExceptions,
       };
     });
     showToast('Pořadí položek bylo aktualizováno.');
@@ -1238,64 +1296,62 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       const rule = prev.recurringRules.find(r => r.id === ruleId);
       if (!rule) return prev;
 
-      const targetIndex = orderedIds.indexOf(movedTransactionId);
-      const targetSequence = targetIndex >= 0 ? targetIndex + 1 : 1;
       const nowIso = new Date().toISOString();
-      // Zhmotněná (reálná) transakce dneška se navíc přeuspořádá i fyzicky -
-      // hint sám o sobě ovlivňuje jen budoucí generování virtuálních výskytů.
-      const isRealToday = !movedTransactionId.startsWith('virtual_');
+
+      // Pozice VŠECH opakujících se položek toho dne (ne jen přetažené). Kdyby měla pozici jen
+      // přetažená, při posunu dolů pod jinou opakovanou platbu by se její index zkrátil na
+      // začátek dne a původní pořadí by se vrátilo.
+      const positions = ruleSequencesFromOrderedIds(orderedIds, prev.transactions, prev.recurringRules);
+      positions.set(ruleId, Math.max(1, orderedIds.indexOf(movedTransactionId) + 1));
+      const involvedRuleIds = Array.from(positions.keys());
+
+      // Zhmotněné (reálné) transakce toho dne se přeuspořádají i fyzicky - hinty ovlivňují
+      // jen generování virtuálních výskytů.
+      const reorderRealToday = (txs: Transaction[]) => reorderDayTxsService(date, orderedIds, txs);
 
       if (mode === 'occurrence') {
-        const existingExIndex = prev.recurringExceptions.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
-        const ex: RecurringException = existingExIndex >= 0
-          ? { ...prev.recurringExceptions[existingExIndex], overrideSequence: targetSequence }
-          : { id: `ex_${Date.now()}`, ruleId, periodKey, overrideSequence: targetSequence, createdAt: nowIso };
-
-        const newExceptions = existingExIndex >= 0
-          ? prev.recurringExceptions.map((item, idx) => idx === existingExIndex ? ex : item)
-          : [...prev.recurringExceptions, ex];
-
-        const transactions = isRealToday
-          ? reorderDayTxsService(date, orderedIds, prev.transactions)
-          : prev.transactions;
-
-        return { ...prev, recurringExceptions: newExceptions, transactions };
-      }
-
-      if (mode === 'future') {
-        const { updatedOldRule, newFutureRule, updatedTransactions, updatedExceptions } = splitRecurringRuleForFuture(
-          rule,
-          date,
-          {},
-          undefined,
-          prev.transactions,
-          prev.recurringExceptions,
-          prev.settings.budgetStartDay,
-          nowIso
-        );
-        const hintedFutureRule: RecurringRule = { ...newFutureRule, orderHint: targetSequence, orderHintUpdatedAt: nowIso };
-        const transactions = isRealToday
-          ? reorderDayTxsService(date, orderedIds, updatedTransactions)
-          : updatedTransactions;
-
         return {
           ...prev,
-          recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedOldRule : r), hintedFutureRule],
-          recurringExceptions: updatedExceptions,
-          transactions,
+          recurringExceptions: withSequenceExceptions(prev.recurringExceptions, positions, periodKey, nowIso),
+          transactions: reorderRealToday(prev.transactions),
         };
       }
 
-      // mode === 'series' - jen nastaví hint na existujícím pravidle, minulost se nepřepočítává.
-      const updatedRule: RecurringRule = { ...rule, orderHint: targetSequence, orderHintUpdatedAt: nowIso, updatedAt: nowIso };
-      const transactions = isRealToday
-        ? reorderDayTxsService(date, orderedIds, prev.transactions)
-        : prev.transactions;
+      if (mode === 'future') {
+        let rules = prev.recurringRules;
+        let txs = prev.transactions;
+        let exceptions = prev.recurringExceptions;
+        involvedRuleIds.forEach((rid, i) => {
+          const current = rules.find(r => r.id === rid);
+          if (!current) return;
+          const split = splitRecurringRuleForFuture(
+            current, date, {}, undefined, txs, exceptions, prev.settings.budgetStartDay, nowIso, `_${i}`
+          );
+          const hinted: RecurringRule = {
+            ...split.newFutureRule,
+            orderHint: positions.get(rid),
+            orderHintUpdatedAt: nowIso,
+          };
+          rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
+          txs = split.updatedTransactions;
+          exceptions = split.updatedExceptions;
+        });
 
+        return {
+          ...prev,
+          recurringRules: rules,
+          recurringExceptions: exceptions,
+          transactions: reorderRealToday(txs),
+        };
+      }
+
+      // mode === 'series' - jen nastaví hinty na existujících pravidlech, minulost se nepřepočítává.
       return {
         ...prev,
-        recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedRule : r),
-        transactions,
+        recurringRules: prev.recurringRules.map(r => positions.has(r.id)
+          ? { ...r, orderHint: positions.get(r.id), orderHintUpdatedAt: nowIso, updatedAt: nowIso }
+          : r),
+        transactions: reorderRealToday(prev.transactions),
       };
     });
 
