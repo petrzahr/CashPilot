@@ -881,9 +881,8 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
 
     expect(screenHtml).toContain('Analyzované období');
     expect(screenHtml).toContain('Posledních 12 měsíců');
-    expect(screenHtml).toContain('Příjmy, výdaje a čistá změna');
-    expect(screenHtml).toContain('Výdaje podle kategorií');
-    expect(screenHtml).toContain('Příjmy podle kategorií');
+    expect(screenHtml).toContain('Rozložení celkového majetku');
+    expect(screenHtml).toContain('Trend výdajů mezi obdobími');
     expect(screenHtml).toContain('Nejvyšší výdaje ve vybraném období');
     expect(screenHtml).toContain('Průměry a finanční extrémy');
   });
