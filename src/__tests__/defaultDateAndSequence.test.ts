@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createBudgetPeriod, getDefaultDateForPeriod, getPeriodForDate, getTodayInPrague } from '../services/periodService';
 import { getNextSequenceForDate } from '../services/sequenceService';
-import { BudgetPeriod, Transaction } from '../types/finance';
+import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { BudgetPeriod, RecurringRule, Transaction } from '../types/finance';
 
 describe('CashPilot - Testy automatického výchozího data a pořadí nové položky', () => {
 
@@ -212,5 +213,37 @@ describe('CashPilot - Testy automatického výchozího data a pořadí nové pol
 
     expect(formDate).toBe('2026-08-25'); // Původní datum zůstalo zachováno!
     expect(formSequence).toBe(5); // Původní pořadí zůstalo zachováno!
+  });
+
+  // 12. Nová položka v budoucím dni s virtuálním výskytem opakující se platby se řadí až za něj
+  it('12. Nová položka v budoucím dni, kde existuje jen virtuální výskyt opakující se platby, dostane pořadí za ním (ne 1)', () => {
+    const period = createBudgetPeriod(2026, 10, 15); // 15. 10. 2026 – 14. 11. 2026
+    const targetDay = '2026-10-15';
+
+    const rentRule: RecurringRule = {
+      id: 'rule_rent',
+      title: 'Nájem',
+      amountInHaler: 1500000,
+      type: 'expense',
+      frequency: 'monthly',
+      dayOfMonth: 15,
+      startDate: '2026-09-15',
+      sourceAccountId: 'acc_main',
+      isActive: true,
+      createdAt: '2026-09-01T10:00:00.000Z',
+      updatedAt: '2026-09-01T10:00:00.000Z',
+    };
+
+    // V daném dni zatím neexistují žádné reálné transakce - jen virtuální výskyt nájmu.
+    // Naivní getNextSequenceForDate nad "holými" transakcemi o virtuálním výskytu neví,
+    // a chybně by vrátilo 1 (nová položka by "přeskočila" před nájem).
+    const naiveSeq = getNextSequenceForDate(targetDay, []);
+    expect(naiveSeq).toBe(1);
+
+    // Efektivní výpočet (reálné + virtuální transakce) musí zohlednit už zobrazený
+    // virtuální výskyt a novou položku zařadit až za něj.
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rentRule], [], 15);
+    const correctSeq = getNextSequenceForDate(targetDay, effectiveTxs);
+    expect(correctSeq).toBe(2);
   });
 });
