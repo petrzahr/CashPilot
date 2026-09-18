@@ -96,6 +96,27 @@ export function recordLocalChange(envelope: SyncEnvelope, requested: AppData, de
   return { ...envelope, generation: envelope.generation + 1, data: next, pending: [...envelope.pending, ...operations] };
 }
 
+/**
+ * Merges an imported/restored backup into the current data set without ever deleting or
+ * overwriting anything that already exists. Existing records always win on id collisions;
+ * only backup records with an id absent from the current data (and not already tombstoned)
+ * are added.
+ */
+export function mergeBackupData(current: AppData, backup: AppData): AppData {
+  const base = migrateSyncData(current);
+  const incoming = migrateSyncData(backup);
+  const deletions = mergeDeletions(base.deletions, incoming.deletions);
+  const tombstoned = new Set(deletions.map(d => `${d.entityType}:${d.entityId}`));
+  const result: AppData = { ...base, deletions };
+  for (const [type, collection] of Object.entries(COLLECTIONS) as [EntityType, typeof COLLECTIONS[EntityType]][]) {
+    const existingIds = new Set((base as any)[collection].map((e: any) => e.id));
+    const additions = (incoming as any)[collection].filter((e: any) =>
+      !existingIds.has(e.id) && !tombstoned.has(`${type}:${e.id}`));
+    (result as any)[collection] = [...(base as any)[collection], ...additions];
+  }
+  return result;
+}
+
 /** A cache is not an operation log. Only explicitly recorded changes may enter the cloud. */
 export function mergePending(cloud: AppData, local: AppData, pending: PendingOperation[]): AppData {
   let result = migrateSyncData(structuredClone(cloud));

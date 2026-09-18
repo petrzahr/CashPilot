@@ -486,7 +486,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <Upload className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-            <span className="text-[10px] text-slate-500">Nahrát .json soubor</span>
+            <span className="text-[10px] text-slate-500">Sloučí .json se stávajícími daty</span>
           </button>
           <input
             ref={fileInputRef}

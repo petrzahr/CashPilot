@@ -1,4 +1,4 @@
-import { accountStorageKey } from '../services/syncModel';
+import { accountStorageKey, mergeBackupData } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -1844,8 +1844,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const importJSON = useCallback((jsonStr: string): boolean => {
     try {
       const parsed = validateAndParseBackup(jsonStr);
+      const merged = mergeBackupData(data, parsed);
       // Doplnit pořadí (sequence) pro starší zálohy a normalizovat na 1, 2, 3... zvlášť pro každý kalendářní den
-      const rawTxs: Transaction[] = parsed.transactions || [];
+      const rawTxs: Transaction[] = merged.transactions || [];
       const byDate = new Map<string, Transaction[]>();
       for (const t of rawTxs) {
         const list = byDate.get(t.date) || [];
@@ -1854,16 +1855,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       }
       const txs = Array.from(byDate.values()).flatMap(dayTxs => normalizeDaySequences(dayTxs));
       setData({
-        ...parsed,
+        ...merged,
         transactions: sortTransactionsByDateAndSequence(txs)
       });
-      showToast('Záloha byla úspěšně obnovena.');
+      showToast('Záloha byla úspěšně sloučena se stávajícími daty.');
       return true;
     } catch (err: any) {
       showToast(`Chyba při obnově: ${err.message}`, 'error');
       return false;
     }
-  }, [showToast]);
+  }, [data, showToast]);
 
   const exportCSV = useCallback(() => {
     exportTransactionsCSV(data.transactions, data.accounts, data.categories);
