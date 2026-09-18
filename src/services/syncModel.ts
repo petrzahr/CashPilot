@@ -99,19 +99,18 @@ export function recordLocalChange(envelope: SyncEnvelope, requested: AppData, de
 /**
  * Merges an imported/restored backup into the current data set without ever deleting or
  * overwriting anything that already exists. Existing records always win on id collisions;
- * only backup records with an id absent from the current data (and not already tombstoned)
- * are added.
+ * every backup record whose id is not currently present is added — including records that
+ * were previously deleted/reset locally, since restoring a backup is expected to bring them
+ * back (that's the whole point of restoring into an emptied or reset app).
  */
 export function mergeBackupData(current: AppData, backup: AppData): AppData {
   const base = migrateSyncData(current);
   const incoming = migrateSyncData(backup);
   const deletions = mergeDeletions(base.deletions, incoming.deletions);
-  const tombstoned = new Set(deletions.map(d => `${d.entityType}:${d.entityId}`));
   const result: AppData = { ...base, deletions };
-  for (const [type, collection] of Object.entries(COLLECTIONS) as [EntityType, typeof COLLECTIONS[EntityType]][]) {
+  for (const [, collection] of Object.entries(COLLECTIONS) as [EntityType, typeof COLLECTIONS[EntityType]][]) {
     const existingIds = new Set((base as any)[collection].map((e: any) => e.id));
-    const additions = (incoming as any)[collection].filter((e: any) =>
-      !existingIds.has(e.id) && !tombstoned.has(`${type}:${e.id}`));
+    const additions = (incoming as any)[collection].filter((e: any) => !existingIds.has(e.id));
     (result as any)[collection] = [...(base as any)[collection], ...additions];
   }
   return result;
