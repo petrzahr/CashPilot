@@ -11,6 +11,7 @@ import {
   sanitizeAndRepairSequences
 } from '../services/sequenceService';
 import { createBudgetPeriod, generatePeriodsSequence } from '../services/periodService';
+import { autoExecuteDueTransactions } from '../services/statusService';
 import {
   Account,
   AppSettings,
@@ -466,6 +467,22 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       { id: 'other1', seq: 1 },
       { id: 'rule_ex', seq: 2 },
     ]);
+  });
+
+  // Test 15: Zhmotnění splatného výskytu zachová pořadí nastavené přes orderHint
+  it('15. Automatické zhmotnění splatného výskytu respektuje orderHint a výjimku overrideSequence', () => {
+    const manual: Transaction = { id: 'tx_m', title: 'Ručně', amountInHaler: 100, date: '2026-10-15', sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
+    const hinted: RecurringRule = {
+      id: 'rule_h', title: 'Hint', amountInHaler: 300, type: 'expense', frequency: 'monthly', dayOfMonth: 15,
+      startDate: '2026-10-15', sourceAccountId: 'acc_main', isActive: true, orderHint: 1,
+      orderHintUpdatedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '',
+    };
+    const plain: RecurringRule = { ...hinted, id: 'rule_p', title: 'Bez hintu', orderHint: undefined, orderHintUpdatedAt: undefined };
+
+    const res = autoExecuteDueTransactions([manual], [plain, hinted], [], 15, '2026-10-16');
+    const day = res.transactions.filter(t => t.date === '2026-10-15').sort((a, b) => a.sequence - b.sequence);
+    expect(day.map(t => t.recurringRuleId || t.id)).toEqual(['rule_h', 'tx_m', 'rule_p']);
+    expect(day.map(t => t.sequence)).toEqual([1, 2, 3]);
   });
 
   // Test 14: Determinismus zůstává zachován i s hinty (nezávisle na pořadí vstupního pole pravidel)
