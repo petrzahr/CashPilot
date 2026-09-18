@@ -81,7 +81,16 @@ export function autoExecuteDueTransactions(
   const safeRules = Array.isArray(rules) ? rules : [];
   const safeExceptions = Array.isArray(exceptions) ? exceptions : [];
 
-  for (const rule of safeRules) {
+  // Pravidla s požadovanou pozicí se zhmotňují vzestupně podle orderHint, aby se ve stejném dni
+  // vložila do správného pořadí (stejné řazení jako u virtuálních výskytů v financialEngine).
+  const rulesInOrder = [...safeRules].sort((a, b) => {
+    const hintA = a.orderHint ?? Number.POSITIVE_INFINITY;
+    const hintB = b.orderHint ?? Number.POSITIVE_INFINITY;
+    if (hintA !== hintB) return hintA < hintB ? -1 : 1;
+    return 0;
+  });
+
+  for (const rule of rulesInOrder) {
     if (!rule.isActive) continue;
     if (rule.startDate > today) continue;
 
@@ -121,7 +130,11 @@ export function autoExecuteDueTransactions(
       }
 
       if (alreadyInstantiated) continue;
-        const nextSeq = getNextSequenceForDate(occ.date, currentTxs);
+        const lastSeq = getNextSequenceForDate(occ.date, currentTxs);
+        // Uživatelem nastavené pořadí série (výjimka pro periodu, jinak pravidlo) se musí
+        // zachovat i po zhmotnění výskytu, ne se ztratit řazením na konec dne.
+        const hint = ex?.overrideSequence ?? rule.orderHint;
+        const nextSeq = hint !== undefined ? Math.max(1, Math.min(Math.round(hint), lastSeq)) : lastSeq;
         const nowIso = new Date().toISOString();
         const realTx: Transaction = {
           id: `tx_rec_${rule.id}_${period.key}`,
