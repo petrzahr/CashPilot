@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createResetAppData } from '../constants/defaultData';
 import { validateAndParseBackup, type AppData } from '../services/storageService';
-import { COLLECTIONS, accountStorageKey, applyDeletions, mergePending, recordLocalChange, type SyncEnvelope } from '../services/syncModel';
+import { COLLECTIONS, accountStorageKey, applyDeletions, mergeBackupData, mergePending, recordLocalChange, type SyncEnvelope } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
 import { calculateQuickFinancialOverview, type QuickFinancialOverview } from '../services/financialEngine';
 import type { Account, Transaction } from '../types/finance';
@@ -37,6 +37,39 @@ beforeEach(() => {
   vi.stubGlobal('navigator', { onLine: true });
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+describe('mergeBackupData', () => {
+  it('adds every backup record into an empty current data set', () => {
+    const current = createResetAppData();
+    const backup = createResetAppData();
+    backup.transactions = [tx('a'), tx('b')];
+    const merged = mergeBackupData(current, backup);
+    expect(merged.transactions.map(t => t.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('keeps the existing record on id collisions instead of the backup version', () => {
+    const current = createResetAppData();
+    current.transactions = [tx('a')];
+    const backup = createResetAppData();
+    backup.transactions = [{ ...tx('a'), title: 'from backup' }];
+    const merged = mergeBackupData(current, backup);
+    expect(merged.transactions).toHaveLength(1);
+    expect(merged.transactions[0].title).toBe('a');
+  });
+
+  it('restores records that were previously deleted/reset locally (import after reset)', () => {
+    const before = createResetAppData();
+    before.transactions = [tx('a')];
+    const afterReset = recordLocalChange(envelope(before), createResetAppData(), 'device', stamp, true).data;
+    expect(afterReset.transactions).toHaveLength(0);
+    expect(afterReset.deletions.some(d => d.entityType === 'transaction' && d.entityId === 'a')).toBe(true);
+
+    const backup = createResetAppData();
+    backup.transactions = [tx('a')];
+    const merged = mergeBackupData(afterReset, backup);
+    expect(merged.transactions.map(t => t.id)).toEqual(['a']);
+  });
+});
 
 it('publishes current sidebar groups after load, local CRUD, and remote restoration', async () => {
   const initial = createResetAppData();
