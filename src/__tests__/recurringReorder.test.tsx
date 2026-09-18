@@ -83,7 +83,9 @@ async function getContextHandle() {
     return null;
   };
   renderToStaticMarkup(
-    React.createElement(FinanceProvider, { syncSession: controller }, React.createElement(Consumer))
+    <FinanceProvider syncSession={controller}>
+      <Consumer />
+    </FinanceProvider>
   );
   return ctx;
 }
