@@ -1,5 +1,22 @@
-import { Account } from '../types/finance';
-import { addHaler } from './currencyService';
+import { Account, Transaction } from '../types/finance';
+import { addHaler, subHaler } from './currencyService';
+
+/**
+ * Signed effect of a transaction on an investment/pension account value:
+ * transfers in / income add, transfers out / expenses subtract.
+ */
+export function getAssetFlowInHaler(tx: Transaction, accountId: string, amountInHaler: number): number {
+  if (tx.type === 'transfer') {
+    let flow = 0;
+    if (tx.targetAccountId === accountId) flow = addHaler(flow, amountInHaler);
+    if (tx.sourceAccountId === accountId) flow = subHaler(flow, amountInHaler);
+    return flow;
+  }
+  if (tx.sourceAccountId !== accountId) return 0;
+  if (tx.type === 'income') return amountInHaler;
+  if (tx.type === 'expense') return subHaler(0, amountInHaler);
+  return 0;
+}
 
 /** Apply the optional cost-basis correction without changing balances or cash flows. */
 export function getEffectiveInvestedAmount(account: Account, calculatedAmountInHaler: number): number {

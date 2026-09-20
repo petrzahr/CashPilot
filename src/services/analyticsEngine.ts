@@ -22,7 +22,7 @@ import {
   generatePeriodsBetween,
 } from './periodService';
 import { czechStringCompare } from './categoryService';
-import { sortAccountsByOrder } from './accountService';
+import { getAssetFlowInHaler, sortAccountsByOrder } from './accountService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
 
@@ -621,7 +621,7 @@ export function computeAssetAccountBalanceAtDate(
   }
 
   for (const t of transactions) {
-    if (t.status !== 'executed' || t.type !== 'transfer') continue;
+    if (t.status !== 'executed') continue;
     if (hasValuation) {
       if (t.date <= valDate || t.date > pointDate) continue;
     } else {
@@ -629,8 +629,7 @@ export function computeAssetAccountBalanceAtDate(
     }
 
     const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    if (t.targetAccountId === acc.id) baseVal = addHaler(baseVal, amt);
-    if (t.sourceAccountId === acc.id) baseVal = subHaler(baseVal, amt);
+    baseVal = addHaler(baseVal, getAssetFlowInHaler(t, acc.id, amt));
   }
 
   return baseVal;

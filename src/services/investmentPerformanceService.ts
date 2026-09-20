@@ -1,5 +1,5 @@
 import { Account, BudgetPeriod, MarketValueSnapshot, Transaction } from '../types/finance';
-import { getEffectiveInvestedAmount } from './accountService';
+import { getAssetFlowInHaler, getEffectiveInvestedAmount } from './accountService';
 import { addHaler, subHaler } from './currencyService';
 import { getPreviousPeriod, getTodayInPrague } from './periodService';
 
@@ -35,11 +35,8 @@ export function getHistoricalInvestedAmount(account: Account, snapshots: MarketV
 export function getInvestedAmountAtValuation(account: Account, transactions: Transaction[], date: string): number {
   let principal = account.initialBalanceInHaler;
   for (const tx of transactions) {
-    if (tx.type !== 'transfer' || tx.status !== 'executed' ||
-        tx.date < account.initialBalanceDate || tx.date > date) continue;
-    const amount = tx.actualAmountInHaler ?? tx.amountInHaler;
-    if (tx.targetAccountId === account.id) principal = addHaler(principal, amount);
-    if (tx.sourceAccountId === account.id) principal = subHaler(principal, amount);
+    if (tx.status !== 'executed' || tx.date < account.initialBalanceDate || tx.date > date) continue;
+    principal = addHaler(principal, getAssetFlowInHaler(tx, account.id, tx.actualAmountInHaler ?? tx.amountInHaler));
   }
   return getEffectiveInvestedAmount(account, Math.max(0, principal));
 }
