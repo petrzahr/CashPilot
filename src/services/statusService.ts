@@ -11,6 +11,7 @@ import {
   isDateInPeriod
 } from './periodService';
 import {
+  applyRuleRankOrder,
   getNextSequenceForDate,
   insertOrUpdateWithSequence
 } from './sequenceService';
@@ -90,6 +91,11 @@ export function autoExecuteDueTransactions(
     return 0;
   });
 
+  const seriesRanks = new Map<string, number>();
+  for (const r of safeRules) {
+    if (r.orderHint !== undefined) seriesRanks.set(r.id, r.orderHint);
+  }
+
   for (const rule of rulesInOrder) {
     if (!rule.isActive) continue;
     if (rule.startDate > today) continue;
@@ -131,10 +137,10 @@ export function autoExecuteDueTransactions(
 
       if (alreadyInstantiated) continue;
         const lastSeq = getNextSequenceForDate(occ.date, currentTxs);
-        // Uživatelem nastavené pořadí série (výjimka pro periodu, jinak pravidlo) se musí
-        // zachovat i po zhmotnění výskytu, ne se ztratit řazením na konec dne.
-        const hint = ex?.overrideSequence ?? rule.orderHint;
-        const nextSeq = hint !== undefined ? Math.max(1, Math.min(Math.round(hint), lastSeq)) : lastSeq;
+        // Pozice zvolená jen pro tuto periodu (výjimka) se zachová i po zhmotnění výskytu;
+        // pořadí série (orderHint) se uplatní níže přeuspořádáním opakovaných položek dne.
+        const override = ex?.overrideSequence;
+        const nextSeq = override !== undefined ? Math.max(1, Math.min(Math.round(override), lastSeq)) : lastSeq;
         const nowIso = new Date().toISOString();
         const realTx: Transaction = {
           id: `tx_rec_${rule.id}_${period.key}`,
@@ -158,6 +164,9 @@ export function autoExecuteDueTransactions(
         };
 
         currentTxs = insertOrUpdateWithSequence(realTx, nextSeq, currentTxs);
+        if (override === undefined && seriesRanks.size > 0) {
+          currentTxs = applyRuleRankOrder(currentTxs, seriesRanks, occ.date, occ.date);
+        }
         hasChanges = true;
         executedCount++;
     }

@@ -158,7 +158,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     };
 
     // Virtual occurrence in periodSep
-    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [salaryRule], [], 15);
+    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [salaryRule], [], 15, '2026-09-10');
     expect(effSepBefore.length).toBe(1);
     expect(effSepBefore[0].id).toBe('virtual_rec_salary_2026-09');
     expect(effSepBefore[0].status).toBe('planned');
