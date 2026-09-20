@@ -14,6 +14,7 @@ import {
 import { addHaler, subHaler } from './currencyService';
 import { computeLiquidAccountBalanceAtDate } from './analyticsEngine';
 import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from './investmentPerformanceService';
+import { getAssetFlowInHaler } from './accountService';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
@@ -524,11 +525,10 @@ export function calculateForecast(
         let netTransfers = 0;
         if (firstPeriod) {
           for (const t of safeTxs) {
-            if (t.status === 'cancelled' || t.type !== 'transfer') continue;
+            if (t.status === 'cancelled') continue;
             if (t.date >= initDate && t.date > valDate && t.date < firstPeriod.startDate) {
               const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-              if (t.targetAccountId === acc.id) netTransfers = addHaler(netTransfers, amt);
-              if (t.sourceAccountId === acc.id) netTransfers = subHaler(netTransfers, amt);
+              netTransfers = addHaler(netTransfers, getAssetFlowInHaler(t, acc.id, amt));
             }
           }
         }
@@ -648,6 +648,7 @@ export function calculateForecast(
           const accBal = accountBalances[tx.sourceAccountId];
           if (accBal) {
             accBal.incomeInHaler = addHaler(accBal.incomeInHaler, amount);
+            investedPrincipals[tx.sourceAccountId] = addHaler(investedPrincipals[tx.sourceAccountId] || 0, amount);
           }
           periodTotalIncome = addHaler(periodTotalIncome, amount);
         }
@@ -656,6 +657,7 @@ export function calculateForecast(
           const accBal = accountBalances[tx.sourceAccountId];
           if (accBal) {
             accBal.expenseInHaler = addHaler(accBal.expenseInHaler, amount);
+            investedPrincipals[tx.sourceAccountId] = subHaler(investedPrincipals[tx.sourceAccountId] || 0, amount);
           }
           periodTotalExpense = addHaler(periodTotalExpense, amount);
         }
@@ -741,18 +743,18 @@ export function calculateForecast(
         if (snapshotsInPeriod.length > 0) {
           const latestSnapInPeriod = snapshotsInPeriod[0];
           const netTransfersAfterSnap = effectiveTxs
-            .filter(t => t.status !== 'cancelled' && t.type === 'transfer' && t.date > latestSnapInPeriod.date && t.date >= initDate)
+            .filter(t => t.status !== 'cancelled' && t.date > latestSnapInPeriod.date && t.date >= initDate)
             .reduce((sum, t) => {
               const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-              if (t.targetAccountId === acc.id) return addHaler(sum, amt);
-              if (t.sourceAccountId === acc.id) return subHaler(sum, amt);
-              return sum;
+              return addHaler(sum, getAssetFlowInHaler(t, acc.id, amt));
             }, 0);
           closing = addHaler(latestSnapInPeriod.marketValueInHaler, netTransfersAfterSnap);
         } else {
           closing = addHaler(
             accBal.openingBalanceInHaler,
             baseInitialToAdd,
+            accBal.incomeInHaler,
+            subHaler(0, accBal.expenseInHaler),
             accBal.transfersInInHaler,
             subHaler(0, accBal.transfersOutInHaler)
           );
@@ -860,10 +862,10 @@ export function calculateForecast(
       let incoming = 0;
       let outgoing = 0;
       for (const tx of remainingTxs) {
-        if (tx.type !== 'transfer') continue;
         const amount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler;
-        if (tx.targetAccountId === acc.id) incoming = addHaler(incoming, amount);
-        if (tx.sourceAccountId === acc.id) outgoing = addHaler(outgoing, amount);
+        const flow = getAssetFlowInHaler(tx, acc.id, amount);
+        if (flow > 0) incoming = addHaler(incoming, flow);
+        if (flow < 0) outgoing = addHaler(outgoing, -flow);
       }
       const closing = addHaler(opening, incoming, -outgoing);
       projected.accountBalances[acc.id] = {
@@ -981,15 +983,14 @@ export function getCurrentAssetValue(
 
   // Přičíst/odečíst uskutečněné převody (vklady a výběry) po datu ocenění až do todayStr (včetně)
   for (const t of safeTxs) {
-    if (t.status !== 'executed' || t.type !== 'transfer') continue;
+    if (t.status !== 'executed') continue;
     if (hasValuation) {
       if (t.date <= valDate || t.date > todayStr) continue;
     } else {
       if (t.date < initDate || t.date > todayStr) continue;
     }
     const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    if (t.targetAccountId === acc.id) baseVal = addHaler(baseVal, amt);
-    if (t.sourceAccountId === acc.id) baseVal = subHaler(baseVal, amt);
+    baseVal = addHaler(baseVal, getAssetFlowInHaler(t, acc.id, amt));
   }
 
   return baseVal;
