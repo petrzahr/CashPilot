@@ -162,7 +162,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const septEffective = getEffectiveTransactionsForPeriod(septPeriod, [], [oldRule], [], 15);
     expect(septEffective.find(t => t.recurringRuleId === gymRule.id)?.sequence).toBe(1);
 
-    // Budoucí perioda používá nové pravidlo s hintem - virtuál je první i před manuální položkou
+    // Budoucí perioda používá nové pravidlo (s pořadím série) - virtuál je za ruční položkou dne
     const novPeriod = getPeriodForDate('2026-11-15', 15);
     const novManual: Transaction = {
       id: 'tx_nov', title: 'Nákup', amountInHaler: 2000, date: '2026-11-15', sequence: 1,
@@ -170,7 +170,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     };
     const novEffective = getEffectiveTransactionsForPeriod(novPeriod, [novManual], [oldRule, newRule], [], 15);
     const dayNov = novEffective.filter(t => t.date === '2026-11-15');
-    expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([newRule.id, novManual.id]);
+    expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([novManual.id, newRule.id]);
   });
 
   it('series: nastaví orderHint na existujícím pravidle in-place, sequence u již materializované minulé transakce zůstává beze změny', async () => {
@@ -222,6 +222,42 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const nov = getEffectiveTransactionsForPeriod(novPeriod, [], stored.recurringRules, stored.recurringExceptions, 15)
       .filter(t => t.date === '2026-11-15');
     expect(nov.map(t => t.recurringRuleId)).toEqual(['rule_gym', 'rule_rent']);
+  });
+
+  describe.each([['series' as const], ['future' as const]])('přesun 3. položky na 2. mezi provedenými opakovanými platbami (%s)', mode => {
+    const mkRule = (id: string, created: string): RecurringRule => ({ ...gymRule, id, title: id, startDate: '2026-07-15', createdAt: created });
+    const mkTx = (rule: string, month: string, seq: number): Transaction => ({
+      id: `tx_${rule}_${month}`, title: rule, amountInHaler: 1000, date: `2026-${month}-15`, sequence: seq,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'executed', actualAmountInHaler: 1000,
+      recurringRuleId: rule, createdAt: '2026-07-15T00:00:00.000Z', updatedAt: '2026-07-15T00:00:00.000Z',
+    });
+
+    it('propíše se do už zhmotněných výskytů i do budoucích virtuálních', async () => {
+      const rules = [mkRule('rule_a', '2026-07-01T01:00:00.000Z'), mkRule('rule_b', '2026-07-01T02:00:00.000Z'), mkRule('rule_c', '2026-07-01T03:00:00.000Z')];
+      const txs = ['08', '09'].flatMap(m => [mkTx('rule_a', m, 1), mkTx('rule_b', m, 2), mkTx('rule_c', m, 3)]);
+      populateTestStorage({ recurringRules: rules, transactions: txs });
+      const ctx = await getContextHandle();
+
+      // Uživatel v září přetáhne 3. (C) na 2. místo: A, C, B
+      const period = getPeriodForDate('2026-09-15', 15);
+      ctx.reorderRecurringItem('rule_c', mode, '2026-09-15', period.key,
+        ['tx_rule_a_09', 'tx_rule_c_09', 'tx_rule_b_09'], 'tx_rule_c_09');
+
+      const stored = loadStoredDataResult().data;
+      const dayOrder = (month: string) => stored.transactions
+        .filter(t => t.date === `2026-${month}-15`)
+        .sort((a, b) => a.sequence - b.sequence)
+        .map(t => t.title);
+
+      expect(dayOrder('09')).toEqual(['rule_a', 'rule_c', 'rule_b']);
+      // Srpen (minulost před zvoleným dnem): „celá série" ho přeuspořádá, „tento a další" ne
+      expect(dayOrder('08')).toEqual(mode === 'series' ? ['rule_a', 'rule_c', 'rule_b'] : ['rule_a', 'rule_b', 'rule_c']);
+
+      // Budoucí (virtuální) říjen - pořadí A, C, B
+      const oct = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-10-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+        .filter(t => t.date === '2026-10-15');
+      expect(oct.map(t => t.title)).toEqual(['rule_a', 'rule_c', 'rule_b']);
+    });
   });
 
   it('obyčejné přetažení ručně zadané položky ve dni s virtuálním výskytem zachová zvolené pořadí', async () => {

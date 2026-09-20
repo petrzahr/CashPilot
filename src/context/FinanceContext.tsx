@@ -80,6 +80,7 @@ import {
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
+  applyRuleRankOrder,
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
 
@@ -91,20 +92,25 @@ function ruleIdFromVirtualId(id: string): string | null {
   return cut > 0 ? rest.slice(0, cut) : null;
 }
 
-/** Pozice (1-based) každé opakující se položky v pořadí dne; klíčem je ID existujícího pravidla. */
-function ruleSequencesFromOrderedIds(
+/**
+ * Pro každou opakující se položku dne: absolutní pozice ve dni (positions, pro jednu periodu)
+ * a pořadí mezi opakovanými platbami (ranks, platné napříč obdobími). Klíčem je ID pravidla.
+ */
+function ruleOrderFromOrderedIds(
   orderedIds: string[],
   transactions: Transaction[],
   rules: RecurringRule[]
-): Map<string, number> {
+): { positions: Map<string, number>; ranks: Map<string, number> } {
   const positions = new Map<string, number>();
+  const ranks = new Map<string, number>();
   orderedIds.forEach((id, idx) => {
     const ruleId = ruleIdFromVirtualId(id) ?? transactions.find(t => t.id === id)?.recurringRuleId;
     if (ruleId && !positions.has(ruleId) && rules.some(r => r.id === ruleId)) {
       positions.set(ruleId, idx + 1);
+      ranks.set(ruleId, ranks.size + 1);
     }
   });
-  return positions;
+  return { positions, ranks };
 }
 
 /** Zapíše požadovanou pozici do výjimek dané periody (vytvoří je, pokud chybí). */
@@ -1301,9 +1307,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       // Pozice VŠECH opakujících se položek toho dne (ne jen přetažené). Kdyby měla pozici jen
       // přetažená, při posunu dolů pod jinou opakovanou platbu by se její index zkrátil na
       // začátek dne a původní pořadí by se vrátilo.
-      const positions = ruleSequencesFromOrderedIds(orderedIds, prev.transactions, prev.recurringRules);
-      positions.set(ruleId, Math.max(1, orderedIds.indexOf(movedTransactionId) + 1));
-      const involvedRuleIds = Array.from(positions.keys());
+      const { positions, ranks } = ruleOrderFromOrderedIds(orderedIds, prev.transactions, prev.recurringRules);
+      if (!ranks.has(ruleId)) {
+        positions.set(ruleId, Math.max(1, orderedIds.indexOf(movedTransactionId) + 1));
+        ranks.set(ruleId, ranks.size + 1);
+      }
+      const involvedRuleIds = Array.from(ranks.keys());
 
       // Zhmotněné (reálné) transakce toho dne se přeuspořádají i fyzicky - hinty ovlivňují
       // jen generování virtuálních výskytů.
@@ -1321,6 +1330,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         let rules = prev.recurringRules;
         let txs = prev.transactions;
         let exceptions = prev.recurringExceptions;
+        const newRanks = new Map<string, number>();
         involvedRuleIds.forEach((rid, i) => {
           const current = rules.find(r => r.id === rid);
           if (!current) return;
@@ -1329,29 +1339,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           );
           const hinted: RecurringRule = {
             ...split.newFutureRule,
-            orderHint: positions.get(rid),
+            orderHint: ranks.get(rid),
             orderHintUpdatedAt: nowIso,
           };
           rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
           txs = split.updatedTransactions;
           exceptions = split.updatedExceptions;
+          newRanks.set(hinted.id, ranks.get(rid) as number);
         });
 
+        // Už zhmotněné výskyty od tohoto dne dál (provedené i plánované) dostanou nové pořadí hned.
         return {
           ...prev,
           recurringRules: rules,
           recurringExceptions: exceptions,
-          transactions: reorderRealToday(txs),
+          transactions: applyRuleRankOrder(reorderRealToday(txs), newRanks, date),
         };
       }
 
-      // mode === 'series' - jen nastaví hinty na existujících pravidlech, minulost se nepřepočítává.
+      // mode === 'series' - pořadí se uloží do pravidel a propíše i do všech už zhmotněných výskytů.
       return {
         ...prev,
-        recurringRules: prev.recurringRules.map(r => positions.has(r.id)
-          ? { ...r, orderHint: positions.get(r.id), orderHintUpdatedAt: nowIso, updatedAt: nowIso }
+        recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
+          ? { ...r, orderHint: ranks.get(r.id), orderHintUpdatedAt: nowIso, updatedAt: nowIso }
           : r),
-        transactions: reorderRealToday(prev.transactions),
+        transactions: applyRuleRankOrder(reorderRealToday(prev.transactions), ranks),
       };
     });
 

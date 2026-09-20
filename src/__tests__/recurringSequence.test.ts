@@ -405,7 +405,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
   });
 
   // Test 12: Pravidlo s orderHint vloží virtuál na požadovanou pozici, pravidlo bez hintu se řadí za
-  it('12. Pravidlo s orderHint vloží virtuál před manuální položky, sourozenecké pravidlo bez hintu za', () => {
+  it('12. Pravidlo s orderHint (pořadí série) se řadí před sourozenecké pravidlo bez hintu, obě za manuální položky', () => {
     const period = createBudgetPeriod(2026, 10, 15);
     const targetDay = '2026-10-15';
     const tx1: Transaction = { id: 'tx1', title: 'Manuální 1', amountInHaler: 100, date: targetDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
@@ -427,9 +427,9 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
 
     expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
-      { id: 'rule_hinted', seq: 1 },
-      { id: 'tx1', seq: 2 },
-      { id: 'tx2', seq: 3 },
+      { id: 'tx1', seq: 1 },
+      { id: 'tx2', seq: 2 },
+      { id: 'rule_hinted', seq: 3 },
       { id: 'rule_plain', seq: 4 },
     ]);
   });
@@ -481,8 +481,15 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
 
     const res = autoExecuteDueTransactions([manual], [plain, hinted], [], 15, '2026-10-16');
     const day = res.transactions.filter(t => t.date === '2026-10-15').sort((a, b) => a.sequence - b.sequence);
-    expect(day.map(t => t.recurringRuleId || t.id)).toEqual(['rule_h', 'tx_m', 'rule_p']);
+    expect(day.map(t => t.recurringRuleId || t.id)).toEqual(['tx_m', 'rule_h', 'rule_p']);
     expect(day.map(t => t.sequence)).toEqual([1, 2, 3]);
+
+    // Dvě pravidla s pořadím série se po zhmotnění seřadí podle ranku, ne podle pořadí v poli
+    const first: RecurringRule = { ...hinted, id: 'rule_first', orderHint: 1 };
+    const second: RecurringRule = { ...hinted, id: 'rule_second', orderHint: 2 };
+    const res2 = autoExecuteDueTransactions([], [second, first], [], 15, '2026-10-16');
+    const day2 = res2.transactions.filter(t => t.date === '2026-10-15').sort((a, b) => a.sequence - b.sequence);
+    expect(day2.map(t => t.recurringRuleId)).toEqual(['rule_first', 'rule_second']);
   });
 
   // Test 14: Determinismus zůstává zachován i s hinty (nezávisle na pořadí vstupního pole pravidel)

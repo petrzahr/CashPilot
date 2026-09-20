@@ -1,4 +1,4 @@
-import {
+﻿import {
   Account,
   AppSettings,
   BalanceCorrection,
@@ -206,8 +206,10 @@ export function getEffectiveTransactionsForPeriod(
   });
 
   // Nashromáždit výskyty, které se pro tuto periodu ještě nemají zhmotnit jako reálná transakce,
-  // seskupené podle dne a doplněné o případný požadovaný hint pořadí (výjimka nebo pravidlo).
-  const pendingByDate = new Map<string, { virtual: Transaction; hint?: number; hintUpdatedAt?: string }[]>();
+  // seskupené podle dne. override = absolutní pozice jen pro tuto periodu (výjimka),
+  // rank = pořadí mezi opakovanými platbami platné napříč obdobími (orderHint pravidla).
+  type PendingOccurrence = { virtual: Transaction; override?: number; rank?: number; rankUpdatedAt?: string };
+  const pendingByDate = new Map<string, PendingOccurrence[]>();
   for (const rule of sortedRules) {
     if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
     const virtual = generateOccurrenceForPeriod(rule, period, safeExceptions, startDay, 1, today, accounts);
@@ -227,9 +229,8 @@ export function getEffectiveTransactionsForPeriod(
     if (alreadyInstantiated) continue;
 
     const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
-    const hint = ex?.overrideSequence ?? rule.orderHint;
     const list = pendingByDate.get(virtual.date) || [];
-    list.push({ virtual, hint, hintUpdatedAt: rule.orderHintUpdatedAt });
+    list.push({ virtual, override: ex?.overrideSequence, rank: rule.orderHint, rankUpdatedAt: rule.orderHintUpdatedAt });
     pendingByDate.set(virtual.date, list);
   }
 
@@ -237,12 +238,11 @@ export function getEffectiveTransactionsForPeriod(
   const adjustedManualByDate = new Map<string, Transaction[]>();
 
   for (const [occDate, pending] of pendingByDate.entries()) {
-    const hinted = pending.filter(p => p.hint !== undefined);
-    const unhinted = pending.filter(p => p.hint === undefined);
+    const hasCustomOrder = pending.some(p => p.override !== undefined || p.rank !== undefined);
 
-    if (hinted.length === 0) {
+    if (!hasCustomOrder) {
       // Beze změny oproti dřívějšímu chování: postupné přidávání na konec dne.
-      for (const { virtual } of unhinted) {
+      for (const { virtual } of pending) {
         const currentMax = dayMaxSeq.get(occDate) || 0;
         const nextSeq = currentMax + 1;
         dayMaxSeq.set(occDate, nextSeq);
@@ -252,13 +252,19 @@ export function getEffectiveTransactionsForPeriod(
       continue;
     }
 
-    // Alespoň jeden výskyt v tomto dni má požadovanou pozici - sestavíme den znovu
-    // od manuálních položek a vložíme hintované výskyty na jejich požadovaná místa.
-    hinted.sort((a, b) => {
-      if (a.hint !== b.hint) return (a.hint as number) - (b.hint as number);
-      const timeA = a.hintUpdatedAt ? new Date(a.hintUpdatedAt).getTime() : 0;
-      const timeB = b.hintUpdatedAt ? new Date(b.hintUpdatedAt).getTime() : 0;
+    // Základ dne: ruční/zhmotněné položky, za ně virtuální výskyty. Výskyty s pořadím série
+    // (rank) jdou první ve svém pořadí, ostatní za nimi v původním pořadí.
+    const withoutOverride = pending.filter(p => p.override === undefined);
+    const ranked = withoutOverride.filter(p => p.rank !== undefined).sort((a, b) => {
+      if (a.rank !== b.rank) return (a.rank as number) - (b.rank as number);
+      const timeA = a.rankUpdatedAt ? new Date(a.rankUpdatedAt).getTime() : 0;
+      const timeB = b.rankUpdatedAt ? new Date(b.rankUpdatedAt).getTime() : 0;
       if (timeA !== timeB) return timeA - timeB;
+      return (a.virtual.recurringRuleId || '').localeCompare(b.virtual.recurringRuleId || '');
+    });
+    const unranked = withoutOverride.filter(p => p.rank === undefined);
+    const overridden = pending.filter(p => p.override !== undefined).sort((a, b) => {
+      if (a.override !== b.override) return (a.override as number) - (b.override as number);
       return (a.virtual.recurringRuleId || '').localeCompare(b.virtual.recurringRuleId || '');
     });
 
@@ -272,12 +278,13 @@ export function getEffectiveTransactionsForPeriod(
       })
       .map(t => ({ ...t }));
 
-    for (const { virtual, hint } of hinted) {
-      const clampedIndex = Math.max(0, Math.min((hint as number) - 1, dayItems.length));
-      dayItems.splice(clampedIndex, 0, virtual);
-    }
-    for (const { virtual } of unhinted) {
+    for (const { virtual } of [...ranked, ...unranked]) {
       dayItems.push(virtual);
+    }
+    // Absolutní pozice pro tuto periodu (přetažení v konkrétním dni) se uplatní nakonec.
+    for (const { virtual, override } of overridden) {
+      const clampedIndex = Math.max(0, Math.min((override as number) - 1, dayItems.length));
+      dayItems.splice(clampedIndex, 0, virtual);
     }
 
     const renumbered = dayItems.map((item, idx) => ({ ...item, sequence: idx + 1 }));
@@ -292,7 +299,6 @@ export function getEffectiveTransactionsForPeriod(
     }
     adjustedManualByDate.set(occDate, manualForDate);
   }
-
   const finalManual = periodManual.map(t => {
     const adjusted = adjustedManualByDate.get(t.date);
     if (!adjusted) return t;

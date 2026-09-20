@@ -110,6 +110,48 @@ export function reorderDayTransactions(
 }
 
 /**
+ * Přeuspořádá zhmotněné opakované položky podle pořadí (rank) jejich pravidel.
+ * V každém dni se pozice (sequence), které tyto položky už zabírají, přerozdělí mezi ně
+ * podle ranku - ostatní položky dne (ruční, jiná pravidla) zůstávají na svých místech.
+ */
+export function applyRuleRankOrder(
+  transactions: Transaction[],
+  ranks: Map<string, number>,
+  fromDate?: string,
+  toDate?: string
+): Transaction[] {
+  if (ranks.size === 0) return transactions;
+
+  const byDate = new Map<string, Transaction[]>();
+  for (const t of transactions) {
+    if (!t.recurringRuleId || !ranks.has(t.recurringRuleId)) continue;
+    if (fromDate && t.date < fromDate) continue;
+    if (toDate && t.date > toDate) continue;
+    const list = byDate.get(t.date) || [];
+    list.push(t);
+    byDate.set(t.date, list);
+  }
+
+  const replaced = new Map<string, Transaction>();
+  byDate.forEach(group => {
+    if (group.length < 2) return;
+    const slots = group.map(t => t.sequence ?? 1).sort((a, b) => a - b);
+    const ordered = [...group].sort((a, b) =>
+      (ranks.get(a.recurringRuleId!)! - ranks.get(b.recurringRuleId!)!) ||
+      ((a.sequence ?? 1) - (b.sequence ?? 1)) ||
+      (a.id || '').localeCompare(b.id || '')
+    );
+    ordered.forEach((t, i) => {
+      if ((t.sequence ?? 1) !== slots[i]) {
+        replaced.set(t.id, { ...t, sequence: slots[i], updatedAt: new Date().toISOString() });
+      }
+    });
+  });
+
+  return replaced.size > 0 ? transactions.map(t => replaced.get(t.id) ?? t) : transactions;
+}
+
+/**
  * Vloží nebo upraví položku s požadovaným pořadím.
  * - Pokud se změnilo datum položky (oldDate !== txToSave.date), zbývající položky původního dne se přečíslují bez mezer.
  * - V cílovém dni se položka vloží na požadovanou pozici a ostatní položky se posunou.
