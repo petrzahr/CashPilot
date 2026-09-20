@@ -1,4 +1,4 @@
-﻿import {
+import {
   Account,
   AppSettings,
   BalanceCorrection,
@@ -207,7 +207,7 @@ export function getEffectiveTransactionsForPeriod(
 
   // Nashromáždit výskyty, které se pro tuto periodu ještě nemají zhmotnit jako reálná transakce,
   // seskupené podle dne. override = absolutní pozice jen pro tuto periodu (výjimka),
-  // rank = pořadí mezi opakovanými platbami platné napříč obdobími (orderHint pravidla).
+  // rank = pořadí mezi opakovanými platbami platné napříč obdobími (orderRank pravidla).
   type PendingOccurrence = { virtual: Transaction; override?: number; rank?: number; rankUpdatedAt?: string };
   const pendingByDate = new Map<string, PendingOccurrence[]>();
   for (const rule of sortedRules) {
@@ -230,7 +230,7 @@ export function getEffectiveTransactionsForPeriod(
 
     const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
     const list = pendingByDate.get(virtual.date) || [];
-    list.push({ virtual, override: ex?.overrideSequence, rank: rule.orderHint, rankUpdatedAt: rule.orderHintUpdatedAt });
+    list.push({ virtual, override: ex?.overrideSequence, rank: rule.orderRank, rankUpdatedAt: rule.orderRankUpdatedAt });
     pendingByDate.set(virtual.date, list);
   }
 

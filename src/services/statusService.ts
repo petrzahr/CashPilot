@@ -82,18 +82,18 @@ export function autoExecuteDueTransactions(
   const safeRules = Array.isArray(rules) ? rules : [];
   const safeExceptions = Array.isArray(exceptions) ? exceptions : [];
 
-  // Pravidla s požadovanou pozicí se zhmotňují vzestupně podle orderHint, aby se ve stejném dni
+  // Pravidla s požadovanou pozicí se zhmotňují vzestupně podle orderRank, aby se ve stejném dni
   // vložila do správného pořadí (stejné řazení jako u virtuálních výskytů v financialEngine).
   const rulesInOrder = [...safeRules].sort((a, b) => {
-    const hintA = a.orderHint ?? Number.POSITIVE_INFINITY;
-    const hintB = b.orderHint ?? Number.POSITIVE_INFINITY;
+    const hintA = a.orderRank ?? Number.POSITIVE_INFINITY;
+    const hintB = b.orderRank ?? Number.POSITIVE_INFINITY;
     if (hintA !== hintB) return hintA < hintB ? -1 : 1;
     return 0;
   });
 
   const seriesRanks = new Map<string, number>();
   for (const r of safeRules) {
-    if (r.orderHint !== undefined) seriesRanks.set(r.id, r.orderHint);
+    if (r.orderRank !== undefined) seriesRanks.set(r.id, r.orderRank);
   }
 
   for (const rule of rulesInOrder) {
@@ -138,7 +138,7 @@ export function autoExecuteDueTransactions(
       if (alreadyInstantiated) continue;
         const lastSeq = getNextSequenceForDate(occ.date, currentTxs);
         // Pozice zvolená jen pro tuto periodu (výjimka) se zachová i po zhmotnění výskytu;
-        // pořadí série (orderHint) se uplatní níže přeuspořádáním opakovaných položek dne.
+        // pořadí série (orderRank) se uplatní níže přeuspořádáním opakovaných položek dne.
         const override = ex?.overrideSequence;
         const nextSeq = override !== undefined ? Math.max(1, Math.min(Math.round(override), lastSeq)) : lastSeq;
         const nowIso = new Date().toISOString();

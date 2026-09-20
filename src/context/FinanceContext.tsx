@@ -93,6 +93,22 @@ function ruleIdFromVirtualId(id: string): string | null {
 }
 
 /**
+ * Zruší pevné pozice (overrideSequence) jednotlivých period u daných pravidel, aby pořadí
+ * série platilo všude. Výjimky, které po tom nenesou žádnou jinou změnu, se odstraní.
+ */
+function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<string>): RecurringException[] {
+  return exceptions.flatMap(e => {
+    if (!ruleIds.has(e.ruleId) || e.overrideSequence === undefined) return [e];
+    const { overrideSequence: _removed, ...rest } = e;
+    const carriesOtherChange = rest.isCancelled || rest.overrideDate !== undefined ||
+      rest.overrideAmountInHaler !== undefined || rest.overrideSourceAccountId !== undefined ||
+      rest.overrideTargetAccountId !== undefined || rest.overrideCategoryId !== undefined ||
+      rest.overrideSubcategoryId !== undefined;
+    return carriesOtherChange ? [{ ...rest, updatedAt: new Date().toISOString() }] : [];
+  });
+}
+
+/**
  * Pro každou opakující se položku dne: absolutní pozice ve dni (positions, pro jednu periodu)
  * a pořadí mezi opakovanými platbami (ranks, platné napříč obdobími). Klíčem je ID pravidla.
  */
@@ -1339,8 +1355,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           );
           const hinted: RecurringRule = {
             ...split.newFutureRule,
-            orderHint: ranks.get(rid),
-            orderHintUpdatedAt: nowIso,
+            orderRank: ranks.get(rid),
+            orderRankUpdatedAt: nowIso,
           };
           rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
           txs = split.updatedTransactions;
@@ -1352,7 +1368,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         return {
           ...prev,
           recurringRules: rules,
-          recurringExceptions: exceptions,
+          recurringExceptions: clearSequenceOverrides(exceptions, new Set(newRanks.keys())),
           transactions: applyRuleRankOrder(reorderRealToday(txs), newRanks, date),
         };
       }
@@ -1361,8 +1377,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       return {
         ...prev,
         recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
-          ? { ...r, orderHint: ranks.get(r.id), orderHintUpdatedAt: nowIso, updatedAt: nowIso }
+          ? { ...r, orderRank: ranks.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
           : r),
+        recurringExceptions: clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())),
         transactions: applyRuleRankOrder(reorderRealToday(prev.transactions), ranks),
       };
     });
