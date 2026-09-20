@@ -733,7 +733,10 @@ export function calculateForecast(
       let closing = 0;
       if (isAsset) {
         if (initDate >= period.startDate && initDate <= period.endDate) {
-          investedPrincipals[acc.id] = subHaler(addHaler(initBal, accBal.transfersInInHaler), accBal.transfersOutInHaler);
+          investedPrincipals[acc.id] = subHaler(
+            addHaler(initBal, accBal.transfersInInHaler, accBal.incomeInHaler),
+            addHaler(accBal.transfersOutInHaler, accBal.expenseInHaler)
+          );
         }
 
         const snapshotsInPeriod = safeSnapshots
