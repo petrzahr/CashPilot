@@ -137,12 +137,21 @@ export class SyncController {
           conflicts = 0;
           this.emit(remaining.length ? 'syncing' : 'synced');
         } catch (error) {
-          if (error instanceof DriveConflictError && ++conflicts < 3 && !this.stopped) continue;
+          if (error instanceof DriveConflictError && ++conflicts < 3 && !this.stopped) {
+            // Give the other device a moment to finish writing before re-reading the cloud.
+            await new Promise(resolve => setTimeout(resolve, 400 * conflicts + Math.random() * 300));
+            continue;
+          }
           throw error;
         }
       } while (!this.stopped && (this.envelope.pending.length > 0 || conflicts > 0));
     } catch (error) {
       const message = (error as Error).message;
+      // Pending operations are preserved, so a persistent conflict is retried automatically instead of stalling.
+      if (error instanceof DriveConflictError && !this.stopped) {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => { void this.sync(); }, 5000);
+      }
       this.emit(navigator.onLine === false ? 'offline' : error instanceof DriveConflictError || message.includes('Konflikt') ? 'conflict' : 'error', message);
     }
   }
