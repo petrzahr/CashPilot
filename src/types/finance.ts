@@ -100,8 +100,8 @@ export interface RecurringRule {
   subcategoryId?: string | null;
   note?: string;
   isActive: boolean;
-  orderHint?: number;          // Pořadí této platby mezi opakovanými platbami téhož dne (bez hintu = výchozí řazení)
-  orderHintUpdatedAt?: string; // Čas poslední změny orderHint - tie-break při kolizi dvou pravidel
+  orderRank?: number;          // Pořadí této platby mezi opakovanými platbami téhož dne (bez hintu = výchozí řazení)
+  orderRankUpdatedAt?: string; // Čas poslední změny orderRank - tie-break při kolizi dvou pravidel
   createdAt: string;
   updatedAt: string;
 }

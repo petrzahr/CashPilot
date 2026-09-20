@@ -404,8 +404,8 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     expect(period0Txs.find(t => t.recurringRuleId === 'rule_rent')?.sequence).toBe(1);
   });
 
-  // Test 12: Pravidlo s orderHint vloží virtuál na požadovanou pozici, pravidlo bez hintu se řadí za
-  it('12. Pravidlo s orderHint (pořadí série) se řadí před sourozenecké pravidlo bez hintu, obě za manuální položky', () => {
+  // Test 12: Pravidlo s orderRank vloží virtuál na požadovanou pozici, pravidlo bez hintu se řadí za
+  it('12. Pravidlo s orderRank (pořadí série) se řadí před sourozenecké pravidlo bez hintu, obě za manuální položky', () => {
     const period = createBudgetPeriod(2026, 10, 15);
     const targetDay = '2026-10-15';
     const tx1: Transaction = { id: 'tx1', title: 'Manuální 1', amountInHaler: 100, date: targetDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
@@ -414,7 +414,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const hintedRule: RecurringRule = {
       id: 'rule_hinted', title: 'Hintovaná', amountInHaler: 300, type: 'expense', frequency: 'monthly',
       dayOfMonth: 15, startDate: '2026-09-15', sourceAccountId: 'acc_main', isActive: true,
-      orderHint: 1, orderHintUpdatedAt: '2026-10-01T10:00:00.000Z',
+      orderRank: 1, orderRankUpdatedAt: '2026-10-01T10:00:00.000Z',
       createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z',
     };
     const plainRule: RecurringRule = {
@@ -469,15 +469,15 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     ]);
   });
 
-  // Test 15: Zhmotnění splatného výskytu zachová pořadí nastavené přes orderHint
-  it('15. Automatické zhmotnění splatného výskytu respektuje orderHint a výjimku overrideSequence', () => {
+  // Test 15: Zhmotnění splatného výskytu zachová pořadí nastavené přes orderRank
+  it('15. Automatické zhmotnění splatného výskytu respektuje orderRank a výjimku overrideSequence', () => {
     const manual: Transaction = { id: 'tx_m', title: 'Ručně', amountInHaler: 100, date: '2026-10-15', sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
     const hinted: RecurringRule = {
       id: 'rule_h', title: 'Hint', amountInHaler: 300, type: 'expense', frequency: 'monthly', dayOfMonth: 15,
-      startDate: '2026-10-15', sourceAccountId: 'acc_main', isActive: true, orderHint: 1,
-      orderHintUpdatedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '',
+      startDate: '2026-10-15', sourceAccountId: 'acc_main', isActive: true, orderRank: 1,
+      orderRankUpdatedAt: '2026-10-01T00:00:00.000Z', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '',
     };
-    const plain: RecurringRule = { ...hinted, id: 'rule_p', title: 'Bez hintu', orderHint: undefined, orderHintUpdatedAt: undefined };
+    const plain: RecurringRule = { ...hinted, id: 'rule_p', title: 'Bez hintu', orderRank: undefined, orderRankUpdatedAt: undefined };
 
     const res = autoExecuteDueTransactions([manual], [plain, hinted], [], 15, '2026-10-16');
     const day = res.transactions.filter(t => t.date === '2026-10-15').sort((a, b) => a.sequence - b.sequence);
@@ -485,11 +485,26 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     expect(day.map(t => t.sequence)).toEqual([1, 2, 3]);
 
     // Dvě pravidla s pořadím série se po zhmotnění seřadí podle ranku, ne podle pořadí v poli
-    const first: RecurringRule = { ...hinted, id: 'rule_first', orderHint: 1 };
-    const second: RecurringRule = { ...hinted, id: 'rule_second', orderHint: 2 };
+    const first: RecurringRule = { ...hinted, id: 'rule_first', orderRank: 1 };
+    const second: RecurringRule = { ...hinted, id: 'rule_second', orderRank: 2 };
     const res2 = autoExecuteDueTransactions([], [second, first], [], 15, '2026-10-16');
     const day2 = res2.transactions.filter(t => t.date === '2026-10-15').sort((a, b) => a.sequence - b.sequence);
     expect(day2.map(t => t.recurringRuleId)).toEqual(['rule_first', 'rule_second']);
+  });
+
+  // Test 16: Zastaralé pole orderHint z dřívějších verzí (absolutní pozice, často jen u jednoho pravidla) se ignoruje
+  it('16. Zastaralý orderHint v datech nemění řazení výskytů', () => {
+    const period = createBudgetPeriod(2026, 10, 15);
+    const mk = (id: string, created: string): RecurringRule => ({
+      id, title: id, amountInHaler: 100, type: 'expense', frequency: 'monthly', dayOfMonth: 15,
+      startDate: '2026-07-15', sourceAccountId: 'acc_main', isActive: true, createdAt: created, updatedAt: '',
+    });
+    const mzda = mk('mzda', '2026-07-01T01:00:00.000Z');
+    const air = mk('air', '2026-07-01T02:00:00.000Z');
+    const bonus = { ...mk('bonus', '2026-07-01T03:00:00.000Z'), orderHint: 2 } as RecurringRule;
+
+    const day = getEffectiveTransactionsForPeriod(period, [], [air, bonus, mzda], [], 15).filter(t => t.date === '2026-10-15');
+    expect(day.map(t => t.recurringRuleId)).toEqual(['mzda', 'air', 'bonus']);
   });
 
   // Test 14: Determinismus zůstává zachován i s hinty (nezávisle na pořadí vstupního pole pravidel)
@@ -498,13 +513,13 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const rule1: RecurringRule = {
       id: 'r1', title: 'R1', amountInHaler: 100, type: 'expense', frequency: 'monthly', dayOfMonth: 18,
       startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true,
-      orderHint: 2, orderHintUpdatedAt: '2026-10-01T10:00:00.000Z',
+      orderRank: 2, orderRankUpdatedAt: '2026-10-01T10:00:00.000Z',
       createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '',
     };
     const rule2: RecurringRule = {
       id: 'r2', title: 'R2', amountInHaler: 200, type: 'expense', frequency: 'monthly', dayOfMonth: 18,
       startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true,
-      orderHint: 1, orderHintUpdatedAt: '2026-10-01T09:00:00.000Z',
+      orderRank: 1, orderRankUpdatedAt: '2026-10-01T09:00:00.000Z',
       createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '',
     };
 
