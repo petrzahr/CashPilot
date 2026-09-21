@@ -1001,6 +1001,8 @@ export function getCurrentAssetValue(
 
 export interface QuickFinancialOverview {
   checkingAndCashInHaler: number;
+  checkingInHaler: number;
+  cashInHaler: number;
   savingsInHaler: number;
   investmentsInHaler: number;
   pensionInHaler: number;
@@ -1025,6 +1027,8 @@ export function calculateQuickFinancialOverview(
   const safeSnapshots = Array.isArray(marketValueSnapshots) ? marketValueSnapshots : [];
 
   let checkingAndCashInHaler = 0;
+  let checkingInHaler = 0;
+  let cashInHaler = 0;
   let savingsInHaler = 0;
   let investmentsInHaler = 0;
   let pensionInHaler = 0;
@@ -1037,6 +1041,8 @@ export function calculateQuickFinancialOverview(
 
     if (acc.type === 'checking' || acc.type === 'cash') {
       checkingAndCashInHaler = addHaler(checkingAndCashInHaler, balance);
+      if (acc.type === 'checking') checkingInHaler = addHaler(checkingInHaler, balance);
+      else cashInHaler = addHaler(cashInHaler, balance);
     } else if (acc.type === 'savings') {
       savingsInHaler = addHaler(savingsInHaler, balance);
     } else if (acc.type === 'investment') {
@@ -1050,6 +1056,8 @@ export function calculateQuickFinancialOverview(
 
   return {
     checkingAndCashInHaler,
+    checkingInHaler,
+    cashInHaler,
     savingsInHaler,
     investmentsInHaler,
     pensionInHaler,

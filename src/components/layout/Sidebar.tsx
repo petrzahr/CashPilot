@@ -127,9 +127,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3.5 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
-              <span className="truncate pr-2" title="Běžné účty + hotovost">Běžné účty + hotovost</span>
-              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingAndCashInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                {formatCurrency(quickOverview.checkingAndCashInHaler)}
+              <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                {formatCurrency(quickOverview.checkingInHaler)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="truncate pr-2" title="Hotovost">Hotovost</span>
+              <span className={`shrink-0 font-medium tabular-nums ${quickOverview.cashInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                {formatCurrency(quickOverview.cashInHaler)}
               </span>
             </div>
             <div className="flex items-center justify-between text-slate-500">
