@@ -432,7 +432,7 @@ export async function findAppDataFile(token: string, signal?: AbortSignal): Prom
  * Stáhne a naparsuje data ze souboru na Google Disku
  */
 export async function downloadFromGoogleDrive(token: string, fileId: string, signal?: AbortSignal): Promise<AppData> {
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+  const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`;
 
   const res = await fetch(url, {
     signal, cache: 'no-store',
