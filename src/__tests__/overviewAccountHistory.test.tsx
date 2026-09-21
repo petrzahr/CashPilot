@@ -55,7 +55,7 @@ const cases = [
 ] as const;
 
 describe.each(['investment', 'pension'] as const)('Overview %s forecast', type => {
-  it.each(cases)('$name', ({ values, opening, closing }) => {
+  it.each(cases)('$name', ({ values, closing }) => {
     const period = createBudgetPeriod(2026, 8, 15);
     const last = values[values.length - 1];
     const asset: Account = {

@@ -1,17 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { Account, AppSettings, BudgetPeriod, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
+import { Account, BudgetPeriod, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
 import { } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
 
 describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
-  const settings: AppSettings = {
-    currency: 'CZK',
-    budgetStartDay: 15,
-    minReserveInHaler: 5000000,
-    roundAmounts: false,
-  };
-
   const periodSep: BudgetPeriod = createBudgetPeriod(2026, 9, 15); // 15. 9. 2026 – 14. 10. 2026
 
   const testAccounts: Account[] = [
@@ -81,9 +74,6 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
   ];
 
   it('1. Czech alphabetical sorting: sorts strings with diacritics, case-insensitively, trimming spaces', () => {
-    const raw = [' Zrušená ', 'Auto', 'ČSOB Penze', 'Běžný účet', 'auto', 'stravování', 'Stravování', 'Školy', 'Řemesla'];
-    const sorted = [...raw].sort(czechStringCompare);
-
     // Expected order in Czech:
     // "Auto" / "auto", "Běžný účet", "ČSOB Penze", "Řemesla", "Stravování" / "stravování", "Školy", " Zrušená "
     expect(czechStringCompare('Auto', 'Bydlení')).toBeLessThan(0);

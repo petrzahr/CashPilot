@@ -1,4 +1,3 @@
-import { mergePending, migrateSyncData, type PendingOperation } from './syncModel';
 /**
  * Google Drive Sync Service pro CashPilot
  * Využívá Google Identity Services (GIS) Token Client a Google Drive API v3 (appDataFolder).
@@ -365,10 +364,6 @@ export function sortDriveFilesByPrecedence(files: DriveFileInfo[]): DriveFileInf
     driveFileTime(b) - driveFileTime(a) || driveFileSize(b) - driveFileSize(a) || b.id.localeCompare(a.id));
 }
 
-export function pickCanonicalDriveFile(files: DriveFileInfo[]): DriveFileInfo | null {
-  return sortDriveFilesByPrecedence(files)[0] ?? null;
-}
-
 /**
  * Odloží duplicitní datový soubor přejmenováním. Nikdy nemaže – obsah zůstává v appDataFolder
  * dostupný, jen přestane odpovídat kanonickému názvu.
@@ -546,17 +541,6 @@ export async function uploadToGoogleDrive(
 
   const result = await res.json();
   return { ...result, name: result.name || result.title, modifiedTime: result.modifiedTime || result.modifiedDate, size: result.size || result.fileSize } as DriveFileInfo;
-}
-
-export interface MergeResult {
-  mergedData: AppData;
-  hasLocalAdditions: boolean;
-}
-
-/** Legacy entry point: cached entities without explicit operations are never uploaded. */
-export function mergeCloudAndLocalData(cloudData: AppData, localData: AppData, pending: PendingOperation[] = []): MergeResult {
-  const mergedData = mergePending(cloudData, localData, pending);
-  return { mergedData, hasLocalAdditions: JSON.stringify(mergedData) !== JSON.stringify(migrateSyncData(cloudData)) };
 }
 
 export class DriveConflictError extends Error {

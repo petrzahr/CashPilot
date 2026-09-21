@@ -7,34 +7,9 @@ import {
   createBudgetPeriod,
 } from '../services/periodService';
 import {
-  Account,
-  AppSettings,
   RecurringRule,
   Transaction
 } from '../types/finance';
-
-const defaultSettings: AppSettings = {
-  currency: 'CZK',
-  budgetStartDay: 15,
-  minReserveInHaler: 0,
-  roundAmounts: false,
-};
-
-const checkingAccount: Account = {
-  id: 'acc_main',
-  name: 'Běžný účet',
-  type: 'checking',
-  currency: 'CZK',
-  initialBalanceInHaler: 10000000,
-  initialBalanceDate: '2026-01-01',
-  isUsableCash: true,
-  isNetWorth: true,
-  color: '#3B82F6',
-  sortOrder: 1,
-  status: 'active',
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-};
 
 describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Požadavek 10)', () => {
   const todayRef = '2026-09-20';

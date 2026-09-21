@@ -6,10 +6,7 @@ import { FinanceProvider } from '../context/FinanceContext';
 import {
   resolveAnalyticsDateRange,
   getFilteredExecutedTransactions,
-  calculateAnalyticsKPIs,
   calculateMonthlyCashFlow,
-  calculateCategoryBreakdown,
-  calculateNetWorthHistory,
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
@@ -315,77 +312,6 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     expect(filtered.length).toBe(0);
   });
 
-  // 7. Vyloučení převodů z příjmů a výdajů
-  it('7. Vylučuje převody mezi vlastními účty z celkových příjmů a výdajů', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const transferTx: Transaction = {
-      id: 'tx_trans',
-      title: 'Převod na spořák',
-      amountInHaler: 2000000, // 20 000 Kč
-      date: '2026-09-05',
-      sequence: 1,
-      type: 'transfer',
-      sourceAccountId: sampleChecking.id,
-      targetAccountId: sampleSavings.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      [transferTx],
-      testAccounts,
-      [transferTx],
-      [],
-      [],
-      null);
-
-    // Převod nesmí být započítán jako příjem ani výdaj
-    expect(kpis.totalIncomeInHaler).toBe(0);
-    expect(kpis.totalExpenseInHaler).toBe(0);
-    expect(kpis.netChangeInHaler).toBe(0);
-  });
-
-  // 8. Neutralita převodů pro celkové jmění
-  it('8. Převody mezi vlastními účty jsou z hlediska celkového jmění neutrální', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const transferTx: Transaction = {
-      id: 'tx_trans_inv',
-      title: 'Vklad do Portu',
-      amountInHaler: 5000000, // 50 000 Kč
-      date: '2026-09-05',
-      sequence: 1,
-      type: 'transfer',
-      sourceAccountId: sampleChecking.id,
-      targetAccountId: sampleInvestment.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const kpisWithout = calculateAnalyticsKPIs(
-      range,
-      [],
-      testAccounts,
-      [],
-      [],
-      [],
-      null);
-
-    const kpisWith = calculateAnalyticsKPIs(
-      range,
-      [transferTx],
-      testAccounts,
-      [transferTx],
-      [],
-      [],
-      null);
-
-    // Změna celkového jmění je po převodu totožná
-    expect(kpisWith.netWorthChangeInHaler).toBe(kpisWithout.netWorthChangeInHaler);
-  });
-
   // 9. Zohlednění převodů v historii konkrétního účtu
   it('9. Zohledňuje převody v historii zůstatku konkrétního účtu', () => {
     const transferTx: Transaction = {
@@ -421,36 +347,6 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     expect(savBal).toBe(21000000);
   });
 
-  // 10. Vyloučení korekcí z příjmů a výdajů
-  it('10. Vylučuje korekce zůstatku z příjmů i výdajů', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const corrTx: Transaction = {
-      id: 'corr1',
-      title: 'Korekce',
-      amountInHaler: 50000,
-      diffInHaler: -50000,
-      date: '2026-09-05',
-      sequence: 1,
-      type: 'balance_adjustment',
-      sourceAccountId: sampleChecking.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      [corrTx],
-      testAccounts,
-      [corrTx],
-      [],
-      [],
-      null);
-
-    expect(kpis.totalIncomeInHaler).toBe(0);
-    expect(kpis.totalExpenseInHaler).toBe(0);
-  });
-
   // 11. Zohlednění korekcí v zůstatku běžných a spořicích účtů
   it('11. Zohledňuje korekce zůstatku u běžných a spořicích účtů', () => {
     const corr: BalanceCorrection = {
@@ -472,215 +368,6 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     // Korekce nesmí změnit hodnotu investičního účtu
     const bal = computeAssetAccountBalanceAtDate(sampleInvestment, '2026-09-10', [], []);
     expect(bal).toBe(sampleInvestment.initialBalanceInHaler);
-  });
-
-  // 13. Správný výpočet čisté změny
-  it('13. Správný výpočet čisté změny (příjmy − výdaje)', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const txs: Transaction[] = [
-      {
-        id: 't_inc',
-        title: 'Mzda',
-        amountInHaler: 6000000, // 60 000 Kč
-        date: '2026-09-01',
-        sequence: 1,
-        type: 'income',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: 't_exp',
-        title: 'Nájem',
-        amountInHaler: 2500000, // 25 000 Kč
-        date: '2026-09-02',
-        sequence: 2,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      txs,
-      testAccounts,
-      txs,
-      [],
-      [],
-      null);
-
-    expect(kpis.totalIncomeInHaler).toBe(6000000);
-    expect(kpis.totalExpenseInHaler).toBe(2500000);
-    expect(kpis.netChangeInHaler).toBe(3500000);
-  });
-
-  // 14. Správný výpočet míry úspor
-  it('14. Správný výpočet míry úspor v %', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const txs: Transaction[] = [
-      {
-        id: 'i1',
-        title: 'Příjem',
-        amountInHaler: 10000000, // 100 000 Kč
-        date: '2026-09-01',
-        sequence: 1,
-        type: 'income',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: 'e1',
-        title: 'Výdaj',
-        amountInHaler: 4000000, // 40 000 Kč
-        date: '2026-09-02',
-        sequence: 2,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      txs,
-      testAccounts,
-      txs,
-      [],
-      [],
-      null);
-
-    // (100k - 40k) / 100k * 100 = 60.0 %
-    expect(kpis.savingsRate).toBe(60);
-  });
-
-  // 15. Bezpečný výpočet při nulových příjmech
-  it('15. Bezpečný výpočet míry úspor při nulových příjmech (vrací null, žádné NaN)', () => {
-    const range = resolveAnalyticsDateRange('12m', undefined, undefined, undefined, today).range;
-    const expTx: Transaction = {
-      id: 'e1',
-      title: 'Výdaj',
-      amountInHaler: 100000,
-      date: '2026-09-02',
-      sequence: 1,
-      type: 'expense',
-      sourceAccountId: sampleChecking.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      [expTx],
-      testAccounts,
-      [expTx],
-      [],
-      [],
-      null);
-
-    expect(kpis.savingsRate).toBeNull();
-  });
-
-  // 16. Správné měsíční průměry
-  it('16. Správné měsíční průměry výdajů', () => {
-    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today, 15).range;
-    expect(range.periods.length).toBe(3);
-
-    const txs: Transaction[] = [
-      {
-        id: 'e1',
-        title: 'Výdaj',
-        amountInHaler: 3000000, // 30 000 Kč
-        date: '2026-09-01',
-        sequence: 1,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const kpis = calculateAnalyticsKPIs(
-      range,
-      txs,
-      testAccounts,
-      txs,
-      [],
-      [],
-      null);
-
-    // 30 000 / 3 měsíce = 10 000 Kč
-    expect(kpis.avgMonthlyExpenseInHaler).toBe(1000000);
-  });
-
-  // 17. Správné seskupení hlavních kategorií a podkategorií
-  it('17. Správné seskupení kategorií s rozpadem na podkategorie a Bez kategorie', () => {
-    const txs: Transaction[] = [
-      {
-        id: 't_groc',
-        title: 'Nákup potravin',
-        amountInHaler: 150000,
-        date: '2026-09-02',
-        sequence: 1,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        categoryId: catFood.id,
-        subcategoryId: subGroceries.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: 't_nocat',
-        title: 'Různé bez kategorie',
-        amountInHaler: 50000,
-        date: '2026-09-03',
-        sequence: 2,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const breakdown = calculateCategoryBreakdown('expense', txs, testCategories);
-    expect(breakdown.length).toBe(2);
-
-    // První kategorie podle částky je Potraviny
-    expect(breakdown[0].name).toBe('Potraviny');
-    expect(breakdown[0].totalInHaler).toBe(150000);
-    expect(breakdown[0].subcategories.length).toBe(1);
-    expect(breakdown[0].subcategories[0].name).toBe('Supermarket');
-
-    // Druhá kategorie je Bez kategorie
-    expect(breakdown[1].name).toBe('Bez kategorie');
-    expect(breakdown[1].totalInHaler).toBe(50000);
-  });
-
-  // 18. České abecední řazení kategorií a účtů
-  it('18. Řazení kategorií a účtů respektuje české abecední řazení', () => {
-    const catA: Category = { id: 'cA', name: 'Čaj a káva', type: 'expense', color: '', icon: '', sortOrder: 1, status: 'active', createdAt: '', updatedAt: '' };
-    const catB: Category = { id: 'cB', name: 'Cestování', type: 'expense', color: '', icon: '', sortOrder: 2, status: 'active', createdAt: '', updatedAt: '' };
-
-    const txs: Transaction[] = [
-      { id: '1', title: '', amountInHaler: 100, date: '2026-09-01', sequence: 1, type: 'expense', sourceAccountId: sampleChecking.id, categoryId: catA.id, status: 'executed', createdAt: '', updatedAt: '' },
-      { id: '2', title: '', amountInHaler: 100, date: '2026-09-01', sequence: 2, type: 'expense', sourceAccountId: sampleChecking.id, categoryId: catB.id, status: 'executed', createdAt: '', updatedAt: '' },
-    ];
-
-    const breakdown = calculateCategoryBreakdown('expense', txs, [catA, catB]);
-    // Při stejné částce: 'Cestování' má být před 'Čaj a káva' (C < Č)
-    expect(breakdown[0].name).toBe('Cestování');
-    expect(breakdown[1].name).toBe('Čaj a káva');
   });
 
   // 19. Historický stav účtu před datem počátečního stavu rovný nule
@@ -714,22 +401,6 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     // Stav k srpnu 2026 musí použít snapshot z 1. 8. (550 000 Kč)
     const balAug = computeAssetAccountBalanceAtDate(sampleInvestment, '2026-08-31', [], snaps);
     expect(balAug).toBe(55000000);
-  });
-
-  // 21. Správný vývoj celkového jmění
-  it('21. Vývoj celkového jmění správně agreguje všechny skupiny po měsících', () => {
-    const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, today, 15).range;
-    const history = calculateNetWorthHistory(range.periods, testAccounts, [], [], []);
-
-    expect(history.length).toBe(3);
-    for (const point of history) {
-      const sum =
-        point.checkingAndCashInHaler +
-        point.savingsInHaler +
-        point.investmentsInHaler +
-        point.pensionInHaler;
-      expect(point.totalNetWorthInHaler).toBe(sum);
-    }
   });
 
   // 22. Zahrnutí historie archivovaných účtů a kategorií
@@ -883,8 +554,6 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   };
-
-  const sampleAccounts = [sampleChecking];
 
   // 1. Pole Od a Do používají pouze výběr měsíce a roku
   it('1. Pole Od a Do používají pouze výběr měsíce a roku (input type="month")', () => {

@@ -14,13 +14,11 @@ import {
   getPreviousPeriod,
   getNextPeriod,
   formatCzechDate,
-  getPreviousDayString,
   getTodayInPrague,
   isDateInPeriod,
   getOverviewPeriods,
   generatePeriodsBetween,
 } from './periodService';
-import { czechStringCompare } from './categoryService';
 import { getAssetFlowInHaler, sortAccountsByOrder } from './accountService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
@@ -54,17 +52,6 @@ export interface AnalyticsFilters {
   subcategoryId?: string | null;
 }
 
-export interface AnalyticsKPIs {
-  totalIncomeInHaler: number;
-  totalExpenseInHaler: number;
-  netChangeInHaler: number;
-  savingsRate: number | null;
-  avgMonthlyExpenseInHaler: number;
-  netWorthChangeInHaler: number;
-  hasPartialCurrentMonth: boolean;
-  totalMonthsCount: number;
-}
-
 export interface MonthlyCashFlowPoint {
   monthKey: string;
   label: string;
@@ -74,37 +61,6 @@ export interface MonthlyCashFlowPoint {
   expenseInHaler: number;
   netChangeInHaler: number;
   savingsRate: number | null;
-  isCurrentMonth: boolean;
-}
-
-export interface SubcategoryBreakdownItem {
-  subcategoryId: string;
-  name: string;
-  totalInHaler: number;
-  percentage: number;
-}
-
-export interface CategoryBreakdownItem {
-  categoryId: string;
-  name: string;
-  color: string;
-  icon?: string;
-  totalInHaler: number;
-  percentage: number;
-  subcategories: SubcategoryBreakdownItem[];
-}
-
-export interface NetWorthHistoryPoint {
-  monthKey: string;
-  label: string;
-  shortLabel: string;
-  dateRangeStr: string;
-  date: string;
-  checkingAndCashInHaler: number;
-  savingsInHaler: number;
-  investmentsInHaler: number;
-  pensionInHaler: number;
-  totalNetWorthInHaler: number;
   isCurrentMonth: boolean;
 }
 
@@ -635,145 +591,6 @@ export function computeAssetAccountBalanceAtDate(
 }
 
 /**
- * Spočítá celkové jmění k danému dni.
- */
-export function calculateNetWorthAtDate(
-  accounts: Account[] = [],
-  pointDate: string,
-  transactions: Transaction[] = [],
-  corrections: BalanceCorrection[] = [],
-  snapshots: MarketValueSnapshot[] = [],
-  filterAccountId?: string | null
-): {
-  checkingAndCashInHaler: number;
-  savingsInHaler: number;
-  investmentsInHaler: number;
-  pensionInHaler: number;
-  totalNetWorthInHaler: number;
-} {
-  const targetAccounts = filterAccountId
-    ? accounts.filter((a) => a.id === filterAccountId)
-    : accounts;
-
-  let checkingAndCashInHaler = 0;
-  let savingsInHaler = 0;
-  let investmentsInHaler = 0;
-  let pensionInHaler = 0;
-
-  for (const acc of targetAccounts) {
-    if (acc.type === 'checking' || acc.type === 'cash' || acc.type === 'other') {
-      checkingAndCashInHaler = addHaler(
-        checkingAndCashInHaler,
-        computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections)
-      );
-    } else if (acc.type === 'savings') {
-      savingsInHaler = addHaler(
-        savingsInHaler,
-        computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections)
-      );
-    } else if (acc.type === 'investment') {
-      investmentsInHaler = addHaler(
-        investmentsInHaler,
-        computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
-      );
-    } else if (acc.type === 'pension') {
-      pensionInHaler = addHaler(
-        pensionInHaler,
-        computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
-      );
-    }
-  }
-
-  const totalNetWorthInHaler = addHaler(
-    checkingAndCashInHaler,
-    savingsInHaler,
-    investmentsInHaler,
-    pensionInHaler
-  );
-
-  return {
-    checkingAndCashInHaler,
-    savingsInHaler,
-    investmentsInHaler,
-    pensionInHaler,
-    totalNetWorthInHaler,
-  };
-}
-
-/**
- * Spočítá 6 hlavních souhrnných KPI karet pro sekci Analýza & trendy.
- */
-export function calculateAnalyticsKPIs(
-  range: AnalyticsDateRange,
-  filteredTxs: Transaction[],
-  accounts: Account[],
-  allTxs: Transaction[],
-  corrections: BalanceCorrection[],
-  snapshots: MarketValueSnapshot[],
-  filterAccountId?: string | null
-): AnalyticsKPIs {
-  let totalIncomeInHaler = 0;
-  let totalExpenseInHaler = 0;
-
-  for (const t of filteredTxs) {
-    if (t.type === 'transfer' || t.type === 'balance_adjustment') continue;
-
-    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-
-    if (t.type === 'income') {
-      totalIncomeInHaler = addHaler(totalIncomeInHaler, amt);
-    } else if (t.type === 'expense') {
-      totalExpenseInHaler = addHaler(totalExpenseInHaler, amt);
-    }
-  }
-
-  const netChangeInHaler = subHaler(totalIncomeInHaler, totalExpenseInHaler);
-
-  const savingsRate =
-    totalIncomeInHaler > 0
-      ? ((totalIncomeInHaler - totalExpenseInHaler) / totalIncomeInHaler) * 100
-      : null;
-
-  const totalMonthsCount = Math.max(1, range.periods.length);
-  const avgMonthlyExpenseInHaler = Math.round(totalExpenseInHaler / totalMonthsCount);
-
-  // Změna celkového jmění = stav ke konci období - stav k předchozímu dni před startem období
-  const prevDayStr = getPreviousDayString(range.startDate);
-
-  const netWorthStart = calculateNetWorthAtDate(
-    accounts,
-    prevDayStr,
-    allTxs,
-    corrections,
-    snapshots,
-    filterAccountId
-  ).totalNetWorthInHaler;
-
-  const netWorthEnd = calculateNetWorthAtDate(
-    accounts,
-    range.endDate,
-    allTxs,
-    corrections,
-    snapshots,
-    filterAccountId
-  ).totalNetWorthInHaler;
-
-  const netWorthChangeInHaler = subHaler(netWorthEnd, netWorthStart);
-  const hasPartialCurrentMonth = range.periods.some((p) => p.isCurrentPeriod);
-
-  return {
-    totalIncomeInHaler,
-    totalExpenseInHaler,
-    netChangeInHaler,
-    savingsRate,
-    avgMonthlyExpenseInHaler,
-    netWorthChangeInHaler,
-    hasPartialCurrentMonth,
-    totalMonthsCount,
-  };
-}
-
-/**
  * Spočítá cash flow podle rozpočtových period pro hlavní sloupcový graf.
  */
 export function calculateMonthlyCashFlow(
@@ -809,178 +626,6 @@ export function calculateMonthlyCashFlow(
       expenseInHaler,
       netChangeInHaler,
       savingsRate,
-      isCurrentMonth: p.isCurrentPeriod,
-    };
-  });
-}
-
-/**
- * Spočítá rozpad kategorií seřazený sestupně podle částky a abecedně A–Z.
- */
-export function calculateCategoryBreakdown(
-  type: 'expense' | 'income',
-  filteredTxs: Transaction[],
-  categories: Category[]
-): CategoryBreakdownItem[] {
-  const relevantTxs = filteredTxs.filter((t) => t.type === type);
-
-  let totalAmountInHaler = 0;
-  for (const t of relevantTxs) {
-    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    totalAmountInHaler = addHaler(totalAmountInHaler, amt);
-  }
-
-  const catMap = new Map<string, Category>();
-  for (const c of categories) {
-    catMap.set(c.id, c);
-  }
-
-  const mainAgg = new Map<
-    string,
-    {
-      name: string;
-      color: string;
-      icon?: string;
-      total: number;
-      subMap: Map<string, { name: string; total: number }>;
-    }
-  >();
-
-  for (const t of relevantTxs) {
-    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    const cat = t.categoryId ? catMap.get(t.categoryId) : undefined;
-
-    let mainCatId = 'uncategorized';
-    let mainCatName = 'Bez kategorie';
-    let mainColor = '#94a3b8';
-    let mainIcon: string | undefined = undefined;
-
-    let subId = t.subcategoryId || (cat && cat.parentId ? cat.id : 'no_sub');
-    let subName = 'Bez podkategorie';
-
-    if (cat) {
-      if (cat.parentId) {
-        const parent = catMap.get(cat.parentId);
-        mainCatId = cat.parentId;
-        mainCatName = parent ? parent.name : 'Neznámá kategorie';
-        mainColor = parent ? parent.color : cat.color;
-        mainIcon = parent ? parent.icon : cat.icon;
-        subId = cat.id;
-        subName = cat.name;
-      } else {
-        mainCatId = cat.id;
-        mainCatName = cat.name;
-        mainColor = cat.color;
-        mainIcon = cat.icon;
-
-        if (t.subcategoryId) {
-          const subCat = catMap.get(t.subcategoryId);
-          subId = t.subcategoryId;
-          subName = subCat ? subCat.name : 'Podkategorie';
-        }
-      }
-    }
-
-    if (!mainAgg.has(mainCatId)) {
-      mainAgg.set(mainCatId, {
-        name: mainCatName,
-        color: mainColor,
-        icon: mainIcon,
-        total: 0,
-        subMap: new Map(),
-      });
-    }
-
-    const mItem = mainAgg.get(mainCatId)!;
-    mItem.total = addHaler(mItem.total, amt);
-
-    if (!mItem.subMap.has(subId)) {
-      mItem.subMap.set(subId, { name: subName, total: 0 });
-    }
-    const sItem = mItem.subMap.get(subId)!;
-    sItem.total = addHaler(sItem.total, amt);
-  }
-
-  const result: CategoryBreakdownItem[] = [];
-
-  for (const [id, data] of mainAgg.entries()) {
-    if (data.total <= 0) continue;
-
-    const percentage =
-      totalAmountInHaler > 0 ? (data.total / totalAmountInHaler) * 100 : 0;
-
-    const subcategories: SubcategoryBreakdownItem[] = [];
-    for (const [sId, sData] of data.subMap.entries()) {
-      if (sData.total <= 0) continue;
-      subcategories.push({
-        subcategoryId: sId,
-        name: sData.name,
-        totalInHaler: sData.total,
-        percentage: data.total > 0 ? (sData.total / data.total) * 100 : 0,
-      });
-    }
-
-    subcategories.sort((a, b) => {
-      if (b.totalInHaler !== a.totalInHaler) {
-        return b.totalInHaler - a.totalInHaler;
-      }
-      return czechStringCompare(a.name, b.name);
-    });
-
-    result.push({
-      categoryId: id,
-      name: data.name,
-      color: data.color,
-      icon: data.icon,
-      totalInHaler: data.total,
-      percentage,
-      subcategories,
-    });
-  }
-
-  result.sort((a, b) => {
-    if (b.totalInHaler !== a.totalInHaler) {
-      return b.totalInHaler - a.totalInHaler;
-    }
-    return czechStringCompare(a.name, b.name);
-  });
-
-  return result;
-}
-
-/**
- * Spočítá vývoj celkového jmění podle rozpočtových period.
- */
-export function calculateNetWorthHistory(
-  periods: BudgetPeriodInfo[],
-  accounts: Account[],
-  transactions: Transaction[],
-  corrections: BalanceCorrection[],
-  snapshots: MarketValueSnapshot[],
-  filterAccountId?: string | null
-): NetWorthHistoryPoint[] {
-  return periods.map((p) => {
-    const pointDate = p.analysisEndDate;
-    const nw = calculateNetWorthAtDate(
-      accounts,
-      pointDate,
-      transactions,
-      corrections,
-      snapshots,
-      filterAccountId
-    );
-
-    return {
-      monthKey: p.key,
-      label: p.label,
-      shortLabel: p.shortLabel,
-      dateRangeStr: p.dateRangeStr,
-      date: pointDate,
-      checkingAndCashInHaler: nw.checkingAndCashInHaler,
-      savingsInHaler: nw.savingsInHaler,
-      investmentsInHaler: nw.investmentsInHaler,
-      pensionInHaler: nw.pensionInHaler,
-      totalNetWorthInHaler: nw.totalNetWorthInHaler,
       isCurrentMonth: p.isCurrentPeriod,
     };
   });
