@@ -85,7 +85,7 @@ it('publishes current sidebar groups after load, local CRUD, and remote restorat
       data.marketValueSnapshots, '2026-09-14');
   }, drive.transport);
   const expected = {
-    checkingAndCashInHaler: 1000, savingsInHaler: 1000, investmentsInHaler: 1000,
+    checkingAndCashInHaler: 1000, checkingInHaler: 1000, cashInHaler: 0, savingsInHaler: 1000, investmentsInHaler: 1000,
     pensionInHaler: 1000, totalNetWorthInHaler: 0,
   };
   try {
@@ -95,19 +95,19 @@ it('publishes current sidebar groups after load, local CRUD, and remote restorat
       sourceAccountId: 'checking', amountInHaler: 100, status: 'executed', date: '2026-09-14',
       sequence: 1, createdAt: stamp, updatedAt: stamp };
     controller.change(data => ({ ...data, transactions: [expense] }));
-    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 900 });
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 900, checkingInHaler: 900 });
     controller.change(data => ({ ...data, transactions: [{ ...expense, actualAmountInHaler: 250 }] }));
-    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 750 });
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 750, checkingInHaler: 750 });
     controller.change(data => ({ ...data, transactions: [] }));
     expect(overview).toEqual(expected);
     controller.change(data => ({ ...data, accounts: data.accounts.map(a => ({ ...a, initialBalanceInHaler: 2000 })) }));
-    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 2000, savingsInHaler: 2000,
+    expect(overview).toEqual({ ...expected, checkingAndCashInHaler: 2000, checkingInHaler: 2000, savingsInHaler: 2000,
       investmentsInHaler: 2000, pensionInHaler: 2000 });
     await controller.sync();
     drive.cloud.accounts = drive.cloud.accounts.map(a => ({ ...a, initialBalanceInHaler: 3000, isNetWorth: true }));
     drive.cloud.sync.revision++;
     await controller.sync();
-    expect(overview).toEqual({ checkingAndCashInHaler: 3000, savingsInHaler: 3000,
+    expect(overview).toEqual({ checkingAndCashInHaler: 3000, checkingInHaler: 3000, cashInHaler: 0, savingsInHaler: 3000,
       investmentsInHaler: 3000, pensionInHaler: 3000, totalNetWorthInHaler: 12000 });
     controller.change(data => ({ ...data, accounts: data.accounts.filter(a => a.id !== 'savings') }));
     expect(overview?.savingsInHaler).toBe(0);

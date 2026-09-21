@@ -172,7 +172,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     const session = new SyncController('sidebar-cards', () => null, () => {});
     const Probe = () => {
       const { quickOverview } = useFinance();
-      expect(quickOverview).toEqual({ checkingAndCashInHaler: 9888200, savingsInHaler: 28012000,
+      expect(quickOverview).toEqual({ checkingAndCashInHaler: 9888200, checkingInHaler: 8000000, cashInHaler: 1888200, savingsInHaler: 28012000,
         investmentsInHaler: 57900000, pensionInHaler: 25300000, totalNetWorthInHaler: 131100200 });
       return null;
     };
@@ -184,7 +184,8 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
             onCloseMobile={() => {}} onOpenTransactionModal={() => {}} />
           <AccountsScreen />
         </FinanceProvider>);
-        expect(html.replace(/\s/g, ' ')).toContain('98 882');
+        expect(html.replace(/\s/g, ' ')).toContain('80 000');
+        expect(html.replace(/\s/g, ' ')).toContain('18 882');
         expect(html.replace(/\s/g, ' ')).toContain('71 846');
       }
     } finally {
@@ -238,7 +239,8 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
       </FinanceProvider>
     );
 
-    expect(html).toContain('Běžné účty + hotovost');
+    expect(html).toContain('Běžné účty');
+    expect(html).toContain('Hotovost');
     expect(html).toContain('Spořicí účty');
     expect(html).toContain('Investice');
     expect(html).toContain('Penzijní účty');
