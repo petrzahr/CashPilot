@@ -102,8 +102,8 @@ export const AnalyticsScreen: React.FC = () => {
   }, [transactions, todayStr]);
 
   const monthlyCashFlow = useMemo(() => {
-    return calculateMonthlyCashFlow(dateRange.periods, filteredTxs, budgetStartDay);
-  }, [dateRange.periods, filteredTxs, budgetStartDay]);
+    return calculateMonthlyCashFlow(dateRange.periods, filteredTxs);
+  }, [dateRange.periods, filteredTxs]);
 
   const expenseTrends = useMemo(() => {
     return calculateExpenseMoMTrend(

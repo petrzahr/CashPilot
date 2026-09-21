@@ -20,7 +20,7 @@ import {
   AlertTriangle,
   Repeat
 } from 'lucide-react';
-import { sortTransactionsByDateAndSequence } from '../../services/sequenceService';
+import { } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { czechStringCompare } from '../../services/categoryService';
 import { DeleteTransactionModal } from './DeleteTransactionModal';

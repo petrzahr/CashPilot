@@ -17,7 +17,7 @@ import {
   AppData,
 } from '../services/storageService';
 import { DEFAULT_CATEGORIES, DEFAULT_SETTINGS, createEmptyAppData } from '../constants/defaultData';
-import { KNOWN_DEMO_ACCOUNT_IDS, KNOWN_DEMO_RULE_IDS, KNOWN_DEMO_TX_IDS, isKnownDemoRecordId } from '../fixtures/demoData';
+import { isKnownDemoRecordId } from '../fixtures/demoData';
 
 const storageMock = (() => {
   let store: Record<string, string> = {};

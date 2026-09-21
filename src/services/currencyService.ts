@@ -1,14 +1,10 @@
-﻿/**
+/**
  * Finanční pomocné funkce pro bezpečnou práci s celými haléři (integer math).
  * 1 Kč = 100 haléřů.
  */
 
 export function halerToCzk(haler: number): number {
   return haler / 100;
-}
-
-export function czkToHaler(czk: number): number {
-  return Math.round(czk * 100);
 }
 
 /**

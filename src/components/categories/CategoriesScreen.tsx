@@ -5,14 +5,10 @@ import { CategoryModal } from './CategoryModal';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { 
   Plus, 
-  Tag, 
-  Folder, 
   Edit3, 
   Archive, 
   RotateCcw, 
   Trash2, 
-  ChevronRight, 
-  Layers, 
   TrendingUp, 
   TrendingDown 
 } from 'lucide-react';

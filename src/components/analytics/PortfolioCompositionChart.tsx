@@ -72,8 +72,6 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
     return margin.top + chartHeight - norm * chartHeight;
   };
 
-  const zeroY = getY(0);
-
   const count = data.length;
   const slotWidth = chartWidth / count;
   const barWidth = Math.min(slotWidth * 0.6, 60);

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, BudgetPeriod, MarketValueSnapshot, RecurringRule, Transaction } from '../types/finance';
-import { calculateForecast, getAccountBalanceAtDate, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
-import { getNextSequenceForDate, sanitizeAndRepairSequences, sortTransactionsByDateAndSequence } from '../services/sequenceService';
-import { addHaler, subHaler } from '../services/currencyService';
+import { calculateForecast, getAccountBalanceAtDate } from '../services/financialEngine';
+import { getNextSequenceForDate, sanitizeAndRepairSequences } from '../services/sequenceService';
+import { subHaler } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 
 describe('Reconciliation and Market Value Engine', () => {

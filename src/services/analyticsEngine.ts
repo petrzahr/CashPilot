@@ -14,7 +14,6 @@ import {
   getPreviousPeriod,
   getNextPeriod,
   formatCzechDate,
-  formatPeriodRange,
   getPreviousDayString,
   getTodayInPrague,
   isDateInPeriod,
@@ -711,8 +710,7 @@ export function calculateAnalyticsKPIs(
   allTxs: Transaction[],
   corrections: BalanceCorrection[],
   snapshots: MarketValueSnapshot[],
-  filterAccountId?: string | null,
-  todayStr: string = getTodayInPrague()
+  filterAccountId?: string | null
 ): AnalyticsKPIs {
   let totalIncomeInHaler = 0;
   let totalExpenseInHaler = 0;
@@ -780,8 +778,7 @@ export function calculateAnalyticsKPIs(
  */
 export function calculateMonthlyCashFlow(
   periods: BudgetPeriodInfo[],
-  filteredTxs: Transaction[],
-  startDay: number = 15
+  filteredTxs: Transaction[]
 ): MonthlyCashFlowPoint[] {
   return periods.map((p) => {
     let incomeInHaler = 0;

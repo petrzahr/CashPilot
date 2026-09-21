@@ -8,17 +8,13 @@ import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import {
-  History,
   Pencil,
   Trash2,
   ArrowDownLeft,
   ArrowUpRight,
-  ArrowLeftRight,
   SlidersHorizontal,
   TrendingUp,
-  Calendar,
   Eye,
-  Info
 } from 'lucide-react';
 
 interface AccountHistoryModalProps {

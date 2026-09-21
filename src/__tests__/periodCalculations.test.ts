@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   createBudgetPeriod,
   getPeriodForDate,
-  getPeriodStartDate,
   getPreviousDayString,
   getDaysInMonth,
   formatPeriodRange,

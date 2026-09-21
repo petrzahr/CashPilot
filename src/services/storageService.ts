@@ -11,10 +11,8 @@ import {
   Transaction
 } from '../types/finance';
 import {
-  DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
   createEmptyAppData,
-  createResetAppData
 } from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
 import { formatCzechDate, getPreviousDay } from './periodService';
@@ -39,7 +37,6 @@ export const STORAGE_KEY_TEST = 'cashpilot_test_data_v1';
 export const STORAGE_KEY_DEMO = 'cashpilot_demo_data_v1';
 export const RECOVERY_KEY_PREFIX = 'cashpilot_data_recovery_';
 export const OPERATION_RECOVERY_KEY = 'cashpilot_data_recovery_operation';
-const PRE_CLEANUP_BACKUP_KEY = 'cashpilot_data_backup_pre_cleanup';
 
 export type OperationType = 'clear_transactions' | 'clear_accounts' | 'clear_categories' | 'clear_all';
 

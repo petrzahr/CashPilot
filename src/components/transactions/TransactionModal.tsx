@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
-import { czkToHaler, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
+import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../../services/periodService';
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
-import { AlertCircle, ArrowRightLeft, Calendar, Repeat, Hash, Loader2 } from 'lucide-react';
+import { Repeat, Hash, Loader2 } from 'lucide-react';
 
 interface TransactionModalProps {
   isOpen: boolean;

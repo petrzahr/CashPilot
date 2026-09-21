@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { createBudgetPeriod, getDefaultDateForPeriod, getPeriodForDate, getTodayInPrague } from '../services/periodService';
+import { createBudgetPeriod, getDefaultDateForPeriod, getTodayInPrague } from '../services/periodService';
 import { getNextSequenceForDate } from '../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
-import { BudgetPeriod, RecurringRule, Transaction } from '../types/finance';
+import { RecurringRule, Transaction } from '../types/finance';
 
 describe('CashPilot - Testy automatického výchozího data a pořadí nové položky', () => {
 

@@ -14,17 +14,11 @@ import { AccountHistoryModal } from './AccountHistoryModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { 
   Plus, 
-  Wallet, 
-  TrendingUp, 
-  Shield, 
   Archive, 
   RotateCcw, 
   Trash2, 
   Edit3, 
-  CheckCircle2, 
-  AlertTriangle, 
   Clock, 
-  ExternalLink,
   History,
   GripVertical
 } from 'lucide-react';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';

@@ -38,12 +38,3 @@ export function buildGmailComposeUrl(email: string = ACCESS_REQUEST_EMAIL): stri
   const encodedBody = encodeURIComponent(ACCESS_REQUEST_BODY);
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`;
 }
-
-/**
- * @deprecated Nahrazeno webovým odkazem na Gmail buildGmailComposeUrl()
- */
-export function buildAccessRequestMailtoUrl(email: string = ACCESS_REQUEST_EMAIL): string {
-  const encodedSubject = encodeURIComponent(ACCESS_REQUEST_SUBJECT);
-  const encodedBody = encodeURIComponent(ACCESS_REQUEST_BODY);
-  return `mailto:${email}?subject=${encodedSubject}&body=${encodedBody}`;
-}

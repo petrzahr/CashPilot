@@ -5,7 +5,7 @@ import { ConfirmationModal } from '../common/ConfirmationModal';
 import { Transaction, BalanceCorrection } from '../../types/finance';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
-import { SlidersHorizontal, Trash2, Check, AlertCircle, Info, Calendar, FileText, ArrowRight } from 'lucide-react';
+import { SlidersHorizontal, Trash2, Check, Info, Calendar, FileText } from 'lucide-react';
 
 interface CorrectionDetailModalProps {
   isOpen: boolean;
@@ -21,7 +21,6 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   const { accounts, transactions, corrections, updateCorrectionNote, deleteCorrection } = useFinance();
   const [note, setNote] = useState('');
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Získat nejaktuálnější data položky ze stavu
   const currentItem = React.useMemo(() => {
@@ -37,7 +36,6 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
     if (currentItem && isOpen) {
       setNote(currentItem.note || '');
       setIsConfirmDeleteOpen(false);
-      setIsDeleting(false);
     }
   }, [currentItem, isOpen]);
 
@@ -57,15 +55,10 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const ok = await deleteCorrection(currentItem.id);
-      if (ok) {
-        setIsConfirmDeleteOpen(false);
-        onClose();
-      }
-    } finally {
-      setIsDeleting(false);
+    const ok = await deleteCorrection(currentItem.id);
+    if (ok) {
+      setIsConfirmDeleteOpen(false);
+      onClose();
     }
   };
 

@@ -5,7 +5,7 @@ import { Account, MarketValueSnapshot } from '../../types/finance';
 import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../../services/investmentPerformanceService';
 import { formatCurrency, halerToInputValue, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
-import { TrendingUp, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface MarketValueModalProps {
   isOpen: boolean;
