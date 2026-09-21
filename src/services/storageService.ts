@@ -73,20 +73,6 @@ export function createOperationRecoveryBackup(
   }
 }
 
-/**
- * Načte poslední interní recovery zálohu po operaci.
- */
-export function getOperationRecoveryBackup(): OperationRecoveryBackup | null {
-  try {
-    const raw = localStorage.getItem(getOperationRecoveryKey());
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error('Nepodařilo se načíst recovery zálohu operace:', err);
-    return null;
-  }
-}
-
 export function isTestEnvironment(): boolean {
   const g = globalThis as any;
   return Boolean(
@@ -119,38 +105,6 @@ export function setActiveStorageKey(key: string | null): void {
  */
 export function getInitialData(): AppData {
   return createEmptyAppData();
-}
-
-/**
- * Sanituje a vyčistí osiřelé/neaktivní korekce:
- * - Záznam korekce, který patří účtu bez jakýchkoli reálných transakcí a bez pravidel
- *   (např. testovací stará korekce na prázdném účtu), nesmí existovat jako skrytý blokující záznam.
- * - Zachovává všechny platné korekce a korekce na účtech s existující finanční historií.
- */
-export function sanitizeCorrections(
-  corrections: BalanceCorrection[] = [],
-  transactions: Transaction[] = [],
-  recurringRules: RecurringRule[] = []
-): { cleanedCorrections: BalanceCorrection[]; hasCorrectionsRemoved: boolean } {
-  const initialCount = corrections.length;
-  const cleanedCorrections = corrections.filter(c => {
-    const hasTxs = transactions.some(
-      t => t.sourceAccountId === c.accountId || t.targetAccountId === c.accountId
-    );
-    const hasRules = recurringRules.some(
-      r => r.sourceAccountId === c.accountId || r.targetAccountId === c.accountId
-    );
-    if (!hasTxs && !hasRules) {
-      console.info(`[Sanitace dat] Odstraněn osiřelý záznam korekce ${c.id} pro prázdný účet ${c.accountId}.`);
-      return false;
-    }
-    return true;
-  });
-
-  return {
-    cleanedCorrections,
-    hasCorrectionsRemoved: cleanedCorrections.length !== initialCount
-  };
 }
 
 /**

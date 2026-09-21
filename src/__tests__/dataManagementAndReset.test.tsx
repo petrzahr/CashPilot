@@ -10,7 +10,7 @@ import { TransactionsScreen } from '../components/transactions/TransactionsScree
 import { DataActionConfirmationModal } from '../components/settings/DataActionConfirmationModal';
 import {
   OPERATION_RECOVERY_KEY,
-  getOperationRecoveryBackup,
+  getOperationRecoveryKey,
   getActiveStorageKey,
   loadStoredDataResult,
   saveStoredData,
@@ -19,6 +19,8 @@ import {
 import { DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from '../constants/defaultData';
 import { Account, Transaction, RecurringRule, BalanceCorrection, MarketValueSnapshot } from '../types/finance';
 import { saveStoredAuth } from '../services/googleDriveService';
+
+const getOperationRecoveryBackup = () => JSON.parse(localStorage.getItem(getOperationRecoveryKey()) ?? 'null');
 
 const storageMock = (() => {
   let store: Record<string, string> = {};

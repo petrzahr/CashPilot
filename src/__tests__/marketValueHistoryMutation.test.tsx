@@ -10,7 +10,7 @@ import { calculatePeriodInvestmentChange, getHistoricalInvestmentCorrection } fr
 import { calculateForecast } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
 import { mergePending, recordLocalChange } from '../services/syncModel';
-import { calculateNetWorthAtDate } from '../services/analyticsEngine';
+import { computeAssetAccountBalanceAtDate } from '../services/analyticsEngine';
 import { AccountHistoryModal } from '../components/accounts/AccountHistoryModal';
 
 const account: Account = { id: 'asset', name: 'Investment', type: 'investment', currency: 'CZK',
@@ -67,7 +67,7 @@ it('deletes an intermediate transition and lets inherited states use the precedi
   const forecast = calculateForecast([createBudgetPeriod(2026, 9, 15)], flow.data.accounts, [], [], [], [], undefined, flow.data.marketValueSnapshots, undefined, '2026-11-15');
   expect(forecast.periods[0].accountBalances[account.id]).toMatchObject({ marketValueInHaler: c.marketValueInHaler, investedPrincipalInHaler: 31000000, unrealizedGainLossInHaler: 4192700 });
   expect(forecast.periods[0]).toMatchObject({ netWorthOpeningInHaler: 31000000, netWorthClosingInHaler: c.marketValueInHaler });
-  expect(calculateNetWorthAtDate(flow.data.accounts, '2026-10-14', [], [], flow.data.marketValueSnapshots).totalNetWorthInHaler).toBe(c.marketValueInHaler);
+  expect(computeAssetAccountBalanceAtDate(flow.data.accounts[0], '2026-10-14', [], flow.data.marketValueSnapshots)).toBe(c.marketValueInHaler);
 });
 
 it('moves a valuation across dates, recaptures capital, and never uses a future state as current', () => {

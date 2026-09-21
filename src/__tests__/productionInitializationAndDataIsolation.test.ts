@@ -310,7 +310,7 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
       'Spořicí účet',
     ];
 
-    userTitles.forEach(title => {
+    userTitles.forEach(() => {
       const userCustomId = `user_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       expect(isKnownDemoRecordId(userCustomId)).toBe(false);
     });

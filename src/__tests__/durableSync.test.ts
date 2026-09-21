@@ -5,7 +5,7 @@ import { COLLECTIONS, accountStorageKey, applyDeletions, mergeBackupData, mergeP
 import { SyncController, type SyncStatus } from '../services/syncController';
 import { calculateQuickFinancialOverview, type QuickFinancialOverview } from '../services/financialEngine';
 import type { Account, Transaction } from '../types/finance';
-import { DriveConflictError, findAppDataFile, pickCanonicalDriveFile, readDriveSnapshot, uploadToGoogleDrive } from '../services/googleDriveService';
+import { DriveConflictError, findAppDataFile, sortDriveFilesByPrecedence, readDriveSnapshot, uploadToGoogleDrive } from '../services/googleDriveService';
 
 export function memoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -328,9 +328,9 @@ describe('Drive concurrency protocol', () => {
   });
   it('resolves duplicates deterministically when timestamps tie', () => {
     const at = (id: string, size?: string) => ({ id, name: 'cashpilot_data.json', modifiedTime: '2026-09-14T12:00:00Z', size });
-    expect(pickCanonicalDriveFile([at('a', '10'), at('b', '20')])?.id).toBe('b');
-    expect(pickCanonicalDriveFile([at('a'), at('b')])?.id).toBe('b');
-    expect(pickCanonicalDriveFile([])).toBeNull();
+    expect(sortDriveFilesByPrecedence([at('a', '10'), at('b', '20')])[0]?.id).toBe('b');
+    expect(sortDriveFilesByPrecedence([at('a'), at('b')])[0]?.id).toBe('b');
+    expect(sortDriveFilesByPrecedence([])[0]).toBeUndefined();
   });
   it('refuses to create a second file from an incomplete empty listing', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ files: [], incompleteSearch: true }))));

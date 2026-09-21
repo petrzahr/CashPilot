@@ -1,6 +1,5 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, MarketValueSnapshot, RecurringException, RecurringRule, Transaction } from '../types/finance';
-import { sanitizeCorrections } from '../services/storageService';
 
 describe('Account Deletion and Orphaned Corrections Sanitization', () => {
   const emptyAccount: Account = {
@@ -102,64 +101,6 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
     createdAt: '2026-09-08T10:00:00Z',
     updatedAt: '2026-09-08T10:00:00Z',
   };
-
-  describe('sanitizeCorrections function', () => {
-    it('removes orphaned legacy correction for an empty account with no transactions and no rules', () => {
-      const { cleanedCorrections, hasCorrectionsRemoved } = sanitizeCorrections(
-        [orphanCorrection],
-        [sampleTx],
-        [sampleRule]
-      );
-
-      expect(hasCorrectionsRemoved).toBe(true);
-      expect(cleanedCorrections).toHaveLength(0);
-    });
-
-    it('preserves corrections for accounts that have transactions', () => {
-      const { cleanedCorrections, hasCorrectionsRemoved } = sanitizeCorrections(
-        [validCorrection],
-        [sampleTx],
-        [sampleRule]
-      );
-
-      expect(hasCorrectionsRemoved).toBe(false);
-      expect(cleanedCorrections).toHaveLength(1);
-      expect(cleanedCorrections[0].id).toBe('corr_checking_1');
-    });
-
-    it('preserves corrections for accounts that have recurring rules', () => {
-      const ruleSavingsCorr: BalanceCorrection = {
-        id: 'corr_savings_1',
-        accountId: 'demo_acc_savings',
-        checkDate: '2026-09-05',
-        calculatedBalanceInHaler: 10000000,
-        actualBalanceInHaler: 10500000,
-        diffInHaler: 500000,
-        createdAt: '2026-09-05T00:00:00Z',
-        updatedAt: '2026-09-05T00:00:00Z',
-      };
-
-      const { cleanedCorrections, hasCorrectionsRemoved } = sanitizeCorrections(
-        [orphanCorrection, ruleSavingsCorr],
-        [sampleTx],
-        [sampleRule]
-      );
-
-      expect(hasCorrectionsRemoved).toBe(true);
-      expect(cleanedCorrections).toHaveLength(1);
-      expect(cleanedCorrections[0].id).toBe('corr_savings_1');
-    });
-
-    it('does not touch any other account data or transactions', () => {
-      const { cleanedCorrections } = sanitizeCorrections(
-        [orphanCorrection, validCorrection],
-        [sampleTx],
-        [sampleRule]
-      );
-
-      expect(cleanedCorrections).toEqual([validCorrection]);
-    });
-  });
 
   describe('deleteAccount referential integrity logic', () => {
     function simulateDeleteAccount(

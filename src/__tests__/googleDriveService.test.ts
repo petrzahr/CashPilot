@@ -1,4 +1,4 @@
-import { recordLocalChange } from '../services/syncModel';
+import { migrateSyncData, mergePending, recordLocalChange, type PendingOperation } from '../services/syncModel';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   getGoogleClientId,
@@ -16,10 +16,14 @@ import {
   logoutFromGoogle,
   CASH_PILOT_DATA_FILENAME,
   GOOGLE_DRIVE_APP_DATA_SCOPE,
-  mergeCloudAndLocalData,
 } from '../services/googleDriveService';
-import { getInitialData } from '../services/storageService';
+import { getInitialData, type AppData } from '../services/storageService';
 import { DEMO_TRANSACTIONS } from '../fixtures/demoData';
+
+function mergeCloudAndLocalData(cloudData: AppData, localData: AppData, pending: PendingOperation[] = []) {
+  const mergedData = mergePending(cloudData, localData, pending);
+  return { mergedData, hasLocalAdditions: JSON.stringify(mergedData) !== JSON.stringify(migrateSyncData(cloudData)) };
+}
 
 const storageMock = (() => {
   let store: Record<string, string> = {};
@@ -301,7 +305,7 @@ describe('googleDriveService', () => {
 
     it('zavolá revoke a vymaže autentizační data při odhlášení', async () => {
       saveStoredAuth({ accessToken: 'to_be_revoked', expiresAt: Date.now() + 100000 });
-      const mockRevoke = vi.fn().mockImplementation((token: string, cb?: () => void) => {
+      const mockRevoke = vi.fn().mockImplementation((_token: string, cb?: () => void) => {
         if (cb) cb();
       });
 

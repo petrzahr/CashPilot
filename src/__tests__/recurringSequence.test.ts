@@ -7,8 +7,7 @@ import {
 import {
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
-  normalizeDaySequences,
-  sanitizeAndRepairSequences
+  normalizeDaySequences
 } from '../services/sequenceService';
 import { createBudgetPeriod, generatePeriodsSequence } from '../services/periodService';
 import { autoExecuteDueTransactions } from '../services/statusService';
@@ -304,28 +303,6 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const movedOcc = day20Txs.find(t => t.recurringRuleId === 'rule_move');
     // V novém dni musí dostat max + 1 = 4, nepřenáší se 1 z 15.10.
     expect(movedOcc?.sequence).toBe(4);
-  });
-
-  // Test 9: Již existující chybné budoucí výskyty (seq 10) jsou bezpečně opraveny, historické uskutečněné platby zůstávají
-  it('9. Již existující chybné budoucí výskyty (seq 10) jsou bezpečně opraveny bez poškození historie', () => {
-    const today = '2026-09-12';
-    const buggyTxs: Transaction[] = [
-      // Historická uskutečněná transakce před dneškem - musí zůstat zachována
-      { id: 'hist_1', title: 'Historická', amountInHaler: 1000, date: '2026-08-10', sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'executed', createdAt: '', updatedAt: '' },
-      // Budoucí den s chybnou položkou se sekvencí 10 a mezerou
-      { id: 'fut_1', title: 'Budoucí běžná', amountInHaler: 2000, date: '2026-10-15', sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '' },
-      { id: 'fut_err10', title: 'Budoucí s chybou 10', amountInHaler: 5000, date: '2026-10-15', sequence: 10, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '' },
-    ];
-
-    const sanitized = sanitizeAndRepairSequences(buggyTxs, today);
-    const day1015 = sanitized.filter(t => t.date === '2026-10-15');
-
-    expect(day1015.length).toBe(2);
-    expect(day1015[0].sequence).toBe(1);
-    expect(day1015[1].sequence).toBe(2); // opraveno z 10 na 2!
-
-    const hist = sanitized.find(t => t.id === 'hist_1');
-    expect(hist?.sequence).toBe(1);
   });
 
   // Test 10: Nevznikají duplicity ani mezery (vždy souvislá řada 1, 2, 3...)

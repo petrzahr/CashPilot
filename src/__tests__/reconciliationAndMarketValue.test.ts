@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, BudgetPeriod, MarketValueSnapshot, RecurringRule, Transaction } from '../types/finance';
 import { calculateForecast, getAccountBalanceAtDate } from '../services/financialEngine';
-import { getNextSequenceForDate, sanitizeAndRepairSequences } from '../services/sequenceService';
+import { getNextSequenceForDate, normalizeDaySequences } from '../services/sequenceService';
 import { subHaler } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 
@@ -351,7 +351,7 @@ describe('Reconciliation and Market Value Engine', () => {
 
       // Smazání korekce corr_tx_del
       const remaining = dayTxs.filter(t => t.id !== 'corr_tx_del');
-      const repaired = sanitizeAndRepairSequences(remaining, '2026-09-01');
+      const repaired = normalizeDaySequences(remaining);
 
       expect(repaired.length).toBe(2);
       expect(repaired[0].id).toBe('tx_1');
