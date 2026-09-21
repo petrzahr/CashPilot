@@ -2,7 +2,7 @@ import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatPeriodRange } from '../../services/periodService';
-import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, Cloud, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
 

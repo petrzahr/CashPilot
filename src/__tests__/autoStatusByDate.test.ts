@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { getStatusForDate, autoExecuteDueTransactions } from '../services/statusService';
-import { getTodayInPrague, createBudgetPeriod, generatePeriodsSequence } from '../services/periodService';
+import { getTodayInPrague, createBudgetPeriod } from '../services/periodService';
 import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import {
   Account,
   AppSettings,
-  RecurringException,
   RecurringRule,
   Transaction
 } from '../types/finance';

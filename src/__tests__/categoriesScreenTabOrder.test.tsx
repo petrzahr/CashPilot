@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CategoriesScreen } from '../components/categories/CategoriesScreen';

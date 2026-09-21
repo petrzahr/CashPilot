@@ -29,10 +29,6 @@ function parseScreenFromUrl(): NavScreen {
 }
 
 const MainLayout: React.FC = () => {
-  const {
-    data,
-  } = useFinance();
-
   const [currentScreen, setCurrentScreen] = useState<NavScreen>(() => parseScreenFromUrl());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +120,7 @@ const MainLayout: React.FC = () => {
 
             {currentScreen === 'overview' && (
               <OverviewScreen
-                onNavigateToBudget={(p) => handleSelectScreen('budget')}
+                onNavigateToBudget={() => handleSelectScreen('budget')}
               />
             )}
 

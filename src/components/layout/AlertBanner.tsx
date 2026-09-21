@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { AlertTriangle, ShieldAlert } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export const AlertBanner: React.FC = () => {
   const { forecast, settings, setSelectedPeriod } = useFinance();

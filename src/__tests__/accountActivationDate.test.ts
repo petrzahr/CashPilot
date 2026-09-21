@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Account, AppSettings, Transaction, BalanceCorrection, MarketValueSnapshot, RecurringRule } from '../types/finance';
+import { Account, AppSettings, Transaction, RecurringRule } from '../types/finance';
 import { calculateForecast, getAccountBalanceAtDate, generateOccurrenceForPeriod } from '../services/financialEngine';
 import {
   createBudgetPeriod,

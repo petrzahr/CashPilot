@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, AppSettings, BudgetPeriod, RecurringException, RecurringRule, Transaction } from '../types/finance';
 import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
-import { deleteTransactionAndReorder, deleteTransactionsAndReorder } from '../services/sequenceService';
-import { createBudgetPeriod, generatePeriodsSequence, getPeriodForDate, getPreviousDay } from '../services/periodService';
+import { deleteTransactionAndReorder } from '../services/sequenceService';
+import { createBudgetPeriod, generatePeriodsSequence, getPreviousDay } from '../services/periodService';
 import { AppData, loadStoredData, saveStoredData } from '../services/storageService';
 
 describe('CashPilot - Testy mazání finančních položek (Klasický seznam a Měsíční rozpočet)', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { Account, AppSettings, BudgetPeriod, Category, MovementType, RecurringRule, Transaction, TransactionStatus } from '../types/finance';
+import { Account, AppSettings, BudgetPeriod, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
-import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
 
 describe('TransactionsScreen Filters & Alphabetical Sorting', () => {

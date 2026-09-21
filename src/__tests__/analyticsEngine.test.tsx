@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Sidebar } from '../components/layout/Sidebar';
@@ -17,15 +16,11 @@ import {
   computeLiquidAccountBalanceAtDate,
   computeAssetAccountBalanceAtDate,
   createBudgetPeriodInfo,
-  generateBudgetPeriodSequence,
 } from '../services/analyticsEngine';
 import {
   getPeriodForDate,
   createBudgetPeriod,
-  getPreviousPeriod,
-  getNextPeriod,
   isDateInPeriod,
-  formatCzechDate,
   formatPeriodRange,
 } from '../services/periodService';
 import {
@@ -344,9 +339,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       [transferTx],
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     // Převod nesmí být započítán jako příjem ani výdaj
     expect(kpis.totalIncomeInHaler).toBe(0);
@@ -378,9 +371,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       [],
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     const kpisWith = calculateAnalyticsKPIs(
       range,
@@ -389,9 +380,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       [transferTx],
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     // Změna celkového jmění je po převodu totožná
     expect(kpisWith.netWorthChangeInHaler).toBe(kpisWithout.netWorthChangeInHaler);
@@ -456,9 +445,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       [corrTx],
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     expect(kpis.totalIncomeInHaler).toBe(0);
     expect(kpis.totalExpenseInHaler).toBe(0);
@@ -524,9 +511,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       txs,
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     expect(kpis.totalIncomeInHaler).toBe(6000000);
     expect(kpis.totalExpenseInHaler).toBe(2500000);
@@ -570,9 +555,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       txs,
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     // (100k - 40k) / 100k * 100 = 60.0 %
     expect(kpis.savingsRate).toBe(60);
@@ -601,9 +584,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       [expTx],
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     expect(kpis.savingsRate).toBeNull();
   });
@@ -635,9 +616,7 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       txs,
       [],
       [],
-      null,
-      today
-    );
+      null);
 
     // 30 000 / 3 měsíce = 10 000 Kč
     expect(kpis.avgMonthlyExpenseInHaler).toBe(1000000);
@@ -967,7 +946,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       updatedAt: '',
     };
     const periodInfo = createBudgetPeriodInfo(period, '2026-09-14');
-    const cf = calculateMonthlyCashFlow([periodInfo], [tx], 15);
+    const cf = calculateMonthlyCashFlow([periodInfo], [tx]);
     expect(cf[0].expenseInHaler).toBe(100000);
   });
 
@@ -990,7 +969,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       updatedAt: '',
     };
     const periodInfo = createBudgetPeriodInfo(period, '2026-09-15');
-    const cf = calculateMonthlyCashFlow([periodInfo], [tx], 15);
+    const cf = calculateMonthlyCashFlow([periodInfo], [tx]);
     expect(cf[0].expenseInHaler).toBe(200000);
   });
 
@@ -1090,7 +1069,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
   // 14. Grafy používají správné názvy a hranice období
   it('14. Grafy používají správné názvy a hranice období (např. srp 2026, 15. 8. 2026 – 13. 9. 2026)', () => {
     const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
-    const cf = calculateMonthlyCashFlow(range.periods, [], 15);
+    const cf = calculateMonthlyCashFlow(range.periods, []);
     expect(cf[2].shortLabel).toBe('Srp 2026');
     expect(cf[2].dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
   });
@@ -1098,7 +1077,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
   // 15. Tooltip ukazuje skutečný rozsah období
   it('15. Tooltip ukazuje skutečný analyzovaný rozsah období a stav (Probíhající vs Uzavřené)', () => {
     const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
-    const cf = calculateMonthlyCashFlow(range.periods, [], 15);
+    const cf = calculateMonthlyCashFlow(range.periods, []);
 
     // Probíhající srpen
     expect(cf[2].label).toBe('Srpen 2026');

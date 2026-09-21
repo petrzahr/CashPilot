@@ -7,7 +7,7 @@ import {
   generateBudgetPeriodSequence,
 } from '../services/analyticsEngine';
 import { createBudgetPeriod } from '../services/periodService';
-import { Account, BalanceCorrection, MarketValueSnapshot, Transaction } from '../types/finance';
+import { Account, MarketValueSnapshot } from '../types/finance';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
 import { PortfolioCompositionChart } from '../components/analytics/PortfolioCompositionChart';
 import { FinanceProvider } from '../context/FinanceContext';

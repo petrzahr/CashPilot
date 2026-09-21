@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { addHaler, formatCurrency, halerToCzk, subHaler } from '../../services/currencyService';
+import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
@@ -13,15 +13,12 @@ import {
   Ban, 
   Edit3, 
   ArrowRightLeft, 
-  Filter, 
   Search, 
-  ShieldCheck, 
   AlertTriangle,
   AlertCircle,
   GripVertical,
   List,
   Calendar,
-  Hash,
   ChevronDown,
   Clock,
   Loader2,
@@ -73,8 +70,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     marketValueSnapshots = [],
     duplicateTransaction,
     setTransactionStatus,
-    markTransactionExecuted,
-    cancelTransaction,
     deleteTransaction,
     reorderDayTransactions,
     reorderRecurringItem,
@@ -1080,7 +1075,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           ? tx.actualAmountInHaler
                           : tx.amountInHaler;
 
-                        const isExecuted = tx.status === 'executed';
                         const isCancelled = tx.status === 'cancelled';
                         const isCorrection = tx.type === 'balance_adjustment';
 

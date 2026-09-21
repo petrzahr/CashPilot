@@ -2,21 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   generateOccurrenceForPeriod,
   getEffectiveTransactionsForPeriod,
-  calculateForecast
 } from '../services/financialEngine';
 import {
   createBudgetPeriod,
-  generatePeriodsSequence,
-  getDaysInMonth
 } from '../services/periodService';
-import {
-  autoExecuteDueTransactions,
-  getStatusForDate
-} from '../services/statusService';
-import {
-  getNextSequenceForDate,
-  insertOrUpdateWithSequence
-} from '../services/sequenceService';
 import {
   Account,
   AppSettings,

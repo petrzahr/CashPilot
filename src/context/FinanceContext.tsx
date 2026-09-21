@@ -21,7 +21,6 @@ import {
   exportBackupJSON,
   validateAndParseBackup,
   exportTransactionsCSV,
-  getActiveStorageKey,
   setActiveStorageKey,
   STORAGE_KEY_PRODUCTION,
   isDemoModeEnabled,

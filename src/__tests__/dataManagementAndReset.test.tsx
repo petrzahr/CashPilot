@@ -3,7 +3,6 @@ import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { getPeriodForDate } from '../services/periodService';
 import { SyncController } from '../services/syncController';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';
 import { SettingsScreen } from '../components/settings/SettingsScreen';

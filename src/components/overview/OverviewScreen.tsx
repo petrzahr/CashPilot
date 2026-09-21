@@ -163,7 +163,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {displayPeriods.map((p, idx) => {
+              {displayPeriods.map((p) => {
                 const isCurrent = p.period.key === forecast.currentPeriod.key;
                 
                 const opening = forecastScope === 'usable' ? p.usableOpeningInHaler : p.openingBalanceInHaler;

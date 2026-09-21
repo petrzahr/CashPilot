@@ -1,20 +1,17 @@
 import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
+import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { isDemoModeEnabled } from '../../services/storageService';
 import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
-  Settings, 
   Download, 
   Upload, 
   Trash2, 
-  Sparkles, 
   ShieldAlert, 
   Calendar, 
-  Coins, 
   Layers, 
   CheckCircle2, 
   FileText,
