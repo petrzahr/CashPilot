@@ -331,10 +331,15 @@ export function validateAndParseBackup(jsonStr: string): AppData {
     if (parsed[name] !== undefined && !Array.isArray(parsed[name])) throw new Error(`Neplatná kolekce ${name}.`);
     parsed[name] ??= [];
   }
+  for (const name of ['accounts', 'categories', 'transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots']) {
+    for (const item of parsed[name]) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error(`Neplatná položka v kolekci ${name}.`);
+    }
+  }
   if (parsed.version > 2) throw new Error('Tato data vyžadují novější verzi CashPilotu.');
   if (parsed.sync && (!Number.isSafeInteger(parsed.sync.revision) || parsed.sync.revision < 0)) throw new Error('Neplatná revize synchronizace.');
   for (const deletion of parsed.deletions) {
-    if (!deletion || !(deletion.entityType in COLLECTIONS) || typeof deletion.entityId !== 'string' ||
+    if (!deletion || !Object.prototype.hasOwnProperty.call(COLLECTIONS, deletion.entityType) || typeof deletion.entityId !== 'string' ||
       typeof deletion.deviceId !== 'string' || !Number.isFinite(Date.parse(deletion.deletedAt))) throw new Error('Poškozená evidence smazání. Data nebyla změněna.');
   }
   if (parsed.resetMarker && (typeof parsed.resetMarker.operationId !== 'string' || typeof parsed.resetMarker.deviceId !== 'string' ||
@@ -345,6 +350,13 @@ export function validateAndParseBackup(jsonStr: string): AppData {
     parsed.settings = { ...parsed.settings, overdraftLimitInHaler: parsed.settings.minReserveInHaler ?? DEFAULT_SETTINGS.overdraftLimitInHaler };
   }
   return reconcileMarketValueHistory(migrateSyncData(parsed));
+}
+
+/** Textová buňka CSV: escapuje uvozovky a neutralizuje vzorce (=, +, -, @, tab, CR) proti formula injection. */
+function csvCell(value: string): string {
+  const text = String(value ?? '');
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 /**
@@ -369,16 +381,16 @@ export function exportTransactionsCSV(
     const subName = t.subcategoryId ? (catMap.get(t.subcategoryId) || '') : '';
 
     return [
-      `"${formatCzechDate(t.date)}"`,
-      `"${t.title.replace(/"/g, '""')}"`,
-      `"${typeLabel}"`,
+      csvCell(formatCzechDate(t.date)),
+      csvCell(t.title),
+      csvCell(typeLabel),
       czk.toFixed(2).replace('.', ','),
-      `"${sourceName}"`,
-      `"${targetName}"`,
-      `"${catName}"`,
-      `"${subName}"`,
-      `"${statusLabel}"`,
-      `"${(t.note || '').replace(/"/g, '""')}"`
+      csvCell(sourceName),
+      csvCell(targetName),
+      csvCell(catName),
+      csvCell(subName),
+      csvCell(statusLabel),
+      csvCell(t.note || '')
     ].join(';');
   });
 
