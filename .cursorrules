@@ -4,5 +4,3 @@
 2. Po úspěšném dokončení každého zadaného úkolu a ověření kódu automaticky:
    - Zkontroluj změněné soubory pomocí `git status`.
    - Zabal změny a vytvoř commit se stručnou, výstižnou zprávou (dodržuj Conventional Commits, např. `feat: ...`, `fix: ...`, `refactor: ...`).
-   - Pushni změny do vzdálené větve `develop` na GitHub (`git push origin develop` nebo pomocí GitHub MCP).
-3. Do větve `main` slučuj kód pouze na můj výslovný příkaz.
