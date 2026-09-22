@@ -197,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
                       disconnectGoogleDrive();
                       setMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 font-medium transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 font-medium transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Odpojit Google Disk</span>
