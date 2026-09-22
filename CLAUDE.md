@@ -1,4 +1,4 @@
-﻿# Claude Code Guidelines
+# Claude Code Guidelines
 
 ## Token Budget & Context Management
 - Strictly adhere to .claudeignore. Never bypass exclusions.

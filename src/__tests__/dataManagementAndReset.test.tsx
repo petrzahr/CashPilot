@@ -13,9 +13,9 @@ import {
   getOperationRecoveryKey,
   getActiveStorageKey,
   loadStoredDataResult,
-  saveStoredData,
   AppData
 } from '../services/storageService';
+import { saveStoredData } from './testStorageHelpers';
 import { DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from '../constants/defaultData';
 import { Account, Transaction, RecurringRule, BalanceCorrection, MarketValueSnapshot } from '../types/finance';
 import { saveStoredAuth } from '../services/googleDriveService';

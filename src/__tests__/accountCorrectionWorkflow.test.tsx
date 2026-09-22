@@ -5,7 +5,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';
 import { AccountModal } from '../components/accounts/AccountModal';
 import { MarketValueModal } from '../components/accounts/MarketValueModal';
-import { AppData, getInitialData, loadStoredData, saveStoredData } from '../services/storageService';
+import { AppData, getInitialData } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { SyncController } from '../services/syncController';
 import { calculateForecast } from '../services/financialEngine';
 

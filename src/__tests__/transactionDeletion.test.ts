@@ -3,7 +3,8 @@ import { Account, AppSettings, BudgetPeriod, RecurringException, RecurringRule, 
 import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { deleteTransactionAndReorder } from '../services/sequenceService';
 import { createBudgetPeriod, generatePeriodsSequence, getPreviousDay } from '../services/periodService';
-import { AppData, loadStoredData, saveStoredData } from '../services/storageService';
+import { AppData } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 
 describe('CashPilot - Testy mazání finančních položek (Klasický seznam a Měsíční rozpočet)', () => {
   const defaultSettings: AppSettings = {

@@ -1,4 +1,4 @@
-﻿# Agent Instructions & Context Budget Optimization
+# Agent Instructions & Context Budget Optimization
 
 ## Context Preservation & File Exclusions
 To conserve token limits and avoid context rot:

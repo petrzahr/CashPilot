@@ -1,4 +1,4 @@
-﻿# Antigravity Context & Efficiency Rules
+# Antigravity Context & Efficiency Rules
 
 ## Scope & File Access Restrictions
 - NEVER inspect, read, or grep inside:
