@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, AppSettings, BalanceCorrection, Transaction } from '../types/finance';
 import { calculateForecast } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
-import { loadStoredData, saveStoredData, validateAndParseBackup, AppData, getInitialData, getActiveStorageKey } from '../services/storageService';
+import { validateAndParseBackup, AppData, getInitialData, getActiveStorageKey } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { halerToCzk } from '../services/currencyService';
 

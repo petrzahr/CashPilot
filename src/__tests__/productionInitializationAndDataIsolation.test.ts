@@ -3,8 +3,6 @@ import { Account, Transaction } from '../types/finance';
 import {
   getInitialData,
   loadStoredDataResult,
-  loadStoredData,
-  saveStoredData,
   validateAndParseBackup,
   getActiveStorageKey,
   setActiveStorageKey,
@@ -16,6 +14,7 @@ import {
   RECOVERY_KEY_PREFIX,
   AppData,
 } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { DEFAULT_CATEGORIES, DEFAULT_SETTINGS, createEmptyAppData } from '../constants/defaultData';
 import { isKnownDemoRecordId } from '../fixtures/demoData';
 

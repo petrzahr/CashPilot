@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, Category, Transaction, MovementType } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
-import { loadStoredData, saveStoredData, AppData, getInitialData } from '../services/storageService';
+import { AppData, getInitialData } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { calculateForecast } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 

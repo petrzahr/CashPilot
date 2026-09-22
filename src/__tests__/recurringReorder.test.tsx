@@ -6,9 +6,9 @@ import {
   getActiveStorageKey,
   getInitialData,
   loadStoredDataResult,
-  saveStoredData,
   AppData,
 } from '../services/storageService';
+import { saveStoredData } from './testStorageHelpers';
 import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { getPeriodForDate } from '../services/periodService';
 import { Account, RecurringRule, Transaction } from '../types/finance';

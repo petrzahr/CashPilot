@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Account, BudgetPeriod } from '../types/finance';
 import { getEffectiveInvestedAmount } from '../services/accountService';
 import { calculateForecast } from '../services/financialEngine';
-import { getInitialData, loadStoredData, saveStoredData } from '../services/storageService';
+import { getInitialData } from '../services/storageService';
+import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { mergePending, recordLocalChange, SyncEnvelope } from '../services/syncModel';
 import { halerToInputValue, parseInputToHaler } from '../services/currencyService';
 

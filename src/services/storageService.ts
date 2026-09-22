@@ -218,23 +218,6 @@ export function loadStoredDataResult(targetKey?: string): LoadDataResult {
 }
 
 /**
- * Standardní načtení dat pro běžné synchronní scénáře.
- */
-export function loadStoredData(targetKey?: string): AppData {
-  const result = loadStoredDataResult(targetKey);
-  return result.data;
-}
-
-export function saveStoredData(data: AppData, targetKey?: string): void {
-  const key = targetKey || getActiveStorageKey();
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (err) {
-    console.error('Chyba při ukládání dat do localStorage:', err);
-  }
-}
-
-/**
  * Export poškozeného raw obsahu úložiště do textového/JSON souboru pro kontrolu uživatelem
  */
 export function exportCorruptedRawData(rawContent: string): void {
