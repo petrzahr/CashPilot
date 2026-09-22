@@ -169,7 +169,7 @@ const MainLayout: React.FC = () => {
 export function AppContent() {
   const {
     isDriveConnected,
-    isCloudReady, driveSyncStatus, driveError, syncWithGoogleDrive, disconnectGoogleDrive,
+    isCloudReady, driveSyncStatus, driveError, syncWithGoogleDrive,
     loadState,
     loadErrorDetails,
     restoreFromBackupFile,
@@ -216,7 +216,6 @@ export function AppContent() {
           </div>
           {driveError && <p className="text-red-700">{driveError}</p>}
           {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2 bg-sky-600 text-white rounded">Zkusit znovu</button>}
-          <button onClick={() => void disconnectGoogleDrive()} className="block mx-auto">Odhlásit</button>
         </div>
       </div>
     );
