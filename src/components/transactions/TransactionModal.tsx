@@ -318,7 +318,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               {
                 title,
                 amountInHaler,
-                date,
+                // U celé série posíláme datum jen při skutečné změně - jinak by se
+                // přesunutý jednotlivý výskyt propsal jako nový den celé série.
+                date: recurringEditMode === 'series' && date === transactionToEdit.date ? undefined : date,
                 sourceAccountId,
                 targetAccountId: type === 'transfer' ? targetAccountId : undefined,
                 categoryId: type !== 'transfer' && categoryId ? categoryId : null,

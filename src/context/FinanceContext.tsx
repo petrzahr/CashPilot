@@ -47,6 +47,7 @@ import {
   getOverviewPeriods,
   getNextPeriod,
   getPeriodForDate,
+  getDaysInMonth,
   getPreviousPeriod,
   getPreviousDay,
   getTodayInPrague,
@@ -1266,8 +1267,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         };
       }
 
+      // Změna data u celé série = nový den v měsíci pro všechny výskyty. Začátek pravidla
+      // se posune na nový den ve stejném měsíci, aby první výskyt nevypadl (occDate < startDate).
+      const newDay = overrideData.date ? parseInt(overrideData.date.split('-')[2], 10) : NaN;
+      const dayChanged = !isNaN(newDay) && newDay >= 1 && newDay <= 31;
+      const withDay = (dateStr: string): string => {
+        const [y, m] = dateStr.split('-').map(Number);
+        const day = Math.min(newDay, getDaysInMonth(y, m));
+        return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      };
+
       const updatedSeries: RecurringRule = {
         ...rule,
+        dayOfMonth: dayChanged ? newDay : rule.dayOfMonth,
+        startDate: dayChanged ? withDay(rule.startDate) : rule.startDate,
         title: overrideData.title || rule.title,
         amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
         sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
@@ -1291,6 +1304,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           categoryId: updatedSeries.categoryId,
           subcategoryId: updatedSeries.subcategoryId,
           note: updatedSeries.note,
+          date: !dayChanged ? t.date : (t.id === originalTransactionId ? overrideData.date! : withDay(t.date)),
           updatedAt: nowIso,
         };
       });
