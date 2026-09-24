@@ -161,7 +161,8 @@ function splitRecurringRuleForFuture(
   prevExceptions: RecurringException[],
   budgetStartDay: number,
   nowIso: string,
-  idSuffix: string = ''
+  idSuffix: string = '',
+  newRuleId?: string
 ): {
   updatedOldRule: RecurringRule;
   newFutureRule: RecurringRule;
@@ -181,7 +182,7 @@ function splitRecurringRuleForFuture(
   const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
   const newFutureRule: RecurringRule = {
     ...rule,
-    id: `rec_${Date.now()}${idSuffix}_split`,
+    id: newRuleId ?? `rec_${Date.now()}${idSuffix}_split`,
     title: overrideData.title || rule.title,
     amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
     dayOfMonth: newDayOfMonth,
@@ -298,7 +299,7 @@ interface FinanceContextType {
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
-  ) => void;
+  ) => string | undefined; // mode 'future': ID nové (odštěpené) větve pravidla
   deleteRecurringRule: (id: string) => void;
   reorderRecurringItem: (
     ruleId: string,
@@ -1214,7 +1215,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
-  ) => {
+  ): string | undefined => {
+    // ID nové větve se určí předem (mimo updater), aby ho volající znal - např. pro
+    // následné nastavení pořadí - a aby bylo stejné i při opakovaném spuštění updateru.
+    const futureRuleId = mode === 'future' ? `rec_${Date.now()}_split` : undefined;
     setData(prev => {
       const rule = prev.recurringRules.find(r => r.id === ruleId);
       if (!rule) return prev;
@@ -1256,7 +1260,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           prev.transactions,
           prev.recurringExceptions,
           prev.settings.budgetStartDay,
-          nowIso
+          nowIso,
+          '',
+          futureRuleId
         );
 
         return {
@@ -1292,7 +1298,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
 
       // "Včetně minulých" - promítnout změnu i do už materializovaných transakcí série.
-      const updatedTxs = prev.transactions.map(t => {
+      let updatedTxs = prev.transactions.map(t => {
         if (t.recurringRuleId !== ruleId) return t;
         return {
           ...t,
@@ -1309,6 +1315,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         };
       });
 
+      // Přesunuté výskyty dostanou pořadí v novém dni (na jeho konec) a ve starém dni
+      // se zbylé položky přečíslují - jinak by si nesly původní pořadí (např. #13 v prázdném dni).
+      if (dayChanged) {
+        for (const oldTx of prev.transactions) {
+          if (oldTx.recurringRuleId !== ruleId) continue;
+          const moved = updatedTxs.find(t => t.id === oldTx.id);
+          if (!moved || moved.date === oldTx.date) continue;
+          const seq = getNextSequenceForDate(moved.date, updatedTxs.filter(t => t.id !== moved.id));
+          updatedTxs = insertOrUpdateWithSequence(moved, seq, updatedTxs, oldTx.date);
+        }
+      }
+
       return {
         ...prev,
         recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedSeries : r),
@@ -1317,6 +1335,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     });
 
     showToast('Pravidelná položka byla úspěšně upravena.');
+    return futureRuleId;
   }, [showToast]);
 
   const reorderRecurringItem = useCallback((
@@ -1360,9 +1379,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         let txs = prev.transactions;
         let exceptions = prev.recurringExceptions;
         const newRanks = new Map<string, number>();
+        const newPositions = new Map<string, number>();
         involvedRuleIds.forEach((rid, i) => {
           const current = rules.find(r => r.id === rid);
           if (!current) return;
+          // Pravidlo, které začíná až tímto dnem (např. právě odštěpená větev), nemá žádnou
+          // minulost k zachování - pořadí se nastaví přímo, bez dalšího štěpení.
+          if (current.startDate >= date) {
+            rules = rules.map(r => r.id === rid
+              ? { ...r, orderRank: ranks.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
+              : r);
+            newRanks.set(rid, ranks.get(rid) as number);
+            if (positions.has(rid)) newPositions.set(rid, positions.get(rid) as number);
+            return;
+          }
           const split = splitRecurringRuleForFuture(
             current, date, {}, undefined, txs, exceptions, prev.settings.budgetStartDay, nowIso, `_${i}`
           );
@@ -1375,13 +1405,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           txs = split.updatedTransactions;
           exceptions = split.updatedExceptions;
           newRanks.set(hinted.id, ranks.get(rid) as number);
+          if (positions.has(rid)) newPositions.set(hinted.id, positions.get(rid) as number);
         });
 
         // Už zhmotněné výskyty od tohoto dne dál (provedené i plánované) dostanou nové pořadí hned.
+        // Přetažený den si navíc drží přesné pozice (i vůči ručním položkám) - samotný rank
+        // řadí jen opakované platby mezi sebou a virtuální výskyt by jinak skočil zpět za ruční.
         return {
           ...prev,
           recurringRules: rules,
-          recurringExceptions: clearSequenceOverrides(exceptions, new Set(newRanks.keys())),
+          recurringExceptions: withSequenceExceptions(
+            clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
+          ),
           transactions: applyRuleRankOrder(reorderRealToday(txs), newRanks, date),
         };
       }
@@ -1392,7 +1427,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
           ? { ...r, orderRank: ranks.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
           : r),
-        recurringExceptions: clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())),
+        recurringExceptions: withSequenceExceptions(
+          clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
+        ),
         transactions: applyRuleRankOrder(reorderRealToday(prev.transactions), ranks),
       };
     });

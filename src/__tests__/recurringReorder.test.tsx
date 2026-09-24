@@ -311,6 +311,77 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     expect(day.map(t => t.recurringRuleId || t.id)).toEqual(['rule_gym', 'tx_m']);
   });
 
+  it('series: přetažený virtuální výskyt před ruční položku v daném dni drží (nevrátí se zpět)', async () => {
+    const octManual: Transaction = {
+      id: 'tx_oct', title: 'Nákup', amountInHaler: 1000, date: '2026-10-15', sequence: 1,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
+    };
+    populateTestStorage({ recurringRules: [gymRule], transactions: [octManual] });
+    const ctx = await getContextHandle();
+
+    const period = getPeriodForDate('2026-10-15', 15);
+    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15)
+      .find(t => t.recurringRuleId === gymRule.id)!;
+    ctx.reorderRecurringItem(gymRule.id, 'series', '2026-10-15', period.key, [virtual.id, octManual.id], virtual.id);
+
+    const stored = loadStoredDataResult().data;
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      .filter(t => t.date === '2026-10-15');
+    expect(day.map(t => t.recurringRuleId || t.id)).toEqual([gymRule.id, octManual.id]);
+  });
+
+  it('future: ruční pořadí z formuláře se nastaví nové větvi bez dalšího štěpení a v daném dni drží', async () => {
+    const octManual: Transaction = {
+      id: 'tx_oct', title: 'Nákup', amountInHaler: 1000, date: '2026-10-15', sequence: 1,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
+    };
+    populateTestStorage({ recurringRules: [gymRule], transactions: [octManual] });
+    const ctx = await getContextHandle();
+
+    const period = getPeriodForDate('2026-10-15', 15);
+    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15)
+      .find(t => t.recurringRuleId === gymRule.id)!;
+    expect(virtual.sequence).toBe(2);
+
+    // Stejný tok jako TransactionModal: úprava „tento a budoucí“, pak pořadí 1 pro novou větev
+    const newRuleId = ctx.updateRecurringRule(gymRule.id, 'future', period.key, { amountInHaler: 90000, date: '2026-10-15' }, virtual.id);
+    expect(newRuleId).toBeTruthy();
+    const movedId = `virtual_${newRuleId}_${period.key}`;
+    ctx.reorderRecurringItem(newRuleId, 'future', '2026-10-15', period.key, [movedId, octManual.id], movedId);
+
+    const stored = loadStoredDataResult().data;
+    expect(stored.recurringRules).toHaveLength(2);
+    expect(stored.recurringRules.find(r => r.id === newRuleId)?.orderRank).toBe(1);
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      .filter(t => t.date === '2026-10-15');
+    expect(day.map(t => t.recurringRuleId || t.id)).toEqual([newRuleId, octManual.id]);
+  });
+
+  it('series: změna data přečísluje pořadí přesunutých zhmotněných výskytů', async () => {
+    const rule: RecurringRule = { ...gymRule, dayOfMonth: 20, startDate: '2026-07-20' };
+    const mk = (month: string, seq: number): Transaction => ({
+      id: `tx_gym_${month}`, title: 'Posilovna', amountInHaler: 80000, date: `2026-${month}-20`, sequence: seq,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'executed', actualAmountInHaler: 80000,
+      recurringRuleId: rule.id, createdAt: '2026-07-20T00:00:00.000Z', updatedAt: '2026-07-20T00:00:00.000Z',
+    });
+    const other: Transaction = {
+      id: 'tx_other', title: 'Jiné', amountInHaler: 500, date: '2026-08-20', sequence: 1,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'executed', createdAt: '', updatedAt: '',
+    };
+    const aug = { ...mk('08', 2) };
+    populateTestStorage({ recurringRules: [rule], transactions: [mk('07', 13), other, aug] });
+    const ctx = await getContextHandle();
+
+    ctx.updateRecurringRule(rule.id, 'series', getPeriodForDate('2026-08-20', 15).key, { date: '2026-08-25' }, aug.id);
+
+    const stored = loadStoredDataResult().data;
+    const byId = (id: string) => stored.transactions.find(t => t.id === id)!;
+    expect(stored.recurringRules[0].dayOfMonth).toBe(25);
+    expect(byId('tx_gym_07')).toMatchObject({ date: '2026-07-25', sequence: 1 });
+    expect(byId('tx_gym_08')).toMatchObject({ date: '2026-08-25', sequence: 1 });
+    expect(byId('tx_other').sequence).toBe(1);
+  });
+
   it('reálná (dnešní) transakce se navíc fyzicky přeuspořádá pomocí reorderDayTransactions', async () => {
     // Manuální transakce je zároveň již materializovaným výskytem pravidla pro dnešní den
     const realOccurrence: Transaction = {
