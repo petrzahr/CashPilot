@@ -330,6 +330,33 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     expect(day.map(t => t.recurringRuleId || t.id)).toEqual([gymRule.id, octManual.id]);
   });
 
+  it('future: ruční pořadí z formuláře se nastaví nové větvi bez dalšího štěpení a v daném dni drží', async () => {
+    const octManual: Transaction = {
+      id: 'tx_oct', title: 'Nákup', amountInHaler: 1000, date: '2026-10-15', sequence: 1,
+      type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
+    };
+    populateTestStorage({ recurringRules: [gymRule], transactions: [octManual] });
+    const ctx = await getContextHandle();
+
+    const period = getPeriodForDate('2026-10-15', 15);
+    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15)
+      .find(t => t.recurringRuleId === gymRule.id)!;
+    expect(virtual.sequence).toBe(2);
+
+    // Stejný tok jako TransactionModal: úprava „tento a budoucí“, pak pořadí 1 pro novou větev
+    const newRuleId = ctx.updateRecurringRule(gymRule.id, 'future', period.key, { amountInHaler: 90000, date: '2026-10-15' }, virtual.id);
+    expect(newRuleId).toBeTruthy();
+    const movedId = `virtual_${newRuleId}_${period.key}`;
+    ctx.reorderRecurringItem(newRuleId, 'future', '2026-10-15', period.key, [movedId, octManual.id], movedId);
+
+    const stored = loadStoredDataResult().data;
+    expect(stored.recurringRules).toHaveLength(2);
+    expect(stored.recurringRules.find(r => r.id === newRuleId)?.orderRank).toBe(1);
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      .filter(t => t.date === '2026-10-15');
+    expect(day.map(t => t.recurringRuleId || t.id)).toEqual([newRuleId, octManual.id]);
+  });
+
   it('series: změna data přečísluje pořadí přesunutých zhmotněných výskytů', async () => {
     const rule: RecurringRule = { ...gymRule, dayOfMonth: 20, startDate: '2026-07-20' };
     const mk = (month: string, seq: number): Transaction => ({

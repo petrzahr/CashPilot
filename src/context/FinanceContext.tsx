@@ -161,7 +161,8 @@ function splitRecurringRuleForFuture(
   prevExceptions: RecurringException[],
   budgetStartDay: number,
   nowIso: string,
-  idSuffix: string = ''
+  idSuffix: string = '',
+  newRuleId?: string
 ): {
   updatedOldRule: RecurringRule;
   newFutureRule: RecurringRule;
@@ -181,7 +182,7 @@ function splitRecurringRuleForFuture(
   const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
   const newFutureRule: RecurringRule = {
     ...rule,
-    id: `rec_${Date.now()}${idSuffix}_split`,
+    id: newRuleId ?? `rec_${Date.now()}${idSuffix}_split`,
     title: overrideData.title || rule.title,
     amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
     dayOfMonth: newDayOfMonth,
@@ -298,7 +299,7 @@ interface FinanceContextType {
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
-  ) => void;
+  ) => string | undefined; // mode 'future': ID nové (odštěpené) větve pravidla
   deleteRecurringRule: (id: string) => void;
   reorderRecurringItem: (
     ruleId: string,
@@ -1214,7 +1215,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
-  ) => {
+  ): string | undefined => {
+    // ID nové větve se určí předem (mimo updater), aby ho volající znal - např. pro
+    // následné nastavení pořadí - a aby bylo stejné i při opakovaném spuštění updateru.
+    const futureRuleId = mode === 'future' ? `rec_${Date.now()}_split` : undefined;
     setData(prev => {
       const rule = prev.recurringRules.find(r => r.id === ruleId);
       if (!rule) return prev;
@@ -1256,7 +1260,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           prev.transactions,
           prev.recurringExceptions,
           prev.settings.budgetStartDay,
-          nowIso
+          nowIso,
+          '',
+          futureRuleId
         );
 
         return {
@@ -1329,6 +1335,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     });
 
     showToast('Pravidelná položka byla úspěšně upravena.');
+    return futureRuleId;
   }, [showToast]);
 
   const reorderRecurringItem = useCallback((
@@ -1376,6 +1383,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         involvedRuleIds.forEach((rid, i) => {
           const current = rules.find(r => r.id === rid);
           if (!current) return;
+          // Pravidlo, které začíná až tímto dnem (např. právě odštěpená větev), nemá žádnou
+          // minulost k zachování - pořadí se nastaví přímo, bez dalšího štěpení.
+          if (current.startDate >= date) {
+            rules = rules.map(r => r.id === rid
+              ? { ...r, orderRank: ranks.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
+              : r);
+            newRanks.set(rid, ranks.get(rid) as number);
+            if (positions.has(rid)) newPositions.set(rid, positions.get(rid) as number);
+            return;
+          }
           const split = splitRecurringRuleForFuture(
             current, date, {}, undefined, txs, exceptions, prev.settings.budgetStartDay, nowIso, `_${i}`
           );

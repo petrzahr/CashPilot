@@ -312,7 +312,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               });
             }
           } else {
-            updateRecurringRule(
+            const futureRuleId = updateRecurringRule(
               transactionToEdit.recurringRuleId,
               recurringEditMode,
               selectedPeriod.key,
@@ -331,14 +331,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               transactionToEdit.id
             );
 
-            // Pořadí u celé série se nastaví stejně jako přetažením: pozice v tomto dni
-            // a pořadí série mezi opakovanými platbami pro ostatní období.
+            // Pořadí se nastaví stejně jako přetažením: pozice v tomto dni a pořadí mezi
+            // opakovanými platbami pro ostatní období. U „tento a budoucí“ už pravidlo
+            // bylo rozštěpené, takže se pořadí nastaví nové větvi (ta minulost nemá).
             const seqChanged = sequenceNum !== (transactionToEdit.sequence || 1);
-            if (recurringEditMode === 'series' && (seqChanged || date !== transactionToEdit.date)) {
+            const targetRuleId = recurringEditMode === 'future' ? futureRuleId : transactionToEdit.recurringRuleId;
+            if (targetRuleId && (seqChanged || date !== transactionToEdit.date)) {
               const ruleId = transactionToEdit.recurringRuleId;
               const targetPeriod = getPeriodForDate(date, settings.budgetStartDay);
               const movedId = transactionToEdit.id.startsWith('virtual_')
-                ? `virtual_${ruleId}_${targetPeriod.key}`
+                ? `virtual_${targetRuleId}_${targetPeriod.key}`
                 : transactionToEdit.id;
               const orderedIds = getEffectiveTransactionsForPeriod(
                 targetPeriod,
@@ -352,7 +354,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 .filter(t => t.date === date && t.recurringRuleId !== ruleId && t.id !== transactionToEdit.id)
                 .map(t => t.id);
               orderedIds.splice(Math.min(sequenceNum - 1, orderedIds.length), 0, movedId);
-              reorderRecurringItem(ruleId, 'series', date, targetPeriod.key, orderedIds, movedId);
+              reorderRecurringItem(targetRuleId, recurringEditMode, date, targetPeriod.key, orderedIds, movedId);
             }
           }
         } else {
