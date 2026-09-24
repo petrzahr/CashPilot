@@ -102,6 +102,7 @@ export interface RecurringRule {
   isActive: boolean;
   orderRank?: number;          // Pořadí této platby mezi opakovanými platbami téhož dne (bez hintu = výchozí řazení)
   orderRankUpdatedAt?: string; // Čas poslední změny orderRank - tie-break při kolizi dvou pravidel
+  orderPosition?: number;      // Požadovaná pozice ve dni (1 = první) i vůči ručním položkám, platí napříč obdobími
   createdAt: string;
   updatedAt: string;
 }

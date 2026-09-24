@@ -209,7 +209,7 @@ export function getEffectiveTransactionsForPeriod(
   // Nashromáždit výskyty, které se pro tuto periodu ještě nemají zhmotnit jako reálná transakce,
   // seskupené podle dne. override = absolutní pozice jen pro tuto periodu (výjimka),
   // rank = pořadí mezi opakovanými platbami platné napříč obdobími (orderRank pravidla).
-  type PendingOccurrence = { virtual: Transaction; override?: number; rank?: number; rankUpdatedAt?: string };
+  type PendingOccurrence = { virtual: Transaction; override?: number; rank?: number; rankUpdatedAt?: string; position?: number };
   const pendingByDate = new Map<string, PendingOccurrence[]>();
   for (const rule of sortedRules) {
     if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
@@ -231,7 +231,7 @@ export function getEffectiveTransactionsForPeriod(
 
     const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
     const list = pendingByDate.get(virtual.date) || [];
-    list.push({ virtual, override: ex?.overrideSequence, rank: rule.orderRank, rankUpdatedAt: rule.orderRankUpdatedAt });
+    list.push({ virtual, override: ex?.overrideSequence, rank: rule.orderRank, rankUpdatedAt: rule.orderRankUpdatedAt, position: rule.orderPosition });
     pendingByDate.set(virtual.date, list);
   }
 
@@ -239,7 +239,7 @@ export function getEffectiveTransactionsForPeriod(
   const adjustedManualByDate = new Map<string, Transaction[]>();
 
   for (const [occDate, pending] of pendingByDate.entries()) {
-    const hasCustomOrder = pending.some(p => p.override !== undefined || p.rank !== undefined);
+    const hasCustomOrder = pending.some(p => p.override !== undefined || p.rank !== undefined || p.position !== undefined);
 
     if (!hasCustomOrder) {
       // Beze změny oproti dřívějšímu chování: postupné přidávání na konec dne.
@@ -279,8 +279,15 @@ export function getEffectiveTransactionsForPeriod(
       })
       .map(t => ({ ...t }));
 
-    for (const { virtual } of [...ranked, ...unranked]) {
+    // Výskyty s pozicí série (orderPosition) se vloží přímo na svou pozici ve dni - i před ruční
+    // položky; ostatní jdou na konec. Vkládá se v pořadí ranku, aby vzájemné pořadí sedělo.
+    const positioned = ranked.filter(p => p.position !== undefined);
+    for (const { virtual } of [...ranked.filter(p => p.position === undefined), ...unranked]) {
       dayItems.push(virtual);
+    }
+    for (const { virtual, position } of positioned) {
+      const clampedIndex = Math.max(0, Math.min((position as number) - 1, dayItems.length));
+      dayItems.splice(clampedIndex, 0, virtual);
     }
     // Absolutní pozice pro tuto periodu (přetažení v konkrétním dni) se uplatní nakonec.
     for (const { virtual, override } of overridden) {

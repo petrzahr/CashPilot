@@ -161,7 +161,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const septEffective = getEffectiveTransactionsForPeriod(septPeriod, [], [oldRule], [], 15);
     expect(septEffective.find(t => t.recurringRuleId === gymRule.id)?.sequence).toBe(1);
 
-    // Budoucí perioda používá nové pravidlo (s pořadím série) - virtuál je za ruční položkou dne
+    // Budoucí perioda používá nové pravidlo (s pozicí série) - virtuál drží 1. místo i před ruční položkou
     const novPeriod = getPeriodForDate('2026-11-15', 15);
     const novManual: Transaction = {
       id: 'tx_nov', title: 'Nákup', amountInHaler: 2000, date: '2026-11-15', sequence: 1,
@@ -169,10 +169,10 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     };
     const novEffective = getEffectiveTransactionsForPeriod(novPeriod, [novManual], [oldRule, newRule], [], 15);
     const dayNov = novEffective.filter(t => t.date === '2026-11-15');
-    expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([novManual.id, newRule.id]);
+    expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([newRule.id, novManual.id]);
   });
 
-  it('series: nastaví orderRank na existujícím pravidle in-place, sequence u již materializované minulé transakce zůstává beze změny', async () => {
+  it('series: nastaví orderRank a pozici na existujícím pravidle in-place a propíše ji i do minulé zhmotněné transakce', async () => {
     const octManual: Transaction = {
       id: 'tx_oct', title: 'Nákup', amountInHaler: 1000, date: '2026-10-15', sequence: 1,
       type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
@@ -194,11 +194,41 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const stored = loadStoredDataResult().data;
     expect(stored.recurringRules).toHaveLength(1);
     expect(stored.recurringRules[0].orderRank).toBe(1);
+    expect(stored.recurringRules[0].orderPosition).toBe(1);
 
-    // Minulá materializovaná transakce zůstává úplně beze změny - sequence se u ní nepřepočítává
+    // Minulá zhmotněná transakce (ve svém dni sama) dostane pozici série - žádné osiřelé #5
     const pastTx = stored.transactions.find(t => t.id === 'tx_past_gym')!;
-    expect(pastTx.sequence).toBe(5);
-    expect(pastTx).toEqual(pastMaterialized);
+    expect(pastTx.sequence).toBe(1);
+    expect(pastTx.date).toBe(pastMaterialized.date);
+  });
+
+  it('series: pozice série platí i v dalších měsících před ručními položkami (virtuální i zhmotněné)', async () => {
+    const rule: RecurringRule = { ...gymRule, startDate: '2026-08-15' };
+    const mk = (id: string, date: string, seq: number, ruleId?: string): Transaction => ({
+      id, title: id, amountInHaler: 100, date, sequence: seq, type: 'expense', sourceAccountId: 'acc_main',
+      status: 'executed', actualAmountInHaler: 100, recurringRuleId: ruleId, createdAt: '', updatedAt: '',
+    });
+    const txs = [
+      mk('aug_m1', '2026-08-15', 1), mk('aug_m2', '2026-08-15', 2), mk('aug_gym', '2026-08-15', 3, rule.id),
+      mk('oct_m1', '2026-10-15', 1), mk('oct_m2', '2026-10-15', 2),
+      mk('nov_m1', '2026-11-15', 1),
+    ];
+    populateTestStorage({ recurringRules: [rule], transactions: txs });
+    const ctx = await getContextHandle();
+
+    const period = getPeriodForDate('2026-10-15', 15);
+    const virtual = getEffectiveTransactionsForPeriod(period, txs, [rule], [], 15)
+      .find(t => t.recurringRuleId === rule.id)!;
+    expect(virtual.sequence).toBe(3);
+    ctx.reorderRecurringItem(rule.id, 'series', '2026-10-15', period.key, [virtual.id, 'oct_m1', 'oct_m2'], virtual.id);
+
+    const stored = loadStoredDataResult().data;
+    const nov = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-11-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      .filter(t => t.date === '2026-11-15');
+    expect(nov.map(t => t.recurringRuleId || t.id)).toEqual([rule.id, 'nov_m1']);
+
+    const aug = stored.transactions.filter(t => t.date === '2026-08-15').sort((a, b) => a.sequence - b.sequence);
+    expect(aug.map(t => t.id)).toEqual(['aug_gym', 'aug_m1', 'aug_m2']);
   });
 
   it('series: přesun opakované platby DOLŮ pod jinou opakovanou platbu se propíše do dalších období', async () => {

@@ -152,6 +152,48 @@ export function applyRuleRankOrder(
 }
 
 /**
+ * Umístí zhmotněné opakované položky na pozici ve dni dané jejich sérií (orderPosition),
+ * i vůči ručním položkám. Vkládá se vzestupně podle ranku; den se pak přečísluje 1, 2, 3…
+ */
+export function applyRulePositions(
+  transactions: Transaction[],
+  order: Map<string, { position: number; rank: number }>,
+  fromDate?: string,
+  toDate?: string
+): Transaction[] {
+  if (order.size === 0) return transactions;
+
+  const dates = new Set<string>();
+  for (const t of transactions) {
+    if (!t.recurringRuleId || !order.has(t.recurringRuleId)) continue;
+    if (fromDate && t.date < fromDate) continue;
+    if (toDate && t.date > toDate) continue;
+    dates.add(t.date);
+  }
+  if (dates.size === 0) return transactions;
+
+  const replaced = new Map<string, Transaction>();
+  const nowIso = new Date().toISOString();
+  dates.forEach(date => {
+    const sorted = sortTransactionsByDateAndSequence(transactions.filter(t => t.date === date));
+    const isPositioned = (t: Transaction) => !!t.recurringRuleId && order.has(t.recurringRuleId);
+    const dayItems = sorted.filter(t => !isPositioned(t));
+    const positioned = sorted.filter(isPositioned).sort((a, b) =>
+      order.get(a.recurringRuleId!)!.rank - order.get(b.recurringRuleId!)!.rank
+    );
+    for (const t of positioned) {
+      const idx = Math.max(0, Math.min(order.get(t.recurringRuleId!)!.position - 1, dayItems.length));
+      dayItems.splice(idx, 0, t);
+    }
+    dayItems.forEach((t, i) => {
+      if ((t.sequence ?? 1) !== i + 1) replaced.set(t.id, { ...t, sequence: i + 1, updatedAt: nowIso });
+    });
+  });
+
+  return replaced.size > 0 ? transactions.map(t => replaced.get(t.id) ?? t) : transactions;
+}
+
+/**
  * Vloží nebo upraví položku s požadovaným pořadím.
  * - Pokud se změnilo datum položky (oldDate !== txToSave.date), zbývající položky původního dne se přečíslují bez mezer.
  * - V cílovém dni se položka vloží na požadovanou pozici a ostatní položky se posunou.
