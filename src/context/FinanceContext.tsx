@@ -1292,7 +1292,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
 
       // "Včetně minulých" - promítnout změnu i do už materializovaných transakcí série.
-      const updatedTxs = prev.transactions.map(t => {
+      let updatedTxs = prev.transactions.map(t => {
         if (t.recurringRuleId !== ruleId) return t;
         return {
           ...t,
@@ -1308,6 +1308,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           updatedAt: nowIso,
         };
       });
+
+      // Přesunuté výskyty dostanou pořadí v novém dni (na jeho konec) a ve starém dni
+      // se zbylé položky přečíslují - jinak by si nesly původní pořadí (např. #13 v prázdném dni).
+      if (dayChanged) {
+        for (const oldTx of prev.transactions) {
+          if (oldTx.recurringRuleId !== ruleId) continue;
+          const moved = updatedTxs.find(t => t.id === oldTx.id);
+          if (!moved || moved.date === oldTx.date) continue;
+          const seq = getNextSequenceForDate(moved.date, updatedTxs.filter(t => t.id !== moved.id));
+          updatedTxs = insertOrUpdateWithSequence(moved, seq, updatedTxs, oldTx.date);
+        }
+      }
 
       return {
         ...prev,
@@ -1360,6 +1372,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         let txs = prev.transactions;
         let exceptions = prev.recurringExceptions;
         const newRanks = new Map<string, number>();
+        const newPositions = new Map<string, number>();
         involvedRuleIds.forEach((rid, i) => {
           const current = rules.find(r => r.id === rid);
           if (!current) return;
@@ -1375,13 +1388,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           txs = split.updatedTransactions;
           exceptions = split.updatedExceptions;
           newRanks.set(hinted.id, ranks.get(rid) as number);
+          if (positions.has(rid)) newPositions.set(hinted.id, positions.get(rid) as number);
         });
 
         // Už zhmotněné výskyty od tohoto dne dál (provedené i plánované) dostanou nové pořadí hned.
+        // Přetažený den si navíc drží přesné pozice (i vůči ručním položkám) - samotný rank
+        // řadí jen opakované platby mezi sebou a virtuální výskyt by jinak skočil zpět za ruční.
         return {
           ...prev,
           recurringRules: rules,
-          recurringExceptions: clearSequenceOverrides(exceptions, new Set(newRanks.keys())),
+          recurringExceptions: withSequenceExceptions(
+            clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
+          ),
           transactions: applyRuleRankOrder(reorderRealToday(txs), newRanks, date),
         };
       }
@@ -1392,7 +1410,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
           ? { ...r, orderRank: ranks.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
           : r),
-        recurringExceptions: clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())),
+        recurringExceptions: withSequenceExceptions(
+          clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
+        ),
         transactions: applyRuleRankOrder(reorderRealToday(prev.transactions), ranks),
       };
     });

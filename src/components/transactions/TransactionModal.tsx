@@ -37,6 +37,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     updateTransaction,
     addRecurringRule,
     updateRecurringRule,
+    reorderRecurringItem,
   } = useFinance();
 
   // Další volné pořadí v daném dni musí počítat i s ještě nezhmotněnými (virtuálními)
@@ -329,6 +330,30 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               },
               transactionToEdit.id
             );
+
+            // Pořadí u celé série se nastaví stejně jako přetažením: pozice v tomto dni
+            // a pořadí série mezi opakovanými platbami pro ostatní období.
+            const seqChanged = sequenceNum !== (transactionToEdit.sequence || 1);
+            if (recurringEditMode === 'series' && (seqChanged || date !== transactionToEdit.date)) {
+              const ruleId = transactionToEdit.recurringRuleId;
+              const targetPeriod = getPeriodForDate(date, settings.budgetStartDay);
+              const movedId = transactionToEdit.id.startsWith('virtual_')
+                ? `virtual_${ruleId}_${targetPeriod.key}`
+                : transactionToEdit.id;
+              const orderedIds = getEffectiveTransactionsForPeriod(
+                targetPeriod,
+                transactions,
+                recurringRules,
+                recurringExceptions,
+                settings.budgetStartDay,
+                undefined,
+                accounts
+              )
+                .filter(t => t.date === date && t.recurringRuleId !== ruleId && t.id !== transactionToEdit.id)
+                .map(t => t.id);
+              orderedIds.splice(Math.min(sequenceNum - 1, orderedIds.length), 0, movedId);
+              reorderRecurringItem(ruleId, 'series', date, targetPeriod.key, orderedIds, movedId);
+            }
           }
         } else {
           updateTransaction({
