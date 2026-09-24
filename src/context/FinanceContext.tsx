@@ -81,6 +81,7 @@ import {
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
   applyRuleRankOrder,
+  applyRulePositions,
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
 
@@ -127,6 +128,16 @@ function ruleOrderFromOrderedIds(
     }
   });
   return { positions, ranks };
+}
+
+/** Spojí rank a pozici série podle ID pravidla (vstup pro applyRulePositions). */
+function toRuleOrder(
+  ranks: Map<string, number>,
+  positions: Map<string, number>
+): Map<string, { position: number; rank: number }> {
+  const order = new Map<string, { position: number; rank: number }>();
+  ranks.forEach((rank, ruleId) => order.set(ruleId, { rank, position: positions.get(ruleId) ?? rank }));
+  return order;
 }
 
 /** Zapíše požadovanou pozici do výjimek dané periody (vytvoří je, pokud chybí). */
@@ -1325,6 +1336,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           const seq = getNextSequenceForDate(moved.date, updatedTxs.filter(t => t.id !== moved.id));
           updatedTxs = insertOrUpdateWithSequence(moved, seq, updatedTxs, oldTx.date);
         }
+        if (updatedSeries.orderPosition !== undefined) {
+          updatedTxs = applyRulePositions(updatedTxs, new Map([[ruleId, {
+            position: updatedSeries.orderPosition,
+            rank: updatedSeries.orderRank ?? updatedSeries.orderPosition,
+          }]]));
+        }
       }
 
       return {
@@ -1387,7 +1404,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           // minulost k zachování - pořadí se nastaví přímo, bez dalšího štěpení.
           if (current.startDate >= date) {
             rules = rules.map(r => r.id === rid
-              ? { ...r, orderRank: ranks.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
+              ? { ...r, orderRank: ranks.get(rid), orderPosition: positions.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
               : r);
             newRanks.set(rid, ranks.get(rid) as number);
             if (positions.has(rid)) newPositions.set(rid, positions.get(rid) as number);
@@ -1399,6 +1416,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           const hinted: RecurringRule = {
             ...split.newFutureRule,
             orderRank: ranks.get(rid),
+            orderPosition: positions.get(rid),
             orderRankUpdatedAt: nowIso,
           };
           rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
@@ -1417,7 +1435,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           recurringExceptions: withSequenceExceptions(
             clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
           ),
-          transactions: applyRuleRankOrder(reorderRealToday(txs), newRanks, date),
+          transactions: applyRulePositions(reorderRealToday(txs), toRuleOrder(newRanks, newPositions), date),
         };
       }
 
@@ -1425,12 +1443,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       return {
         ...prev,
         recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
-          ? { ...r, orderRank: ranks.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
+          ? { ...r, orderRank: ranks.get(r.id), orderPosition: positions.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
           : r),
         recurringExceptions: withSequenceExceptions(
           clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
         ),
-        transactions: applyRuleRankOrder(reorderRealToday(prev.transactions), ranks),
+        transactions: applyRulePositions(reorderRealToday(prev.transactions), toRuleOrder(ranks, positions)),
       };
     });
 

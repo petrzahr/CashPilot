@@ -12,6 +12,7 @@ import {
 } from './periodService';
 import {
   applyRuleRankOrder,
+  applyRulePositions,
   getNextSequenceForDate,
   insertOrUpdateWithSequence
 } from './sequenceService';
@@ -95,6 +96,13 @@ export function autoExecuteDueTransactions(
   for (const r of safeRules) {
     if (r.orderRank !== undefined) seriesRanks.set(r.id, r.orderRank);
   }
+  // Pozice série ve dni (i vůči ručním položkám) - viz RecurringRule.orderPosition
+  const seriesPositions = new Map<string, { position: number; rank: number }>();
+  for (const r of safeRules) {
+    if (r.orderPosition !== undefined) {
+      seriesPositions.set(r.id, { position: r.orderPosition, rank: r.orderRank ?? r.orderPosition });
+    }
+  }
 
   for (const rule of rulesInOrder) {
     if (!rule.isActive) continue;
@@ -164,6 +172,9 @@ export function autoExecuteDueTransactions(
         };
 
         currentTxs = insertOrUpdateWithSequence(realTx, nextSeq, currentTxs);
+        if (override === undefined && seriesPositions.size > 0) {
+          currentTxs = applyRulePositions(currentTxs, seriesPositions, occ.date, occ.date);
+        }
         if (override === undefined && seriesRanks.size > 0) {
           currentTxs = applyRuleRankOrder(currentTxs, seriesRanks, occ.date, occ.date);
         }
