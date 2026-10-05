@@ -3,7 +3,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/layout/Header';
 import { Sidebar, NavScreen } from './components/layout/Sidebar';
-import { AlertBanner } from './components/layout/AlertBanner';
 import { OverviewScreen } from './components/overview/OverviewScreen';
 import { AnalyticsScreen } from './components/analytics/AnalyticsScreen';
 import { MonthlyBudgetScreen } from './components/budget/MonthlyBudgetScreen';
@@ -108,9 +107,6 @@ const MainLayout: React.FC = () => {
         />
 
         <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          {/* Upozorňovací banner na rizika a pokles rezervy */}
-          <AlertBanner />
-
           <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
             {currentScreen === 'budget' && (
               <MonthlyBudgetScreen
