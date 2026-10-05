@@ -759,23 +759,23 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
     expect(cf[1].isCurrentMonth).toBe(false);
   });
 
-  // 16. Meziměsíční srovnání používá stejné části rozpočtových období
-  it('16. Meziměsíční srovnání porovnává prvních N dní aktuálního období s prvními N dny předchozího', () => {
+  // 16. Meziměsíční srovnání používá celé předchozí rozpočtové období
+  it('16. Meziměsíční srovnání porovnává probíhající období s celým předchozím obdobím', () => {
     const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
     const txs: Transaction[] = [
-      // Předchozí období Červenec 2026 (15. 7. – 14. 8.): výdaj v prvních 30 dnech
-      { id: 'tx_prev_in', title: '', amountInHaler: 100000, date: '2026-07-20', sequence: 1, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
-      // Předchozí období Červenec 2026: výdaj v 31. dni (14. 8.), který se nesmí zahrnout do 30denního srovnání
-      { id: 'tx_prev_out', title: '', amountInHaler: 900000, date: '2026-08-14', sequence: 2, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      // Předchozí období Červenec 2026 (15. 7. – 14. 8.): výdaj na začátku období
+      { id: 'tx_prev_start', title: '', amountInHaler: 100000, date: '2026-07-20', sequence: 1, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
+      // Předchozí období Červenec 2026: výdaj v posledním dni (14. 8.), který se také započítá
+      { id: 'tx_prev_end', title: '', amountInHaler: 900000, date: '2026-08-14', sequence: 2, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
       // Probíhající období Srpen 2026 (15. 8. – 13. 9.)
       { id: 'tx_cur', title: '', amountInHaler: 120000, date: '2026-08-25', sequence: 3, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
     ];
 
     const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13', 15);
     const aug = trends.find((t) => t.monthKey === '2026-08')!;
-    expect(aug.isSameDayComparison).toBe(true);
     expect(aug.expenseInHaler).toBe(120000);
-    expect(aug.prevMonthExpenseInHaler).toBe(100000); // Pouze tx_prev_in
+    expect(aug.prevMonthExpenseInHaler).toBe(1000000); // Celé předchozí období
+    expect(aug.changePercent).toBeCloseTo(-88);
   });
 
   // 17. Počáteční den 1 odpovídá kalendářním měsícům

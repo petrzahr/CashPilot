@@ -90,7 +90,6 @@ export interface ExpenseTrendItem {
   prevMonthExpenseInHaler: number | null;
   changePercent: number | null;
   isCurrentMonth: boolean;
-  isSameDayComparison: boolean;
 }
 
 export interface FinancialExtremes {
@@ -702,7 +701,7 @@ export function calculatePortfolioComposition(
 
 /**
  * Spočítá meziměsíční trend výdajů mezi rozpočtovými obdobími.
- * U probíhajícího období srovnává 1.–N. den s 1.–N. dnem předchozího rozpočtového období.
+ * Každé období (i probíhající) srovnává s celým předchozím rozpočtovým obdobím.
  */
 export function calculateExpenseMoMTrend(
   periods: BudgetPeriodInfo[],
@@ -744,24 +743,12 @@ export function calculateExpenseMoMTrend(
     const curP = periods[i];
     const curExpenses = getExpensesInDateRange(curP.startDate, curP.analysisEndDate);
 
+    // Celé předchozí rozpočtové období
     const prevPeriod = getPreviousPeriod(curP.period, safeStartDay);
-    let prevExpenses: number | null = null;
-    let isSameDayComparison = false;
-
-    if (curP.isCurrentPeriod) {
-      // Shodný počet uplynulých dní (1.–N. den)
-      const elapsedDays = getDaysBetweenInclusive(curP.startDate, curP.analysisEndDate);
-      const prevCompareEndDate = addDaysToDateString(prevPeriod.startDate, elapsedDays - 1);
-      const effectivePrevEnd = prevCompareEndDate < prevPeriod.endDate ? prevCompareEndDate : prevPeriod.endDate;
-      prevExpenses = getExpensesInDateRange(prevPeriod.startDate, effectivePrevEnd);
-      isSameDayComparison = true;
-    } else {
-      // Celé předchozí rozpočtové období
-      prevExpenses = getExpensesInDateRange(prevPeriod.startDate, prevPeriod.endDate);
-    }
+    const prevExpenses = getExpensesInDateRange(prevPeriod.startDate, prevPeriod.endDate);
 
     let changePercent: number | null = null;
-    if (prevExpenses !== null && prevExpenses > 0) {
+    if (prevExpenses > 0) {
       changePercent = ((curExpenses - prevExpenses) / prevExpenses) * 100;
     }
 
@@ -773,7 +760,6 @@ export function calculateExpenseMoMTrend(
       prevMonthExpenseInHaler: prevExpenses,
       changePercent,
       isCurrentMonth: curP.isCurrentPeriod,
-      isSameDayComparison,
     });
   }
 
