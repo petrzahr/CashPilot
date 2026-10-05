@@ -507,6 +507,36 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     });
   }, [periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds]);
 
+  // Zůstatek zdrojového účtu po každé položce (z nefiltrovaných položek období, aby filtr neovlivnil výsledek)
+  const sourceAccountBalanceByTxId = useMemo(() => {
+    const balances = (forecast.periods.find(p => p.period.key === selectedPeriod.key) ?? currentSummary).accountBalances;
+    const txsByAccount = new Map<string, Transaction[]>();
+    allPeriodTransactions.forEach(tx => {
+      [tx.sourceAccountId, tx.targetAccountId].forEach(id => {
+        if (!id) return;
+        const list = txsByAccount.get(id) || [];
+        if (!list.includes(tx)) list.push(tx);
+        txsByAccount.set(id, list);
+      });
+    });
+
+    const result = new Map<string, number>();
+    txsByAccount.forEach((accTxs, accountId) => {
+      let running = balances[accountId]?.openingBalanceInHaler ?? 0;
+      const dates = Array.from(new Set(accTxs.map(t => t.date))).sort();
+      for (const date of dates) {
+        const intraDay = calculateIntraDayRunningBalances(running, accTxs.filter(t => t.date === date), accountId);
+        intraDay.steps.forEach(step => {
+          if (step.transaction.sourceAccountId === accountId) {
+            result.set(step.transaction.id, step.runningBalanceInHaler);
+          }
+        });
+        running = intraDay.endOfDayBalanceInHaler;
+      }
+    });
+    return result;
+  }, [allPeriodTransactions, forecast.periods, currentSummary, selectedPeriod.key]);
+
   // Drag-and-drop obsluha
   const handleDragStart = (e: React.DragEvent, txId: string) => {
     e.dataTransfer.setData('text/plain', txId);
@@ -1068,7 +1098,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                     {/* Seznam položek v rámci dne (Draggable) */}
                     <div className="space-y-1.5">
-                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler, isTemporaryNegative }) => {
+                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }) => {
                         const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                         const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                         const cat = categories.find(c => c.id === tx.categoryId);
@@ -1087,6 +1117,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             : tx.amountInHaler
                         );
 
+                        const balanceAfterInHaler = sourceAccountBalanceByTxId.get(tx.id) ?? runningBalanceInHaler;
+
                         return (
                           <div
                             key={tx.id}
@@ -1099,7 +1131,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
                                   ? 'bg-amber-50/40 border-amber-200/80 hover:border-amber-300'
-                                  : isTemporaryNegative
+                                  : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-red-200 hover:border-red-300'
                                     : 'bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-xs'
                             } ${isCancelled ? 'opacity-50 line-through' : ''}`}
@@ -1178,9 +1210,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   Zůstatek po položce:
                                 </span>
                                 <span className={`font-bold block ${
-                                  isTemporaryNegative ? 'text-red-600' : 'text-slate-900'
+                                  balanceAfterInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                                 }`}>
-                                  {formatCurrency(runningBalanceInHaler)}
+                                  {formatCurrency(balanceAfterInHaler)}
                                 </span>
                               </div>
 
