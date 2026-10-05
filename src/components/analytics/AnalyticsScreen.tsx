@@ -186,11 +186,7 @@ export const AnalyticsScreen: React.FC = () => {
                             ? 'bg-red-50 text-red-700 border-red-200'
                             : 'bg-slate-100 text-slate-500 border-slate-200'
                         }`}
-                        title={
-                          t.isSameDayComparison
-                            ? 'Srovnání ke stejnému dni období'
-                            : 'Změna oproti předchozímu období'
-                        }
+                        title="Změna oproti celému předchozímu období"
                       >
                         {isDecrease ? '↓ ' : isIncrease ? '↑ +' : ''}
                         {t.changePercent.toFixed(1)} %
