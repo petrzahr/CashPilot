@@ -1098,7 +1098,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                     {/* Seznam položek v rámci dne (Draggable) */}
                     <div className="space-y-1.5">
-                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler, isTemporaryNegative }) => {
+                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }) => {
                         const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                         const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                         const cat = categories.find(c => c.id === tx.categoryId);
@@ -1131,7 +1131,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
                                   ? 'bg-amber-50/40 border-amber-200/80 hover:border-amber-300'
-                                  : isTemporaryNegative
+                                  : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-red-200 hover:border-red-300'
                                     : 'bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-xs'
                             } ${isCancelled ? 'opacity-50 line-through' : ''}`}
