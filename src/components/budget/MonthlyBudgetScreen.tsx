@@ -270,17 +270,21 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Souhrnné ukazatele za všechny účty, respektující vybrané rozpočtové období
   const aggregateSummary = useMemo(() => {
+    // Toky za celé období bereme z neprojektovaného souhrnu - projekce aktiv od dneška
+    // obsahuje jen zbývající (neprovedené) převody a uskutečněné by vynechala.
+    const flowBalances = (forecast.periods.find(p => p.period.key === selectedPeriod.key) ?? currentSummary).accountBalances;
+
     const savedInHaler = accounts
       .filter(a => a.type === 'savings' && a.status === 'active')
       .reduce((sum, acc) => {
-        const bal = currentSummary.accountBalances[acc.id];
+        const bal = flowBalances[acc.id];
         return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
       }, 0);
 
     const investedInHaler = accounts
       .filter(a => (a.type === 'investment' || a.type === 'pension') && a.status === 'active')
       .reduce((sum, acc) => {
-        const bal = currentSummary.accountBalances[acc.id];
+        const bal = flowBalances[acc.id];
         return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
       }, 0);
 
@@ -306,7 +310,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
       actuallySavedInHaler, actuallySavedPct,
     };
-  }, [accounts, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
+  }, [accounts, forecast.periods, currentSummary, marketValueSnapshots, selectedPeriod, settings.budgetStartDay]);
 
   const formatPercent = (value: number | null) => value === null
     ? '—'
