@@ -262,7 +262,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       netWorthOpeningInHaler: 0,
       netWorthClosingInHaler: 0,
       isNegativeBalance: false,
-      isBelowReserve: false,
       minUsableBalanceInHaler: 0,
       accountBalances: {},
     };

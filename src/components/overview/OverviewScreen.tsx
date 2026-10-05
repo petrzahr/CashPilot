@@ -65,8 +65,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     onNavigateToBudget(p);
   };
 
-  const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
-
   return (
     <div className="space-y-6 pb-12">
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label="Období přehledů">
@@ -171,7 +169,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 const change = forecastScope === 'usable' ? p.usableNetChangeInHaler : p.netChangeInHaler;
 
                 const isNegative = closing < 0;
-                const isBelowReserve = forecastScope === 'usable' && closing < overdraftLimit;
 
                 return (
                   <tr
@@ -202,11 +199,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       {formatCurrency(change, { showPlus: true })}
                     </td>
                     <td className={`py-3 px-4 w-[140px] text-right font-bold ${
-                      isNegative
-                        ? 'text-red-600'
-                        : isBelowReserve
-                          ? 'text-amber-600'
-                          : 'text-slate-900'
+                      isNegative ? 'text-red-600' : 'text-slate-900'
                     }`}>
                       {formatCurrency(closing)}
                     </td>
@@ -388,7 +381,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
                       const isOpeningNegative = opening < 0;
                       const isClosingNegative = closing < 0;
-                      const isClosingBelowReserve = acc.isUsableCash && closing < overdraftLimit && closing >= 0;
 
                       return (
                         <td
@@ -420,22 +412,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                               <span
                                 title="K – konečný stav"
                                 className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
-                                  isClosingNegative
-                                    ? 'text-red-600'
-                                    : isClosingBelowReserve
-                                      ? 'text-amber-600'
-                                      : 'text-slate-500'
+                                  isClosingNegative ? 'text-red-600' : 'text-slate-500'
                                 }`}
                               >
                                 K
                               </span>
                               <span
                                 className={`text-xs font-bold whitespace-nowrap ${
-                                  isClosingNegative
-                                    ? 'text-red-600'
-                                    : isClosingBelowReserve
-                                      ? 'text-amber-600'
-                                      : 'text-slate-900'
+                                  isClosingNegative ? 'text-red-600' : 'text-slate-900'
                                 }`}
                               >
                                 {formatCurrency(closing)}
@@ -461,7 +445,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     const totalClosing = p.netWorthClosingInHaler;
                     const isOpeningNegative = totalOpening < 0;
                     const isClosingNegative = totalClosing < 0;
-                    const isClosingBelowReserve = totalClosing < overdraftLimit && totalClosing >= 0;
 
                     return (
                       <td key={p.period.key} className="py-2.5 px-3 text-right">
@@ -485,18 +468,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <span
                               title="K – konečný stav"
                               className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
-                                isClosingNegative ? 'text-red-600' : isClosingBelowReserve ? 'text-amber-600' : 'text-slate-500'
+                                isClosingNegative ? 'text-red-600' : 'text-slate-500'
                               }`}
                             >
                               K
                             </span>
                             <span
                               className={`text-xs font-bold whitespace-nowrap ${
-                                isClosingNegative
-                                  ? 'text-red-600'
-                                  : isClosingBelowReserve
-                                    ? 'text-amber-600'
-                                    : 'text-slate-900'
+                                isClosingNegative ? 'text-red-600' : 'text-slate-900'
                               }`}
                             >
                               {formatCurrency(totalClosing)}

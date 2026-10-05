@@ -557,7 +557,6 @@ export function calculateForecast(
   }
 
   let overallMinBalance = Infinity;
-  let earliestShortage: BudgetPeriod | null = null;
 
   for (const period of periods) {
     const effectiveTxs = getEffectiveTransactionsForPeriod(
@@ -808,8 +807,6 @@ export function calculateForecast(
     const usableNetChange = subHaler(usableClosing, usableOpening);
 
     const isNegative = usableClosing < 0;
-    const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
-    const isBelowReserve = usableClosing < overdraftLimit;
 
     periodSummaries.push({
       period,
@@ -827,7 +824,6 @@ export function calculateForecast(
       netWorthOpeningInHaler: netWorthOpening,
       netWorthClosingInHaler: netWorthClosing,
       isNegativeBalance: isNegative,
-      isBelowReserve: isBelowReserve,
       minUsableBalanceInHaler: usableClosing,
     });
   }
@@ -896,13 +892,9 @@ export function calculateForecast(
   });
 
   overallMinBalance = Infinity;
-  earliestShortage = null;
   for (const s of forecastPeriods) {
     if (s.usableClosingInHaler < overallMinBalance) {
       overallMinBalance = s.usableClosingInHaler;
-    }
-    if (!earliestShortage && (s.isNegativeBalance || s.isBelowReserve)) {
-      earliestShortage = s.period;
     }
   }
 
@@ -911,7 +903,6 @@ export function calculateForecast(
     forecastPeriods,
     allPeriods: periodSummaries,
     currentPeriod: resolvedCurrentPeriod,
-    earliestShortagePeriod: earliestShortage,
     overallMinBalanceInHaler: overallMinBalance === Infinity ? 0 : overallMinBalance,
     usableCashNowInHaler: (() => {
       let usableNow = currentSummary ? currentSummary.usableOpeningInHaler : 0;

@@ -203,7 +203,6 @@ export interface PeriodSummary {
   netWorthOpeningInHaler: number;
   netWorthClosingInHaler: number;
   isNegativeBalance: boolean;
-  isBelowReserve: boolean;
   minUsableBalanceInHaler: number;
 }
 
@@ -212,7 +211,6 @@ export interface ForecastResult {
   forecastPeriods?: PeriodSummary[];
   allPeriods?: PeriodSummary[];
   currentPeriod: BudgetPeriod;
-  earliestShortagePeriod?: BudgetPeriod | null;
   overallMinBalanceInHaler: number;
   usableCashNowInHaler: number;
   expectedClosingCurrentPeriodInHaler: number;
