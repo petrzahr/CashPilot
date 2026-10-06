@@ -5,6 +5,7 @@ import { Header } from './components/layout/Header';
 import { Sidebar, NavScreen } from './components/layout/Sidebar';
 import { OverviewScreen } from './components/overview/OverviewScreen';
 import { AnalyticsScreen } from './components/analytics/AnalyticsScreen';
+import { MandatoryExpensesScreen } from './components/mandatory/MandatoryExpensesScreen';
 import { MonthlyBudgetScreen } from './components/budget/MonthlyBudgetScreen';
 import { TransactionsScreen } from './components/transactions/TransactionsScreen';
 import { AccountsScreen } from './components/accounts/AccountsScreen';
@@ -17,7 +18,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
 import { Loader2 } from 'lucide-react';
 
-const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'transactions', 'accounts', 'categories', 'settings'];
+const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'mandatory', 'transactions', 'accounts', 'categories', 'settings'];
 
 function parseScreenFromUrl(): NavScreen {
   if (typeof window === 'undefined') return 'budget';
@@ -81,6 +82,7 @@ const MainLayout: React.FC = () => {
       case 'budget': return 'Měsíční rozpočet';
       case 'overview': return 'Přehledy';
       case 'analytics': return 'Analýza & trendy';
+      case 'mandatory': return 'Mandatorní výdaje';
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Správa účtů';
       case 'categories': return 'Kategorie';
@@ -123,6 +125,10 @@ const MainLayout: React.FC = () => {
 
             {currentScreen === 'analytics' && (
               <AnalyticsScreen />
+            )}
+
+            {currentScreen === 'mandatory' && (
+              <MandatoryExpensesScreen />
             )}
 
             {currentScreen === 'transactions' && (
