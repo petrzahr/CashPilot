@@ -56,7 +56,7 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     tx({ categoryId: 'housing', amountInHaler: 10000, date: '2026-08-22' }),
     tx({ categoryId: 'auto', amountInHaler: 100000, status: 'cancelled', date: '2026-07-22' }),
     tx({ categoryId: 'auto', amountInHaler: 300000, status: 'planned', date: '2026-09-10' }),
-    tx({ type: 'transfer', targetAccountId: 'sav', amountInHaler: 1000000, date: '2026-08-25' }),
+    tx({ type: 'transfer', targetAccountId: 'sav', amountInHaler: 1000000, actualAmountInHaler: 1200000, date: '2026-08-25' }),
   ];
 
   const result = calculateCategoryBreakdown(periods, transactions, [], [], categories, accounts, 15);
@@ -78,6 +78,7 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     expect(result.incomeTotalsInHaler).toEqual([9500000, 9600000]);
     expect(result.expenseTotalInHaler).toBe(2200000 + 660000 + 300000);
 
+    // Převody s plánovanou částkou (jako v Měsíčním rozpočtu), i když proběhly s jinou
     const transfers = result.rows.find((r) => r.group === 'transfer')!;
     expect(transfers.amountsInHaler).toEqual([0, 1000000]);
     expect(transfers.children.map((c) => c.label)).toEqual(['Spořicí']);

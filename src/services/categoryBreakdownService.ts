@@ -46,7 +46,7 @@ const sum = (values: number[]) => values.reduce((s, v) => addHaler(s, v), 0);
  * rozpočtu (efektivní položky celého období včetně plánovaných a opakovaných, bez zrušených).
  * Kategorie i podkategorie jsou řazené abecedně (nejdřív příjmové, pak výdajové), prázdné
  * řádky se vynechávají. Převody jsou v samostatném řádku "Spoření & Převody" rozpadlém
- * podle cílového účtu.
+ * podle cílového účtu a počítají se s plánovanou částkou (shodně s Měsíčním rozpočtem).
  */
 export function calculateCategoryBreakdown(
   periods: BudgetPeriodInfo[],
@@ -95,7 +95,8 @@ export function calculateCategoryBreakdown(
       const amount = effectiveAmount(t);
 
       if (t.type === 'transfer') {
-        add(transferAmounts, t.targetAccountId || '', idx, amount);
+        // Převody stejně jako "Spoření & Převody" v Měsíčním rozpočtu vždy s plánovanou částkou
+        add(transferAmounts, t.targetAccountId || '', idx, t.amountInHaler);
         continue;
       }
 
