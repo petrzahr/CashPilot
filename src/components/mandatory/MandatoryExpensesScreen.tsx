@@ -65,6 +65,13 @@ const STANDARD_FREQUENCIES: RecurrenceFrequency[] = ['monthly', 'bi_monthly', 'q
 const inputClass =
   'w-full h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
 
+// Název platby a akce zůstávají viditelné i při vodorovném posunu široké tabulky
+const STICKY_LEFT = 'sticky left-0 z-10';
+const STICKY_RIGHT = 'sticky right-0 z-10';
+// Neprůhledné ekvivalenty bg-slate-50/75 a bg-slate-50/40 na bílé - ukotvené buňky nesmí prosvítat
+const HEADER_ROW_BG = 'bg-[#fafbfd]';
+const CATEGORY_ROW_BG = 'bg-[#fcfdfe]';
+
 const iconButtonClass =
   'p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
 
@@ -151,8 +158,8 @@ const SectionTable: React.FC<SectionTableProps> = ({
     const set = (patch: Partial<Draft>) => setAddDraft({ ...addDraft, ...patch });
     const monthly = previewMonthly(addDraft);
     return (
-      <tr className="bg-emerald-50/50">
-        <td className="py-2 px-4">
+      <tr className="bg-emerald-50">
+        <td className={`py-2 px-4 ${STICKY_LEFT} bg-emerald-50`}>
           <input autoFocus className={inputClass} placeholder="Název" value={addDraft.title} onChange={(e) => set({ title: e.target.value })} />
         </td>
         {!isTransfer && (
@@ -193,7 +200,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         </td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
-        <td className="py-2 px-2 whitespace-nowrap text-right">
+        <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} bg-emerald-50`}>
           <button
             type="button"
             title="Přidat do simulace"
@@ -217,16 +224,16 @@ const SectionTable: React.FC<SectionTableProps> = ({
   const renderItemRow = (item: MandatoryItem) => {
     const isEditing = editingKey === item.ruleId && draft;
     const isDeleted = item.simState === 'deleted';
-    const rowClass =
-      item.simState === 'edited' ? 'bg-amber-50/60' : item.simState === 'added' ? 'bg-emerald-50/50' : isDeleted ? 'text-slate-400' : '';
+    const rowBg = item.simState === 'edited' ? 'bg-amber-50' : item.simState === 'added' ? 'bg-emerald-50' : 'bg-white';
+    const rowClass = `${rowBg} ${isDeleted ? 'text-slate-400' : ''}`;
     const strike = isDeleted ? 'line-through text-slate-400' : '';
 
     if (isEditing) {
       const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
       const monthly = previewMonthly(draft);
       return (
-        <tr key={item.ruleId} className="bg-sky-50/50">
-          <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'}`}>
+        <tr key={item.ruleId} className="bg-sky-50">
+          <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} ${STICKY_LEFT} bg-sky-50`}>
             <input autoFocus className={inputClass} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
           </td>
           {!isTransfer && <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.categoryLabel}</td>}
@@ -240,7 +247,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           </td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
-          <td className="py-2 px-2 whitespace-nowrap text-right">
+          <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} bg-sky-50`}>
             <button
               type="button"
               title="Uložit do simulace"
@@ -263,7 +270,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
 
     return (
       <tr key={item.ruleId} className={rowClass}>
-        <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'}`}>
+        <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
           {item.simState === 'added' && <span className="ml-1.5 text-[10px] font-semibold text-emerald-700">nová</span>}
         </td>
@@ -285,7 +292,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 px-4 text-right tabular-nums whitespace-nowrap ${strike || 'text-slate-600'}`}>
           {formatRounded(item.yearlyInHaler)}
         </td>
-        <td className="py-2 px-2 whitespace-nowrap text-right">
+        <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} ${rowBg}`}>
           {isDeleted ? (
             <button type="button" title="Vrátit zpět" className={iconButtonClass} onClick={() => onRestore(item)}>
               <RotateCcw className="w-3.5 h-3.5" />
@@ -333,7 +340,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
-                <th className="py-2.5 px-4">Položka</th>
+                <th className={`py-2.5 px-4 ${STICKY_LEFT} ${HEADER_ROW_BG}`}>Položka</th>
                 {!isTransfer && <th className="py-2.5 px-4">Kategorie</th>}
                 <th className="py-2.5 px-4">Účet</th>
                 <th className="py-2.5 px-4">Kdy se hradí</th>
@@ -341,7 +348,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
                 <th className="py-2.5 px-4 text-right">Částka</th>
                 <th className="py-2.5 px-4 text-right">Měsíčně</th>
                 <th className="py-2.5 px-4 text-right">Ročně</th>
-                <th className="py-2.5 px-2 w-20" />
+                <th className={`py-2.5 px-2 ${STICKY_RIGHT} ${HEADER_ROW_BG}`} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -349,37 +356,38 @@ const SectionTable: React.FC<SectionTableProps> = ({
               {section.categories.map((cat) => (
                 <React.Fragment key={cat.key}>
                   {!isTransfer && (
-                    <tr className="bg-slate-50/40">
-                      <td colSpan={5} className="py-2 px-4 font-bold text-slate-900">
+                    <tr className={CATEGORY_ROW_BG}>
+                      <td className={`py-2 px-4 font-bold text-slate-900 whitespace-nowrap ${STICKY_LEFT} ${CATEGORY_ROW_BG}`}>
                         <span className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
                           {cat.label}
                         </span>
                       </td>
-                      <td className="py-2 px-4" />
+                      <td colSpan={columnCount - 4} className="py-2 px-4" />
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
                         {formatRounded(cat.monthlyInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
                         {formatRounded(cat.yearlyInHaler)}
                       </td>
-                      <td className="py-2 px-2" />
+                      <td className={`py-2 px-2 ${STICKY_RIGHT} ${CATEGORY_ROW_BG}`} />
                     </tr>
                   )}
                   {cat.items.map(renderItemRow)}
                 </React.Fragment>
               ))}
-              <tr className="bg-slate-50/75 border-t border-slate-200">
-                <td colSpan={columnCount - 3} className={`py-2.5 px-4 font-bold ${totalColor}`}>
+              <tr className={`${HEADER_ROW_BG} border-t border-slate-200`}>
+                <td className={`py-2.5 px-4 font-bold ${totalColor} ${STICKY_LEFT} ${HEADER_ROW_BG}`}>
                   Celkem
                 </td>
+                <td colSpan={columnCount - 4} className="py-2.5 px-4" />
                 <td className={`py-2.5 px-4 text-right font-extrabold tabular-nums whitespace-nowrap ${totalColor}`}>
                   {formatRounded(section.monthlyInHaler)}
                 </td>
                 <td className={`py-2.5 px-4 text-right font-bold tabular-nums whitespace-nowrap ${totalColor}`}>
                   {formatRounded(section.yearlyInHaler)}
                 </td>
-                <td className="py-2.5 px-2" />
+                <td className={`py-2.5 px-2 ${STICKY_RIGHT} ${HEADER_ROW_BG}`} />
               </tr>
             </tbody>
           </table>
@@ -409,7 +417,7 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
         <thead>
           <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
             <th className="py-2.5 px-4">Změna</th>
-            <th className="py-2.5 px-4">Položka</th>
+            <th className={`py-2.5 px-4 ${STICKY_LEFT} ${HEADER_ROW_BG}`}>Položka</th>
             <th className="py-2.5 px-4">Typ</th>
             <th className="py-2.5 px-4">Kdy se hradí</th>
             <th className="py-2.5 px-4 text-right">Částka</th>
