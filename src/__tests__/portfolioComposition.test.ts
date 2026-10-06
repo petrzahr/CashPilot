@@ -135,7 +135,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(sumPct).toBeCloseTo(100, 6);
   });
 
-  it('2. Záporný zůstatek (checking v mínusu) se projeví jako záporná hodnota vůči základně = součtu kladných zůstatků (100 %)', () => {
+  it('2. Záporný zůstatek: kladná a záporná strana dávají dohromady 100 % (základna = součet absolutních hodnot)', () => {
     const periods = buildPeriods();
     const overdraftChecking: Account = {
       ...checking,
@@ -148,22 +148,17 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
 
     const checkingSegment = point.segments.find((s) => s.key === checking.id)!;
     expect(checkingSegment.balanceInHaler).toBeLessThan(0);
-    expect(checkingSegment.pct).not.toBeNull();
-    expect(checkingSegment.pct!).toBeLessThan(0);
+    // 50 000 / (50 000 + 200 000 + 300 000 + 500 000)
+    expect(checkingSegment.pct!).toBeCloseTo(-(5000000 / 105000000) * 100, 6);
 
-    // Součet POUZE kladných segmentů (savings + pension + investment) musí být přesně
-    // 100 % - to je základna. Záporný checking do ní nepočítá, jen z ní "ukusuje" pod nulou,
-    // takže celkový součet všech segmentů (kladných i záporného) je proto pod 100 %.
     const positiveSumPct = point.segments
       .filter((s) => s.key !== checking.id)
       .reduce((s, seg) => s + (seg.pct ?? 0), 0);
-    expect(positiveSumPct).toBeCloseTo(100, 6);
-
-    const sumPct = point.segments.reduce((s, seg) => s + (seg.pct ?? 0), 0);
-    expect(sumPct).toBeLessThan(100);
+    expect(positiveSumPct + Math.abs(checkingSegment.pct!)).toBeCloseTo(100, 6);
+    expect(positiveSumPct).toBeLessThan(100);
   });
 
-  it('2b. Pokud |součet záporných účtů| PŘEVÝŠÍ součet kladných účtů, základnou (100 %) se stane záporná strana', () => {
+  it('2b. Pokud |součet záporných účtů| PŘEVÝŠÍ součet kladných účtů, záporná strana je poměrně větší, ale součet stran je stále 100 %', () => {
     const periods = buildPeriods();
     // Checking hluboko v mínusu (300 000 Kč), jediný kladný účet má jen 50 000 Kč
     const deepOverdraftChecking: Account = { ...checking, initialBalanceInHaler: -30000000 };
@@ -181,11 +176,9 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     const checkingSegment = point.segments.find((s) => s.key === checking.id)!;
     const savingsSegment = point.segments.find((s) => s.key === savings.id)!;
 
-    // Záporná strana (300 000) je základna, tedy přesně -100 %
-    expect(checkingSegment.pct).toBeCloseTo(-100, 6);
-    // Kladná strana (50 000) je vůči této základně poměrově menší: 50000/300000*100 ≈ 16.67 %
-    expect(savingsSegment.pct).toBeCloseTo((5000000 / 30000000) * 100, 6);
-    expect(savingsSegment.pct!).toBeLessThan(100);
+    // Základna = 300 000 + 50 000 = 350 000
+    expect(checkingSegment.pct).toBeCloseTo(-(30000000 / 35000000) * 100, 6);
+    expect(savingsSegment.pct).toBeCloseTo((5000000 / 35000000) * 100, 6);
   });
 
   it('3. pct je null u všech segmentů, když totalNetWorthInHaler === 0', () => {

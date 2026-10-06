@@ -3,6 +3,7 @@ import {
   BalanceCorrection,
   BudgetPeriod,
   Category,
+  ForecastResult,
   MarketValueSnapshot,
   Transaction,
 } from '../types/finance';
@@ -20,6 +21,7 @@ import {
   generatePeriodsBetween,
 } from './periodService';
 import { getAssetFlowInHaler, sortAccountsByOrder } from './accountService';
+import { getAccountPeriodSummary } from './accountSummaryService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
 
@@ -80,6 +82,23 @@ export interface PortfolioCompositionPoint {
   totalNetWorthInHaler: number;
   isCurrentMonth: boolean;
   segments: PortfolioCompositionSegment[];
+}
+
+export interface CashFlowCompositionSegment {
+  key: 'income' | 'expense' | 'actuallySaved';
+  label: string;
+  color: string;
+  amountInHaler: number;
+  pct: number | null;     // % podíl na součtu absolutních hodnot všech tří ukazatelů (null, pokud je součet 0)
+}
+
+export interface CashFlowCompositionPoint {
+  periodKey: string;
+  periodLabel: string;
+  periodShortLabel: string;
+  dateRangeStr: string;
+  isCurrentMonth: boolean;
+  segments: CashFlowCompositionSegment[];
 }
 
 export interface ExpenseTrendItem {
@@ -630,16 +649,77 @@ export function calculateMonthlyCashFlow(
   });
 }
 
+/** Součet absolutních hodnot částek - základna (= 100 %) pro skládané % grafy. */
+function sumAbsoluteHaler(amounts: number[]): number {
+  return amounts.reduce((sum, a) => addHaler(sum, Math.abs(a)), 0);
+}
+
+function toSharePct(amountInHaler: number, baseInHaler: number): number | null {
+  return baseInHaler !== 0 ? (amountInHaler / baseInHaler) * 100 : null;
+}
+
+export const CASH_FLOW_COMPOSITION_COLORS = {
+  income: '#0284c7',
+  expense: '#ef4444',
+  actuallySaved: '#10b981',
+} as const;
+
+/**
+ * Spočítá procentuální rozložení Příjmy / Výdaje / Skutečně uspořeno podle rozpočtových
+ * period. Hodnoty odpovídají souhrnným ukazatelům v Měsíčním rozpočtu (stejný souhrn
+ * období z forecastu): příjmy a výdaje běžných a hotovostních účtů a "Skutečně uspořeno"
+ * = příjmy − výdaje + korekce na těchto účtech (bez převodů). Základna pro % (= 100 %) je
+ * součet absolutních hodnot všech tří ukazatelů, záporné "Skutečně uspořeno" tak jde pod nulu.
+ */
+export function calculateCashFlowComposition(
+  periods: BudgetPeriodInfo[],
+  forecast: ForecastResult,
+  accounts: Account[]
+): CashFlowCompositionPoint[] {
+  const cashAccounts = accounts.filter(
+    (a) => (a.type === 'checking' || a.type === 'cash') && a.status === 'active'
+  );
+
+  return periods.map((p) => {
+    const summary = getAccountPeriodSummary(forecast, p.key);
+
+    let incomeInHaler = 0;
+    let expenseInHaler = 0;
+    let correctionsInHaler = 0;
+    for (const acc of cashAccounts) {
+      const bal = summary?.accountBalances[acc.id];
+      if (!bal) continue;
+      incomeInHaler = addHaler(incomeInHaler, bal.incomeInHaler);
+      expenseInHaler = addHaler(expenseInHaler, bal.expenseInHaler);
+      correctionsInHaler = addHaler(correctionsInHaler, bal.correctionsInHaler);
+    }
+    const actuallySavedInHaler = addHaler(subHaler(incomeInHaler, expenseInHaler), correctionsInHaler);
+
+    const base = sumAbsoluteHaler([incomeInHaler, expenseInHaler, actuallySavedInHaler]);
+
+    return {
+      periodKey: p.key,
+      periodLabel: p.label,
+      periodShortLabel: p.shortLabel,
+      dateRangeStr: p.dateRangeStr,
+      isCurrentMonth: p.isCurrentPeriod,
+      segments: [
+        { key: 'income', label: 'Příjmy', color: CASH_FLOW_COMPOSITION_COLORS.income, amountInHaler: incomeInHaler, pct: toSharePct(incomeInHaler, base) },
+        { key: 'expense', label: 'Výdaje', color: CASH_FLOW_COMPOSITION_COLORS.expense, amountInHaler: expenseInHaler, pct: toSharePct(expenseInHaler, base) },
+        { key: 'actuallySaved', label: 'Skutečně uspořeno', color: CASH_FLOW_COMPOSITION_COLORS.actuallySaved, amountInHaler: actuallySavedInHaler, pct: toSharePct(actuallySavedInHaler, base) },
+      ],
+    };
+  });
+}
+
 /**
  * Spočítá procentuální rozložení celkového majetku (podíl jednotlivých účtů na celkovém
  * majetku) podle rozpočtových period. Úplně všechny způsobilé účty (běžné, hotovostní,
  * "jiné", spořicí, penzijní i investiční) se zobrazují jako samostatné segmenty se svou
  * vlastní barvou. Pořadí i barvy segmentů odpovídají pořadí a barvám účtů v sekci Účty
- * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % (= 100 %, y=100 %,
- * resp. y=-100 % pro zápornou stranu) je VĚTŠÍ z dvojice: součet kladných zůstatků, nebo
- * absolutní hodnota součtu záporných zůstatků. Díky tomu je dominantní strana (typicky
- * kladná, ale u záporného celkového jmění záporná) vždy přesně na 100 % a ta menší strana
- * je vůči ní poměrově menší, místo aby přesahovala hranici grafu.
+ * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % (= 100 %) je součet
+ * ABSOLUTNÍCH hodnot všech zůstatků, takže kladná a záporná strana dohromady dávají vždy
+ * přesně 100 % (např. účet na -15 % => kladné účty sahají jen do 85 %).
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -669,22 +749,10 @@ export function calculatePortfolioComposition(
       0
     );
 
-    // % základna = větší z dvojice (součet kladných zůstatků, |součet záporných zůstatků|).
-    // Dominantní strana je tak vždy přesně 100 % (resp. -100 %), menší strana je vůči ní
-    // poměrově menší.
-    const positiveSumInHaler = rawSegments.reduce(
-      (sum, s) => (s.balanceInHaler > 0 ? addHaler(sum, s.balanceInHaler) : sum),
-      0
-    );
-    const negativeSumInHaler = rawSegments.reduce(
-      (sum, s) => (s.balanceInHaler < 0 ? addHaler(sum, s.balanceInHaler) : sum),
-      0
-    );
-    const pctBaseInHaler = Math.max(positiveSumInHaler, Math.abs(negativeSumInHaler));
-
+    const pctBaseInHaler = sumAbsoluteHaler(rawSegments.map((s) => s.balanceInHaler));
     const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
       ...s,
-      pct: pctBaseInHaler !== 0 ? (s.balanceInHaler / pctBaseInHaler) * 100 : null,
+      pct: toSharePct(s.balanceInHaler, pctBaseInHaler),
     }));
 
     return {

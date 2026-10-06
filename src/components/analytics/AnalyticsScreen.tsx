@@ -1,6 +1,7 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { PortfolioCompositionChart } from './PortfolioCompositionChart';
-import React, { useState, useMemo } from 'react';
+import { CashFlowCompositionChart } from './CashFlowCompositionChart';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
   AnalyticsDateRange,
@@ -13,6 +14,7 @@ import {
   getTopExpenses,
   calculateFinancialExtremes,
   calculatePortfolioComposition,
+  calculateCashFlowComposition,
 } from '../../services/analyticsEngine';
 import { formatCurrency } from '../../services/currencyService';
 import {
@@ -38,6 +40,8 @@ export const AnalyticsScreen: React.FC = () => {
     corrections,
     marketValueSnapshots,
     settings,
+    forecast,
+    setOverviewPeriodBounds,
   } = useFinance();
 
   const todayStr = getTodayInPrague();
@@ -71,6 +75,16 @@ export const AnalyticsScreen: React.FC = () => {
       budgetStartDay
     );
   }, [range, currentPeriod, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
+
+  // Forecast musí pokrývat celý vybraný rozsah (stejně jako v sekci Přehledy),
+  // aby graf Příjmy/Výdaje/Skutečně uspořeno měl souhrny pro všechna období
+  const firstPeriodKey = periods[0]?.key;
+  const lastPeriodKey = periods[periods.length - 1]?.key;
+  useEffect(() => {
+    if (!firstPeriodKey || !lastPeriodKey) return;
+    setOverviewPeriodBounds?.([periods[0].period, periods[periods.length - 1].period]);
+  }, [firstPeriodKey, lastPeriodKey, setOverviewPeriodBounds]);
+  useEffect(() => () => setOverviewPeriodBounds?.(null), [setOverviewPeriodBounds]);
 
   const dateRange = useMemo<AnalyticsDateRange>(() => {
     const first = periods[0];
@@ -134,6 +148,10 @@ export const AnalyticsScreen: React.FC = () => {
     );
   }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots]);
 
+  const cashFlowComposition = useMemo(() => {
+    return calculateCashFlowComposition(dateRange.periods, forecast, accounts);
+  }, [dateRange.periods, forecast, accounts]);
+
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* 1. Hlavní filtr období (shodný se sekcí Přehledy) */}
@@ -148,7 +166,10 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 2. Rozložení celkového majetku napříč účty za vybrané období */}
       <PortfolioCompositionChart data={portfolioComposition} />
 
-      {/* 3. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
+      {/* 3. Příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
+      <CashFlowCompositionChart data={cashFlowComposition} />
+
+      {/* 4. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
@@ -303,7 +324,7 @@ export const AnalyticsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 4. Tabulka Nejvyšší výdaje */}
+      {/* 5. Tabulka Nejvyšší výdaje */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100">
           <h3 className="text-sm font-bold text-slate-900">
