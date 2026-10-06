@@ -77,6 +77,38 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     expect(result.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000);
   });
 
+  describe('trvalá změna platby (rozdělení na starou a novou větev)', () => {
+    // Období začínají 15. dnem: dnešek 6. 10. 2026 patří do období Září 2026 (15. 9. – 14. 10.)
+    const split = (oldEnd: string, newStart: string) => [
+      rule({ id: 'old', title: 'Pojištění', amountInHaler: 600000, startDate: '2026-03-20', endDate: oldEnd }),
+      rule({ id: 'new', title: 'Pojištění', amountInHaler: 700000, startDate: newStart, dayOfMonth: parseInt(newStart.slice(8), 10) }),
+    ];
+    const expenseIds = (r: ReturnType<typeof calculateMandatoryOverview>) =>
+      r.expense.categories.flatMap((c) => c.items).map((i) => i.ruleId);
+
+    it('změna od prosince: v září se počítá jen stará částka, změna je v nadcházejících', () => {
+      const r = calculateMandatoryOverview(split('2026-12-19', '2026-12-20'), categories, accounts, today, 15);
+      expect(r.periodName).toBe('Září 2026');
+      expect(expenseIds(r)).toEqual(['old']);
+      expect(r.expense.monthlyInHaler).toBe(600000);
+      expect(r.upcomingChanges.map((c) => [c.ruleId, c.kind, c.occurrenceDate, c.periodName])).toEqual([
+        ['old', 'end', '2026-11-20', 'Listopad 2026'],
+        ['new', 'start', '2026-12-20', 'Prosinec 2026'],
+      ]);
+    });
+
+    it('změna uvnitř aktuálního období: počítá se už jen nová částka', () => {
+      const r = calculateMandatoryOverview(split('2026-10-09', '2026-10-10'), categories, accounts, today, 15);
+      expect(expenseIds(r)).toEqual(['new']);
+    });
+
+    it('změna přesně od začátku dalšího období (15. 10.): počítá se ještě stará částka', () => {
+      const r = calculateMandatoryOverview(split('2026-10-14', '2026-10-15'), categories, accounts, today, 15);
+      expect(expenseIds(r)).toEqual(['old']);
+      expect(r.upcomingChanges.find((c) => c.kind === 'start')!.periodName).toBe('Říjen 2026');
+    });
+  });
+
   it('vlastní interval ve dnech přepočítá podle průměrné délky měsíce', () => {
     expect(getMonthlyFactor({ frequency: 'custom', intervalDays: 14 })).toBeCloseTo(365.25 / 12 / 14, 10);
   });
