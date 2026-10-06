@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { FinanceProvider } from '../context/FinanceContext';
+import { MandatoryExpensesScreen } from '../components/mandatory/MandatoryExpensesScreen';
 import { calculateMandatoryOverview, getMonthlyFactor } from '../services/mandatoryExpensesService';
 import { Account, Category, RecurringRule } from '../types/finance';
 
@@ -107,6 +111,60 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
       expect(expenseIds(r)).toEqual(['old']);
       expect(r.upcomingChanges.find((c) => c.kind === 'start')!.periodName).toBe('Říjen 2026');
     });
+  });
+
+  describe('simulace', () => {
+    const items = (r: ReturnType<typeof calculateMandatoryOverview>) => r.expense.categories.flatMap((c) => c.items);
+
+    it('úprava částky a frekvence přepočítá průměry a zachová původní hodnoty', () => {
+      const r = calculateMandatoryOverview(rules, categories, accounts, today, 15, {
+        edits: { rent: { amountInHaler: 2400000, frequency: 'quarterly' } },
+        deleted: [],
+        added: [],
+      });
+      const rent = items(r).find((i) => i.ruleId === 'rent')!;
+      expect(rent.simState).toBe('edited');
+      expect(rent.monthlyInHaler).toBe(800000);
+      expect(rent.original).toEqual({ title: 'Nájem', amountInHaler: 2200000, frequency: 'monthly' });
+      expect(r.expense.monthlyInHaler).toBe(800000 + 80000 + 150000);
+    });
+
+    it('smazaná platba zůstane v seznamu, ale nezapočítá se', () => {
+      const r = calculateMandatoryOverview(rules, categories, accounts, today, 15, { edits: {}, deleted: ['rent'], added: [] });
+      expect(items(r).find((i) => i.ruleId === 'rent')!.simState).toBe('deleted');
+      expect(r.expense.monthlyInHaler).toBe(80000 + 150000);
+      expect(r.actuallySavedMonthlyInHaler).toBe(9600000 - 230000);
+    });
+
+    it('přidaná platba se započítá do své kategorie i do skutečně uspořeno', () => {
+      const r = calculateMandatoryOverview(rules, categories, accounts, today, 15, {
+        edits: {},
+        deleted: [],
+        added: [{ id: 'sim_1', title: 'Leasing', group: 'expense', categoryId: 'car', sourceAccountId: 'chk', amountInHaler: 500000, frequency: 'monthly' }],
+      });
+      const car = r.expense.categories.find((c) => c.key === 'car')!;
+      expect(car.items.map((i) => i.title)).toEqual(['Leasing', 'Pojištění auta']);
+      expect(car.monthlyInHaler).toBe(580000);
+      expect(r.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000 - 500000);
+    });
+
+    it('úprava na stejné hodnoty se jako změna nepočítá', () => {
+      const r = calculateMandatoryOverview(rules, categories, accounts, today, 15, {
+        edits: { rent: { title: 'Nájem', amountInHaler: 2200000, frequency: 'monthly' } },
+        deleted: [],
+        added: [],
+      });
+      expect(items(r).find((i) => i.ruleId === 'rent')!.simState).toBeUndefined();
+    });
+  });
+
+  it('obrazovka se vykreslí s tlačítky Přidat a Obnovit výchozí stav', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FinanceProvider, null, React.createElement(MandatoryExpensesScreen))
+    );
+    expect(html).toContain('Obnovit výchozí stav');
+    expect(html).toContain('Přidat');
+    expect(html).toContain('Mandatorní výdaje / měsíc');
   });
 
   it('vlastní interval ve dnech přepočítá podle průměrné délky měsíce', () => {

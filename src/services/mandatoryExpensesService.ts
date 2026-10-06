@@ -6,9 +6,47 @@ import { generatePeriodsSequence, getPeriodForDate } from './periodService';
 
 export type MandatoryGroup = 'income' | 'expense' | 'transfer';
 
-export interface MandatoryItem {
-  ruleId: string;
+/**
+ * Simulace nad přehledem: úpravy, smazání a přidání plateb jen pro účely přehledu.
+ * Skutečné opakované platby se nemění.
+ */
+export interface MandatorySimulatedPayment {
+  id: string;
   title: string;
+  group: MandatoryGroup;
+  categoryId: string | null;      // hlavní kategorie (u převodů null)
+  sourceAccountId: string;
+  targetAccountId?: string;       // jen u převodů
+  amountInHaler: number;
+  frequency: RecurrenceFrequency;
+}
+
+export interface MandatorySimulationEdit {
+  title?: string;
+  amountInHaler?: number;
+  frequency?: RecurrenceFrequency;
+}
+
+export interface MandatorySimulation {
+  edits: Record<string, MandatorySimulationEdit>;   // podle ruleId
+  deleted: string[];                                 // ruleId
+  added: MandatorySimulatedPayment[];
+}
+
+export const EMPTY_SIMULATION: MandatorySimulation = { edits: {}, deleted: [], added: [] };
+
+export const isSimulationEmpty = (s: MandatorySimulation) =>
+  Object.keys(s.edits).length === 0 && s.deleted.length === 0 && s.added.length === 0;
+
+export type MandatorySimState = 'edited' | 'added' | 'deleted';
+
+export interface MandatoryItem {
+  ruleId: string;               // ID opakované platby, u přidaných ID simulované platby
+  title: string;
+  frequency: RecurrenceFrequency;
+  simState?: MandatorySimState;
+  /** Původní hodnoty skutečné opakované platby (jen u upravených) */
+  original?: { title: string; amountInHaler: number; frequency: RecurrenceFrequency };
   group: MandatoryGroup;
   mainCategoryId: string | null;
   categoryLabel: string;        // "Kategorie / Podkategorie"
@@ -73,7 +111,7 @@ const AVG_DAYS_PER_MONTH = 365.25 / 12;
 
 const SHORT_MONTHS = ['led', 'úno', 'bře', 'dub', 'kvě', 'čvn', 'čvc', 'srp', 'zář', 'říj', 'lis', 'pro'];
 
-const FREQUENCY_LABELS: Record<RecurrenceFrequency, string> = {
+export const FREQUENCY_LABELS: Record<RecurrenceFrequency, string> = {
   monthly: 'měsíčně',
   bi_monthly: 'každé 2 měsíce',
   quarterly: 'čtvrtletně',
@@ -155,7 +193,8 @@ export function calculateMandatoryOverview(
   categories: Category[],
   accounts: Account[],
   todayStr: string,
-  startDay: number
+  startDay: number,
+  simulation: MandatorySimulation = EMPTY_SIMULATION
 ): MandatoryOverview {
   const catMap = new Map(categories.map((c) => [c.id, c]));
   const accMap = new Map(accounts.map((a) => [a.id, a]));
@@ -181,17 +220,37 @@ export function calculateMandatoryOverview(
     );
   };
 
-  const items: MandatoryItem[] = relevantRules.filter(isCurrent).map((rule) => {
+  const isCashAccount = (id?: string) => ['checking', 'cash'].includes((id && accMap.get(id)?.type) || '');
+  const withAmounts = (item: Omit<MandatoryItem, 'monthlyInHaler' | 'yearlyInHaler'>, intervalDays?: number): MandatoryItem => {
+    const factor = getMonthlyFactor({ frequency: item.frequency, intervalDays });
+    return {
+      ...item,
+      monthlyInHaler: Math.round(item.amountInHaler * factor),
+      yearlyInHaler: Math.round(item.amountInHaler * factor * MONTHS_PER_YEAR),
+    };
+  };
+
+  const baselineItems: MandatoryItem[] = relevantRules.filter(isCurrent).map((rule) => {
     const cat = rule.categoryId ? catMap.get(rule.categoryId) : undefined;
     const sub = rule.subcategoryId ? catMap.get(rule.subcategoryId) : cat?.parentId ? cat : undefined;
     const main = sub?.parentId ? catMap.get(sub.parentId) : cat && !cat.parentId ? cat : undefined;
 
     const occurrenceDates = getOccurrenceDates(rule, currentPeriod, MONTHS_PER_YEAR, todayStr, startDay, accounts);
-    const factor = getMonthlyFactor(rule);
+    const edit = simulation.edits[rule.id];
+    const isDeleted = simulation.deleted.includes(rule.id);
+    const frequency = edit?.frequency ?? rule.frequency;
+    const isEdited = !!edit && (
+      (edit.title !== undefined && edit.title !== rule.title) ||
+      (edit.amountInHaler !== undefined && edit.amountInHaler !== rule.amountInHaler) ||
+      frequency !== rule.frequency
+    );
 
-    return {
+    return withAmounts({
       ruleId: rule.id,
-      title: rule.title,
+      title: edit?.title ?? rule.title,
+      frequency,
+      simState: isDeleted ? 'deleted' : isEdited ? 'edited' : undefined,
+      original: isEdited ? { title: rule.title, amountInHaler: rule.amountInHaler, frequency: rule.frequency } : undefined,
       group: rule.type as MandatoryGroup,
       mainCategoryId: main?.id ?? null,
       categoryLabel: main ? (sub ? `${main.name} / ${sub.name}` : main.name) : 'Bez kategorie',
@@ -199,14 +258,36 @@ export function calculateMandatoryOverview(
         rule.type === 'transfer'
           ? `${accName(rule.sourceAccountId)} → ${accName(rule.targetAccountId)}`
           : accName(rule.sourceAccountId),
-      scheduleLabel: scheduleFor(rule),
-      nextDate: occurrenceDates.find((d) => d >= todayStr) ?? null,
-      fromCashAccount: ['checking', 'cash'].includes(accMap.get(rule.sourceAccountId)?.type ?? ''),
-      amountInHaler: rule.amountInHaler,
-      monthlyInHaler: Math.round(rule.amountInHaler * factor),
-      yearlyInHaler: Math.round(rule.amountInHaler * factor * MONTHS_PER_YEAR),
-    };
+      // Při změně frekvence v simulaci už neznáme konkrétní měsíce splatnosti
+      scheduleLabel: frequency === rule.frequency ? scheduleFor(rule) : buildScheduleLabel({ ...rule, frequency }, []),
+      nextDate: frequency === rule.frequency ? occurrenceDates.find((d) => d >= todayStr) ?? null : null,
+      fromCashAccount: isCashAccount(rule.sourceAccountId),
+      amountInHaler: edit?.amountInHaler ?? rule.amountInHaler,
+    }, rule.intervalDays);
   });
+
+  const addedItems: MandatoryItem[] = simulation.added.map((p) => {
+    const main = p.categoryId ? catMap.get(p.categoryId) : undefined;
+    return withAmounts({
+      ruleId: p.id,
+      title: p.title,
+      frequency: p.frequency,
+      simState: 'added',
+      group: p.group,
+      mainCategoryId: p.group === 'transfer' ? null : main?.id ?? null,
+      categoryLabel: main?.name ?? 'Bez kategorie',
+      accountLabel:
+        p.group === 'transfer' ? `${accName(p.sourceAccountId)} → ${accName(p.targetAccountId)}` : accName(p.sourceAccountId),
+      scheduleLabel: FREQUENCY_LABELS[p.frequency],
+      nextDate: null,
+      fromCashAccount: isCashAccount(p.sourceAccountId),
+      amountInHaler: p.amountInHaler,
+    });
+  });
+
+  const items = [...baselineItems, ...addedItems];
+  // Smazané platby zůstávají v tabulce (přeškrtnuté), ale nezapočítávají se
+  const counted = (i: MandatoryItem) => i.simState !== 'deleted';
 
   const buildSection = (group: MandatoryGroup): MandatorySection => {
     const groupItems = items.filter((i) => i.group === group);
@@ -225,8 +306,8 @@ export function calculateMandatoryOverview(
         label: group === 'transfer' ? 'Spoření & Převody' : main?.name ?? 'Bez kategorie',
         color: group === 'transfer' ? '#0284c7' : main?.color ?? '#94a3b8',
         items: sorted,
-        monthlyInHaler: sorted.reduce((s, i) => addHaler(s, i.monthlyInHaler), 0),
-        yearlyInHaler: sorted.reduce((s, i) => addHaler(s, i.yearlyInHaler), 0),
+        monthlyInHaler: sorted.filter(counted).reduce((s, i) => addHaler(s, i.monthlyInHaler), 0),
+        yearlyInHaler: sorted.filter(counted).reduce((s, i) => addHaler(s, i.yearlyInHaler), 0),
       };
     });
 
@@ -280,7 +361,7 @@ export function calculateMandatoryOverview(
   const transfer = buildSection('transfer');
 
   const actuallySavedMonthlyInHaler = items
-    .filter((i) => i.fromCashAccount && i.group !== 'transfer')
+    .filter((i) => counted(i) && i.fromCashAccount && i.group !== 'transfer')
     .reduce((s, i) => (i.group === 'income' ? addHaler(s, i.monthlyInHaler) : subHaler(s, i.monthlyInHaler)), 0);
 
   return {
