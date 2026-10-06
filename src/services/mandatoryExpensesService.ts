@@ -1,6 +1,6 @@
 import { Account, Category, RecurrenceFrequency, RecurringRule } from '../types/finance';
 import { czechStringCompare } from './categoryService';
-import { addHaler } from './currencyService';
+import { addHaler, subHaler } from './currencyService';
 import { doesRuleApplyInPeriod, generateOccurrenceForPeriod } from './financialEngine';
 import { generatePeriodsSequence, getPeriodForDate } from './periodService';
 
@@ -16,7 +16,8 @@ export interface MandatoryItem {
   scheduleLabel: string;        // např. "ročně, 15. 3." nebo "čtvrtletně, 10. (led, dub, čvc, říj)"
   nextDate: string | null;      // nejbližší splatnost od dneška
   startsInFuture: boolean;
-  amountInHaler: number;        // částka jedné platby
+  fromCashAccount: boolean;     // zdrojový účet je běžný nebo hotovostní
+  amountInHaler: number;      // částka jedné platby
   monthlyInHaler: number;       // průměr na měsíc
   yearlyInHaler: number;        // průměr na rok
 }
@@ -41,6 +42,11 @@ export interface MandatoryOverview {
   income: MandatorySection;
   expense: MandatorySection;
   transfer: MandatorySection;
+  /**
+   * Příjmy − výdaje na běžných a hotovostních účtech, bez převodů (průměr na měsíc) -
+   * stejná definice jako "Skutečně uspořeno" v Měsíčním rozpočtu.
+   */
+  actuallySavedMonthlyInHaler: number;
   /** Příjmy − výdaje − spoření & převody (průměr na měsíc) */
   remainingMonthlyInHaler: number;
 }
@@ -153,6 +159,7 @@ export function calculateMandatoryOverview(
       scheduleLabel: buildScheduleLabel(rule, occurrenceDates),
       nextDate: occurrenceDates.find((d) => d >= todayStr) ?? null,
       startsInFuture: rule.startDate > todayStr,
+      fromCashAccount: ['checking', 'cash'].includes(accMap.get(rule.sourceAccountId)?.type ?? ''),
       amountInHaler: rule.amountInHaler,
       monthlyInHaler: Math.round(rule.amountInHaler * factor),
       yearlyInHaler: Math.round(rule.amountInHaler * factor * MONTHS_PER_YEAR),
@@ -198,10 +205,15 @@ export function calculateMandatoryOverview(
   const expense = buildSection('expense');
   const transfer = buildSection('transfer');
 
+  const actuallySavedMonthlyInHaler = items
+    .filter((i) => i.fromCashAccount && i.group !== 'transfer')
+    .reduce((s, i) => (i.group === 'income' ? addHaler(s, i.monthlyInHaler) : subHaler(s, i.monthlyInHaler)), 0);
+
   return {
     income,
     expense,
     transfer,
+    actuallySavedMonthlyInHaler,
     remainingMonthlyInHaler: income.monthlyInHaler - expense.monthlyInHaler - transfer.monthlyInHaler,
   };
 }

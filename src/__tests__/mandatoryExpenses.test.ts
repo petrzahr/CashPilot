@@ -73,6 +73,8 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     expect(result.transfer.monthlyInHaler).toBe(500000);
     expect(result.transfer.categories[0].items[0].accountLabel).toBe('Běžný → Spořicí');
     expect(result.remainingMonthlyInHaler).toBe(9600000 - 2430000 - 500000);
+    // Skutečně uspořeno = příjmy − výdaje na běžném účtu, bez převodů
+    expect(result.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000);
   });
 
   it('vlastní interval ve dnech přepočítá podle průměrné délky měsíce', () => {

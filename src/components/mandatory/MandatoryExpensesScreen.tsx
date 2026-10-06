@@ -4,6 +4,9 @@ import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { calculateMandatoryOverview, MandatorySection } from '../../services/mandatoryExpensesService';
 
+/** Všechny částky na této obrazovce se zobrazují zaokrouhlené na 100 Kč (součty se počítají z přesných hodnot). */
+const formatRounded = (haler: number) => formatCurrency(Math.round(haler / 10000) * 10000);
+
 const SECTION_TITLES: Record<MandatorySection['group'], string> = {
   income: 'Pravidelné příjmy',
   expense: 'Mandatorní výdaje',
@@ -55,10 +58,10 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                       </td>
                       <td className="py-2 px-4" />
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
-                        {formatCurrency(cat.monthlyInHaler)}
+                        {formatRounded(cat.monthlyInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
-                        {formatCurrency(cat.yearlyInHaler)}
+                        {formatRounded(cat.yearlyInHaler)}
                       </td>
                     </tr>
                   )}
@@ -79,13 +82,13 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                         {item.nextDate ? formatCzechDate(item.nextDate) : '—'}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
-                        {formatCurrency(item.amountInHaler)}
+                        {formatRounded(item.amountInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
-                        {formatCurrency(item.monthlyInHaler)}
+                        {formatRounded(item.monthlyInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
-                        {formatCurrency(item.yearlyInHaler)}
+                        {formatRounded(item.yearlyInHaler)}
                       </td>
                     </tr>
                   ))}
@@ -96,10 +99,10 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                   Celkem
                 </td>
                 <td className={`py-2.5 px-4 text-right font-extrabold tabular-nums whitespace-nowrap ${totalColor}`}>
-                  {formatCurrency(section.monthlyInHaler)}
+                  {formatRounded(section.monthlyInHaler)}
                 </td>
                 <td className={`py-2.5 px-4 text-right font-bold tabular-nums whitespace-nowrap ${totalColor}`}>
-                  {formatCurrency(section.yearlyInHaler)}
+                  {formatRounded(section.yearlyInHaler)}
                 </td>
               </tr>
             </tbody>
@@ -127,6 +130,12 @@ export const MandatoryExpensesScreen: React.FC = () => {
   const cards = [
     { label: 'Příjmy / měsíc', value: overview.income.monthlyInHaler, className: 'text-emerald-600' },
     { label: 'Mandatorní výdaje / měsíc', value: overview.expense.monthlyInHaler, className: 'text-red-600' },
+    {
+      label: 'Skutečně uspořeno / měsíc',
+      value: overview.actuallySavedMonthlyInHaler,
+      className: overview.actuallySavedMonthlyInHaler < 0 ? 'text-red-600' : 'text-emerald-600',
+      title: 'Příjmy − výdaje na běžných účtech a hotovosti, bez převodů',
+    },
     { label: 'Spoření & převody / měsíc', value: overview.transfer.monthlyInHaler, className: 'text-sky-600' },
     {
       label: 'Zbývá / měsíc',
@@ -139,7 +148,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* Souhrn měsíčních průměrů z opakovaných plateb */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {cards.map((card) => (
           <div
             key={card.label}
@@ -148,7 +157,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
           >
             <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
             <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
-              {formatCurrency(card.value)}
+              {formatRounded(card.value)}
             </span>
           </div>
         ))}
