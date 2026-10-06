@@ -657,7 +657,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   }, [allPeriodTransactions]);
 
   const totalTransfersInHaler = useMemo(() => {
-    return transferTxs.reduce((sum, t) => sum + t.amountInHaler, 0);
+    return transferTxs.reduce((sum, t) => addHaler(sum, t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler), 0);
   }, [transferTxs]);
 
   // Výchozí účet a jeho souhrnné údaje
@@ -922,7 +922,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 {transferTxs.map(tx => (
                   <div key={tx.id} className="flex justify-between text-[11px] text-slate-500">
                     <span className="truncate max-w-[130px]">{tx.title}</span>
-                    <span className="font-medium">{formatCurrency(tx.amountInHaler)}</span>
+                    <span className="font-medium">{formatCurrency(tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler)}</span>
                   </div>
                 ))}
               </div>
