@@ -10,9 +10,10 @@ export const CashFlowCompositionChart: React.FC<CashFlowCompositionChartProps> =
   data,
 }) => (
   <StackedPercentChart
-    title="Příjmy, výdaje a skutečně uspořeno"
-    emptyText="Žádná data pro zobrazení příjmů, výdajů a skutečně uspořeného."
+    title="Finanční přehled"
+    emptyText="Žádná data pro zobrazení finančního přehledu."
     rowHeaderLabel="Ukazatel"
+    segmentOrder="topDown"
     data={data}
   />
 );

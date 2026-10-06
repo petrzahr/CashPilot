@@ -166,7 +166,7 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 2. Rozložení celkového majetku napříč účty za vybrané období */}
       <PortfolioCompositionChart data={portfolioComposition} />
 
-      {/* 3. Příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
+      {/* 3. Finanční přehled: příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
       <CashFlowCompositionChart data={cashFlowComposition} />
 
       {/* 4. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}

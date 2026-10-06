@@ -24,6 +24,11 @@ interface StackedPercentChartProps {
   data: StackedPercentPoint[];
   /** Popisek souhrnného řádku (tabulka i tooltip); bez něj se souhrn nezobrazuje. */
   totalLabel?: string;
+  /**
+   * 'bottomUp' (výchozí): první segment je ve sloupci dole, tabulka je v obráceném pořadí.
+   * 'topDown': první segment je ve sloupci nahoře, tabulka i tooltip jsou v pořadí dat.
+   */
+  segmentOrder?: 'bottomUp' | 'topDown';
 }
 
 /**
@@ -37,6 +42,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   rowHeaderLabel,
   data,
   totalLabel,
+  segmentOrder = 'bottomUp',
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
@@ -49,8 +55,11 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   }
 
   // Řádky tabulky vycházejí z pořadí segmentů, které je konzistentní napříč obdobími;
-  // v tabulce se zobrazují v obráceném pořadí (odpovídá vizuálnímu pořadí ve sloupci)
-  const tableSegments = [...data[0].segments].reverse();
+  // v tabulce se zobrazují shora dolů ve stejném pořadí jako ve sloupci
+  const isTopDown = segmentOrder === 'topDown';
+  const tableSegments = isTopDown ? data[0].segments : [...data[0].segments].reverse();
+  const stackSegments = (segments: StackedPercentSegment[]) =>
+    isTopDown ? [...segments].reverse() : segments;
 
   // Segment je "záporný" jen pokud jeho částka po zaokrouhlení na celé koruny skutečně
   // vychází záporně (stejné pravidlo jako formatCurrency). Bez toho by i haléřová
@@ -163,7 +172,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                   />
                 )}
 
-                {item.segments.map((seg) => {
+                {stackSegments(item.segments).map((seg) => {
                   const pct = seg.pct ?? 0;
                   let y0: number;
                   let y1: number;
