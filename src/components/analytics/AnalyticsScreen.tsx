@@ -1,6 +1,8 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { PortfolioCompositionChart } from './PortfolioCompositionChart';
 import { CashFlowCompositionChart } from './CashFlowCompositionChart';
+import { CategoryBreakdownTable } from './CategoryBreakdownTable';
+import { calculateCategoryBreakdown } from '../../services/categoryBreakdownService';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
@@ -42,6 +44,8 @@ export const AnalyticsScreen: React.FC = () => {
     settings,
     forecast,
     setOverviewPeriodBounds,
+    recurringRules,
+    recurringExceptions,
   } = useFinance();
 
   const todayStr = getTodayInPrague();
@@ -152,6 +156,18 @@ export const AnalyticsScreen: React.FC = () => {
     return calculateCashFlowComposition(dateRange.periods, forecast, accounts);
   }, [dateRange.periods, forecast, accounts]);
 
+  const categoryBreakdown = useMemo(() => {
+    return calculateCategoryBreakdown(
+      dateRange.periods,
+      transactions,
+      recurringRules,
+      recurringExceptions,
+      categories,
+      accounts,
+      budgetStartDay
+    );
+  }, [dateRange.periods, transactions, recurringRules, recurringExceptions, categories, accounts, budgetStartDay]);
+
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* 1. Hlavní filtr období (shodný se sekcí Přehledy) */}
@@ -169,7 +185,10 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 3. Finanční přehled: příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
       <CashFlowCompositionChart data={cashFlowComposition} />
 
-      {/* 4. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
+      {/* 4. Souhrn podle kategorií a podkategorií za vybrané období */}
+      <CategoryBreakdownTable periods={dateRange.periods} data={categoryBreakdown} />
+
+      {/* 5. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
@@ -324,7 +343,7 @@ export const AnalyticsScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Tabulka Nejvyšší výdaje */}
+      {/* 6. Tabulka Nejvyšší výdaje */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100">
           <h3 className="text-sm font-bold text-slate-900">
