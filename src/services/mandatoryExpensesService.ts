@@ -1,6 +1,6 @@
-import { Account, Category, RecurrenceFrequency, RecurringRule } from '../types/finance';
+import { Account, BudgetPeriod, Category, RecurrenceFrequency, RecurringRule } from '../types/finance';
 import { czechStringCompare } from './categoryService';
-import { addHaler } from './currencyService';
+import { addHaler, subHaler } from './currencyService';
 import { doesRuleApplyInPeriod, generateOccurrenceForPeriod } from './financialEngine';
 import { generatePeriodsSequence, getPeriodForDate } from './periodService';
 
@@ -15,8 +15,8 @@ export interface MandatoryItem {
   accountLabel: string;         // "Účet" nebo "Z účtu → Na účet"
   scheduleLabel: string;        // např. "ročně, 15. 3." nebo "čtvrtletně, 10. (led, dub, čvc, říj)"
   nextDate: string | null;      // nejbližší splatnost od dneška
-  startsInFuture: boolean;
-  amountInHaler: number;        // částka jedné platby
+  fromCashAccount: boolean;     // zdrojový účet je běžný nebo hotovostní
+  amountInHaler: number;      // částka jedné platby
   monthlyInHaler: number;       // průměr na měsíc
   yearlyInHaler: number;        // průměr na rok
 }
@@ -37,10 +37,33 @@ export interface MandatorySection {
   yearlyInHaler: number;
 }
 
+export interface MandatoryUpcomingChange {
+  ruleId: string;
+  title: string;
+  group: MandatoryGroup;
+  kind: 'start' | 'end';
+  /** První (start) nebo poslední (end) platba */
+  occurrenceDate: string;
+  /** Rozpočtové období, kdy platba začíná / naposledy proběhne (podle dne začátku období z Nastavení) */
+  periodName: string;
+  scheduleLabel: string;
+  amountInHaler: number;
+  monthlyInHaler: number;
+}
+
 export interface MandatoryOverview {
+  /** Rozpočtové období, ke kterému je přehled sestaven */
+  periodName: string;
+  /** Platby, které začnou nebo skončí v dalších obdobích (nejsou/budou zahrnuty v součtech) */
+  upcomingChanges: MandatoryUpcomingChange[];
   income: MandatorySection;
   expense: MandatorySection;
   transfer: MandatorySection;
+  /**
+   * Příjmy − výdaje na běžných a hotovostních účtech, bez převodů (průměr na měsíc) -
+   * stejná definice jako "Skutečně uspořeno" v Měsíčním rozpočtu.
+   */
+  actuallySavedMonthlyInHaler: number;
   /** Příjmy − výdaje − spoření & převody (průměr na měsíc) */
   remainingMonthlyInHaler: number;
 }
@@ -73,14 +96,18 @@ export function getMonthlyFactor(rule: Pick<RecurringRule, 'frequency' | 'interv
 }
 
 /**
- * Výskyty pravidla za 12 rozpočtových období od pozdějšího z (aktuální období, začátek pravidla).
- * Výjimky jednotlivých období se ignorují - přehled popisuje pravidlo samotné.
+ * Výskyty pravidla v `count` rozpočtových obdobích od `fromPeriod` (období začínají dnem
+ * z Nastavení). Výjimky jednotlivých období se ignorují - přehled popisuje pravidlo samotné.
  */
-function getUpcomingOccurrenceDates(rule: RecurringRule, todayStr: string, startDay: number, accounts: Account[]): string[] {
-  const fromDate = rule.startDate > todayStr ? rule.startDate : todayStr;
-  const fromPeriod = getPeriodForDate(fromDate, startDay);
-  const periods = generatePeriodsSequence(fromPeriod.year, fromPeriod.month, MONTHS_PER_YEAR, startDay);
-
+function getOccurrenceDates(
+  rule: RecurringRule,
+  fromPeriod: BudgetPeriod,
+  count: number,
+  todayStr: string,
+  startDay: number,
+  accounts: Account[]
+): string[] {
+  const periods = generatePeriodsSequence(fromPeriod.year, fromPeriod.month, count, startDay);
   const dates: string[] = [];
   for (const period of periods) {
     if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
@@ -89,6 +116,9 @@ function getUpcomingOccurrenceDates(rule: RecurringRule, todayStr: string, start
   }
   return dates.sort();
 }
+
+const periodsBetween = (from: BudgetPeriod, to: BudgetPeriod) =>
+  (to.year - from.year) * 12 + (to.month - from.month) + 1;
 
 function buildScheduleLabel(rule: RecurringRule, occurrenceDates: string[]): string {
   if (rule.frequency === 'custom') {
@@ -110,9 +140,15 @@ function buildScheduleLabel(rule: RecurringRule, occurrenceDates: string[]): str
 }
 
 /**
- * Přehled pravidelných (mandatorních) plateb sestavený z aktivních opakovaných plateb.
+ * Přehled pravidelných (mandatorních) plateb sestavený z opakovaných plateb platných
+ * v aktuálním rozpočtovém období (začíná dnem z Nastavení, ne 1. dnem v měsíci).
  * Každá platba se přepočte na měsíční a roční průměr podle své frekvence (roční ÷ 12,
  * čtvrtletní ÷ 3, ...), takže nepravidelné platby jsou rozpočítané do každého měsíce.
+ *
+ * Platba se počítá, pokud začala nejpozději v aktuálním období a platí až do jeho konce.
+ * Trvalá změna platby (rozdělení na starou větev končící den před změnou a novou od změny)
+ * se tak započítá vždy právě jednou: do konce období platí stará větev, jinak nová.
+ * Platby, které začnou nebo skončí v dalších obdobích, jsou v upcomingChanges.
  */
 export function calculateMandatoryOverview(
   rules: RecurringRule[],
@@ -125,19 +161,32 @@ export function calculateMandatoryOverview(
   const accMap = new Map(accounts.map((a) => [a.id, a]));
   const accName = (id?: string) => (id ? accMap.get(id)?.name ?? 'Neznámý účet' : '—');
 
-  const activeRules = rules.filter(
+  const currentPeriod = getPeriodForDate(todayStr, startDay);
+  const periodEnd = currentPeriod.endDate;
+
+  const relevantRules = rules.filter(
     (r) =>
       r.isActive &&
-      (!r.endDate || r.endDate >= todayStr) &&
-      (r.type === 'income' || r.type === 'expense' || r.type === 'transfer')
+      (r.type === 'income' || r.type === 'expense' || r.type === 'transfer') &&
+      (!r.endDate || r.endDate >= currentPeriod.startDate)
   );
+  const isCurrent = (r: RecurringRule) => r.startDate <= periodEnd && (!r.endDate || r.endDate >= periodEnd);
 
-  const items: MandatoryItem[] = activeRules.map((rule) => {
+  // Rozpis splatností popisuje pravidlo jako takové, proto ignoruje datum konce
+  const scheduleFor = (rule: RecurringRule) => {
+    const fromDate = rule.startDate > todayStr ? rule.startDate : todayStr;
+    return buildScheduleLabel(
+      rule,
+      getOccurrenceDates({ ...rule, endDate: null }, getPeriodForDate(fromDate, startDay), MONTHS_PER_YEAR, todayStr, startDay, accounts)
+    );
+  };
+
+  const items: MandatoryItem[] = relevantRules.filter(isCurrent).map((rule) => {
     const cat = rule.categoryId ? catMap.get(rule.categoryId) : undefined;
     const sub = rule.subcategoryId ? catMap.get(rule.subcategoryId) : cat?.parentId ? cat : undefined;
     const main = sub?.parentId ? catMap.get(sub.parentId) : cat && !cat.parentId ? cat : undefined;
 
-    const occurrenceDates = getUpcomingOccurrenceDates(rule, todayStr, startDay, accounts);
+    const occurrenceDates = getOccurrenceDates(rule, currentPeriod, MONTHS_PER_YEAR, todayStr, startDay, accounts);
     const factor = getMonthlyFactor(rule);
 
     return {
@@ -150,9 +199,9 @@ export function calculateMandatoryOverview(
         rule.type === 'transfer'
           ? `${accName(rule.sourceAccountId)} → ${accName(rule.targetAccountId)}`
           : accName(rule.sourceAccountId),
-      scheduleLabel: buildScheduleLabel(rule, occurrenceDates),
+      scheduleLabel: scheduleFor(rule),
       nextDate: occurrenceDates.find((d) => d >= todayStr) ?? null,
-      startsInFuture: rule.startDate > todayStr,
+      fromCashAccount: ['checking', 'cash'].includes(accMap.get(rule.sourceAccountId)?.type ?? ''),
       amountInHaler: rule.amountInHaler,
       monthlyInHaler: Math.round(rule.amountInHaler * factor),
       yearlyInHaler: Math.round(rule.amountInHaler * factor * MONTHS_PER_YEAR),
@@ -194,14 +243,53 @@ export function calculateMandatoryOverview(
     };
   };
 
+  const upcomingChanges: MandatoryUpcomingChange[] = [];
+  for (const rule of relevantRules) {
+    const base = {
+      ruleId: rule.id,
+      title: rule.title,
+      group: rule.type as MandatoryGroup,
+      scheduleLabel: scheduleFor(rule),
+      amountInHaler: rule.amountInHaler,
+      monthlyInHaler: Math.round(rule.amountInHaler * getMonthlyFactor(rule)),
+    };
+
+    if (rule.startDate > periodEnd) {
+      const firstDate = getOccurrenceDates(rule, getPeriodForDate(rule.startDate, startDay), MONTHS_PER_YEAR, todayStr, startDay, accounts)[0];
+      if (firstDate) {
+        upcomingChanges.push({ ...base, kind: 'start', occurrenceDate: firstDate, periodName: getPeriodForDate(firstDate, startDay).name });
+      }
+    }
+
+    if (rule.endDate) {
+      const fromPeriod = rule.startDate > currentPeriod.startDate ? getPeriodForDate(rule.startDate, startDay) : currentPeriod;
+      const endPeriod = getPeriodForDate(rule.endDate, startDay);
+      const count = periodsBetween(fromPeriod, endPeriod);
+      const dates = count > 0 ? getOccurrenceDates(rule, fromPeriod, count, todayStr, startDay, accounts) : [];
+      const lastDate = dates[dates.length - 1];
+      // Včetně platby končící už v aktuálním období - je vidět, proč není v součtech
+      if (lastDate) {
+        upcomingChanges.push({ ...base, kind: 'end', occurrenceDate: lastDate, periodName: getPeriodForDate(lastDate, startDay).name });
+      }
+    }
+  }
+  upcomingChanges.sort((a, b) => a.occurrenceDate.localeCompare(b.occurrenceDate) || (a.kind === 'end' ? -1 : 1));
+
   const income = buildSection('income');
   const expense = buildSection('expense');
   const transfer = buildSection('transfer');
 
+  const actuallySavedMonthlyInHaler = items
+    .filter((i) => i.fromCashAccount && i.group !== 'transfer')
+    .reduce((s, i) => (i.group === 'income' ? addHaler(s, i.monthlyInHaler) : subHaler(s, i.monthlyInHaler)), 0);
+
   return {
+    periodName: currentPeriod.name,
+    upcomingChanges,
     income,
     expense,
     transfer,
+    actuallySavedMonthlyInHaler,
     remainingMonthlyInHaler: income.monthlyInHaler - expense.monthlyInHaler - transfer.monthlyInHaler,
   };
 }

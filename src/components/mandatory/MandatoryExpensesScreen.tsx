@@ -2,7 +2,15 @@ import React, { useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { calculateMandatoryOverview, MandatorySection } from '../../services/mandatoryExpensesService';
+import {
+  calculateMandatoryOverview,
+  MandatoryGroup,
+  MandatorySection,
+  MandatoryUpcomingChange,
+} from '../../services/mandatoryExpensesService';
+
+/** Všechny částky na této obrazovce se zobrazují zaokrouhlené na 100 Kč (součty se počítají z přesných hodnot). */
+const formatRounded = (haler: number) => formatCurrency(Math.round(haler / 10000) * 10000);
 
 const SECTION_TITLES: Record<MandatorySection['group'], string> = {
   income: 'Pravidelné příjmy',
@@ -55,10 +63,10 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                       </td>
                       <td className="py-2 px-4" />
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
-                        {formatCurrency(cat.monthlyInHaler)}
+                        {formatRounded(cat.monthlyInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right font-bold tabular-nums text-slate-900 whitespace-nowrap">
-                        {formatCurrency(cat.yearlyInHaler)}
+                        {formatRounded(cat.yearlyInHaler)}
                       </td>
                     </tr>
                   )}
@@ -66,9 +74,6 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                     <tr key={item.ruleId}>
                       <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium text-slate-900`}>
                         {item.title}
-                        {item.startsInFuture && (
-                          <span className="ml-1.5 text-[10px] font-medium text-slate-500">(zatím nezačala)</span>
-                        )}
                       </td>
                       {!isTransfer && (
                         <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.categoryLabel}</td>
@@ -79,13 +84,13 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                         {item.nextDate ? formatCzechDate(item.nextDate) : '—'}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
-                        {formatCurrency(item.amountInHaler)}
+                        {formatRounded(item.amountInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
-                        {formatCurrency(item.monthlyInHaler)}
+                        {formatRounded(item.monthlyInHaler)}
                       </td>
                       <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
-                        {formatCurrency(item.yearlyInHaler)}
+                        {formatRounded(item.yearlyInHaler)}
                       </td>
                     </tr>
                   ))}
@@ -96,10 +101,10 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
                   Celkem
                 </td>
                 <td className={`py-2.5 px-4 text-right font-extrabold tabular-nums whitespace-nowrap ${totalColor}`}>
-                  {formatCurrency(section.monthlyInHaler)}
+                  {formatRounded(section.monthlyInHaler)}
                 </td>
                 <td className={`py-2.5 px-4 text-right font-bold tabular-nums whitespace-nowrap ${totalColor}`}>
-                  {formatCurrency(section.yearlyInHaler)}
+                  {formatRounded(section.yearlyInHaler)}
                 </td>
               </tr>
             </tbody>
@@ -114,6 +119,58 @@ const SectionTable: React.FC<{ section: MandatorySection }> = ({ section }) => {
   );
 };
 
+const GROUP_LABELS: Record<MandatoryGroup, string> = {
+  income: 'Příjem',
+  expense: 'Výdaj',
+  transfer: 'Převod',
+};
+
+const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = ({ changes }) => (
+  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="p-4 sm:p-5 border-b border-slate-100">
+      <h3 className="text-sm font-bold text-slate-900">Nadcházející změny</h3>
+    </div>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+            <th className="py-2.5 px-4">Změna</th>
+            <th className="py-2.5 px-4">Položka</th>
+            <th className="py-2.5 px-4">Typ</th>
+            <th className="py-2.5 px-4">Kdy se hradí</th>
+            <th className="py-2.5 px-4 text-right">Částka</th>
+            <th className="py-2.5 px-4 text-right">Měsíčně</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {changes.map((change) => (
+            <tr key={`${change.ruleId}-${change.kind}`}>
+              <td className="py-2 px-4 whitespace-nowrap">
+                <span className={`font-semibold ${change.kind === 'start' ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {change.kind === 'start' ? 'Začíná' : 'Končí'}
+                </span>
+                <span className="text-slate-500">
+                  {' '}
+                  {change.kind === 'start' ? 'od' : 'naposledy'} {formatCzechDate(change.occurrenceDate)} (období {change.periodName})
+                </span>
+              </td>
+              <td className="py-2 px-4 font-medium text-slate-900">{change.title}</td>
+              <td className="py-2 px-4 text-slate-500">{GROUP_LABELS[change.group]}</td>
+              <td className="py-2 px-4 text-slate-600 whitespace-nowrap">{change.scheduleLabel}</td>
+              <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
+                {formatRounded(change.amountInHaler)}
+              </td>
+              <td className="py-2 px-4 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
+                {formatRounded(change.monthlyInHaler)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
 export const MandatoryExpensesScreen: React.FC = () => {
   const { recurringRules, categories, accounts, settings } = useFinance();
   const todayStr = getTodayInPrague();
@@ -127,6 +184,12 @@ export const MandatoryExpensesScreen: React.FC = () => {
   const cards = [
     { label: 'Příjmy / měsíc', value: overview.income.monthlyInHaler, className: 'text-emerald-600' },
     { label: 'Mandatorní výdaje / měsíc', value: overview.expense.monthlyInHaler, className: 'text-red-600' },
+    {
+      label: 'Skutečně uspořeno / měsíc',
+      value: overview.actuallySavedMonthlyInHaler,
+      className: overview.actuallySavedMonthlyInHaler < 0 ? 'text-red-600' : 'text-emerald-600',
+      title: 'Příjmy − výdaje na běžných účtech a hotovosti, bez převodů',
+    },
     { label: 'Spoření & převody / měsíc', value: overview.transfer.monthlyInHaler, className: 'text-sky-600' },
     {
       label: 'Zbývá / měsíc',
@@ -138,8 +201,13 @@ export const MandatoryExpensesScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
+      <p className="text-xs text-slate-500 px-0.5">
+        Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
+        nepravidelné platby rozpočítané do měsíců.
+      </p>
+
       {/* Souhrn měsíčních průměrů z opakovaných plateb */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {cards.map((card) => (
           <div
             key={card.label}
@@ -148,11 +216,13 @@ export const MandatoryExpensesScreen: React.FC = () => {
           >
             <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
             <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
-              {formatCurrency(card.value)}
+              {formatRounded(card.value)}
             </span>
           </div>
         ))}
       </div>
+
+      {overview.upcomingChanges.length > 0 && <UpcomingChangesTable changes={overview.upcomingChanges} />}
 
       <SectionTable section={overview.income} />
       <SectionTable section={overview.expense} />
