@@ -78,9 +78,9 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     expect(result.incomeTotalsInHaler).toEqual([9500000, 9600000]);
     expect(result.expenseTotalInHaler).toBe(2200000 + 660000 + 300000);
 
-    // Převody s plánovanou částkou (jako v Měsíčním rozpočtu), i když proběhly s jinou
+    // Provedený převod se počítá se skutečnou částkou
     const transfers = result.rows.find((r) => r.group === 'transfer')!;
-    expect(transfers.amountsInHaler).toEqual([0, 1000000]);
+    expect(transfers.amountsInHaler).toEqual([0, 1200000]);
     expect(transfers.children.map((c) => c.label)).toEqual(['Spořicí']);
   });
 

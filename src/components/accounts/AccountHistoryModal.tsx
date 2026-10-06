@@ -196,6 +196,9 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                 let amountDisplay = '';
                 let amountClass = '';
                 let typeBadge = '';
+                const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
+                  ? tx.actualAmountInHaler
+                  : tx.amountInHaler;
 
                 if (isCorrection) {
                   const diff = tx.diffInHaler ?? 0;
@@ -203,19 +206,19 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                   amountClass = diff >= 0 ? 'text-emerald-700' : 'text-amber-700';
                   typeBadge = 'Korekce zůstatku';
                 } else if (tx.type === 'income') {
-                  amountDisplay = `+${formatCurrency(tx.amountInHaler)}`;
+                  amountDisplay = `+${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-emerald-600';
                   typeBadge = 'Příjem';
                 } else if (tx.type === 'expense') {
-                  amountDisplay = `-${formatCurrency(tx.amountInHaler)}`;
+                  amountDisplay = `-${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-red-600';
                   typeBadge = 'Výdaj';
                 } else if (isIncomingTransfer) {
-                  amountDisplay = `+${formatCurrency(tx.amountInHaler)}`;
+                  amountDisplay = `+${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-sky-600';
                   typeBadge = isAssetAccount ? 'Vklad do portfolia' : 'Příchozí převod';
                 } else if (isOutgoingTransfer) {
-                  amountDisplay = `-${formatCurrency(tx.amountInHaler)}`;
+                  amountDisplay = `-${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-indigo-600';
                   typeBadge = isAssetAccount ? 'Výběr z portfolia' : 'Odchozí převod';
                 }
