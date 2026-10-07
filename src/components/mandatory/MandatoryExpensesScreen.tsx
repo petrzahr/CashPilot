@@ -71,6 +71,8 @@ const STICKY_RIGHT = 'sticky right-0 z-10';
 // Neprůhledné ekvivalenty bg-slate-50/75 a bg-slate-50/40 na bílé - ukotvené buňky nesmí prosvítat
 const HEADER_ROW_BG = 'bg-[#fafbfd]';
 const CATEGORY_ROW_BG = 'bg-[#fcfdfe]';
+// Lehce fialové podbarvení plateb, které se neopakují měsíčně (neprůhledné kvůli ukotveným buňkám)
+const NON_MONTHLY_ROW_BG = 'bg-[#f8f6ff]';
 
 const iconButtonClass =
   'p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
@@ -224,7 +226,12 @@ const SectionTable: React.FC<SectionTableProps> = ({
   const renderItemRow = (item: MandatoryItem) => {
     const isEditing = editingKey === item.ruleId && draft;
     const isDeleted = item.simState === 'deleted';
-    const rowBg = item.simState === 'edited' ? 'bg-amber-50' : item.simState === 'added' ? 'bg-emerald-50' : 'bg-white';
+    // Stav simulace má přednost před zvýrazněním nepravidelných (ne měsíčních) plateb
+    const rowBg =
+      item.simState === 'edited' ? 'bg-amber-50'
+        : item.simState === 'added' ? 'bg-emerald-50'
+        : !isDeleted && item.frequency !== 'monthly' ? NON_MONTHLY_ROW_BG
+        : 'bg-white';
     const rowClass = `${rowBg} ${isDeleted ? 'text-slate-400' : ''}`;
     const strike = isDeleted ? 'line-through text-slate-400' : '';
 
@@ -570,7 +577,9 @@ export const MandatoryExpensesScreen: React.FC = () => {
           ) : (
             <>
               Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
-              nepravidelné platby rozpočítané do měsíců. Úpravy zde jsou jen simulace.
+              nepravidelné platby rozpočítané do měsíců{' '}
+              <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
+              Úpravy zde jsou jen simulace.
             </>
           )}
         </p>
