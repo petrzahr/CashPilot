@@ -79,9 +79,12 @@ export interface MandatoryUpcomingChange {
   ruleId: string;
   title: string;
   group: MandatoryGroup;
-  kind: 'start' | 'end';
-  /** První (start) nebo poslední (end) platba */
+  /** 'change' = navazující část téže platby s jinými hodnotami (např. trvalá změna částky nebo termínu) */
+  kind: 'start' | 'end' | 'change';
+  /** První (start, change) nebo poslední (end) platba */
   occurrenceDate: string;
+  /** Hodnoty před změnou (jen u 'change') */
+  previous?: { title: string; scheduleLabel: string; amountInHaler: number; monthlyInHaler: number };
   /** Rozpočtové období, kdy platba začíná / naposledy proběhne (podle dne začátku období z Nastavení) */
   periodName: string;
   scheduleLabel: string;
@@ -155,6 +158,12 @@ function getOccurrenceDates(
   return dates.sort();
 }
 
+const getNextDay = (dateStr: string) => {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
 const periodsBetween = (from: BudgetPeriod, to: BudgetPeriod) =>
   (to.year - from.year) * 12 + (to.month - from.month) + 1;
 
@@ -215,6 +224,36 @@ export function calculateMandatoryOverview(
   );
   const isCurrent = (r: RecurringRule) => r.startDate <= periodEnd && (!r.endDate || r.endDate >= periodEnd);
 
+  // Trvalá změna i nastavení pořadí "od této platby dále" rozdělí platbu na starou část
+  // (končí den před změnou) a navazující novou. Takové dvojice spojíme: beze změny hodnot
+  // se v nadcházejících změnách nezobrazí vůbec, se změnou jako jeden řádek "Mění se".
+  const isSameSeries = (prev: RecurringRule, next: RecurringRule) =>
+    prev.type === next.type &&
+    prev.sourceAccountId === next.sourceAccountId &&
+    (prev.title === next.title ||
+      ((prev.categoryId ?? null) === (next.categoryId ?? null) && (prev.subcategoryId ?? null) === (next.subcategoryId ?? null)));
+  const predecessorOf = new Map<string, RecurringRule>();
+  const successorOf = new Map<string, RecurringRule>();
+  for (const next of relevantRules) {
+    const prev = relevantRules.find(
+      (p) => p.id !== next.id && p.endDate && getNextDay(p.endDate) === next.startDate && !successorOf.has(p.id) && isSameSeries(p, next)
+    );
+    if (prev) {
+      predecessorOf.set(next.id, prev);
+      successorOf.set(prev.id, next);
+    }
+  }
+
+  // Nejbližší splatnost; když už tato část platby další výskyt nemá, vezme se z navazující části
+  const findNextDate = (rule: RecurringRule): string | null => {
+    for (let r: RecurringRule | undefined = rule, guard = 0; r && guard < 20; r = successorOf.get(r.id), guard++) {
+      const from = getPeriodForDate(r.startDate > refDate ? r.startDate : refDate, startDay);
+      const next = getOccurrenceDates(r, from, MONTHS_PER_YEAR, todayStr, startDay, accounts).find((d) => d >= refDate);
+      if (next) return next;
+    }
+    return null;
+  };
+
   // Rozpis splatností popisuje pravidlo jako takové, proto ignoruje datum konce
   const scheduleFor = (rule: RecurringRule) => {
     const fromDate = rule.startDate > refDate ? rule.startDate : refDate;
@@ -239,7 +278,6 @@ export function calculateMandatoryOverview(
     const sub = rule.subcategoryId ? catMap.get(rule.subcategoryId) : cat?.parentId ? cat : undefined;
     const main = sub?.parentId ? catMap.get(sub.parentId) : cat && !cat.parentId ? cat : undefined;
 
-    const occurrenceDates = getOccurrenceDates(rule, currentPeriod, MONTHS_PER_YEAR, todayStr, startDay, accounts);
     const edit = simulation.edits[rule.id];
     const isDeleted = simulation.deleted.includes(rule.id);
     const frequency = edit?.frequency ?? rule.frequency;
@@ -264,7 +302,7 @@ export function calculateMandatoryOverview(
           : accName(rule.sourceAccountId),
       // Při změně frekvence v simulaci už neznáme konkrétní měsíce splatnosti
       scheduleLabel: frequency === rule.frequency ? scheduleFor(rule) : buildScheduleLabel({ ...rule, frequency }, []),
-      nextDate: frequency === rule.frequency ? occurrenceDates.find((d) => d >= refDate) ?? null : null,
+      nextDate: frequency === rule.frequency ? findNextDate(rule) : null,
       fromCashAccount: isCashAccount(rule.sourceAccountId),
       amountInHaler: edit?.amountInHaler ?? rule.amountInHaler,
     }, rule.intervalDays);
@@ -341,12 +379,29 @@ export function calculateMandatoryOverview(
 
     if (rule.startDate > periodEnd) {
       const firstDate = getOccurrenceDates(rule, getPeriodForDate(rule.startDate, startDay), MONTHS_PER_YEAR, todayStr, startDay, accounts)[0];
-      if (firstDate) {
+      const prev = predecessorOf.get(rule.id);
+      if (firstDate && !prev) {
         upcomingChanges.push({ ...base, kind: 'start', occurrenceDate: firstDate, periodName: getPeriodForDate(firstDate, startDay).name });
+      } else if (firstDate && prev) {
+        const previous = {
+          title: prev.title,
+          scheduleLabel: scheduleFor(prev),
+          amountInHaler: prev.amountInHaler,
+          monthlyInHaler: Math.round(prev.amountInHaler * getMonthlyFactor(prev)),
+        };
+        const changed =
+          previous.title !== base.title ||
+          previous.scheduleLabel !== base.scheduleLabel ||
+          previous.amountInHaler !== base.amountInHaler ||
+          previous.monthlyInHaler !== base.monthlyInHaler ||
+          (prev.targetAccountId ?? null) !== (rule.targetAccountId ?? null);
+        if (changed) {
+          upcomingChanges.push({ ...base, kind: 'change', occurrenceDate: firstDate, periodName: getPeriodForDate(firstDate, startDay).name, previous });
+        }
       }
     }
 
-    if (rule.endDate) {
+    if (rule.endDate && !successorOf.has(rule.id)) {
       const fromPeriod = rule.startDate > currentPeriod.startDate ? getPeriodForDate(rule.startDate, startDay) : currentPeriod;
       const endPeriod = getPeriodForDate(rule.endDate, startDay);
       const count = periodsBetween(fromPeriod, endPeriod);
