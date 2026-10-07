@@ -96,10 +96,11 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
       expect(r.periodName).toBe('Září 2026');
       expect(expenseIds(r)).toEqual(['old']);
       expect(r.expense.monthlyInHaler).toBe(600000);
+      // Navazující části téže platby se spojí do jedné změny
       expect(r.upcomingChanges.map((c) => [c.ruleId, c.kind, c.occurrenceDate, c.periodName])).toEqual([
-        ['old', 'end', '2026-11-20', 'Listopad 2026'],
-        ['new', 'start', '2026-12-20', 'Prosinec 2026'],
+        ['new', 'change', '2026-12-20', 'Prosinec 2026'],
       ]);
+      expect(r.upcomingChanges[0].previous!.amountInHaler).toBe(600000);
     });
 
     it('změna uvnitř aktuálního období: počítá se už jen nová částka', () => {
@@ -110,7 +111,34 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     it('změna přesně od začátku dalšího období (15. 10.): počítá se ještě stará částka', () => {
       const r = calculateMandatoryOverview(split('2026-10-14', '2026-10-15'), categories, accounts, today, 15);
       expect(expenseIds(r)).toEqual(['old']);
-      expect(r.upcomingChanges.find((c) => c.kind === 'start')!.periodName).toBe('Říjen 2026');
+      expect(r.upcomingChanges.find((c) => c.kind === 'change')!.periodName).toBe('Říjen 2026');
+    });
+
+    it('rozdělení beze změny hodnot (např. kvůli pořadí v dni) se v nadcházejících změnách nezobrazí', () => {
+      const r = calculateMandatoryOverview(
+        [
+          rule({ id: 'a', title: 'Netflix', amountInHaler: 30000, startDate: '2026-01-15', dayOfMonth: 15, endDate: '2027-05-14' }),
+          rule({ id: 'b', title: 'Netflix', amountInHaler: 30000, startDate: '2027-05-15', dayOfMonth: 15 }),
+        ],
+        categories, accounts, today, 15
+      );
+      expect(r.upcomingChanges).toEqual([]);
+      expect(r.expense.monthlyInHaler).toBe(30000);
+    });
+
+    it('přesun roční platby na jiný měsíc se zobrazí jako jedna změna termínu', () => {
+      const r = calculateMandatoryOverview(
+        [
+          rule({ id: 'a', title: 'Daň z nemovitosti', amountInHaler: 280000, frequency: 'annually', startDate: '2026-09-15', dayOfMonth: 15, endDate: '2027-05-14' }),
+          rule({ id: 'b', title: 'Daň z nemovitosti', amountInHaler: 280000, frequency: 'annually', startDate: '2027-05-15', dayOfMonth: 15 }),
+        ],
+        categories, accounts, today, 15
+      );
+      expect(r.upcomingChanges).toHaveLength(1);
+      expect(r.upcomingChanges[0]).toMatchObject({ kind: 'change', occurrenceDate: '2027-05-15', scheduleLabel: 'ročně, 15. 5.' });
+      expect(r.upcomingChanges[0].previous!.scheduleLabel).toBe('ročně, 15. 9.');
+      // Stará část už další platbu nemá - nejbližší termín je z navazující části
+      expect(r.expense.categories[0].items[0].nextDate).toBe('2027-05-15');
     });
   });
 

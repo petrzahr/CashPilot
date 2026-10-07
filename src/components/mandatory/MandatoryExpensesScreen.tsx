@@ -414,6 +414,28 @@ const GROUP_LABELS: Record<MandatoryGroup, string> = {
   transfer: 'Převod',
 };
 
+const CHANGE_KIND_LABELS: Record<MandatoryUpcomingChange['kind'], string> = {
+  start: 'Začíná',
+  end: 'Končí',
+  change: 'Mění se',
+};
+
+const CHANGE_KIND_COLORS: Record<MandatoryUpcomingChange['kind'], string> = {
+  start: 'text-emerald-700',
+  end: 'text-slate-500',
+  change: 'text-amber-700',
+};
+
+/** Hodnota s původní hodnotou přeškrtnutou před ní (jen pokud se liší). */
+const BeforeAfter: React.FC<{ before?: string; after: string }> = ({ before, after }) => (
+  <>
+    {before !== undefined && before !== after && (
+      <span className="text-slate-400 font-normal line-through mr-1.5">{before}</span>
+    )}
+    {after}
+  </>
+);
+
 const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = ({ changes }) => (
   <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
     <div className="p-4 sm:p-5 border-b border-slate-100">
@@ -435,22 +457,35 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
           {changes.map((change) => (
             <tr key={`${change.ruleId}-${change.kind}`}>
               <td className="py-2 px-4 whitespace-nowrap">
-                <span className={`font-semibold ${change.kind === 'start' ? 'text-emerald-700' : 'text-slate-500'}`}>
-                  {change.kind === 'start' ? 'Začíná' : 'Končí'}
+                <span className={`font-semibold ${CHANGE_KIND_COLORS[change.kind]}`}>
+                  {CHANGE_KIND_LABELS[change.kind]}
                 </span>
                 <span className="text-slate-500">
                   {' '}
-                  {change.kind === 'start' ? 'od' : 'naposledy'} {formatCzechDate(change.occurrenceDate)} (období {change.periodName})
+                  {change.kind === 'end' ? 'naposledy' : 'od'} {formatCzechDate(change.occurrenceDate)} (období {change.periodName})
                 </span>
               </td>
-              <td className="py-2 px-4 font-medium text-slate-900">{change.title}</td>
+              <td className="py-2 px-4 font-medium text-slate-900">
+                {change.previous && change.previous.title !== change.title && (
+                  <span className="text-slate-400 line-through mr-1.5">{change.previous.title}</span>
+                )}
+                {change.title}
+              </td>
               <td className="py-2 px-4 text-slate-500">{GROUP_LABELS[change.group]}</td>
-              <td className="py-2 px-4 text-slate-600 whitespace-nowrap">{change.scheduleLabel}</td>
+              <td className="py-2 px-4 text-slate-600 whitespace-nowrap">
+                <BeforeAfter before={change.previous?.scheduleLabel} after={change.scheduleLabel} />
+              </td>
               <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">
-                {formatRounded(change.amountInHaler)}
+                <BeforeAfter
+                  before={change.previous && formatRounded(change.previous.amountInHaler)}
+                  after={formatRounded(change.amountInHaler)}
+                />
               </td>
               <td className="py-2 px-4 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
-                {formatRounded(change.monthlyInHaler)}
+                <BeforeAfter
+                  before={change.previous && formatRounded(change.previous.monthlyInHaler)}
+                  after={formatRounded(change.monthlyInHaler)}
+                />
               </td>
             </tr>
           ))}
