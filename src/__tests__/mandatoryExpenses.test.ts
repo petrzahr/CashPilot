@@ -5,6 +5,7 @@ import { FinanceProvider } from '../context/FinanceContext';
 import { MandatoryExpensesScreen } from '../components/mandatory/MandatoryExpensesScreen';
 import { calculateMandatoryOverview, getMonthlyFactor } from '../services/mandatoryExpensesService';
 import { Account, Category, RecurringRule } from '../types/finance';
+import { createBudgetPeriod } from '../services/periodService';
 
 const today = '2026-10-06';
 
@@ -111,6 +112,21 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
       expect(expenseIds(r)).toEqual(['old']);
       expect(r.upcomingChanges.find((c) => c.kind === 'start')!.periodName).toBe('Říjen 2026');
     });
+  });
+
+  it('přepočítá se podle vybraného období: roční platba od října je v září jen v nadcházejících, v říjnu už v součtech', () => {
+    const october = [rule({ id: 'tax', title: 'Daň', amountInHaler: 1200000, frequency: 'annually', dayOfMonth: 20, startDate: '2026-10-20' })];
+
+    const september = calculateMandatoryOverview(october, categories, accounts, today, 15);
+    expect(september.periodName).toBe('Září 2026');
+    expect(september.expense.monthlyInHaler).toBe(0);
+    expect(september.upcomingChanges.map((c) => c.kind)).toEqual(['start']);
+
+    const selected = calculateMandatoryOverview(october, categories, accounts, today, 15, undefined, createBudgetPeriod(2026, 10, 15));
+    expect(selected.periodName).toBe('Říjen 2026');
+    expect(selected.expense.monthlyInHaler).toBe(100000);
+    expect(selected.expense.categories[0].items[0].nextDate).toBe('2026-10-20');
+    expect(selected.upcomingChanges).toEqual([]);
   });
 
   describe('simulace', () => {

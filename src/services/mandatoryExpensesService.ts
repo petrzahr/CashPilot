@@ -179,7 +179,8 @@ function buildScheduleLabel(rule: RecurringRule, occurrenceDates: string[]): str
 
 /**
  * Přehled pravidelných (mandatorních) plateb sestavený z opakovaných plateb platných
- * v aktuálním rozpočtovém období (začíná dnem z Nastavení, ne 1. dnem v měsíci).
+ * ve vybraném rozpočtovém období (výchozí je aktuální; období začíná dnem z Nastavení,
+ * ne 1. dnem v měsíci). Dále v popisu "aktuální období" = vybrané období.
  * Každá platba se přepočte na měsíční a roční průměr podle své frekvence (roční ÷ 12,
  * čtvrtletní ÷ 3, ...), takže nepravidelné platby jsou rozpočítané do každého měsíce.
  *
@@ -194,14 +195,17 @@ export function calculateMandatoryOverview(
   accounts: Account[],
   todayStr: string,
   startDay: number,
-  simulation: MandatorySimulation = EMPTY_SIMULATION
+  simulation: MandatorySimulation = EMPTY_SIMULATION,
+  period?: BudgetPeriod
 ): MandatoryOverview {
   const catMap = new Map(categories.map((c) => [c.id, c]));
   const accMap = new Map(accounts.map((a) => [a.id, a]));
   const accName = (id?: string) => (id ? accMap.get(id)?.name ?? 'Neznámý účet' : '—');
 
-  const currentPeriod = getPeriodForDate(todayStr, startDay);
+  const currentPeriod = period ?? getPeriodForDate(todayStr, startDay);
   const periodEnd = currentPeriod.endDate;
+  // Od kdy hledat nejbližší splatnost: u budoucího období od jeho začátku, jinak od dneška
+  const refDate = currentPeriod.startDate > todayStr ? currentPeriod.startDate : todayStr;
 
   const relevantRules = rules.filter(
     (r) =>
@@ -213,7 +217,7 @@ export function calculateMandatoryOverview(
 
   // Rozpis splatností popisuje pravidlo jako takové, proto ignoruje datum konce
   const scheduleFor = (rule: RecurringRule) => {
-    const fromDate = rule.startDate > todayStr ? rule.startDate : todayStr;
+    const fromDate = rule.startDate > refDate ? rule.startDate : refDate;
     return buildScheduleLabel(
       rule,
       getOccurrenceDates({ ...rule, endDate: null }, getPeriodForDate(fromDate, startDay), MONTHS_PER_YEAR, todayStr, startDay, accounts)
@@ -260,7 +264,7 @@ export function calculateMandatoryOverview(
           : accName(rule.sourceAccountId),
       // Při změně frekvence v simulaci už neznáme konkrétní měsíce splatnosti
       scheduleLabel: frequency === rule.frequency ? scheduleFor(rule) : buildScheduleLabel({ ...rule, frequency }, []),
-      nextDate: frequency === rule.frequency ? occurrenceDates.find((d) => d >= todayStr) ?? null : null,
+      nextDate: frequency === rule.frequency ? occurrenceDates.find((d) => d >= refDate) ?? null : null,
       fromCashAccount: isCashAccount(rule.sourceAccountId),
       amountInHaler: edit?.amountInHaler ?? rule.amountInHaler,
     }, rule.intervalDays);

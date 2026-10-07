@@ -454,7 +454,7 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
 );
 
 export const MandatoryExpensesScreen: React.FC = () => {
-  const { recurringRules, categories, accounts, settings } = useFinance();
+  const { recurringRules, categories, accounts, settings, selectedPeriod } = useFinance();
   const todayStr = getTodayInPrague();
   const budgetStartDay = settings?.budgetStartDay || 15;
 
@@ -463,13 +463,13 @@ export const MandatoryExpensesScreen: React.FC = () => {
   const isSimulating = !isSimulationEmpty(simulation);
 
   const overview = useMemo(
-    () => calculateMandatoryOverview(recurringRules, categories, accounts, todayStr, budgetStartDay, simulation),
-    [recurringRules, categories, accounts, todayStr, budgetStartDay, simulation]
+    () => calculateMandatoryOverview(recurringRules, categories, accounts, todayStr, budgetStartDay, simulation, selectedPeriod),
+    [recurringRules, categories, accounts, todayStr, budgetStartDay, simulation, selectedPeriod]
   );
   // Výchozí stav (skutečné opakované platby) pro porovnání v kartách
   const baseline = useMemo(
-    () => calculateMandatoryOverview(recurringRules, categories, accounts, todayStr, budgetStartDay),
-    [recurringRules, categories, accounts, todayStr, budgetStartDay]
+    () => calculateMandatoryOverview(recurringRules, categories, accounts, todayStr, budgetStartDay, EMPTY_SIMULATION, selectedPeriod),
+    [recurringRules, categories, accounts, todayStr, budgetStartDay, selectedPeriod]
   );
 
   const accountOptions = useMemo(() => sortAccountsByOrder(accounts).filter((a) => a.status === 'active'), [accounts]);
