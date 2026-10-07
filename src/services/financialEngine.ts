@@ -726,6 +726,7 @@ export function calculateForecast(
         if (isAsset) {
           accBal.marketValueInHaler = 0;
           accBal.investedPrincipalInHaler = 0;
+          accBal.contributedPrincipalInHaler = 0;
           accBal.unrealizedGainLossInHaler = 0;
         }
         runningBalances[acc.id] = 0;
@@ -776,6 +777,8 @@ export function calculateForecast(
             !safeSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
           accBal.investedPrincipalInHaler = addHaler(investedPrincipals[acc.id] || 0, acc.investedAmountAdjustmentInHaler ?? 0);
         }
+        accBal.contributedPrincipalInHaler = accBal.investedPrincipalInHaler === undefined
+          ? undefined : investedPrincipals[acc.id] || 0;
         accBal.unrealizedGainLossInHaler = accBal.investedPrincipalInHaler === undefined
           ? undefined : subHaler(closing, accBal.investedPrincipalInHaler);
         accBal.closingBalanceInHaler = closing;

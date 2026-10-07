@@ -183,6 +183,7 @@ export interface AccountPeriodBalance {
   correctionsInHaler: number;
   closingBalanceInHaler: number;
   investedPrincipalInHaler?: number;
+  contributedPrincipalInHaler?: number; // Vloženo bez korekce (jen pro zobrazení)
   marketValueInHaler?: number;
   unrealizedGainLossInHaler?: number;
 }

@@ -177,7 +177,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         </div>
                         <div className="text-[11px] text-slate-500">
                           {snap.effectiveInvestedAmountInHaler === undefined ? 'Historický vložený kapitál není znám' : <>
-                            <div>Vloženo: {formatCurrency(snap.effectiveInvestedAmountInHaler)}</div>
+                            <div>Vloženo: {formatCurrency(snap.baseInvestedAmountInHaler ?? subHaler(snap.effectiveInvestedAmountInHaler, snap.investedAmountAdjustmentInHaler ?? 0))}</div>
                             {snap.investedAmountAdjustmentInHaler !== undefined && <div>Korekce: {formatCurrency(snap.investedAmountAdjustmentInHaler)}</div>}
                             <div>Výnos / ztráta: {formatCurrency(subHaler(snap.marketValueInHaler, snap.effectiveInvestedAmountInHaler))}</div>
                           </>}

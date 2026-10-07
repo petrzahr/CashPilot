@@ -59,7 +59,7 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
     if (index === 1) {
       expect(html).toContain('Historický vložený kapitál není znám');
     } else if (index > 1) {
-      expect(html).toContain(`Vloženo: ${formatCurrency(10100000)}`);
+      expect(html).toContain(`Vloženo: ${formatCurrency(10000000)}`);
       expect(html).toContain(`${((value - 10100000) / 10100000 * 100).toFixed(1)} %)`);
     }
     expect(JSON.stringify(data)).toBe(before);
