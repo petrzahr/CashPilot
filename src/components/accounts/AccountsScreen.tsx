@@ -208,12 +208,16 @@ export const AccountsScreen: React.FC = () => {
           let investedPrincipal = selectedPeriod.endDate < currentPeriod.startDate
             ? accBal?.investedPrincipalInHaler
             : accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
+          // Zobrazené „Vloženo“ je bez korekce; korekce ovlivňuje jen výpočet výnosu.
+          let contributedPrincipal = accBal?.investedPrincipalInHaler !== undefined
+            ? accBal.contributedPrincipalInHaler : acc.initialBalanceInHaler;
           if (isCurrentInvestment) {
             const base = getInvestedAmountAtValuation({ ...acc, investedAmountAdjustmentInHaler: 0 }, transactions, today);
             investedPrincipal = getHistoricalInvestedAmount(acc, marketValueSnapshots, transactions, today, base);
             if (investedPrincipal === undefined && !marketValueSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
               investedPrincipal = getEffectiveInvestedAmount(acc, base);
             }
+            contributedPrincipal = base;
           }
           const unrealizedProfitHaler = investedPrincipal === undefined ? 0 : subHaler(marketValue, investedPrincipal);
           const unrealizedPct = investedPrincipal ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
@@ -319,7 +323,7 @@ export const AccountsScreen: React.FC = () => {
 
                 {isInvestment && (
                   <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">{investedPrincipal === undefined ? 'Historický vložený kapitál není znám' : `Vloženo: ${formatCurrency(investedPrincipal)}`}</span>
+                    <span className="text-slate-500">{investedPrincipal === undefined ? 'Historický vložený kapitál není znám' : `Vloženo: ${formatCurrency(contributedPrincipal ?? investedPrincipal)}`}</span>
                     <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`} hidden={investedPrincipal === undefined}>
                       {unrealizedProfitHaler >= 0 ? '+' : ''}{formatCurrency(unrealizedProfitHaler)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)} %)
                     </span>
