@@ -1,7 +1,6 @@
 # Claude Code Guidelines
 
 ## Token Budget & Context Management
-- Don't open paths listed in .claudeignore (generated files, dependencies, binaries); they waste context.
 - Check installed packages and scripts via package.json only.
 - Do not run commands that dump massive outputs into stdout (e.g. cat on large files or uncapped grep).
 - Keep diffs atomic and focused on the requested task.
