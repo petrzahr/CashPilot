@@ -18,12 +18,6 @@ export function getAssetFlowInHaler(tx: Transaction, accountId: string, amountIn
   return 0;
 }
 
-/** Apply the optional cost-basis correction without changing balances or cash flows. */
-export function getEffectiveInvestedAmount(account: Account, calculatedAmountInHaler: number): number {
-  if (account.type !== 'investment' && account.type !== 'pension') return calculatedAmountInHaler;
-  return addHaler(calculatedAmountInHaler, account.investedAmountAdjustmentInHaler ?? 0);
-}
-
 /**
  * Seřadí účty podle uživatelem definovaného pořadí (sortOrder).
  * Při shodě rozhodne datum vytvoření a následně id, aby bylo řazení deterministické.

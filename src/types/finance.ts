@@ -11,8 +11,6 @@ export type AccountStatus = 'active' | 'archived';
 export interface Account {
   // Once history is edited, current valuation fields are reconstructed from surviving snapshots.
   marketValueHistoryManaged?: boolean;
-  // Retains the known baseline even when the first/last snapshot is deleted.
-  investmentCorrectionInitiallyZero?: boolean;
   id: string;
   name: string;
   type: AccountType;
@@ -27,7 +25,6 @@ export interface Account {
   sortOrder: number;
   status: AccountStatus;
   currentMarketValueInHaler?: number; // Pro investiční účty
-  investedAmountAdjustmentInHaler?: number; // Korekce vloženého kapitálu, nikoli peněžní pohyb
   marketValueUpdatedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -142,13 +139,17 @@ export interface MarketValueSnapshot {
   accountId: string;
   date: string; // YYYY-MM-DD
   marketValueInHaler: number;
-  effectiveInvestedAmountInHaler?: number; // Kapitál včetně korekce zachycený při ocenění; ve staré historii chybí.
-  baseInvestedAmountInHaler?: number;
-  investedAmountAdjustmentInHaler?: number;
-  // False means this valuation inherits the preceding correction transition.
-  correctionChanged?: boolean;
-  // First recorded correction on an account that had no previous correction/history.
-  correctionPreviouslyZero?: boolean;
+  note?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** Měsíční poplatek obchodníka investičního/penzijního účtu; nejvýše jeden za rozpočtové období. */
+export interface InvestmentFee {
+  id: string;
+  accountId: string;
+  periodKey: string; // YYYY-MM rozpočtového období
+  amountInHaler: number;
   note?: string;
   createdAt: string;
   updatedAt?: string;
@@ -182,8 +183,9 @@ export interface AccountPeriodBalance {
   transfersOutInHaler: number;
   correctionsInHaler: number;
   closingBalanceInHaler: number;
-  investedPrincipalInHaler?: number;
-  contributedPrincipalInHaler?: number; // Vloženo bez korekce (jen pro zobrazení)
+  investedPrincipalInHaler?: number; // Základ pro výnos: vloženo − poplatky
+  contributedPrincipalInHaler?: number; // Vloženo (čisté vklady)
+  feesInHaler?: number; // Součet poplatků do konce období
   marketValueInHaler?: number;
   unrealizedGainLossInHaler?: number;
 }

@@ -436,7 +436,8 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       recurringRules: [],
       recurringExceptions: [],
       corrections: [],
-      marketValueSnapshots: []
+      marketValueSnapshots: [],
+      investmentFees: []
     };
 
     saveStoredData(initialData);

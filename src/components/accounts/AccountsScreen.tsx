@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
-import { getEffectiveInvestedAmount } from '../../services/accountService';
-import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
+import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { formatCurrency, subHaler } from '../../services/currencyService';
@@ -10,6 +9,7 @@ import { formatCzechDate, getTodayInPrague } from '../../services/periodService'
 import { AccountModal } from './AccountModal';
 import { ReconciliationModal } from './ReconciliationModal';
 import { MarketValueModal } from './MarketValueModal';
+import { InvestmentFeeModal } from './InvestmentFeeModal';
 import { AccountHistoryModal } from './AccountHistoryModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { 
@@ -32,6 +32,8 @@ export const AccountsScreen: React.FC = () => {
     transactions,
     corrections,
     marketValueSnapshots,
+    investmentFees = [],
+    settings,
     archiveAccount,
     restoreAccount,
     deleteAccount,
@@ -46,6 +48,7 @@ export const AccountsScreen: React.FC = () => {
   // Reconciliace, Tržní hodnota a Historie modály
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
   const [marketValueAccount, setMarketValueAccount] = useState<Account | null>(null);
+  const [feeAccount, setFeeAccount] = useState<Account | null>(null);
   const [historyAccount, setHistoryAccount] = useState<Account | null>(null);
 
   // Změna pořadí účtů přetažením (drag-and-drop)
@@ -205,21 +208,15 @@ export const AccountsScreen: React.FC = () => {
             : isInvestment && selectedPeriod.endDate < currentPeriod.startDate
             ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
             : acc.currentMarketValueInHaler || closingBalance;
-          let investedPrincipal = selectedPeriod.endDate < currentPeriod.startDate
-            ? accBal?.investedPrincipalInHaler
-            : accBal?.investedPrincipalInHaler ?? getEffectiveInvestedAmount(acc, acc.initialBalanceInHaler);
-          // Zobrazené „Vloženo“ je bez korekce; korekce ovlivňuje jen výpočet výnosu.
-          let contributedPrincipal = accBal?.investedPrincipalInHaler !== undefined
-            ? accBal.contributedPrincipalInHaler : acc.initialBalanceInHaler;
-          if (isCurrentInvestment) {
-            const base = getInvestedAmountAtValuation({ ...acc, investedAmountAdjustmentInHaler: 0 }, transactions, today);
-            investedPrincipal = getHistoricalInvestedAmount(acc, marketValueSnapshots, transactions, today, base);
-            if (investedPrincipal === undefined && !marketValueSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
-              investedPrincipal = getEffectiveInvestedAmount(acc, base);
-            }
-            contributedPrincipal = base;
-          }
-          const unrealizedProfitHaler = investedPrincipal === undefined ? 0 : subHaler(marketValue, investedPrincipal);
+          // Výnos = tržní hodnota − (vloženo − poplatky); zobrazené „Vloženo“ jsou čisté vklady.
+          const contributedPrincipal = isCurrentInvestment
+            ? getInvestedAmountAtValuation(acc, transactions, today)
+            : accBal?.contributedPrincipalInHaler ?? acc.initialBalanceInHaler;
+          const feesTotal = isCurrentInvestment
+            ? getFeesUpToDate(investmentFees, acc.id, today, settings.budgetStartDay)
+            : accBal?.feesInHaler ?? 0;
+          const investedPrincipal = subHaler(contributedPrincipal, feesTotal);
+          const unrealizedProfitHaler = subHaler(marketValue, investedPrincipal);
           const unrealizedPct = investedPrincipal ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
 
           return (
@@ -323,8 +320,11 @@ export const AccountsScreen: React.FC = () => {
 
                 {isInvestment && (
                   <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">{investedPrincipal === undefined ? 'Historický vložený kapitál není znám' : `Vloženo: ${formatCurrency(contributedPrincipal ?? investedPrincipal)}`}</span>
-                    <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`} hidden={investedPrincipal === undefined}>
+                    <span className="text-slate-500">
+                      {`Vloženo: ${formatCurrency(contributedPrincipal)}`}
+                      {feesTotal !== 0 && <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>}
+                    </span>
+                    <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {unrealizedProfitHaler >= 0 ? '+' : ''}{formatCurrency(unrealizedProfitHaler)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)} %)
                     </span>
                   </div>
@@ -383,13 +383,23 @@ export const AccountsScreen: React.FC = () => {
               {/* Akční tlačítka pro účet */}
               <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
                 {isInvestment ? (
-                  <button
-                    type="button"
-                    onClick={() => setMarketValueAccount(acc)}
-                    className="flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
-                  >
-                    Aktualizovat tržní hodnotu
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMarketValueAccount(acc)}
+                      className="flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
+                    >
+                      Aktualizovat tržní hodnotu
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeeAccount(acc)}
+                      title="Zadat měsíční poplatek"
+                      className="py-2 px-3 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-purple-200 rounded-xl transition-colors shrink-0"
+                    >
+                      Poplatek
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
@@ -431,6 +441,12 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!marketValueAccount}
         onClose={() => setMarketValueAccount(null)}
         account={marketValueAccount}
+      />
+
+      <InvestmentFeeModal
+        isOpen={!!feeAccount}
+        onClose={() => setFeeAccount(null)}
+        account={feeAccount}
       />
 
       <AccountHistoryModal

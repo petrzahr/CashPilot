@@ -1,54 +1,58 @@
-import { Account, BudgetPeriod, MarketValueSnapshot, Transaction } from '../types/finance';
-import { getAssetFlowInHaler, getEffectiveInvestedAmount } from './accountService';
+import { Account, BudgetPeriod, InvestmentFee, MarketValueSnapshot, Transaction } from '../types/finance';
+import { getAssetFlowInHaler } from './accountService';
 import { addHaler, subHaler } from './currencyService';
-import { getPreviousPeriod, getTodayInPrague } from './periodService';
+import { getPeriodForDate, getPreviousPeriod, getTodayInPrague } from './periodService';
 
 export function latestInvestmentSnapshot(account: Account, snapshots: MarketValueSnapshot[], date: string) {
   return snapshots.filter(s => s.accountId === account.id && s.date >= account.initialBalanceDate && s.date <= date)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))[0];
 }
 
-/** Unknown legacy corrections stay unknown. Never infer them from today's account value. */
-export function getHistoricalInvestmentCorrection(account: Account, snapshots: MarketValueSnapshot[], date: string): number | undefined {
-  const snapshot = latestInvestmentSnapshot(account, snapshots, date);
-  if (snapshot) return snapshot.investedAmountAdjustmentInHaler;
-  const history = snapshots.filter(s => s.accountId === account.id);
-  if (account.investmentCorrectionInitiallyZero || history.some(s => s.correctionPreviouslyZero) ||
-      (!history.length && !account.marketValueHistoryManaged && account.investedAmountAdjustmentInHaler === undefined)) return 0;
-  return undefined;
-}
-
-/** Carry captured capital with net contributions after the valuation, including forecast capital. */
-export function getHistoricalInvestedAmount(account: Account, snapshots: MarketValueSnapshot[], transactions: Transaction[], date: string, base: number): number | undefined {
-  if (date < account.initialBalanceDate) return 0;
-  const snapshot = latestInvestmentSnapshot(account, snapshots, date);
-  if (snapshot && Number.isSafeInteger(snapshot.effectiveInvestedAmountInHaler)) {
-    const capturedBase = snapshot.baseInvestedAmountInHaler ?? getInvestedAmountAtValuation(
-      { ...account, investedAmountAdjustmentInHaler: 0 }, transactions, snapshot.date);
-    return addHaler(snapshot.effectiveInvestedAmountInHaler!, subHaler(base, capturedBase));
+/** One fee per account and period; a sync collision keeps the most recently updated record. */
+export function getAccountFees(fees: InvestmentFee[], accountId: string): InvestmentFee[] {
+  const byPeriod = new Map<string, InvestmentFee>();
+  for (const fee of fees) {
+    if (fee.accountId !== accountId) continue;
+    const old = byPeriod.get(fee.periodKey);
+    const stamp = (f: InvestmentFee) => `${f.updatedAt || f.createdAt}|${f.id}`;
+    if (!old || stamp(fee) > stamp(old)) byPeriod.set(fee.periodKey, fee);
   }
-  const correction = getHistoricalInvestmentCorrection(account, snapshots, date);
-  return correction === undefined ? undefined : addHaler(base, correction);
+  return [...byPeriod.values()].sort((a, b) => a.periodKey.localeCompare(b.periodKey));
 }
 
-/** Capture actual capital at valuation time, excluding future/planned contributions. */
+/** Fees of the given period and all earlier ones. */
+export function getFeesUpToPeriod(fees: InvestmentFee[], accountId: string, periodKey: string): number {
+  return getAccountFees(fees, accountId)
+    .filter(f => f.periodKey <= periodKey)
+    .reduce((sum, f) => addHaler(sum, f.amountInHaler), 0);
+}
+
+export function getFeesUpToDate(fees: InvestmentFee[], accountId: string, date: string, startDay: number): number {
+  return getFeesUpToPeriod(fees, accountId, getPeriodForDate(date, startDay).key);
+}
+
+/** Net executed contributions up to the date, excluding future/planned ones. */
 export function getInvestedAmountAtValuation(account: Account, transactions: Transaction[], date: string): number {
   let principal = account.initialBalanceInHaler;
   for (const tx of transactions) {
     if (tx.status !== 'executed' || tx.date < account.initialBalanceDate || tx.date > date) continue;
     principal = addHaler(principal, getAssetFlowInHaler(tx, account.id, tx.actualAmountInHaler ?? tx.amountInHaler));
   }
-  return getEffectiveInvestedAmount(account, Math.max(0, principal));
+  return Math.max(0, principal);
 }
 
-/** Compare each included account using its last known state at each period end.
- * Carry market value and captured capital together; never apply today's correction to history.
+/** Cost basis for the return: contributions minus broker fees up to the date. */
+export function getReturnBaseAtDate(account: Account, transactions: Transaction[], fees: InvestmentFee[], date: string, startDay: number): number {
+  return subHaler(getInvestedAmountAtValuation(account, transactions, date), getFeesUpToDate(fees, account.id, date, startDay));
+}
+
+/** Compare each included account using its last valuation at each period end.
  * Later contributions do not change this unrealized gain/loss until another valuation.
- * Accounts without a paired valuation at both ends are skipped, not treated as blocking the rest.
+ * Accounts without a valuation at both ends are skipped, not treated as blocking the rest.
  */
 export function calculatePeriodInvestmentChange(
   accounts: Account[], snapshots: MarketValueSnapshot[], period: BudgetPeriod,
-  startDay: number, today = getTodayInPrague(),
+  startDay: number, today = getTodayInPrague(), transactions: Transaction[] = [], fees: InvestmentFee[] = [],
 ): number | null {
   const previous = getPreviousPeriod(period, startDay);
   const included = accounts.filter(a => a.status === 'active' && a.isNetWorth &&
@@ -59,13 +63,11 @@ export function calculatePeriodInvestmentChange(
   for (const account of included) {
     const current = latestInvestmentSnapshot(account, snapshots, period.endDate < today ? period.endDate : today);
     const prior = latestInvestmentSnapshot(account, snapshots, previous.endDate < today ? previous.endDate : today);
-    if (!current || !prior || !Number.isSafeInteger(current.effectiveInvestedAmountInHaler) ||
-        !Number.isSafeInteger(prior.effectiveInvestedAmountInHaler)) continue;
+    if (!current || !prior) continue;
     counted++;
-    change = addHaler(change, subHaler(
-      subHaler(current.marketValueInHaler, current.effectiveInvestedAmountInHaler!),
-      subHaler(prior.marketValueInHaler, prior.effectiveInvestedAmountInHaler!),
-    ));
+    const gain = (s: MarketValueSnapshot) =>
+      subHaler(s.marketValueInHaler, getReturnBaseAtDate(account, transactions, fees, s.date, startDay));
+    change = addHaler(change, subHaler(gain(current), gain(prior)));
   }
   return counted ? change : null;
 }

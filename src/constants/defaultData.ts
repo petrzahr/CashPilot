@@ -162,6 +162,7 @@ export function createEmptyAppData(): AppData {
     recurringExceptions: [],
     corrections: [],
     marketValueSnapshots: [],
+    investmentFees: [],
   };
 }
 
@@ -182,6 +183,7 @@ export function createResetAppData(): AppData {
     recurringExceptions: [],
     corrections: [],
     marketValueSnapshots: [],
+    investmentFees: [],
   };
 }
 

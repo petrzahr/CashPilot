@@ -8,6 +8,7 @@ import {
   BudgetPeriod,
   Category,
   ForecastResult,
+  InvestmentFee,
   MarketValueSnapshot,
   RecurringException,
   RecurringRule,
@@ -54,8 +55,8 @@ import {
   formatCzechDate
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
-import { getInvestedAmountAtValuation, getHistoricalInvestmentCorrection } from '../services/investmentPerformanceService';
 import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
+import { getAccountFees } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import {
@@ -260,7 +261,8 @@ interface FinanceContextType {
   recurringExceptions: RecurringException[];
   corrections: BalanceCorrection[];
   marketValueSnapshots: MarketValueSnapshot[];
-  
+  investmentFees: InvestmentFee[];
+
   // Periody a výpočty
   currentPeriod: BudgetPeriod;
   selectedPeriod: BudgetPeriod;
@@ -329,10 +331,12 @@ interface FinanceContextType {
   deleteAccount: (id: string) => { success: boolean; message?: string };
   reorderAccounts: (orderedIds: string[]) => void;
   reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => void;
-  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string, investedAmountAdjustmentInHaler?: number) => void;
+  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string) => void;
   updateCorrectionNote: (id: string, note: string) => void;
   editMarketValue: (id: string, edit: MarketValueEdit) => void;
   deleteMarketValue: (id: string) => void;
+  saveInvestmentFee: (accountId: string, periodKey: string, amountInHaler: number, note?: string) => void;
+  deleteInvestmentFee: (id: string) => void;
   deleteCorrection: (id: string) => Promise<boolean>;
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
 
@@ -616,7 +620,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       data.settings,
       data.marketValueSnapshots,
       currentPeriod.key,
-      todayStr
+      todayStr,
+      data.investmentFees
     );
   }, [
     allPeriodsSequence,
@@ -627,6 +632,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     data.corrections,
     data.settings,
     data.marketValueSnapshots,
+    data.investmentFees,
     currentPeriod.key,
     todayStr
   ]);
@@ -1628,6 +1634,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         accounts: prev.accounts.filter(a => a.id !== id),
         corrections: prev.corrections.filter(c => c.accountId !== id),
         marketValueSnapshots: (prev.marketValueSnapshots || []).filter(s => s.accountId !== id),
+        investmentFees: (prev.investmentFees || []).filter(f => f.accountId !== id),
         recurringExceptions: (prev.recurringExceptions || []).filter(
           e => e.overrideSourceAccountId !== id && e.overrideTargetAccountId !== id
         ),
@@ -1735,8 +1742,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     accountId: string,
     marketValueInHaler: number,
     date?: string,
-    note?: string,
-    investedAmountAdjustmentInHaler?: number
+    note?: string
   ) => {
     const account = data.accounts.find(a => a.id === accountId);
     if (!account) return;
@@ -1768,28 +1774,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     setData(prev => {
       const currentAccount = prev.accounts.find(a => a.id === accountId)!;
       const isLatest = !currentAccount.marketValueUpdatedAt || valuationDate >= currentAccount.marketValueUpdatedAt;
-      const correction = investedAmountAdjustmentInHaler ??
-        getHistoricalInvestmentCorrection(currentAccount, prev.marketValueSnapshots, valuationDate) ??
-        (isLatest && valuationDate >= getTodayInPrague() ? currentAccount.investedAmountAdjustmentInHaler ?? 0 : undefined);
-      const base = getInvestedAmountAtValuation({ ...currentAccount, investedAmountAdjustmentInHaler: 0 }, prev.transactions, valuationDate);
       return reconcileMarketValueHistory({
         ...prev,
         marketValueSnapshots: [...prev.marketValueSnapshots, {
           ...snapshot,
           createdAt: new Date(prev.marketValueSnapshots.filter(s => s.accountId === accountId)
             .reduce((time, s) => Math.max(time, (Date.parse(s.createdAt) || 0) + 1), Date.parse(nowIso))).toISOString(),
-          baseInvestedAmountInHaler: base,
-          investedAmountAdjustmentInHaler: correction,
-          correctionChanged: correction !== getHistoricalInvestmentCorrection(currentAccount, prev.marketValueSnapshots, valuationDate),
-          effectiveInvestedAmountInHaler: correction === undefined ? undefined : addHaler(base, correction),
-          correctionPreviouslyZero: currentAccount.investedAmountAdjustmentInHaler === undefined &&
-            !prev.marketValueSnapshots.some(s => s.accountId === accountId) || undefined,
         }],
         accounts: prev.accounts.map(a => a.id === accountId ? {
           ...a,
           currentMarketValueInHaler: isLatest ? marketValueInHaler : a.currentMarketValueInHaler,
-          ...(isLatest && correction !== undefined && (correction !== 0 || a.investedAmountAdjustmentInHaler !== undefined)
-            ? { investedAmountAdjustmentInHaler: correction } : {}),
           marketValueUpdatedAt: isLatest ? valuationDate : a.marketValueUpdatedAt,
           updatedAt: nowIso
         } : a)
@@ -1808,6 +1802,36 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const deleteMarketValue = useCallback((id: string) => {
     setData(prev => mutateMarketValueHistory(prev, id));
     showToast('Tržní ocenění bylo smazáno.');
+  }, [setData, showToast]);
+
+  const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
+    if (!/^\d{4}-\d{2}$/.test(periodKey) || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
+      showToast('Zadejte platnou částku poplatku.', 'warning');
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    const cleanNote = note && note.trim() ? note.trim() : undefined;
+    setData(prev => {
+      // Nejvýše jeden poplatek za období: existující záznam se přepíše.
+      const fees = prev.investmentFees || [];
+      const existing = getAccountFees(fees, accountId).find(f => f.periodKey === periodKey);
+      const others = fees.filter(f => !(f.accountId === accountId && f.periodKey === periodKey));
+      const fee: InvestmentFee = existing
+        ? { ...existing, amountInHaler, note: cleanNote, updatedAt: nowIso }
+        : { id: `fee_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, accountId, periodKey,
+            amountInHaler, note: cleanNote, createdAt: nowIso, updatedAt: nowIso };
+      return { ...prev, investmentFees: [...others, fee] };
+    });
+    showToast('Poplatek byl uložen.');
+  }, [setData, showToast]);
+
+  const deleteInvestmentFee = useCallback((id: string) => {
+    setData(prev => {
+      const target = (prev.investmentFees || []).find(f => f.id === id);
+      if (!target) return prev;
+      return { ...prev, investmentFees: prev.investmentFees.filter(f => !(f.accountId === target.accountId && f.periodKey === target.periodKey)) };
+    });
+    showToast('Poplatek byl smazán.');
   }, [setData, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
@@ -1961,6 +1985,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       recurringExceptions: [],
       corrections: [],
       marketValueSnapshots: [],
+      investmentFees: [],
     });
     showToast('Ukázková data byla úspěšně načtena.');
   }, [showToast]);
@@ -2005,6 +2030,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       recurringExceptions: [],
       corrections: [],
       marketValueSnapshots: [],
+      investmentFees: [],
       settings: {
         ...latestDataRef.current.settings,
       },
@@ -2334,6 +2360,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     recurringExceptions: data.recurringExceptions,
     corrections: data.corrections,
     marketValueSnapshots: data.marketValueSnapshots,
+    investmentFees: data.investmentFees || [],
 
     currentPeriod,
     selectedPeriod,
@@ -2376,6 +2403,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     updateMarketValue,
     editMarketValue,
     deleteMarketValue,
+    saveInvestmentFee,
+    deleteInvestmentFee,
     updateCorrectionNote,
     deleteCorrection,
     dataConflicts,

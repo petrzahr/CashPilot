@@ -4,7 +4,7 @@ import { reconcileMarketValueHistory } from './marketValueHistoryService';
 export const COLLECTIONS = {
   transaction: 'transactions', account: 'accounts', category: 'categories',
   recurringRule: 'recurringRules', recurringException: 'recurringExceptions',
-  correction: 'corrections', marketValueSnapshot: 'marketValueSnapshots',
+  correction: 'corrections', marketValueSnapshot: 'marketValueSnapshots', investmentFee: 'investmentFees',
 } as const;
 export type EntityType = keyof typeof COLLECTIONS;
 export interface DeletionRecord { entityType: EntityType; entityId: string; deletedAt: string; deviceId: string }
@@ -33,9 +33,10 @@ export function accountStorageKey(identity: string): string {
 const time = (s?: string) => s && Number.isFinite(Date.parse(s)) ? Date.parse(s) : 0;
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-/** Only adds synchronization metadata. Never repairs, seeds or removes financial records. */
+/** Only adds synchronization metadata and collections missing in older data. Never repairs, seeds or removes financial records. */
 export function migrateSyncData(input: AppData): AppData {
-  return { ...input, version: 2, deletions: input.deletions || [], sync: input.sync || { ...EMPTY_SYNC } };
+  return { ...input, version: 2, deletions: input.deletions || [], sync: input.sync || { ...EMPTY_SYNC },
+    investmentFees: input.investmentFees || [] };
 }
 export function mergeDeletions(...groups: DeletionRecord[][]): DeletionRecord[] {
   const map = new Map<string, DeletionRecord>();
@@ -76,7 +77,7 @@ export function recordLocalChange(envelope: SyncEnvelope, requested: AppData, de
     op.payload = next.resetMarker;
   }
   for (const [type, collection] of Object.entries(COLLECTIONS) as [EntityType, typeof COLLECTIONS[EntityType]][]) {
-    const old = new Map<string, any>((before[collection] as any[]).map(e => [e.id, e]));
+    const old = new Map<string, any>(((before[collection] as any[]) || []).map(e => [e.id, e]));
     const current = new Map<string, any>((next[collection] as any[]).map(e => [e.id, e]));
     for (const [id] of old) if (!current.has(id)) {
       const deletion: DeletionRecord = { entityType: type, entityId: id, deletedAt: now, deviceId };

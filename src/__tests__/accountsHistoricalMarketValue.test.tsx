@@ -25,7 +25,7 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
   const account: Account = {
     id: 'asset', name: 'Asset', type, currency: 'CZK',
     initialBalanceInHaler: 10000000, initialBalanceDate: '2026-08-01',
-    currentMarketValueInHaler: 10000000, investedAmountAdjustmentInHaler: 100000,
+    currentMarketValueInHaler: 10000000,
     isUsableCash: false, isNetWorth: true, color: '', sortOrder: 0, status: 'active',
     createdAt: '2026-09-14T10:00:00Z', updatedAt: '2026-09-14T10:00:00Z',
   };
@@ -56,11 +56,9 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
       .map(match => match[1]);
     expect(balances).toEqual([formatCurrency(value), formatCurrency(index === 0 ? 0 : 2300000)]);
     expect(computeAssetAccountBalanceAtDate(data.accounts[0], periods[index].endDate, [], data.marketValueSnapshots)).toBe(value);
-    if (index === 1) {
-      expect(html).toContain('Historický vložený kapitál není znám');
-    } else if (index > 1) {
+    if (index > 0) {
       expect(html).toContain(`Vloženo: ${formatCurrency(10000000)}`);
-      expect(html).toContain(`${((value - 10100000) / 10100000 * 100).toFixed(1)} %)`);
+      expect(html).toContain(`${((value - 10000000) / 10000000 * 100).toFixed(1)} %)`);
     }
     expect(JSON.stringify(data)).toBe(before);
   };

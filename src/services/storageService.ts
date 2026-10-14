@@ -5,6 +5,7 @@ import {
   AppSettings,
   BalanceCorrection,
   Category,
+  InvestmentFee,
   MarketValueSnapshot,
   RecurringException,
   RecurringRule,
@@ -30,6 +31,7 @@ export interface AppData {
   recurringExceptions: RecurringException[];
   corrections: BalanceCorrection[];
   marketValueSnapshots: MarketValueSnapshot[];
+  investmentFees: InvestmentFee[];
 }
 
 export const STORAGE_KEY_PRODUCTION = 'cashpilot_data_v1';
@@ -261,11 +263,11 @@ export function validateAndParseBackup(jsonStr: string): AppData {
   if (!Array.isArray(parsed.accounts) || !Array.isArray(parsed.categories)) {
     throw new Error('Záloha neobsahuje povinné entity (účty nebo kategorie).');
   }
-  for (const name of ['transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots', 'deletions']) {
+  for (const name of ['transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots', 'investmentFees', 'deletions']) {
     if (parsed[name] !== undefined && !Array.isArray(parsed[name])) throw new Error(`Neplatná kolekce ${name}.`);
     parsed[name] ??= [];
   }
-  for (const name of ['accounts', 'categories', 'transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots']) {
+  for (const name of ['accounts', 'categories', 'transactions', 'recurringRules', 'recurringExceptions', 'corrections', 'marketValueSnapshots', 'investmentFees']) {
     for (const item of parsed[name]) {
       if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error(`Neplatná položka v kolekci ${name}.`);
     }
