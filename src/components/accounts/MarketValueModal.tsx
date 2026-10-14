@@ -106,7 +106,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           )}
           {feesHaler !== 0 && (
             <div className="flex justify-between">
-              <span className="text-slate-500">Celkem investováno:</span>
+              <span className="text-slate-500">Investováno:</span>
               <span className="font-semibold text-slate-900">{formatCurrency(returnBaseHaler)}</span>
             </div>
           )}
