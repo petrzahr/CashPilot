@@ -41,18 +41,14 @@ export function getInvestedAmountAtValuation(account: Account, transactions: Tra
   return Math.max(0, principal);
 }
 
-/** Cost basis for the return: contributions minus broker fees up to the date. */
-export function getReturnBaseAtDate(account: Account, transactions: Transaction[], fees: InvestmentFee[], date: string, startDay: number): number {
-  return subHaler(getInvestedAmountAtValuation(account, transactions, date), getFeesUpToDate(fees, account.id, date, startDay));
-}
-
 /** Compare each included account using its last valuation at each period end.
+ * Gain is after fees (market value − contributions), so it reconciles with the net worth change.
  * Later contributions do not change this unrealized gain/loss until another valuation.
  * Accounts without a valuation at both ends are skipped, not treated as blocking the rest.
  */
 export function calculatePeriodInvestmentChange(
   accounts: Account[], snapshots: MarketValueSnapshot[], period: BudgetPeriod,
-  startDay: number, today = getTodayInPrague(), transactions: Transaction[] = [], fees: InvestmentFee[] = [],
+  startDay: number, today = getTodayInPrague(), transactions: Transaction[] = [],
 ): number | null {
   const previous = getPreviousPeriod(period, startDay);
   const included = accounts.filter(a => a.status === 'active' && a.isNetWorth &&
@@ -66,7 +62,7 @@ export function calculatePeriodInvestmentChange(
     if (!current || !prior) continue;
     counted++;
     const gain = (s: MarketValueSnapshot) =>
-      subHaler(s.marketValueInHaler, getReturnBaseAtDate(account, transactions, fees, s.date, startDay));
+      subHaler(s.marketValueInHaler, getInvestedAmountAtValuation(account, transactions, s.date));
     change = addHaler(change, subHaler(gain(current), gain(prior)));
   }
   return counted ? change : null;

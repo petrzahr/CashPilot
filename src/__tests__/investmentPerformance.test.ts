@@ -30,7 +30,7 @@ const history = [snapshot('2026-08-20', 302000), snapshot('2026-09-20', 323000),
 const period = createBudgetPeriod(2026, 9, 15);
 const today = '2026-12-01';
 const compare = (accounts: Account[], records: MarketValueSnapshot[], p = period, startDay = 15, now = today,
-  transactions = txs, fees: InvestmentFee[] = []) => calculatePeriodInvestmentChange(accounts, records, p, startDay, now, transactions, fees);
+  transactions = txs) => calculatePeriodInvestmentChange(accounts, records, p, startDay, now, transactions);
 
 describe('investment change across financial periods', () => {
   it('excludes added capital for positive and negative changes', () => {
@@ -72,11 +72,9 @@ describe('investment change across financial periods', () => {
     expect(compare([], [])).toBeNull();
     expect(compare([account], history, period, 15, '2026-09-14')).toBeNull();
   });
-  it('lowers the return base by fees of the valuation period and all earlier ones', () => {
-    // Září: výnos 3 000 → 3 500 díky poplatku 500 za září; srpnové ocenění poplatek ještě nezná.
-    expect(compare([account], history, period, 15, today, txs, [fee('2026-09', 500)])).toBe(150000);
-    // Poplatek ze srpna snižuje základ obou ocenění stejně, změna se nemění.
-    expect(compare([account], history, period, 15, today, txs, [fee('2026-08', 500)])).toBe(100000);
+  it('is measured after fees: market value change minus contributions, reconciling with net worth', () => {
+    // Poplatky nevstupují; obchodník je už strhl z tržní hodnoty.
+    expect(calculatePeriodInvestmentChange([account], history, period, 15, today, txs)).toBe(100000);
   });
   it('captures only executed net transfers through valuation date', () => {
     const tx: Transaction = { id: 'tx', title: '', date: '2026-09-10', sequence: 1,

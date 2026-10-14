@@ -68,7 +68,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     recurringRules,
     recurringExceptions,
     marketValueSnapshots = [],
-    investmentFees = [],
     duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
@@ -301,7 +300,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const actuallySavedPct = income > 0 ? (actuallySavedInHaler / income) * 100 : null;
 
     const investmentChange = calculatePeriodInvestmentChange(
-      accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay, undefined, transactions, investmentFees
+      accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay, undefined, transactions
     );
 
     return {
@@ -310,7 +309,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
       actuallySavedInHaler, actuallySavedPct,
     };
-  }, [accounts, forecast.periods, currentSummary, marketValueSnapshots, investmentFees, transactions, selectedPeriod, settings.budgetStartDay]);
+  }, [accounts, forecast.periods, currentSummary, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
 
   const formatPercent = (value: number | null) => value === null
     ? '—'
