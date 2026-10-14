@@ -322,7 +322,10 @@ export const AccountsScreen: React.FC = () => {
                   <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
                     <span className="text-slate-500">
                       {`Vloženo: ${formatCurrency(contributedPrincipal)}`}
-                      {feesTotal !== 0 && <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>}
+                      {feesTotal !== 0 && <>
+                        <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>
+                        <span className="block">{`Celkem investováno: ${formatCurrency(investedPrincipal)}`}</span>
+                      </>}
                     </span>
                     <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {unrealizedProfitHaler >= 0 ? '+' : ''}{formatCurrency(unrealizedProfitHaler)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)} %)

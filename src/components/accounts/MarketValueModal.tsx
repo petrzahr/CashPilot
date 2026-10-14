@@ -104,6 +104,12 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               <span className="font-semibold text-slate-900">{formatCurrency(-feesHaler)}</span>
             </div>
           )}
+          {feesHaler !== 0 && (
+            <div className="flex justify-between">
+              <span className="text-slate-500">Celkem investováno:</span>
+              <span className="font-semibold text-slate-900">{formatCurrency(returnBaseHaler)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-slate-500">Nerealizovaný výnos / ztráta:</span>
             <span className={`font-bold ${gainLossHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
