@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
-import { Account, Transaction, MarketValueSnapshot } from '../../types/finance';
+import { Account, Transaction, MarketValueSnapshot, InvestmentFee } from '../../types/finance';
 import { formatCurrency, subHaler } from '../../services/currencyService';
-import { formatCzechDate } from '../../services/periodService';
+import { createBudgetPeriod, formatCzechDate } from '../../services/periodService';
+import { getAccountFees, getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
+import { InvestmentFeeModal } from './InvestmentFeeModal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import {
   Pencil,
@@ -15,6 +17,7 @@ import {
   SlidersHorizontal,
   TrendingUp,
   Eye,
+  Receipt,
 } from 'lucide-react';
 
 interface AccountHistoryModalProps {
@@ -25,18 +28,22 @@ interface AccountHistoryModalProps {
 
 type UnifiedHistoryItem =
   | { kind: 'transaction'; data: Transaction; date: string; sequence?: number }
-  | { kind: 'snapshot'; data: MarketValueSnapshot; date: string; sequence?: number };
+  | { kind: 'snapshot'; data: MarketValueSnapshot; date: string; sequence?: number }
+  | { kind: 'fee'; data: InvestmentFee; date: string; periodName: string; sequence?: number };
 
 export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
   isOpen,
   onClose,
   account,
 }) => {
-  const { transactions, marketValueSnapshots, corrections, deleteMarketValue, accounts } = useFinance();
+  const { transactions, marketValueSnapshots, investmentFees = [], settings, corrections, deleteMarketValue, deleteInvestmentFee, accounts } = useFinance();
   const [editingSnapshotId, setEditingSnapshotId] = useState<string | null>(null);
   const [deletingSnapshotId, setDeletingSnapshotId] = useState<string | null>(null);
+  const [editingFeePeriodKey, setEditingFeePeriodKey] = useState<string | null>(null);
+  const [deletingFeeId, setDeletingFeeId] = useState<string | null>(null);
   const editingSnapshot = marketValueSnapshots.find(s => s.id === editingSnapshotId);
   const deletingSnapshot = marketValueSnapshots.find(s => s.id === deletingSnapshotId);
+  const deletingFee = investmentFees.find(f => f.id === deletingFeeId);
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
 
   const isAssetAccount = account?.type === 'investment' || account?.type === 'pension';
@@ -90,10 +97,17 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       );
 
       const snaps = (marketValueSnapshots || []).filter(s => s.accountId === account.id);
+      // Poplatek se řadí na začátek svého rozpočtového období.
+      const fees = getAccountFees(investmentFees, account.id).map(f => {
+        const [y, m] = f.periodKey.split('-').map(Number);
+        const period = createBudgetPeriod(y, m, settings.budgetStartDay);
+        return { kind: 'fee' as const, data: f, date: period.startDate, periodName: period.name, sequence: -1 };
+      });
 
       const combined: UnifiedHistoryItem[] = [
         ...txs.map(t => ({ kind: 'transaction' as const, data: t, date: t.date, sequence: t.sequence })),
-        ...snaps.map(s => ({ kind: 'snapshot' as const, data: s, date: s.date, sequence: 999 }))
+        ...snaps.map(s => ({ kind: 'snapshot' as const, data: s, date: s.date, sequence: 999 })),
+        ...fees,
       ];
 
       return combined.sort((a, b) => {
@@ -105,7 +119,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
         return (b.sequence ?? 0) - (a.sequence ?? 0);
       });
     }
-  }, [account, isAssetAccount, transactions, marketValueSnapshots, corrections]);
+  }, [account, isAssetAccount, transactions, marketValueSnapshots, investmentFees, settings.budgetStartDay, corrections]);
 
   if (!account) return null;
 
@@ -115,7 +129,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         title={`Historie účtu: ${account.name}`}
-        subtitle={isAssetAccount ? 'Historie vkladů, výběrů a tržních ocenění' : 'Kompletní přehled pohybů a korekcí'}
+        subtitle={isAssetAccount ? 'Historie vkladů, výběrů, poplatků a tržních ocenění' : 'Kompletní přehled pohybů a korekcí'}
         maxWidth="max-w-2xl"
       >
         <div className="space-y-4 max-h-[70vh] flex flex-col">
@@ -135,8 +149,47 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
               </div>
             ) : (
               historyItems.map(item => {
+                if (item.kind === 'fee') {
+                  const fee = item.data;
+                  return (
+                    <div
+                      key={fee.id}
+                      className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-sm hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-slate-100 text-slate-600 rounded-lg shrink-0">
+                          <Receipt className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900">Poplatek obchodníka</span>
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">Poplatek</span>
+                          </div>
+                          <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                            <span>{item.periodName}</span>
+                            {fee.note && <span className="truncate">· {fee.note}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="font-bold text-slate-700 mr-2">{formatCurrency(-fee.amountInHaler)}</span>
+                        <button type="button" onClick={() => setEditingFeePeriodKey(fee.periodKey)} title="Upravit poplatek" aria-label="Upravit poplatek"
+                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label="Smazat poplatek"
+                          className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
                 if (item.kind === 'snapshot') {
                   const snap = item.data;
+                  const snapInvested = getInvestedAmountAtValuation(account, transactions, snap.date);
+                  const snapFees = getFeesUpToDate(investmentFees, account.id, snap.date, settings.budgetStartDay);
                   return (
                     <div
                       key={snap.id}
@@ -176,11 +229,9 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           </button>
                         </div>
                         <div className="text-[11px] text-slate-500">
-                          {snap.effectiveInvestedAmountInHaler === undefined ? 'Historický vložený kapitál není znám' : <>
-                            <div>Vloženo: {formatCurrency(snap.baseInvestedAmountInHaler ?? subHaler(snap.effectiveInvestedAmountInHaler, snap.investedAmountAdjustmentInHaler ?? 0))}</div>
-                            {snap.investedAmountAdjustmentInHaler !== undefined && <div>Korekce: {formatCurrency(snap.investedAmountAdjustmentInHaler)}</div>}
-                            <div>Výnos / ztráta: {formatCurrency(subHaler(snap.marketValueInHaler, snap.effectiveInvestedAmountInHaler))}</div>
-                          </>}
+                          <div>Vloženo: {formatCurrency(snapInvested)}</div>
+                          {snapFees !== 0 && <div>Poplatky: {formatCurrency(-snapFees)}</div>}
+                          <div>Výnos / ztráta: {formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
                         </div>
                       </div>
                     </div>
@@ -313,8 +364,15 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       <ConfirmationModal isOpen={isOpen && Boolean(deletingSnapshot)} onClose={() => setDeletingSnapshotId(null)}
         onConfirm={() => { if (deletingSnapshot) deleteMarketValue(deletingSnapshot.id); }}
         title="Smazat tržní ocenění?"
-        message={`Ocenění${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} bude trvale odstraněno včetně související změny korekce. Navazující hodnoty a období se přepočítají.`}
+        message={`Ocenění${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} bude trvale odstraněno. Navazující hodnoty a období se přepočítají.`}
         confirmText="Smazat ocenění" cancelText="Zrušit" isDestructive />
+      <InvestmentFeeModal isOpen={isOpen && editingFeePeriodKey !== null} onClose={() => setEditingFeePeriodKey(null)}
+        account={accounts.find(a => a.id === account.id) ?? account} periodKey={editingFeePeriodKey} />
+      <ConfirmationModal isOpen={isOpen && Boolean(deletingFee)} onClose={() => setDeletingFeeId(null)}
+        onConfirm={() => { if (deletingFee) deleteInvestmentFee(deletingFee.id); }}
+        title="Smazat poplatek?"
+        message={`Poplatek${deletingFee ? ` ${formatCurrency(deletingFee.amountInHaler)}` : ''} bude trvale odstraněn a výnos se přepočítá.`}
+        confirmText="Smazat poplatek" cancelText="Zrušit" isDestructive />
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}

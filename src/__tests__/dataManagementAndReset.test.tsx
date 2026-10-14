@@ -190,6 +190,7 @@ function populateTestStorage(customData?: Partial<AppData>): AppData {
     recurringExceptions: [],
     corrections: [...sampleCorrections],
     marketValueSnapshots: [...sampleMarketValues],
+    investmentFees: [],
     ...customData,
   };
   localStorage.removeItem('cashpilot_sync_v2:test');

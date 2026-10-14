@@ -123,6 +123,7 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
       recurringExceptions: [],
       corrections: [],
       marketValueSnapshots: [],
+      investmentFees: [],
     };
 
     saveStoredData(existingUserData);
@@ -147,6 +148,7 @@ describe('CashPilot - Produkční inicializace, ochrana dat a oddělení prostř
       recurringExceptions: [],
       corrections: [],
       marketValueSnapshots: [],
+      investmentFees: [],
     };
 
     saveStoredData(dataWithoutDemo);

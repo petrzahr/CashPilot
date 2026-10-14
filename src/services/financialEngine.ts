@@ -9,11 +9,12 @@ import {
   RecurringException,
   RecurringRule,
   Transaction,
-  MarketValueSnapshot
+  MarketValueSnapshot,
+  InvestmentFee
 } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
 import { computeLiquidAccountBalanceAtDate } from './analyticsEngine';
-import { getHistoricalInvestedAmount, getInvestedAmountAtValuation } from './investmentPerformanceService';
+import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getAssetFlowInHaler } from './accountService';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
@@ -480,8 +481,10 @@ export function calculateForecast(
   },
   marketValueSnapshots: MarketValueSnapshot[] = [],
   currentPeriodKey?: string,
-  todayStr?: string
+  todayStr?: string,
+  investmentFees: InvestmentFee[] = []
 ): ForecastResult {
+  const safeFees = Array.isArray(investmentFees) ? investmentFees : [];
   const safeAccounts = Array.isArray(accounts) ? accounts : [];
   const safeTxs = Array.isArray(transactions) ? transactions : [];
   const safeRules = Array.isArray(recurringRules) ? recurringRules : [];
@@ -550,8 +553,7 @@ export function calculateForecast(
         );
       }
       investedPrincipals[acc.id] = acc.type === 'investment' || acc.type === 'pension'
-        ? getInvestedAmountAtValuation({ ...acc, investedAmountAdjustmentInHaler: 0 },
-          safeTxs.filter(t => t.date < firstPeriod.startDate), firstPeriod.startDate)
+        ? getInvestedAmountAtValuation(acc, safeTxs.filter(t => t.date < firstPeriod.startDate), firstPeriod.startDate)
         : runningBalances[acc.id];
     }
   }
@@ -727,6 +729,7 @@ export function calculateForecast(
           accBal.marketValueInHaler = 0;
           accBal.investedPrincipalInHaler = 0;
           accBal.contributedPrincipalInHaler = 0;
+          accBal.feesInHaler = 0;
           accBal.unrealizedGainLossInHaler = 0;
         }
         runningBalances[acc.id] = 0;
@@ -771,16 +774,10 @@ export function calculateForecast(
         }
 
         accBal.marketValueInHaler = closing;
-        accBal.investedPrincipalInHaler = getHistoricalInvestedAmount(acc, safeSnapshots, safeTxs, period.endDate, investedPrincipals[acc.id] || 0);
-        // Legacy account correction is known now, but has no reliable historical effective date.
-        if (accBal.investedPrincipalInHaler === undefined && period.endDate >= (todayStr || getTodayInPrague()) &&
-            !safeSnapshots.some(s => s.accountId === acc.id && s.investedAmountAdjustmentInHaler !== undefined)) {
-          accBal.investedPrincipalInHaler = addHaler(investedPrincipals[acc.id] || 0, acc.investedAmountAdjustmentInHaler ?? 0);
-        }
-        accBal.contributedPrincipalInHaler = accBal.investedPrincipalInHaler === undefined
-          ? undefined : investedPrincipals[acc.id] || 0;
-        accBal.unrealizedGainLossInHaler = accBal.investedPrincipalInHaler === undefined
-          ? undefined : subHaler(closing, accBal.investedPrincipalInHaler);
+        accBal.contributedPrincipalInHaler = investedPrincipals[acc.id] || 0;
+        accBal.feesInHaler = getFeesUpToPeriod(safeFees, acc.id, period.key);
+        accBal.investedPrincipalInHaler = subHaler(accBal.contributedPrincipalInHaler, accBal.feesInHaler);
+        accBal.unrealizedGainLossInHaler = subHaler(closing, accBal.investedPrincipalInHaler);
         accBal.closingBalanceInHaler = closing;
       } else {
         closing = addHaler(

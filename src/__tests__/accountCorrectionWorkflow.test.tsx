@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';
 import { AccountModal } from '../components/accounts/AccountModal';
 import { MarketValueModal } from '../components/accounts/MarketValueModal';
+import { InvestmentFeeModal } from '../components/accounts/InvestmentFeeModal';
 import { AppData, getInitialData } from '../services/storageService';
 import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { SyncController } from '../services/syncController';
@@ -50,7 +51,7 @@ function form(render: () => React.ReactNode) {
 
 afterEach(() => { bridge.finance = null; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
-it('creates without correction, preserves it through general editing, and saves subsequent market corrections', () => {
+it('saves valuations and monthly fees separately and keeps them through general editing', () => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
   const store = new Map<string, string>();
@@ -77,17 +78,26 @@ it('creates without correction, preserves it through general editing, and saves 
   accountForm.close();
   expect(data.accounts[0]).not.toHaveProperty('investedAmountAdjustmentInHaler');
 
-  for (const correction of ['-1000', '2500']) {
+  for (const [feeInput, previousFee] of [['1000', ''], ['2500', '1000']]) {
     capture();
     const market = form(() => MarketValueModal({ isOpen: true, onClose() {}, account: data.accounts[0] }));
     const numbers = market.nodes().filter(n => n.type === 'input' && n.props.type === 'number');
-    expect(numbers).toHaveLength(2);
+    expect(numbers).toHaveLength(1);
     market.change(numbers[0], '120000');
-    market.change(numbers[1], correction);
     market.submit();
     market.close();
-    const expected = Number(correction) * 100;
-    expect(data.accounts[0].investedAmountAdjustmentInHaler).toBe(expected);
+    expect(data.accounts[0]).not.toHaveProperty('investedAmountAdjustmentInHaler');
+
+    // Poplatek se zadává zvlášť, nejvýše jeden za období; existující se předvyplní a přepíše.
+    capture();
+    const feeForm = form(() => InvestmentFeeModal({ isOpen: true, onClose() {}, account: data.accounts[0] }));
+    const feeAmount = feeForm.nodes().find(n => n.type === 'input' && n.props.type === 'number')!;
+    expect(feeAmount.props.value).toBe(previousFee);
+    feeForm.change(feeAmount, feeInput);
+    feeForm.submit();
+    feeForm.close();
+    expect(data.investmentFees).toHaveLength(1);
+    const expected = -Number(feeInput) * 100;
     capture();
     const edit = form(() => AccountModal({ isOpen: true, onClose() {}, accountToEdit: data.accounts[0] }));
     expect(edit.nodes().filter(n => n.type === 'input' && n.props.type === 'number')).toHaveLength(1);
@@ -97,10 +107,10 @@ it('creates without correction, preserves it through general editing, and saves 
     saveStoredData(data, 'workflow-test');
     data = loadStoredData('workflow-test');
     expect(data.accounts[0].name).toBe('Renamed investment');
-    expect(data.accounts[0].investedAmountAdjustmentInHaler).toBe(expected);
+    expect(data.investmentFees[0].amountInHaler).toBe(-expected);
     const forecast = calculateForecast([{
       key: '2026-09', name: '', year: 2026, month: 9, startDate: '2026-09-01', endDate: '2026-09-30',
-    }], data.accounts, [], [], [], [], undefined, data.marketValueSnapshots);
+    }], data.accounts, [], [], [], [], undefined, data.marketValueSnapshots, undefined, undefined, data.investmentFees);
     const balance = forecast.periods[0].accountBalances[data.accounts[0].id];
     expect(balance.investedPrincipalInHaler).toBe(10000000 + expected);
     expect(balance.unrealizedGainLossInHaler).toBe(2000000 - expected);

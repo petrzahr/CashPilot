@@ -150,8 +150,8 @@ describe('durable deletion and operation model', () => {
     const base = createResetAppData();
     for (const collection of Object.values(COLLECTIONS)) (base as any)[collection] = [tx(collection)];
     const local = change(base, createResetAppData());
-    expect(local.pending).toHaveLength(7);
-    expect(local.data.deletions).toHaveLength(7);
+    expect(local.pending).toHaveLength(8);
+    expect(local.data.deletions).toHaveLength(8);
     for (const collection of Object.values(COLLECTIONS)) expect(mergePending(base, local.data, local.pending)[collection]).toEqual([]);
   });
   it('reset rejects old device operations even if that device clock is years ahead', () => {
