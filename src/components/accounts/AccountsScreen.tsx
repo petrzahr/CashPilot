@@ -389,7 +389,7 @@ export const AccountsScreen: React.FC = () => {
                       onClick={() => setMarketValueAccount(acc)}
                       className="flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
                     >
-                      Aktualizovat tržní hodnotu
+                      Hodnota
                     </button>
                     <button
                       type="button"
