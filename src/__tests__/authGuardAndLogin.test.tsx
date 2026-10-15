@@ -49,9 +49,8 @@ describe('Auth Guard & Login Wall', () => {
     // LoginScreen prvky jsou přítomny
     expect(html).toContain('Přihlásit se přes Google');
     expect(html).toContain('CashPilot');
-    expect(html).toContain('Soukromé úložiště Google Disk');
-    expect(html).toContain('Automatická synchronizace');
-    expect(html).toContain('Pro vstup do aplikace je vyžadováno přihlášení');
+    expect(html).toContain('Vaše osobní finance pod kontrolou');
+    expect(html).toContain('Nemáte přístup?');
 
     // Chráněný obsah aplikace (navigace, dashboard) NENÍ vykreslen
     expect(html).not.toContain('Měsíční rozpočet');

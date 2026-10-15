@@ -47,7 +47,7 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
       // Přesný podtitul v hlavičce
       expect(html).toContain('Vaše osobní finance pod kontrolou');
       expect(html).toMatch(
-        /<p[^>]*class="[^"]*text-xs text-sky-600 font-bold uppercase tracking-wider[^"]*"[^>]*>[\s\S]*?Vaše osobní finance pod kontrolou[\s\S]*?<\/p>/
+        /<h1[^>]*>[\s\S]*?CashPilot[\s\S]*?<\/h1>\s*<p[^>]*>[\s\S]*?Vaše osobní finance pod kontrolou[\s\S]*?<\/p>/
       );
     });
 
