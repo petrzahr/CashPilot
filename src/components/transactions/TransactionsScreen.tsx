@@ -393,7 +393,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               aria-label="Období"
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as 'current' | 'all')}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"
+              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-500"
             >
               <option value="current">Aktuální období</option>
               <option value="all">Všechny položky</option>
