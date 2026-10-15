@@ -391,7 +391,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               onChange={(e) => setSearch(e.target.value)}
               className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
-            <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-2" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           </div>
 
           {/* 2. Období */}
@@ -477,18 +477,22 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
                 <th
-                  onClick={toggleDateSort}
-                  className="w-[110px] py-2.5 px-4 cursor-pointer hover:text-slate-900 select-none transition-colors"
-                  title={`Řazení podle data a pořadí (${dateSortOrder === 'asc' ? 'Vzestupně: od nejstarších, v rámci dne 1, 2, 3…' : 'Sestupně: od nejnovějších, v rámci dne …3, 2, 1'})`}
+                  aria-sort={dateSortOrder === 'asc' ? 'ascending' : 'descending'}
+                  className="w-[110px] p-0"
                 >
-                  <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleDateSort}
+                    className="w-full py-2.5 px-4 flex items-center gap-1.5 font-semibold hover:text-slate-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
+                    title={`Řazení podle data a pořadí (${dateSortOrder === 'asc' ? 'Vzestupně: od nejstarších, v rámci dne 1, 2, 3…' : 'Sestupně: od nejnovějších, v rámci dne …3, 2, 1'})`}
+                  >
                     <span>Datum</span>
                     {dateSortOrder === 'asc' ? (
-                      <ArrowUp className="w-3.5 h-3.5 text-sky-600" />
+                      <ArrowUp className="w-3.5 h-3.5 text-sky-600" aria-hidden="true" />
                     ) : (
-                      <ArrowDown className="w-3.5 h-3.5 text-sky-600" />
+                      <ArrowDown className="w-3.5 h-3.5 text-sky-600" aria-hidden="true" />
                     )}
-                  </div>
+                  </button>
                 </th>
                 <th
                   className="w-[70px] py-2.5 px-3 text-center"

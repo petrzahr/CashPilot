@@ -245,8 +245,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setSaveError(null);
     if (Object.values(nextErrors).some(Boolean)) {
       focusFirstInvalid(nextErrors, [
-        ['title', `${fieldId}-1`],
         ['amount', `${fieldId}-2`],
+        ['title', `${fieldId}-1`],
         ['source', `${fieldId}-6`],
         ['target', `${fieldId}-7`],
         ['endDate', `${fieldId}-12`],
@@ -409,11 +409,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Přepínač typu pohybu */}
-        <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
+        <div role="group" aria-label="Typ položky" className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
           <button
             type="button"
             onClick={() => handleTypeChange('expense')}
-            className={`py-2 text-sm font-medium rounded-lg transition-all ${
+            aria-pressed={type === 'expense'}
+            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
               type === 'expense'
                 ? 'bg-white text-red-600 shadow-sm font-semibold'
                 : 'text-slate-500 hover:text-slate-900'
@@ -424,7 +425,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="button"
             onClick={() => handleTypeChange('income')}
-            className={`py-2 text-sm font-medium rounded-lg transition-all ${
+            aria-pressed={type === 'income'}
+            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
               type === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm font-semibold'
                 : 'text-slate-500 hover:text-slate-900'
@@ -435,9 +437,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="button"
             onClick={() => handleTypeChange('transfer')}
-            className={`py-2 text-sm font-medium rounded-lg transition-all ${
+            aria-pressed={type === 'transfer'}
+            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
               type === 'transfer'
-                ? 'bg-white text-sky-600 shadow-sm font-semibold'
+                ? 'bg-white text-slate-900 shadow-sm font-semibold'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -497,8 +500,32 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
         )}
 
-        {/* Název a částka */}
+        {/* Částka a název: částka první, protože ji při rychlém zápisu znáte hned */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
+              Částka *
+            </label>
+            <div className="relative">
+              {/* Textové pole s desetinnou klávesnicí: přijme českou čárku i tečku */}
+              <input id={`${fieldId}-2`}
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                required
+                placeholder="0"
+                value={amountStr}
+                onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
+                {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
+                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
+              />
+              <span className="absolute right-3.5 inset-y-0 flex items-center text-xs font-semibold text-slate-500 pointer-events-none">
+                Kč
+              </span>
+            </div>
+            <FieldError inputId={`${fieldId}-2`} message={errors.amount} />
+          </div>
+
           <div>
             <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
               Název položky *
@@ -514,33 +541,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             />
             <FieldError inputId={`${fieldId}-1`} message={errors.title} />
           </div>
-
-          <div>
-            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Částka *
-            </label>
-            <div className="relative">
-              <input id={`${fieldId}-2`}
-                type="number"
-                step="any"
-                min="0"
-                required
-                placeholder="0"
-                value={amountStr}
-                onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
-                {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
-              />
-              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500 pointer-events-none">
-                Kč
-              </span>
-            </div>
-            <FieldError inputId={`${fieldId}-2`} message={errors.amount} />
-          </div>
         </div>
 
-        {/* Datum, Pořadí v rámci dne a Stav */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Datum a Stav; pořadí v rámci dne se doplní samo a je schované níže */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum *
@@ -551,23 +555,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
-              <Hash className="w-3.5 h-3.5 text-sky-600" />
-              <span>Pořadí v rámci dne *</span>
-            </label>
-            <input id={`${fieldId}-4`}
-              type="number"
-              min="1"
-              step="1"
-              required
-              value={sequenceStr}
-              onChange={(e) => setSequenceStr(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-bold text-sky-900"
-              title="1 = první položka dne. Pořadí určuje průběžný zůstatek po každé položce."
             />
           </div>
 
@@ -680,6 +667,38 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Pořadí v rámci dne: doplní se samo (na konec dne), ruční změna je jen pro výjimky */}
+        <details className="group rounded-xl border border-slate-200/80">
+          <summary className="flex items-center justify-between gap-3 px-3.5 min-h-10 max-md:min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-xl hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40">
+            <span className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+              <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                Pořadí v rámci dne: <strong className="text-slate-900">{sequenceStr || '1'}.</strong>
+              </span>
+            </span>
+            <span className="text-xs font-semibold text-sky-700 shrink-0 group-open:hidden">Změnit</span>
+            <span className="text-xs font-semibold text-sky-700 shrink-0 hidden group-open:inline">Skrýt</span>
+          </summary>
+          <div className="px-3.5 pb-3.5 pt-1 space-y-1.5">
+            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500">
+              Pořadí v rámci dne
+            </label>
+            <input id={`${fieldId}-4`}
+              type="number"
+              inputMode="numeric"
+              min="1"
+              step="1"
+              value={sequenceStr}
+              onChange={(e) => setSequenceStr(e.target.value)}
+              className="w-full sm:w-32 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
+              aria-describedby={`${fieldId}-4-hint`}
+            />
+            <p id={`${fieldId}-4-hint`} className="text-xs text-slate-500">
+              1 = první položka dne. Pořadí určuje průběžný zůstatek po každé položce; v rozpočtu ho změníte i přetažením.
+            </p>
+          </div>
+        </details>
 
         {/* Volba opakování pro položky bez pravidelné série */}
         {!isLinkedToRecurring && (

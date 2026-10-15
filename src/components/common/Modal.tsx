@@ -10,6 +10,9 @@ interface ModalProps {
   maxWidth?: string;
 }
 
+/** Identifikátory otevřených dialogů v pořadí otevření; poslední je nahoře. */
+const openModalStack: string[] = [];
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -25,15 +28,27 @@ export const Modal: React.FC<ModalProps> = ({
   const subtitleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // Zásobník otevřených dialogů: Escape zavře jen ten nejvrchnější, ne celý řetězec
   useEffect(() => {
+    if (!isOpen) return;
+    openModalStack.push(titleId);
+    return () => {
+      const index = openModalStack.lastIndexOf(titleId);
+      if (index !== -1) openModalStack.splice(index, 1);
+    };
+  }, [isOpen, titleId]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (openModalStack[openModalStack.length - 1] !== titleId) return;
+      e.preventDefault();
+      onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, titleId]);
 
   // Přesun fokusu do dialogu při otevření a jeho vrácení na původní prvek po zavření
   useEffect(() => {

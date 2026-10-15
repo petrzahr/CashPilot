@@ -5,6 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  /* Čísla jsou hlavní obsah: tabulkové číslice všude, aby částky ve sloupcích lícovaly */
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Výběr textu nese pilotní modř místo výchozí barvy prohlížeče */
+  ::selection {
+    background-color: rgb(var(--c-sky-600) / 0.2);
+  }
+
   /* Výchozí barva odsazení ringu je v Tailwindu napevno bílá; v tmavém vzhledu musí sledovat povrch */
   *, ::before, ::after {
     --tw-ring-offset-color: rgb(var(--c-white));

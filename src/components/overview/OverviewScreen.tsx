@@ -108,7 +108,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
                 <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                 <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
-                <th className="py-2.5 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                <th className="py-2.5 px-4 w-[120px] text-right">Převody</th>
                 <th className="py-2.5 px-4 w-[130px] text-right">Čistá změna</th>
                 <th className="py-2.5 px-4 w-[140px] text-right">Konečný stav</th>
               </tr>
@@ -132,7 +132,15 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     }`}
                   >
                     <td className="py-3 px-4 font-semibold text-slate-900">
-                      {p.period.name}
+                      {/* Řádek je klikací myší; klávesnice a čtečky dostávají skutečné tlačítko */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handlePeriodClick(p.period); }}
+                        aria-label={`Přejít do rozpočtu: ${p.period.name}`}
+                        className="text-left rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 group-hover:text-sky-700"
+                      >
+                        {p.period.name}
+                      </button>
                     </td>
                     <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
                       {formatCurrency(opening)}
@@ -143,7 +151,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-red-600">
                       {p.expenseInHaler > 0 ? `−${formatCurrency(p.expenseInHaler)}` : '0 Kč'}
                     </td>
-                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-sky-600">
+                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-slate-900">
                       {p.transfersInHaler > 0 ? formatCurrency(p.transfersInHaler) : '0 Kč'}
                     </td>
                     <td className={`py-3 px-4 w-[130px] text-right font-medium ${
@@ -201,22 +209,24 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
               return (
                 <div key={p.period.key} className="transition-colors">
-                  <div
+                  <button
+                    type="button"
                     onClick={() => setExpandedPeriodKey(isExpanded ? null : p.period.key)}
-                    className="p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 select-none"
+                    aria-expanded={isExpanded}
+                    className="w-full text-left p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 select-none focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
                   >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-slate-500" />
+                        <ChevronDown className="w-4 h-4 text-slate-500" aria-hidden="true" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-500" />
+                        <ChevronRight className="w-4 h-4 text-slate-500" aria-hidden="true" />
                       )}
                       <span className="text-xs font-semibold text-slate-900">{p.period.name}</span>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-900">
+                    </span>
+                    <span className="text-xs font-semibold text-slate-900">
                       Zůstatek celkem: {formatCurrency(p.closingBalanceInHaler)}
-                    </div>
-                  </div>
+                    </span>
+                  </button>
 
                   {isExpanded && (
                     <div className="pb-4 bg-slate-50/50 overflow-x-auto">
@@ -227,7 +237,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
                             <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                             <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
-                            <th className="py-2.5 px-4 w-[120px] text-right text-sky-600">Převody</th>
+                            <th className="py-2.5 px-4 w-[120px] text-right">Převody</th>
                             <th className="py-2.5 px-4 w-[130px] text-right">Čistá změna</th>
                             <th className="py-2.5 px-4 w-[140px] text-right">Konečný stav</th>
                           </tr>
@@ -304,13 +314,17 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
-                      onClick={() => handlePeriodClick(p.period)}
-                      className="py-2.5 px-3 text-right min-w-[125px] cursor-pointer hover:bg-slate-100/80 transition-colors"
-                      title={`Přejít do rozpočtu: ${p.period.name}`}
+                      className="p-0 text-right min-w-[125px] hover:bg-slate-100/80 transition-colors"
                     >
-                      <span className="block text-slate-500 font-bold hover:text-sky-700">
+                      <button
+                        type="button"
+                        onClick={() => handlePeriodClick(p.period)}
+                        title={`Přejít do rozpočtu: ${p.period.name}`}
+                        aria-label={`Přejít do rozpočtu: ${p.period.name}`}
+                        className="w-full py-2.5 px-3 text-right text-slate-500 font-bold hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
+                      >
                         {p.period.name.split(' ')[0]} '{p.period.year.toString().slice(-2)}
-                      </span>
+                      </button>
                     </th>
                   ))}
                 </tr>
@@ -355,7 +369,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                               </span>
                               <span
                                 className={`text-xs font-normal whitespace-nowrap ${
-                                  isOpeningNegative ? 'text-red-500 font-medium' : 'text-slate-500'
+                                  isOpeningNegative ? 'text-red-600 font-medium' : 'text-slate-500'
                                 }`}
                               >
                                 {formatCurrency(opening)}
@@ -413,7 +427,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             </span>
                             <span
                               className={`text-xs font-medium whitespace-nowrap ${
-                                isOpeningNegative ? 'text-red-500' : 'text-slate-500'
+                                isOpeningNegative ? 'text-red-600' : 'text-slate-500'
                               }`}
                             >
                               {formatCurrency(totalOpening)}
