@@ -75,27 +75,27 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           {/* Finanční přehled korekce */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">Datum kontroly:</span>
+              <span className="text-slate-500">Ke dni</span>
               <span className="font-semibold text-slate-900 flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-slate-500" />
                 {dateStr ? formatCzechDate(dateStr) : '—'}
                 {sequence !== undefined && (
                   <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
-                    #{sequence}. v dni
+                    {sequence}. v pořadí dne
                   </span>
                 )}
               </span>
             </div>
 
             <div className="border-t border-slate-200 pt-2 flex justify-between items-center">
-              <span className="text-slate-500">Vypočítaný stav před korekcí:</span>
+              <span className="text-slate-500">Zůstatek v CashPilotu před korekcí</span>
               <span className="font-medium text-slate-500">
                 {formatCurrency(calcBal)}
               </span>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-slate-500">Evidovaný skutečný stav:</span>
+              <span className="text-slate-500">Zůstatek podle banky</span>
               <span className="font-semibold text-slate-900">
                 {formatCurrency(actualBal)}
               </span>
@@ -110,7 +110,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
             }`}>
               <span className="flex items-center gap-1.5">
                 <SlidersHorizontal className="w-4 h-4" />
-                Výše korekce:
+                Korekce
               </span>
               <span className="font-bold text-base">
                 {formatCurrency(diff, { showPlus: true })}
@@ -120,16 +120,17 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
 
           {/* Editace poznámky */}
           <form onSubmit={handleSaveNote} className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+            <label htmlFor="correction-note" className="block text-xs font-semibold text-slate-500 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-slate-500" />
-              Poznámka ke korekci
+              Poznámka
             </label>
             <div className="flex gap-2">
               <input
+                id="correction-note"
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Důvod korekce nebo zdroj výpisu..."
+                placeholder="např. výpis z banky k 15. 10."
                 className="flex-1 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
@@ -137,7 +138,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
                 className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-xl hover:bg-sky-100 transition-colors flex items-center gap-1"
               >
                 <Check className="w-3.5 h-3.5" />
-                Uložit
+                Uložit poznámku
               </button>
             </div>
           </form>
@@ -146,7 +147,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           <div className="flex items-start gap-2 p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
-              Částku evidované korekce nelze přímo změnit, aby byla zachována integrita navazujících výpočtů. Pokud potřebujete stav opravit, smažte tuto korekci a zadejte skutečný stav znovu.
+              Částku korekce nejde upravit, protože z ní vycházejí všechny další zůstatky. Pokud nesedí, korekci smažte a na účtu znovu zvolte Srovnat s bankou.
             </span>
           </div>
 
@@ -177,7 +178,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
         onClose={() => setIsConfirmDeleteOpen(false)}
         onConfirm={handleDelete}
         title="Smazat korekci zůstatku?"
-        message="Korekce zůstatku bude trvale odstraněna. Tato akce ovlivní zůstatky aktuálního a všech následujících období."
+        message="Korekce se smaže a zůstatky od tohoto dne dál se přepočítají. Smazání nelze vrátit."
         confirmText="Smazat korekci"
         cancelText="Zrušit"
         isDestructive={true}

@@ -53,13 +53,13 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
         deleteHistoricalExecuted
       );
       if (result === false) {
-        setErrorMessage('Při mazání položky došlo k chybě.');
+        setErrorMessage('Položku se nepodařilo smazat. Zkuste to prosím znovu.');
       } else {
         onClose();
       }
     } catch (err) {
       console.error(err);
-      setErrorMessage('Při mazání položky došlo k chybě.');
+      setErrorMessage('Položku se nepodařilo smazat. Zkuste to prosím znovu.');
     }
   };
 
@@ -85,7 +85,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
           </div>
           <div className="text-sm text-slate-500 leading-relaxed">
             <p>
-              Položka „<strong className="text-slate-900">{transaction.title}</strong>“ bude trvale odstraněna. Tato akce ovlivní zůstatky aktuálního a všech následujících období.
+              Položka „<strong className="text-slate-900">{transaction.title}</strong>“ se smaže a zůstatky v tomto i všech dalších obdobích se přepočítají. Smazání nelze vrátit.
             </p>
           </div>
         </div>
@@ -95,7 +95,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
           <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
               <Repeat className="w-4 h-4 text-sky-600" />
-              <span>Tato položka patří do pravidelné série. Vyberte rozsah:</span>
+              <span>Pravidelná položka – co chcete smazat?</span>
             </div>
 
             <div className="space-y-2">
@@ -117,9 +117,9 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                   className="mt-0.5 text-sky-600 focus:ring-sky-500"
                 />
                 <div className="text-xs">
-                  <div className="font-semibold text-slate-900">Pouze tato položka</div>
+                  <div className="font-semibold text-slate-900">Jen tento výskyt</div>
                   <div className="text-slate-500 mt-0.5">
-                    Vytvoří výjimku v pravidelné sérii, aby se odstraněný výskyt po novém načtení znovu nevygeneroval.
+                    Ostatní výskyty série zůstanou beze změny.
                   </div>
                 </div>
               </label>
@@ -142,9 +142,9 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                   className="mt-0.5 text-sky-600 focus:ring-sky-500"
                 />
                 <div className="text-xs">
-                  <div className="font-semibold text-slate-900">Tato a všechny budoucí položky</div>
+                  <div className="font-semibold text-slate-900">Tento a všechny budoucí výskyty</div>
                   <div className="text-slate-500 mt-0.5">
-                    Ukončí nebo upraví pravidlo opakování od vybraného výskytu. Minulé výskyty zůstanou zachovány.
+                    Opakování skončí před tímto výskytem. Minulé výskyty zůstanou.
                   </div>
                 </div>
               </label>
@@ -169,7 +169,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 <div className="text-xs">
                   <div className="font-semibold text-slate-900">Celá série</div>
                   <div className="text-slate-500 mt-0.5">
-                    Odstraní pravidlo i všechny jeho výskyty, které lze podle současného datového modelu bezpečně odstranit.
+                    Smaže opakování i všechny jeho výskyty.
                   </div>
                 </div>
               </label>
@@ -180,7 +180,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span>Série obsahuje již uskutečněné historické položky</span>
+                  <span>Série obsahuje už uskutečněné položky</span>
                 </div>
                 <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
                   <input
@@ -190,11 +190,11 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                     disabled={isDeleting}
                     className="rounded text-red-600 focus:ring-red-500"
                   />
-                  <span>Smazat i již uskutečněné historické položky</span>
+                  <span>Smazat i uskutečněné položky</span>
                 </label>
                 {!deleteHistoricalExecuted && (
-                  <p className="text-xs text-amber-700/90 italic">
-                    Uskutečněné položky zůstanou bez výslovného zaškrtnutí v historii zachovány.
+                  <p className="text-xs text-amber-700">
+                    Bez zaškrtnutí uskutečněné položky zůstanou.
                   </p>
                 )}
               </div>

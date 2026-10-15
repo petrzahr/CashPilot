@@ -148,8 +148,8 @@ export const AccountsScreen: React.FC = () => {
   const pendingMessage = !pendingAction
     ? ''
     : pendingAction.kind === 'archive'
-      ? 'Tento účet je nastaven jako výchozí. Po jeho archivaci aplikace již nebude mít žádný výchozí účet. Přejete si pokračovat?'
-      : `${pendingAction.account.isDefault ? 'Tento účet je nastaven jako výchozí. Po jeho smazání aplikace již nebude mít žádný výchozí účet. ' : ''}Opravdu si přejete smazat účet „${pendingAction.account.name}“?`;
+      ? `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`
+      : `Účet „${pendingAction.account.name}“ se smaže. Smazání nelze vrátit.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`;
 
   const getTypeLabel = (type: AccountType) => {
     switch (type) {
@@ -168,7 +168,7 @@ export const AccountsScreen: React.FC = () => {
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
           <MultiSelectDropdown
-            placeholder="Všechny účty"
+            placeholder="Všechny typy účtů"
             selected={typeFilters}
             onChange={(values) => setTypeFilters(values as AccountType[])}
             options={(['checking', 'cash', 'savings', 'investment', 'pension', 'other'] as AccountType[]).map(type => ({
@@ -198,6 +198,19 @@ export const AccountsScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {displayedAccounts.length === 0 && (
+        <div className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-sm text-center space-y-1">
+          <p className="text-sm font-semibold text-slate-900">
+            {accounts.length === 0 ? 'Zatím nemáte žádný účet' : 'Žádný účet neodpovídá výběru'}
+          </p>
+          <p className="text-xs text-slate-500">
+            {accounts.length === 0
+              ? 'Přidejte první účet tlačítkem Přidat účet. Bez účtu nejde zapisovat položky.'
+              : 'Zrušte filtr typů nebo zapněte Zobrazit archivované účty.'}
+          </p>
+        </div>
+      )}
 
       {/* Karty jednotlivých účtů */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -322,7 +335,7 @@ export const AccountsScreen: React.FC = () => {
               {/* Finanční zůstatek */}
               <div className="p-4 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
-                  {`Očekávaný stav k ${selectedPeriod.name}`}
+                  {`Očekávaný zůstatek na konci období ${selectedPeriod.name}`}
                 </span>
                 <div className={`text-xl font-extrabold truncate ${
                   closingBalance < 0 ? 'text-red-600' : 'text-slate-900'
@@ -333,10 +346,10 @@ export const AccountsScreen: React.FC = () => {
                 {isInvestment && (
                   <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
                     <span className="text-slate-500">
-                      {`Vloženo: ${formatCurrency(contributedPrincipal)}`}
+                      {`Vklady: ${formatCurrency(contributedPrincipal)}`}
                       {feesTotal !== 0 && <>
                         <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>
-                        <span className="block">{`Investováno: ${formatCurrency(investedPrincipal)}`}</span>
+                        <span className="block">{`Vklady po poplatcích: ${formatCurrency(investedPrincipal)}`}</span>
                       </>}
                     </span>
                     <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -352,10 +365,10 @@ export const AccountsScreen: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-purple-400" />
-                      Poslední tržní ocenění:
+                      Tržní hodnota zadána:
                     </span>
                     <span className="font-medium text-slate-500">
-                      {acc.marketValueUpdatedAt ? formatCzechDate(acc.marketValueUpdatedAt) : 'Zatím neověřeno'}
+                      {acc.marketValueUpdatedAt ? formatCzechDate(acc.marketValueUpdatedAt) : 'zatím ne'}
                     </span>
                   </div>
                 ) : (
@@ -363,10 +376,10 @@ export const AccountsScreen: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        Poslední kontrola zůstatku:
+                        Naposledy srovnáno s bankou:
                       </span>
                       <span className="font-medium text-slate-500">
-                        {lastCorrection ? formatCzechDate(lastCorrection.checkDate) : 'Zatím neověřeno'}
+                        {lastCorrection ? formatCzechDate(lastCorrection.checkDate) : 'zatím ne'}
                       </span>
                     </div>
                     {lastCorrection && (
@@ -404,12 +417,12 @@ export const AccountsScreen: React.FC = () => {
                       onClick={() => setMarketValueAccount(acc)}
                       className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
                     >
-                      Hodnota
+                      Tržní hodnota
                     </button>
                     <button
                       type="button"
                       onClick={() => setFeeAccount(acc)}
-                      title="Zadat měsíční poplatek"
+                      title="Zadat měsíční poplatek obchodníka"
                       className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-purple-200 rounded-xl transition-colors shrink-0"
                     >
                       Poplatek
@@ -421,7 +434,7 @@ export const AccountsScreen: React.FC = () => {
                     onClick={() => setReconcileAccount(acc)}
                     className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
                   >
-                    Aktualizovat skutečný stav
+                    Srovnat s bankou
                   </button>
                 )}
                 <button
@@ -474,9 +487,9 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!pendingAction}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmPendingAction}
-        title={pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet' : 'Smazat účet'}
+        title={pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet?' : 'Smazat účet?'}
         message={pendingMessage}
-        confirmText={pendingAction?.kind === 'archive' ? 'Archivovat' : 'Smazat účet'}
+        confirmText={pendingAction?.kind === 'archive' ? 'Archivovat účet' : 'Smazat účet'}
         isDestructive={pendingAction?.kind === 'delete'}
       />
     </div>

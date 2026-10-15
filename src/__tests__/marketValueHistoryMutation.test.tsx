@@ -135,9 +135,9 @@ it('exposes edit and delete for each valuation and fee in the history UI', () =>
   const html = renderToStaticMarkup(<FinanceProvider syncSession={session}>
     <AccountHistoryModal isOpen onClose={() => {}} account={flow.data.accounts[0]} />
   </FinanceProvider>);
-  expect(html.match(/aria-label="Upravit tržní ocenění"/g)).toHaveLength(4);
-  expect(html.match(/aria-label="Smazat tržní ocenění"/g)).toHaveLength(4);
-  expect(html.match(/aria-label="Upravit poplatek"/g)).toHaveLength(2);
+  expect(html.match(/aria-label="Upravit tržní hodnotu z /g)).toHaveLength(4);
+  expect(html.match(/aria-label="Smazat tržní hodnotu z /g)).toHaveLength(4);
+  expect(html.match(/aria-label="Upravit poplatek: /g)).toHaveLength(2);
   flow.run(f => f.deleteInvestmentFee(flow.data.investmentFees[0].id));
   expect(flow.data.investmentFees.map(f => f.periodKey)).toEqual(['2026-10']);
 });

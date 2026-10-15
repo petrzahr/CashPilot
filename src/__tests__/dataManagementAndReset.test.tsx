@@ -247,9 +247,9 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     const render = (transaction?: Transaction) => renderToStaticMarkup(
       <FinanceProvider><TransactionModal isOpen onClose={() => {}} transactionToEdit={transaction} /></FinanceProvider>
     );
-    expect(render()).toContain('Pravidelná položka (opakovat');
-    expect(render(sampleTransactions[0])).toContain('Pravidelná položka (opakovat');
-    expect(render({ ...sampleTransactions[0], recurringRuleId: 'rule_salary' })).not.toContain('Pravidelná položka (opakovat');
+    expect(render()).toContain('Opakovat v dalších obdobích');
+    expect(render(sampleTransactions[0])).toContain('Opakovat v dalších obdobích');
+    expect(render({ ...sampleTransactions[0], recurringRuleId: 'rule_salary' })).not.toContain('Opakovat v dalších obdobích');
   });
 
   it.each(['planned', 'executed', 'cancelled'] as const)('recurring conversion persists and syncs a single first occurrence (%s)', async status => {
@@ -331,7 +331,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     expect(html).not.toContain('Zkontrolovat a vyčistit ukázková data');
     expect(html).not.toContain('ukázkových účtů');
-    expect(html).toContain('Správa jednotlivých dat');
+    expect(html).toContain('Smazat část dat');
     expect(html).toContain('Nebezpečná zóna');
   });
 
@@ -559,7 +559,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     expect(html).toContain('VYMAZAT VŠE');
     expect(html).toContain('Budou odstraněny všechny účty, transakce, kategorie, opakované platby, korekce, tržní hodnoty a nastavení aplikace.');
-    expect(html).toContain('Dotčené záznamy k odstranění');
+    expect(html).toContain('Co se smaže');
     expect(html).toContain('Stáhnout zálohu');
     expect(html).toContain('disabled');
   });

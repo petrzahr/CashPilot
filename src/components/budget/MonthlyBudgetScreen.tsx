@@ -445,6 +445,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     filterStatuses
   ]);
 
+  // Prázdný seznam: odliší období bez položek od filtrů, které nic nenašly
+  const emptyListMessage = allPeriodTransactions.length === 0
+    ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Přidat položku.'
+    : 'Filtrům neodpovídá žádná položka. Upravte nebo zrušte filtry.';
+
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const periodTransactionsSum = useMemo(() => {
     return periodTransactions.reduce((sum, tx) => {
@@ -713,9 +718,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-amber-900">Není zvolen výchozí účet</h4>
+              <h4 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h4>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Pro zobrazení souhrnných finančních ukazatelů rozpočtu je nutné nejprve nastavit výchozí účet ve správě účtů (sekce <strong>Účty</strong>).
+                Souhrn období se počítá z výchozího účtu. V <strong>Správě účtů</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
               </p>
             </div>
           </div>
@@ -904,7 +909,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500 italic">V tomto měsíci bez položek</p>
+                <p className="text-xs text-slate-500 italic">V tomto období žádné položky</p>
               )}
             </div>
           ))}
@@ -914,7 +919,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="w-3.5 h-3.5 text-sky-600" />
-                <span className="text-xs font-bold text-sky-900">Spoření & Převody</span>
+                <span className="text-xs font-bold text-sky-900">Spoření a převody</span>
               </div>
               <span className="text-xs font-bold text-sky-700">
                 {formatCurrency(totalTransfersInHaler)}
@@ -930,7 +935,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-500 italic">V tomto měsíci bez převodů</p>
+              <p className="text-xs text-slate-500 italic">V tomto období žádné převody</p>
             )}
           </div>
         </div>
@@ -945,7 +950,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                   {periodTransactions.length}
                 </span>
-                <h3 className="text-sm font-bold text-slate-900">Suma položek</h3>
+                <span className="text-xs font-semibold text-slate-500">Součet</span>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                   {formatCurrency(periodTransactionsSum, { showPlus: true })}
                 </span>
@@ -995,7 +1000,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <div className="relative sm:col-span-2 lg:col-span-2">
               <input
                 type="text"
-                placeholder="Vyhledat v názvu..."
+                placeholder="Hledat v názvu…"
                 aria-label="Vyhledat v názvu položky"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1059,7 +1064,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="divide-y divide-slate-100">
             {dayGroups.length === 0 ? (
               <div className="py-12 text-center text-slate-500 text-sm">
-                Pro vybrané filtry nebyly v tomto období nalezeny žádné položky.
+                {emptyListMessage}
               </div>
             ) : (
               dayGroups.map(({ date, txs, intraDay }) => {
@@ -1080,14 +1085,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         {hasNegative && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">
                             <AlertTriangle className="w-3 h-3" />
-                            Dočasný záporný stav během dne!
+                            Během dne v mínusu
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center gap-3 text-xs">
                         <span className="text-slate-500">
-                          Počátek dne: <strong>{formatCurrency(intraDay.startOfDayBalanceInHaler)}</strong>
+                          Začátek dne: <strong>{formatCurrency(intraDay.startOfDayBalanceInHaler)}</strong>
                         </span>
                         <span className="text-slate-300">|</span>
                         <span className="text-slate-500">
@@ -1098,7 +1103,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                     {hasNegative && (
                       <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
-                        ⚠️ Během tohoto dne klesne zůstatek pod nulu (až na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přesunutím příjmu před výdaj tomuto stavu snadno předejdete.
+                        Během dne klesne zůstatek pod nulu (nejníž na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přesuňte příjem před výdaj a zůstatek zůstane kladný.
                       </p>
                     )}
 
@@ -1242,7 +1247,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       type="button"
                                       onClick={() => setSelectedCorrection(tx)}
                                       title="Detail a poznámka korekce"
-                                      aria-label="Detail a poznámka korekce"
+                                      aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Eye className="w-3.5 h-3.5" />
@@ -1251,7 +1256,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       type="button"
                                       onClick={() => setSelectedCorrection(tx)}
                                       title="Smazat korekci"
-                                      aria-label="Smazat korekci"
+                                      aria-label={`Smazat korekci: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:text-red-600"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -1264,7 +1269,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         onClick={() => handleStatusChange(tx.id, 'executed')}
                                         disabled={updatingStatusTxId === tx.id}
                                         title="Označit jako uskutečněnou"
-                                        aria-label="Označit jako uskutečněnou"
+                                        aria-label={`Označit jako uskutečněnou: ${tx.title}`}
                                         className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                       >
                                         <Check className="w-4 h-4" />
@@ -1274,7 +1279,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         onClick={() => handleStatusChange(tx.id, 'planned')}
                                         disabled={updatingStatusTxId === tx.id}
                                         title="Vrátit do plánovaných"
-                                        aria-label="Vrátit do plánovaných"
+                                        aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                         className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
                                         <Clock className="w-4 h-4" />
@@ -1282,16 +1287,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     )}
                                     <button
                                       onClick={() => onEditTransaction(tx)}
-                                      title="Upravit"
-                                      aria-label="Upravit"
+                                      title="Upravit položku"
+                                      aria-label={`Upravit položku: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button
                                       onClick={() => duplicateTransaction(tx)}
-                                      title="Duplikovat"
-                                      aria-label="Duplikovat"
+                                      title="Duplikovat položku"
+                                      aria-label={`Duplikovat položku: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                                     >
                                       <Copy className="w-4 h-4" />
@@ -1301,7 +1306,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                         onClick={() => handleStatusChange(tx.id, 'cancelled')}
                                         disabled={updatingStatusTxId === tx.id}
                                         title="Zrušit položku"
-                                        aria-label="Zrušit položku"
+                                        aria-label={`Zrušit položku: ${tx.title}`}
                                         className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
                                         <Ban className="w-4 h-4" />
@@ -1310,8 +1315,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       <button
                                         onClick={() => handleStatusChange(tx.id, 'planned')}
                                         disabled={updatingStatusTxId === tx.id}
-                                        title="Obnovit položku (do plánovaných)"
-                                        aria-label="Obnovit položku (do plánovaných)"
+                                        title="Vrátit zrušenou položku do plánovaných"
+                                        aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
                                         className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                       >
                                         <Clock className="w-4 h-4" />
@@ -1320,8 +1325,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     <button
                                       onClick={() => setDeletingTx(tx)}
                                       disabled={isDeletingTx}
-                                      title="Smazat"
-                                      aria-label="Smazat"
+                                      title="Smazat položku"
+                                      aria-label={`Smazat položku: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -1372,7 +1377,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               {sortedListTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500">
-                    Pro zadané filtry nebyly nalezeny žádné položky.
+                    {emptyListMessage}
                   </td>
                 </tr>
               ) : (
@@ -1501,7 +1506,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Detail a poznámka korekce"
-                                aria-label="Detail a poznámka korekce"
+                                aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Eye className="w-4 h-4" />
@@ -1510,7 +1515,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Smazat korekci"
-                                aria-label="Smazat korekci"
+                                aria-label={`Smazat korekci: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1523,7 +1528,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'executed')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Označit jako uskutečněnou"
-                                  aria-label="Označit jako uskutečněnou"
+                                  aria-label={`Označit jako uskutečněnou: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <Check className="w-4 h-4" />
@@ -1533,7 +1538,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Vrátit do plánovaných"
-                                  aria-label="Vrátit do plánovaných"
+                                  aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
@@ -1542,15 +1547,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               <button
                                 onClick={() => onEditTransaction(tx)}
                                 title="Upravit položku"
-                                aria-label="Upravit položku"
+                                aria-label={`Upravit položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat"
-                                aria-label="Duplikovat"
+                                title="Duplikovat položku"
+                                aria-label={`Duplikovat položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Copy className="w-4 h-4" />
@@ -1560,7 +1565,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'cancelled')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Zrušit položku"
-                                  aria-label="Zrušit položku"
+                                  aria-label={`Zrušit položku: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Ban className="w-4 h-4" />
@@ -1569,8 +1574,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 <button
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
-                                  title="Obnovit položku (do plánovaných)"
-                                  aria-label="Obnovit položku (do plánovaných)"
+                                  title="Vrátit zrušenou položku do plánovaných"
+                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
@@ -1579,8 +1584,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               <button
                                 onClick={() => setDeletingTx(tx)}
                                 disabled={isDeletingTx}
-                                title="Smazat"
-                                aria-label="Smazat"
+                                title="Smazat položku"
+                                aria-label={`Smazat položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                               >
                                 <Trash2 className="w-4 h-4" />

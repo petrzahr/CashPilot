@@ -64,7 +64,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     e.preventDefault();
     const nextErrors: FieldErrors<'name' | 'parent'> = {};
     if (!name.trim()) nextErrors.name = 'Zadejte prosím název kategorie.';
-    if (!isEditMode && !isMainCategoryMode && !parentId) nextErrors.parent = 'Vyberte prosím nadřazenou hlavní kategorii.';
+    if (!isEditMode && !isMainCategoryMode && !parentId) nextErrors.parent = 'Vyberte hlavní kategorii, pod kterou podkategorie patří.';
     setErrors(nextErrors);
     if (nextErrors.name || nextErrors.parent) {
       focusFirstInvalid(nextErrors, [['name', `${fieldId}-1`], ['parent', `${fieldId}-2`]]);
@@ -187,7 +187,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {(isSubcategoryMode || (isEditMode && categoryToEdit?.parentId)) && (
           <div>
             <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Nadřazená hlavní kategorie *
+              Patří pod hlavní kategorii *
             </label>
             <select id={`${fieldId}-2`}
               required
@@ -205,7 +205,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.parent, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
             >
               {isSubcategoryMode && !parentId && (
-                <option value="">-- Vyberte hlavní kategorii --</option>
+                <option value="">Vyberte hlavní kategorii</option>
               )}
               {mainCategories.map((mc) => (
                 <option key={mc.id} value={mc.id}>
@@ -220,7 +220,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Volba při změně rodičovské kategorie v editaci */}
         {isEditMode && categoryToEdit && categoryToEdit.parentId !== parentId && parentId && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
-            <p className="font-semibold">Přesunujete tuto podkategorii do jiné hlavní kategorie:</p>
+            <p className="font-semibold">Podkategorie se přesune do jiné hlavní kategorie.</p>
             <label className="flex items-start gap-2 cursor-pointer mt-1">
               <input
                 type="checkbox"
@@ -228,7 +228,10 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 onChange={(e) => setUpdateHistorical(e.target.checked)}
                 className="mt-0.5 w-4 h-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
               />
-              <span>Změnit také hlavní kategorii u všech historických položek (varování: ovlivní historické reporty)</span>
+              <span>
+                Přesunout i dosavadní položky. Změní se tím i přehledy za minulá období.
+                Bez zaškrtnutí zůstanou dosavadní položky v přehledech pod původní hlavní kategorií.
+              </span>
             </label>
           </div>
         )}
@@ -267,7 +270,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             type="submit"
             className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200"
           >
-            {isEditMode ? 'Uložit' : 'Vytvořit'}
+            {isEditMode ? 'Uložit změny' : isSubcategoryMode ? 'Vytvořit podkategorii' : 'Vytvořit kategorii'}
           </button>
         </ModalFooter>
       </form>

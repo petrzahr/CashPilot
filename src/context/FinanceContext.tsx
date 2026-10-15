@@ -693,7 +693,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     });
 
-    showToast(`Položka „${newTx.title}“ byla úspěšně přidána (pořadí #${assignedSeq}).`);
+    showToast(`Položka „${newTx.title}“ byla přidána jako ${assignedSeq}. v pořadí dne.`);
     return newTx;
   }, [data.transactions, data.accounts, showToast]);
 
@@ -787,7 +787,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         recurringExceptions,
       };
     });
-    showToast('Pořadí položek bylo aktualizováno.');
+    showToast('Pořadí položek bylo uloženo.');
   }, [showToast]);
 
   const deleteTransaction = useCallback(async (
@@ -989,7 +989,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       }
     } catch (err) {
       console.error('Chyba při mazání položky:', err);
-      showToast('Při mazání položky došlo k chybě.', 'error');
+      showToast('Položku se nepodařilo smazat. Zkuste to prosím znovu.', 'error');
       return false;
     }
   }, [selectedPeriod.key, showToast]);
@@ -1014,7 +1014,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       ...prev,
       transactions: insertOrUpdateWithSequence(copy, nextSeq, prev.transactions)
     }));
-    showToast(`Položka byla duplikována: „${copy.title}“`);
+    showToast(`Vytvořena kopie položky „${copy.title}“.`);
   }, [data.transactions, showToast]);
 
   const setTransactionStatus = useCallback((
@@ -1347,7 +1347,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     });
 
-    showToast('Pravidelná položka byla úspěšně upravena.');
+    showToast('Pravidelná položka byla upravena.');
     return futureRuleId;
   }, [showToast]);
 
@@ -1448,7 +1448,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     });
 
-    showToast('Pořadí opakující se položky bylo aktualizováno.');
+    showToast('Pořadí pravidelné položky bylo uloženo.');
   }, [showToast]);
 
   const deleteRecurringRule = useCallback((id: string) => {
@@ -1541,7 +1541,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       }
 
       if (earliestMovementDate && newInitDate > earliestMovementDate) {
-        const msg = `Datum počátečního stavu nelze posunout za existující pohyb ze dne ${formatCzechDate(earliestMovementDate)}. Nejdříve upravte nebo odstraňte starší položky.`;
+        const msg = `Počáteční zůstatek nemůže začínat později než první položka účtu (${formatCzechDate(earliestMovementDate)}). Zvolte dřívější datum, nebo nejdřív posuňte či smažte starší položky.`;
         showToast(msg, 'error');
         return { success: false, message: msg };
       }
@@ -1574,7 +1574,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (activeRules.length > 0) {
       return {
         success: false,
-        message: `Účet nelze archivovat, protože je navázán na ${activeRules.length} aktivní pravidelné položky (např. ${activeRules[0].title}). Před archivací prosím tyto položky převeďte nebo ukončete.`
+        message: `Účet nelze archivovat, protože je navázán na ${activeRules.length} aktivní pravidelné položky (např. ${activeRules[0].title}). Nejdřív u nich změňte účet nebo opakování ukončete.`
       };
     }
 
@@ -1611,7 +1611,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (hasTransactions || hasRules || hasActiveCorrections) {
       return {
         success: false,
-        message: 'Účet s existující historií (transakce, trvalé příkazy nebo korekce) nelze fyzicky smazat. Můžete jej bezpečně archivovat.'
+        message: 'Účet má položky, pravidelné položky nebo korekce, a proto ho nejde smazat. Můžete ho archivovat – zmizí z nabídek, ale historie zůstane.'
       };
     }
 
@@ -1634,7 +1634,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         }
       };
     });
-    showToast('Účet byl trvale smazán.');
+    showToast('Účet byl smazán.');
     return { success: true };
   }, [data.transactions, data.corrections, data.recurringRules, showToast]);
 
@@ -1660,7 +1660,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     if (account.type === 'investment' || account.type === 'pension') {
-      showToast('Korekce zůstatku není povolena pro investiční a penzijní účty.', 'warning');
+      showToast('U investičních a penzijních účtů se místo korekce zadává tržní hodnota.', 'warning');
       return;
     }
 
@@ -1677,7 +1677,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     const diffInHaler = subHaler(actualBalanceInHaler, currentAccBal);
 
     if (diffInHaler === 0) {
-      showToast('Skutečný stav odpovídá vypočtenému zůstatku. Korekce nebyla nutná.', 'info');
+      showToast('Zůstatek sedí s bankou, korekce nebyla potřeba.', 'info');
       return;
     }
 
@@ -1725,7 +1725,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     });
 
-    showToast(`Skutečný zůstatek byl aktualizován. Vytvořena korekce: ${diffInHaler >= 0 ? '+' : ''}${(diffInHaler / 100).toLocaleString('cs-CZ')} Kč.`);
+    showToast(`Zůstatek srovnán s bankou. Uložena korekce ${diffInHaler >= 0 ? '+' : ''}${(diffInHaler / 100).toLocaleString('cs-CZ')} Kč.`);
   }, [data.accounts, data.transactions, data.corrections, showToast]);
 
   const updateMarketValue = useCallback((
@@ -1738,7 +1738,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (!account) return;
 
     if (account.type !== 'investment' && account.type !== 'pension') {
-      showToast('Aktualizace tržní hodnoty je určena pouze pro investiční a penzijní účty.', 'warning');
+      showToast('Tržní hodnota jde zadat jen u investičních a penzijních účtů.', 'warning');
       return;
     }
 
@@ -1786,17 +1786,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
     setData(prev => mutateMarketValueHistory(prev, id, edit));
-    showToast('Tržní ocenění bylo upraveno.');
+    showToast('Tržní hodnota byla upravena.');
   }, [setData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
     setData(prev => mutateMarketValueHistory(prev, id));
-    showToast('Tržní ocenění bylo smazáno.');
+    showToast('Tržní hodnota byla smazána.');
   }, [setData, showToast]);
 
   const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
     if (!/^\d{4}-\d{2}$/.test(periodKey) || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
-      showToast('Zadejte platnou částku poplatku.', 'warning');
+      showToast('Zadejte částku poplatku (0 nebo více).', 'warning');
       return;
     }
     const nowIso = new Date().toISOString();
@@ -1935,7 +1935,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (isUsedInTxs || isUsedInRules) {
       return {
         success: false,
-        message: 'Kategorii použitou v historii nebo v trvalých příkazech nelze fyzicky smazat. Můžete ji bezpečně archivovat.'
+        message: 'Kategorii používají položky nebo pravidelné položky, a proto ji nejde smazat. Můžete ji archivovat – zmizí z nabídek, ale historie zůstane.'
       };
     }
 
@@ -1959,7 +1959,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const loadDemoData = useCallback(async () => {
     if (!isDemoModeEnabled()) {
-      showToast('Ukázková data nejsou v produkčním režimu povolena.', 'warning');
+      showToast('Ukázková data jdou načíst jen v demo režimu.', 'warning');
       return;
     }
     const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
@@ -1977,14 +1977,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       marketValueSnapshots: [],
       investmentFees: [],
     });
-    showToast('Ukázková data byla úspěšně načtena.');
+    showToast('Ukázková data byla načtena.');
   }, [showToast]);
 
   const clearAllTransactions = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
     const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_transactions');
     if (!backupCreated) {
-      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání transakcí bylo zrušeno.', 'error');
+      showToast('Nepodařilo se uložit pojistnou kopii dat, proto se nic nesmazalo. Zkuste to prosím znovu.', 'error');
       return false;
     }
 
@@ -1999,7 +1999,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     setData(updated);
 
-    showToast('Všechny finanční položky, pravidla opakovaných plateb a korekce byly vymazány.');
+    showToast('Všechny položky, pravidelné položky a korekce byly smazány.');
     return true;
   }, [showToast]);
 
@@ -2007,7 +2007,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     // 1. Vytvořit interní recovery zálohu
     const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_accounts');
     if (!backupCreated) {
-      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání účtů bylo zrušeno.', 'error');
+      showToast('Nepodařilo se uložit pojistnou kopii dat, proto se nic nesmazalo. Zkuste to prosím znovu.', 'error');
       return false;
     }
 
@@ -2028,7 +2028,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     setData(updated);
 
-    showToast('Všechny účty a navázaná finanční data byly úspěšně vymazány.');
+    showToast('Všechny účty a data k nim byly smazány.');
     return true;
   }, [showToast]);
 
@@ -2036,7 +2036,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     // 1. Vytvořit interní recovery zálohu
     const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_categories');
     if (!backupCreated) {
-      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Mazání kategorií bylo zrušeno.', 'error');
+      showToast('Nepodařilo se uložit pojistnou kopii dat, proto se nic nesmazalo. Zkuste to prosím znovu.', 'error');
       return false;
     }
 
@@ -2069,7 +2069,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     setData(updated);
 
-    showToast('Všechny kategorie byly vymazány. U existujících položek byla nastavena kategorie „Bez kategorie“.');
+    showToast('Všechny kategorie byly smazány. Položky zůstaly bez kategorie.');
     return true;
   }, [showToast]);
 
@@ -2077,7 +2077,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     // 1. Vytvořit interní recovery zálohu
     const backupCreated = createOperationRecoveryBackup(latestDataRef.current, 'clear_all');
     if (!backupCreated) {
-      showToast('Chyba: Nepodařilo se vytvořit bezpečnostní recovery zálohu. Kompletní reset byl zrušen.', 'error');
+      showToast('Nepodařilo se uložit pojistnou kopii dat, proto se nic nesmazalo. Zkuste to prosím znovu.', 'error');
       return false;
     }
 
@@ -2085,7 +2085,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     const fresh = createResetAppData();
     controllerRef.current?.change(fresh, true);
 
-    showToast('Všechna data byla kompletně vymazána a aplikace byla uvedena do čistého výchozího stavu.');
+    showToast('Všechna data byla smazána. Aplikace začíná od nuly.');
     return true;
   }, [showToast]);
 
@@ -2095,7 +2095,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     setLoadState('ready');
     setLoadErrorDetails(null);
-    showToast('Záloha byla úspěšně obnovena.');
+    showToast('Data byla obnovena ze zálohy.');
   }, [showToast]);
 
   const resetToFreshData = useCallback(() => {
@@ -2104,7 +2104,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     setLoadState('ready');
     setLoadErrorDetails(null);
-    showToast('Byla založena čistá instalace.');
+    showToast('Aplikace začíná s prázdnými daty.');
   }, [showToast]);
 
   const retryLoadData = useCallback(() => {
@@ -2125,7 +2125,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const exportJSON = useCallback(() => {
     exportBackupJSON(data);
-    showToast('Záloha byla úspěšně stažena.');
+    showToast('Záloha byla stažena.');
   }, [data, showToast]);
 
   const importJSON = useCallback((jsonStr: string): boolean => {
@@ -2161,17 +2161,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           transactions: sortTransactionsByDateAndSequence(transactions)
         };
       });
-      showToast('Záloha byla úspěšně sloučena se stávajícími daty.');
+      showToast('Záloha byla sloučena s aktuálními daty.');
       return true;
     } catch (err: any) {
-      showToast(`Chyba při obnově: ${err.message}`, 'error');
+      showToast(`Zálohu se nepodařilo obnovit: ${err.message}`, 'error');
       return false;
     }
   }, [showToast]);
 
   const exportCSV = useCallback(() => {
     exportTransactionsCSV(data.transactions, data.accounts, data.categories);
-    showToast('Položky byly vyexportovány do CSV.');
+    showToast('Položky byly staženy jako CSV.');
   }, [data.transactions, data.accounts, data.categories, showToast]);
 
   const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>(() => isStoredTokenValid() ? 'loading' : 'disconnected');
@@ -2296,13 +2296,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const runDriveBackupNow = useCallback(async () => {
     const token = getValidAccessToken();
     if (!token || !driveUser?.permissionId) {
-      showToast('Nejprve se přihlaste ke Google Disku.', 'error');
+      showToast('Nejdřív připojte Google Disk.', 'error');
       return;
     }
     const result = await tryRunDriveBackup(token, driveUser.permissionId, latestDataRef.current, { force: true });
     if (result.ran) {
       setLastDriveBackupTime(new Date());
-      showToast('Záloha byla úspěšně nahrána na Google Disk.');
+      showToast('Záloha byla uložena na Google Disk.');
     } else {
       showToast(`Zálohu se nepodařilo vytvořit: ${result.reason || 'neznámá chyba'}`, 'error');
     }

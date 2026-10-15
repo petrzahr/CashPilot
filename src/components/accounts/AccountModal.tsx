@@ -127,7 +127,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Upravit účet' : 'Přidat nový účet'}
+      title={isEditing ? 'Upravit účet' : 'Nový účet'}
       subtitle={undefined}
       maxWidth="max-w-lg"
     >
@@ -170,7 +170,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
           <div>
             <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Finanční instituce (banka / broker)
+              Banka nebo obchodník (nepovinné)
             </label>
             <input id={`${fieldId}-3`}
               type="text"
@@ -185,7 +185,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Počáteční zůstatek (Kč) *
+              Počáteční zůstatek *
             </label>
             <div className="relative">
               <input id={`${fieldId}-4`}
@@ -203,7 +203,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
           <div>
             <label htmlFor={`${fieldId}-5`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Datum počátečního stavu *
+              Počáteční zůstatek ke dni *
             </label>
             <input id={`${fieldId}-5`}
               type="date"
@@ -225,7 +225,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
-              Nastavit jako výchozí účet
+              Výchozí účet <span className="font-normal text-slate-500">– předvyplní se u nových položek a počítá se z něj souhrn rozpočtu</span>
             </span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -236,7 +236,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
-              Zahrnout do „Použitelných peněz“ (provozní likvidita)
+              Započítat do použitelných peněz <span className="font-normal text-slate-500">– peníze k běžnému utrácení</span>
             </span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -247,7 +247,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
-              Zahrnout do „Celkového majetku“ (Net Worth)
+              Započítat do celkového majetku
             </span>
           </label>
         </div>

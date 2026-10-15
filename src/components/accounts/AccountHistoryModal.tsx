@@ -74,7 +74,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           calculatedBalanceInHaler: c.calculatedBalanceInHaler,
           actualBalanceInHaler: c.actualBalanceInHaler,
           diffInHaler: c.diffInHaler,
-          note: c.note || 'Korekce skutečného stavu',
+          note: c.note || 'Korekce podle banky',
           createdAt: c.createdAt,
           updatedAt: c.updatedAt || c.createdAt || new Date().toISOString()
         }));
@@ -129,13 +129,13 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         title={`Historie účtu: ${account.name}`}
-        subtitle={isAssetAccount ? 'Historie vkladů, výběrů, poplatků a tržních ocenění' : 'Kompletní přehled pohybů a korekcí'}
+        subtitle={isAssetAccount ? 'Vklady, výběry, poplatky a tržní hodnoty, od nejnovějších' : 'Všechny pohyby a korekce zůstatku, od nejnovějších'}
         maxWidth="max-w-2xl"
       >
         <div className="space-y-4">
           {/* Počáteční stav */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500">
-            <span>Počáteční evidenční stav:</span>
+            <span>Počáteční zůstatek{account.initialBalanceDate ? ` k ${formatCzechDate(account.initialBalanceDate)}` : ''}</span>
             <span className="font-semibold text-slate-900 text-sm">
               {formatCurrency(account.initialBalanceInHaler)}
             </span>
@@ -145,7 +145,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           <div className="space-y-2">
             {historyItems.length === 0 ? (
               <div className="text-center py-10 text-slate-500 text-sm">
-                Na tomto účtu zatím nejsou žádné zaznamenané pohyby.
+                Na tomto účtu zatím nejsou žádné pohyby.
               </div>
             ) : (
               historyItems.map(item => {
@@ -163,7 +163,6 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-slate-900">Poplatek obchodníka</span>
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">Poplatek</span>
                           </div>
                           <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>{item.periodName}</span>
@@ -173,11 +172,11 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="font-bold text-slate-700 mr-2">{formatCurrency(-fee.amountInHaler)}</span>
-                        <button type="button" onClick={() => setEditingFeePeriodKey(fee.periodKey)} title="Upravit poplatek" aria-label="Upravit poplatek"
+                        <button type="button" onClick={() => setEditingFeePeriodKey(fee.periodKey)} title="Upravit poplatek" aria-label={`Upravit poplatek: ${item.periodName}`}
                           className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label="Smazat poplatek"
+                        <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
                           className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -201,10 +200,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-purple-950">Aktualizace tržní hodnoty</span>
-                            <span className="text-xs px-2 py-0.5 bg-purple-200/70 text-purple-800 rounded-full font-medium">
-                              Ocenění
-                            </span>
+                            <span className="font-semibold text-purple-950">Tržní hodnota</span>
                           </div>
                           <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>{formatCzechDate(snap.date)}</span>
@@ -217,24 +213,23 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <span className="font-bold text-purple-900 text-base">
                           {formatCurrency(snap.marketValueInHaler)}
                         </span>
-                        <div className="text-xs text-purple-600 font-medium">Tržní hodnota</div>
                         <div className="flex justify-end gap-1 mt-1">
-                          <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní ocenění" aria-label="Upravit tržní ocenění"
+                          <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní hodnotu" aria-label={`Upravit tržní hodnotu z ${formatCzechDate(snap.date)}`}
                             className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                             <Pencil className="w-4 h-4" />
                           </button>
-                          <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní ocenění" aria-label="Smazat tržní ocenění"
+                          <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
                             className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                         <div className="text-xs text-slate-500">
-                          <div>Vloženo: {formatCurrency(snapInvested)}</div>
+                          <div>Vklady: {formatCurrency(snapInvested)}</div>
                           {snapFees !== 0 && <>
                             <div>Poplatky: {formatCurrency(-snapFees)}</div>
-                            <div>Investováno: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
+                            <div>Vklady po poplatcích: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
                           </>}
-                          <div>Výnos / ztráta: {formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
+                          <div>Výnos:{formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
                         </div>
                       </div>
                     </div>
@@ -338,6 +333,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           onClick={() => setSelectedCorrection(tx)}
                           className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Detail korekce"
+                          aria-label={`Detail korekce z ${formatCzechDate(tx.date)}`}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -366,15 +362,15 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
         account={accounts.find(a => a.id === account.id) ?? account} snapshot={editingSnapshot} />
       <ConfirmationModal isOpen={isOpen && Boolean(deletingSnapshot)} onClose={() => setDeletingSnapshotId(null)}
         onConfirm={() => { if (deletingSnapshot) deleteMarketValue(deletingSnapshot.id); }}
-        title="Smazat tržní ocenění?"
-        message={`Ocenění${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} bude trvale odstraněno. Navazující hodnoty a období se přepočítají.`}
-        confirmText="Smazat ocenění" cancelText="Zrušit" isDestructive />
+        title="Smazat tržní hodnotu?"
+        message={`Tržní hodnota${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} se smaže a výnos i zůstatky se přepočítají. Smazání nelze vrátit.`}
+        confirmText="Smazat tržní hodnotu" cancelText="Zrušit" isDestructive />
       <InvestmentFeeModal isOpen={isOpen && editingFeePeriodKey !== null} onClose={() => setEditingFeePeriodKey(null)}
         account={accounts.find(a => a.id === account.id) ?? account} periodKey={editingFeePeriodKey} />
       <ConfirmationModal isOpen={isOpen && Boolean(deletingFee)} onClose={() => setDeletingFeeId(null)}
         onConfirm={() => { if (deletingFee) deleteInvestmentFee(deletingFee.id); }}
         title="Smazat poplatek?"
-        message={`Poplatek${deletingFee ? ` ${formatCurrency(deletingFee.amountInHaler)}` : ''} bude trvale odstraněn a výnos se přepočítá.`}
+        message={`Poplatek${deletingFee ? ` ${formatCurrency(deletingFee.amountInHaler)}` : ''} se smaže a výnos se přepočítá. Smazání nelze vrátit.`}
         confirmText="Smazat poplatek" cancelText="Zrušit" isDestructive />
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
