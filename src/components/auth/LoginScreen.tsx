@@ -139,7 +139,7 @@ export const LoginScreen: React.FC = () => {
         {/* Žádost o přístup do testovacího režimu */}
         <div className="space-y-3 text-center sm:text-left">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-900">Nemáte přístup?</h3>
+            <h2 className="text-sm font-bold text-slate-900">Nemáte přístup?</h2>
             <p className="text-xs text-slate-500 leading-relaxed">
               CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.
             </p>

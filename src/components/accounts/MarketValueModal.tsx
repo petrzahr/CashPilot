@@ -195,7 +195,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-sm shadow-purple-200 disabled:opacity-50"
+            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm disabled:opacity-50"
           >
             {isSubmitting ? 'Ukládám…' : 'Uložit tržní hodnotu'}
           </button>

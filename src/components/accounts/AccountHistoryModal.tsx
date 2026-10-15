@@ -229,7 +229,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             <div>Poplatky: {formatCurrency(-snapFees)}</div>
                             <div>Vklady po poplatcích: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
                           </>}
-                          <div>Výnos:{formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
+                          <div>Výnos: {formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
                         </div>
                       </div>
                     </div>
@@ -252,23 +252,23 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                 if (isCorrection) {
                   const diff = tx.diffInHaler ?? 0;
                   amountDisplay = formatCurrency(diff, { showPlus: true });
-                  amountClass = diff >= 0 ? 'text-emerald-700' : 'text-amber-700';
+                  amountClass = diff >= 0 ? 'text-emerald-600' : 'text-red-600';
                   typeBadge = 'Korekce zůstatku';
                 } else if (tx.type === 'income') {
                   amountDisplay = `+${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-emerald-600';
                   typeBadge = 'Příjem';
                 } else if (tx.type === 'expense') {
-                  amountDisplay = `-${formatCurrency(effectiveAmount)}`;
+                  amountDisplay = `−${formatCurrency(effectiveAmount)}`;
                   amountClass = 'text-red-600';
                   typeBadge = 'Výdaj';
                 } else if (isIncomingTransfer) {
                   amountDisplay = `+${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-sky-600';
+                  amountClass = 'text-slate-900';
                   typeBadge = isAssetAccount ? 'Vklad do portfolia' : 'Příchozí převod';
                 } else if (isOutgoingTransfer) {
-                  amountDisplay = `-${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-indigo-600';
+                  amountDisplay = `−${formatCurrency(effectiveAmount)}`;
+                  amountClass = 'text-slate-900';
                   typeBadge = isAssetAccount ? 'Výběr z portfolia' : 'Odchozí převod';
                 }
 
