@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {driveSyncStatus === 'syncing' ? (
                         <>
                           <RefreshCw className="w-3 h-3 animate-spin text-sky-600" />
-                          <span className="text-sky-600">Ukládám…</span>
+                          <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
                         </>
                       ) : isSyncProblem ? (
                         <>

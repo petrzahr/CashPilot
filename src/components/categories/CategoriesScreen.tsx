@@ -161,7 +161,7 @@ export const CategoriesScreen: React.FC = () => {
               key={mainCat.id}
               className={`bg-white rounded-2xl border p-5 shadow-sm space-y-3 transition-all ${
                 mainCat.status === 'archived'
-                  ? 'border-slate-200/50 bg-slate-50/50 opacity-75'
+                  ? 'border-slate-200 !bg-slate-50 border-dashed'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
@@ -176,7 +176,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
                           Archivovaná
                         </span>
                       )}

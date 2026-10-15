@@ -138,7 +138,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               value={valuationDate}
               onChange={(e) => { setValuationDate(e.target.value); setErrors(prev => ({ ...prev, date: undefined })); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.date)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.date, 'border-slate-200 focus:ring-2 focus:ring-purple-500')}`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.date, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
             />
             <FieldError inputId={`${fieldId}-1`} message={errors.date} />
           </div>
@@ -173,7 +173,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             placeholder="např. Výpis z penzijní společnosti k 30. 9."
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
 

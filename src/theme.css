@@ -216,7 +216,8 @@
   /* Pozadí řádků tabulky mandatorních výdajů (neprůhledná kvůli ukotveným buňkám) */
   --c-table-header: 250 251 253;
   --c-table-category: 252 253 254;
-  --c-table-nonmonthly: 248 246 255;
+  /* Nepravidelné platby: neutrální šedomodrý nádech (fialová patří investicím) */
+  --c-table-nonmonthly: 244 246 249;
   /* Ztmavení pozadí pod dialogem a mobilním menu (v obou vzhledech tmavé) */
   --c-scrim: 15 23 42;
   color-scheme: light;
@@ -224,7 +225,7 @@
 :root[data-theme="dark"] {
   --c-table-header: 14 22 38;
   --c-table-category: 16 25 43;
-  --c-table-nonmonthly: 27 26 56;
+  --c-table-nonmonthly: 24 34 54;
   --c-scrim: 2 6 15;
   color-scheme: dark;
 }

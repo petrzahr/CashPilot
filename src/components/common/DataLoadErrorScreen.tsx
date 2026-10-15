@@ -118,7 +118,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
           <div className="flex items-center justify-between pt-4 border-t border-slate-700/60 text-xs">
             <button
               onClick={onRetry}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
+              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Načíst znovu</span>
@@ -126,7 +126,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
 
             <button
               onClick={() => setConfirmResetOpen(true)}
-              className="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors"
+              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Začít s prázdnými daty</span>

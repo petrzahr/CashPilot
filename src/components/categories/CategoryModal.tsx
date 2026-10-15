@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
-import { COLOR_PALETTE } from '../../constants/colors';
+import { COLOR_NAMES, COLOR_PALETTE } from '../../constants/colors';
 import { FieldError, FieldErrors, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface CategoryModalProps {
@@ -163,7 +163,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 aria-pressed={type === 'expense'}
                 onClick={() => setType('expense')}
-                className={`max-md:min-h-10 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`max-md:min-h-11 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
@@ -173,7 +173,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 aria-pressed={type === 'income'}
                 onClick={() => setType('income')}
-                className={`max-md:min-h-10 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`max-md:min-h-11 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
@@ -246,7 +246,8 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               <button
                 key={c}
                 type="button"
-                aria-label={`Barva ${i + 1}`}
+                aria-label={COLOR_NAMES[i] ?? `Barva ${i + 1}`}
+                title={COLOR_NAMES[i]}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 max-md:w-9 max-md:h-9 relative max-md:after:absolute max-md:after:-inset-1 max-md:after:content-[''] rounded-full transition-transform motion-reduce:transition-none ${

@@ -285,6 +285,10 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
           {item.simState === 'added' && <span className="ml-1.5 text-xs font-semibold text-emerald-700">nová</span>}
+          {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
+          {!isDeleted && item.frequency !== 'monthly' && (
+            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">rozpočítaná</span>
+          )}
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
         <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.accountLabel}</td>
@@ -623,7 +627,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
               <>
                 Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
                 nepravidelné platby rozpočítané do měsíců{' '}
-                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
+                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-slate-600`}>(podbarvené, štítek rozpočítaná)</span>.
                 Úpravy zde jsou jen simulace.
               </>
             )}

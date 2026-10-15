@@ -13,3 +13,9 @@ export const COLOR_PALETTE = [
   '#6366f1', // Indigo
   '#64748b', // Šedá
 ];
+
+/** České názvy barev palety pro čtečky obrazovky (pořadí odpovídá COLOR_PALETTE). */
+export const COLOR_NAMES = [
+  'Modrá', 'Tyrkysová', 'Smaragdová', 'Zelená', 'Limetková', 'Jantarová',
+  'Oranžová', 'Červená', 'Růžová', 'Fialová', 'Indigo', 'Šedá',
+];

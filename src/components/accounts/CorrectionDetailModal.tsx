@@ -57,6 +57,12 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
     updateCorrectionNote(currentItem.id, note);
   };
 
+  // Zavřením (Zavřít, křížek, Escape, klik mimo) se změněná poznámka sama uloží, aby se neztratila
+  const handleClose = () => {
+    if (note !== (currentItem.note || '')) updateCorrectionNote(currentItem.id, note);
+    onClose();
+  };
+
   const handleDelete = async () => {
     const ok = await deleteCorrection(currentItem.id);
     if (ok) {
@@ -69,7 +75,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
     <>
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         title="Detail korekce zůstatku"
         subtitle={account ? `Účet: ${account.name}` : undefined}
         maxWidth="max-w-lg"
@@ -162,7 +168,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
             >
               Zavřít

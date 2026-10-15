@@ -274,7 +274,7 @@ export const SettingsScreen: React.FC = () => {
           {/* 1. Finanční pravidla a rozpočtový měsíc */}
           <section id="nastaveni-obdobi" tabIndex={-1} aria-labelledby="nastaveni-obdobi-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-5`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-sky-50 text-sky-600">
+              <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
@@ -348,7 +348,7 @@ export const SettingsScreen: React.FC = () => {
           {/* 2. Zahrnutí jednotlivých účtů do rozpočtu */}
           <section id="nastaveni-ucty" tabIndex={-1} aria-labelledby="nastaveni-ucty-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
@@ -399,7 +399,7 @@ export const SettingsScreen: React.FC = () => {
           {/* Vzhled aplikace (nastavení tohoto zařízení) */}
           <section id="nastaveni-vzhled" tabIndex={-1} aria-labelledby="nastaveni-vzhled-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-sky-50 text-sky-600">
+              <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Palette className="w-5 h-5" />
               </div>
               <div>
@@ -435,7 +435,7 @@ export const SettingsScreen: React.FC = () => {
           <section id="nastaveni-disk" tabIndex={-1} aria-labelledby="nastaveni-disk-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4`}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-sky-50 text-sky-600">
+                <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                   <Cloud className="w-5 h-5" />
                 </div>
                 <div>
@@ -526,7 +526,7 @@ export const SettingsScreen: React.FC = () => {
                       {driveSyncStatus === 'syncing' ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
-                          <span className="text-sky-600">Synchronizuji…</span>
+                          <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
                         </>
                       ) : driveSyncStatus !== 'synced' ? (
                         <>
@@ -553,28 +553,7 @@ export const SettingsScreen: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => syncWithGoogleDrive('upload')}
-                    disabled={driveSyncStatus === 'syncing'}
-                    className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                    <span>Nahrát data na Google Disk</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => syncWithGoogleDrive('download')}
-                    disabled={driveSyncStatus === 'syncing'}
-                    className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Stáhnout data z Google Disku</span>
-                  </button>
-                </div>
-
+                {/* Synchronizace má jediné tlačítko „Synchronizovat“ v záhlaví sekce: nahrání i stažení dělají totéž */}
                 <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h4>
@@ -612,7 +591,7 @@ export const SettingsScreen: React.FC = () => {
           {/* 4. Zálohování a Export */}
           <section id="nastaveni-zalohy" tabIndex={-1} aria-labelledby="nastaveni-zalohy-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Download className="w-5 h-5" />
               </div>
               <div>
@@ -663,7 +642,8 @@ export const SettingsScreen: React.FC = () => {
           {/* 4. Správa dat a reset */}
           <section id="nastaveni-data" tabIndex={-1} aria-labelledby="nastaveni-data-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-6`}>
             <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-              <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+              {/* Jediná barevná ikona sekcí: mazání dat nese význam, ostatní jsou neutrální */}
+              <div className="p-2 rounded-xl bg-red-50 text-red-600">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>

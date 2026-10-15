@@ -265,7 +265,7 @@ export const AccountsScreen: React.FC = () => {
               onDrop={(e) => handleDrop(e, acc.id)}
               className={`group bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
                 acc.status === 'archived'
-                  ? 'border-slate-200/50 bg-slate-50/50 opacity-75'
+                  ? 'border-slate-200 !bg-slate-50 border-dashed'
                   : 'border-slate-200/80 hover:border-slate-300'
               } ${draggedAccountId === acc.id ? 'opacity-50' : ''} ${
                 dropTargetAccountId === acc.id && draggedAccountId !== acc.id
@@ -296,7 +296,7 @@ export const AccountsScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
                           Archivovaný
                         </span>
                       )}
