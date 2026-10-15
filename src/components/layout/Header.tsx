@@ -59,7 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0">
+        {/* Na úzkém mobilu se název nevejde vedle navigace obdobím; aktivní sekci ukazuje menu */}
+        <div className="min-w-0 hidden sm:block">
           <h1 className="text-base font-bold text-slate-900 leading-tight truncate">
             {activeScreenTitle}
           </h1>
@@ -108,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 ></span>
               </span>
-              <span className="hidden sm:inline">
+              <span className="hidden lg:inline">
                 {SYNC_LABELS[driveSyncStatus]}
               </span>
             </button>
@@ -216,14 +217,14 @@ export const Header: React.FC<HeaderProps> = ({
           disabled={isCurrentPeriodSelected}
           title={isCurrentPeriodSelected ? 'Aktuální rozpočtové období je již vybrané.' : 'Přejít na aktuální rozpočtové období'}
           aria-label={isCurrentPeriodSelected ? 'Aktuální rozpočtové období je již vybrané.' : 'Přejít na aktuální rozpočtové období'}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 max-md:min-w-11 max-md:min-h-11 md:px-2.5 md:py-1.5 lg:px-3 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
             isCurrentPeriodSelected
               ? 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-60'
               : 'bg-white text-slate-500 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-sm hover:border-sky-300 active:scale-[0.98] cursor-pointer'
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-          <span className="whitespace-nowrap">Aktuální období</span>
+          <span className="hidden lg:inline whitespace-nowrap">Aktuální období</span>
         </button>
 
         <div className="flex items-center bg-slate-100/80 rounded-xl p-1 text-xs shrink-0">
