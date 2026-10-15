@@ -10,6 +10,7 @@ import { ReconciliationModal } from './ReconciliationModal';
 import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
 import { AccountHistoryModal } from './AccountHistoryModal';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MoveButtons } from '../shared/MoveButtons';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
@@ -37,7 +38,11 @@ export const AccountsScreen: React.FC = () => {
     restoreAccount,
     deleteAccount,
     reorderAccounts,
+    showToast,
   } = useFinance();
+
+  // Čekající potvrzení archivace nebo smazání účtu (vlastní dialog místo window.confirm)
+  const [pendingAction, setPendingAction] = useState<{ kind: 'archive' | 'delete'; account: Account } | null>(null);
 
   const [showArchived, setShowArchived] = useState(false);
   const [typeFilters, setTypeFilters] = useState<AccountType[]>([]);
@@ -108,30 +113,43 @@ export const AccountsScreen: React.FC = () => {
     setAccountModalOpen(true);
   };
 
-  const handleArchive = (acc: Account) => {
-    if (acc.isDefault) {
-      if (!confirm('Tento účet je nastaven jako výchozí. Po jeho archivaci aplikace již nebude mít žádný výchozí účet. Přejete si pokračovat?')) {
-        return;
-      }
-    }
+  const runArchive = (acc: Account) => {
     const res = archiveAccount(acc.id);
     if (!res.success && res.message) {
-      alert(res.message);
+      showToast(res.message, 'error');
     }
   };
 
-  const handleDelete = (acc: Account) => {
-    let confirmMsg = `Opravdu si přejete smazat účet „${acc.name}“?`;
+  // Výchozí účet se archivuje až po potvrzení, ostatní hned (archivace je vratná)
+  const handleArchive = (acc: Account) => {
     if (acc.isDefault) {
-      confirmMsg = `Tento účet je nastaven jako výchozí. Po jeho smazání aplikace již nebude mít žádný výchozí účet.\n\nOpravdu si přejete smazat účet „${acc.name}“?`;
+      setPendingAction({ kind: 'archive', account: acc });
+      return;
     }
-    if (confirm(confirmMsg)) {
-      const res = deleteAccount(acc.id);
-      if (!res.success && res.message) {
-        alert(res.message);
-      }
+    runArchive(acc);
+  };
+
+  const handleDelete = (acc: Account) => {
+    setPendingAction({ kind: 'delete', account: acc });
+  };
+
+  const confirmPendingAction = () => {
+    if (!pendingAction) return;
+    if (pendingAction.kind === 'archive') {
+      runArchive(pendingAction.account);
+      return;
+    }
+    const res = deleteAccount(pendingAction.account.id);
+    if (!res.success && res.message) {
+      showToast(res.message, 'error');
     }
   };
+
+  const pendingMessage = !pendingAction
+    ? ''
+    : pendingAction.kind === 'archive'
+      ? 'Tento účet je nastaven jako výchozí. Po jeho archivaci aplikace již nebude mít žádný výchozí účet. Přejete si pokračovat?'
+      : `${pendingAction.account.isDefault ? 'Tento účet je nastaven jako výchozí. Po jeho smazání aplikace již nebude mít žádný výchozí účet. ' : ''}Opravdu si přejete smazat účet „${pendingAction.account.name}“?`;
 
   const getTypeLabel = (type: AccountType) => {
     switch (type) {
@@ -173,7 +191,7 @@ export const AccountsScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAdd}
-            className="h-8 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Přidat účet</span>
@@ -384,7 +402,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setMarketValueAccount(acc)}
-                      className="flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
+                      className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
                     >
                       Hodnota
                     </button>
@@ -392,7 +410,7 @@ export const AccountsScreen: React.FC = () => {
                       type="button"
                       onClick={() => setFeeAccount(acc)}
                       title="Zadat měsíční poplatek"
-                      className="py-2 px-3 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-purple-200 rounded-xl transition-colors shrink-0"
+                      className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-purple-200 rounded-xl transition-colors shrink-0"
                     >
                       Poplatek
                     </button>
@@ -401,7 +419,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setReconcileAccount(acc)}
-                    className="flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                    className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
                   >
                     Aktualizovat skutečný stav
                   </button>
@@ -410,7 +428,7 @@ export const AccountsScreen: React.FC = () => {
                   type="button"
                   onClick={() => setHistoryAccount(acc)}
                   title="Historie účtu"
-                  className="py-2 px-3 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
+                  className="max-md:min-h-11 py-2 px-3 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
                 >
                   <History className="w-3.5 h-3.5 text-slate-500" />
                   <span>Historie</span>
@@ -450,6 +468,16 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!historyAccount}
         onClose={() => setHistoryAccount(null)}
         account={historyAccount}
+      />
+
+      <ConfirmationModal
+        isOpen={!!pendingAction}
+        onClose={() => setPendingAction(null)}
+        onConfirm={confirmPendingAction}
+        title={pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet' : 'Smazat účet'}
+        message={pendingMessage}
+        confirmText={pendingAction?.kind === 'archive' ? 'Archivovat' : 'Smazat účet'}
+        isDestructive={pendingAction?.kind === 'delete'}
       />
     </div>
   );

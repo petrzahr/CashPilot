@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Category, CategoryType } from '../../types/finance';
 import { CategoryModal } from './CategoryModal';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { 
   Plus, 
@@ -14,7 +15,8 @@ import {
 } from 'lucide-react';
 
 export const CategoriesScreen: React.FC = () => {
-  const { categories, archiveCategory, restoreCategory, deleteCategory } = useFinance();
+  const { categories, archiveCategory, restoreCategory, deleteCategory, showToast } = useFinance();
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showArchived, setShowArchived] = useState(false);
@@ -60,11 +62,14 @@ export const CategoriesScreen: React.FC = () => {
   };
 
   const handleDelete = (cat: Category) => {
-    if (confirm(`Opravdu chcete smazat kategorii „${cat.name}“?`)) {
-      const res = deleteCategory(cat.id);
-      if (!res.success && res.message) {
-        alert(res.message);
-      }
+    setDeletingCategory(cat);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingCategory) return;
+    const res = deleteCategory(deletingCategory.id);
+    if (!res.success && res.message) {
+      showToast(res.message, 'error');
     }
   };
 
@@ -73,7 +78,7 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div role="group" aria-label="Typ kategorií" className="h-8 w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
+        <div role="group" aria-label="Typ kategorií" className="h-8 max-md:h-[52px] w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('expense')}
             aria-pressed={activeTab === 'expense'}
@@ -113,7 +118,7 @@ export const CategoriesScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAddMain}
-            className="h-8 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nová hlavní kategorie</span>
@@ -274,6 +279,16 @@ export const CategoriesScreen: React.FC = () => {
         defaultType={activeTab}
         defaultParentId={defaultParentId}
         mode={modalMode}
+      />
+
+      <ConfirmationModal
+        isOpen={!!deletingCategory}
+        onClose={() => setDeletingCategory(null)}
+        onConfirm={confirmDelete}
+        title="Smazat kategorii"
+        message={`Opravdu chcete smazat kategorii „${deletingCategory?.name ?? ''}“?`}
+        confirmText="Smazat kategorii"
+        isDestructive
       />
     </div>
   );

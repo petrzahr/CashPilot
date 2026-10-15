@@ -9,6 +9,9 @@ import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../.
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
 import { Repeat, Hash, Loader2 } from 'lucide-react';
+import { FieldError, FieldErrors, FormError, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
+
+type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -80,6 +83,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   // Dialog úpravy pravidelné položky
   const [recurringEditMode, setRecurringEditMode] = useState<'occurrence' | 'future' | 'series'>('occurrence');
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<TxField>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const clearError = (field: TxField) => setErrors(prev => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   const isEditing = !!transactionToEdit;
   const isLinkedToRecurring = !!transactionToEdit?.recurringRuleId;
@@ -107,6 +113,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     .sort((a, b) => czechStringCompare(a.name, b.name));
 
   useEffect(() => {
+    setErrors({});
+    setSaveError(null);
     if (transactionToEdit) {
       setTitle(transactionToEdit.title);
       const haler = transactionToEdit.status === 'executed' && transactionToEdit.actualAmountInHaler !== undefined
@@ -220,38 +228,29 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     const amountInHaler = parseInputToHaler(amountStr);
     const sequenceNum = Math.max(1, parseInt(sequenceStr, 10) || 1);
 
-    if (!title.trim()) {
-      alert('Zadejte prosím název položky.');
-      return;
-    }
-    if (amountInHaler <= 0) {
-      alert('Částka musí být kladné číslo.');
-      return;
-    }
-    if (!sourceAccountId) {
-      alert('Vyberte prosím účet.');
-      return;
-    }
-    if (sourceAccError) {
-      alert(sourceAccError);
-      return;
-    }
+    const nextErrors: FieldErrors<TxField> = {};
+    if (!title.trim()) nextErrors.title = 'Zadejte prosím název položky.';
+    if (amountInHaler <= 0) nextErrors.amount = 'Částka musí být kladné číslo.';
+    if (!sourceAccountId) nextErrors.source = 'Vyberte prosím účet.';
+    else if (sourceAccError) nextErrors.source = sourceAccError;
     if (type === 'transfer') {
-      if (!targetAccountId) {
-        alert('Pro převod vyberte cílový účet.');
-        return;
-      }
-      if (sourceAccountId === targetAccountId) {
-        alert('Zdrojový a cílový účet převodu se musí lišit.');
-        return;
-      }
-      if (targetAccError) {
-        alert(targetAccError);
-        return;
-      }
+      if (!targetAccountId) nextErrors.target = 'Pro převod vyberte cílový účet.';
+      else if (sourceAccountId === targetAccountId) nextErrors.target = 'Zdrojový a cílový účet převodu se musí lišit.';
+      else if (targetAccError) nextErrors.target = targetAccError;
     }
     if (isRecurring && !isLinkedToRecurring && recurringEndDate && recurringEndDate < date) {
-      alert('Datum konce opakování nemůže být dříve než datum první platby.');
+      nextErrors.endDate = 'Datum konce opakování nemůže být dříve než datum první platby.';
+    }
+    setErrors(nextErrors);
+    setSaveError(null);
+    if (Object.values(nextErrors).some(Boolean)) {
+      focusFirstInvalid(nextErrors, [
+        ['title', `${fieldId}-1`],
+        ['amount', `${fieldId}-2`],
+        ['source', `${fieldId}-6`],
+        ['target', `${fieldId}-7`],
+        ['endDate', `${fieldId}-12`],
+      ]);
       return;
     }
 
@@ -395,7 +394,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Při ukládání položky došlo k chybě.');
+      setSaveError(err instanceof Error && err.message ? err.message : 'Při ukládání položky došlo k chybě.');
     } finally {
       setIsSaving(false);
     }
@@ -408,7 +407,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       title={isEditing ? 'Upravit položku' : 'Nová položka'}
       maxWidth="max-w-xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Přepínač typu pohybu */}
         <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
           <button
@@ -511,9 +510,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               required
               placeholder="např. Nákup potravin, Mzda"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
+              {...fieldErrorProps(`${fieldId}-1`, errors.title)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.title)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
             />
+            <FieldError inputId={`${fieldId}-1`} message={errors.title} />
           </div>
 
           <div>
@@ -528,13 +529,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 required
                 placeholder="0"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
+                onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
+                {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.amount)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium`}
               />
               <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500 pointer-events-none">
                 Kč
               </span>
             </div>
+            <FieldError inputId={`${fieldId}-2`} message={errors.amount} />
           </div>
         </div>
 
@@ -595,8 +598,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <select id={`${fieldId}-6`}
               required
               value={sourceAccountId}
-              onChange={(e) => setSourceAccountId(e.target.value)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${sourceAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+              onChange={(e) => { setSourceAccountId(e.target.value); clearError('source'); }}
+              {...fieldErrorProps(`${fieldId}-6`, errors.source || sourceAccError)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.source || sourceAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
             >
               <option value="">-- Žádný --</option>
               {activeAccounts.map((acc) => {
@@ -608,9 +612,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 );
               })}
             </select>
-            {sourceAccError && (
-              <p className="text-xs text-red-600 font-medium mt-1">{sourceAccError}</p>
-            )}
+            <FieldError inputId={`${fieldId}-6`} message={errors.source || sourceAccError} />
           </div>
 
           {type === 'transfer' ? (
@@ -621,8 +623,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <select id={`${fieldId}-7`}
                 required
                 value={targetAccountId}
-                onChange={(e) => setTargetAccountId(e.target.value)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border ${targetAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+                onChange={(e) => { setTargetAccountId(e.target.value); clearError('target'); }}
+                {...fieldErrorProps(`${fieldId}-7`, errors.target || targetAccError)}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.target || targetAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
               >
                 <option value="">-- Žádný --</option>
                 {activeAccounts
@@ -636,9 +639,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     );
                   })}
               </select>
-              {targetAccError && (
-                <p className="text-xs text-red-600 font-medium mt-1">{targetAccError}</p>
-              )}
+              <FieldError inputId={`${fieldId}-7`} message={errors.target || targetAccError} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
@@ -752,9 +753,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     type="date"
                     value={recurringEndDate}
                     min={date}
-                    onChange={(e) => setRecurringEndDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
+                    {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
+                    className={`w-full px-3 py-2 text-sm bg-white border ${fieldBorderClass(errors.endDate)} rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500`}
                   />
+                  <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">
                     Prázdné pole = opakování bez konce.
                   </p>
@@ -780,6 +783,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
+
+        <FormError message={saveError} />
 
         {/* Akční tlačítka */}
         <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">

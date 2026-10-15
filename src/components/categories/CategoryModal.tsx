@@ -4,6 +4,7 @@ import { Modal } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { COLOR_PALETTE } from '../../constants/colors';
+import { FieldError, FieldErrors, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   const [parentId, setParentId] = useState<string | null>(isMainCategoryMode ? null : defaultParentId);
   const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [updateHistorical, setUpdateHistorical] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<'name' | 'parent'>>({});
 
   // Hlavní kategorie stejného typu pro výběr nadřazené kategorie (seřazeno A–Z)
   const mainCategories = sortCategoriesAlphabetically(
@@ -42,6 +44,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   );
 
   useEffect(() => {
+    setErrors({});
     if (categoryToEdit) {
       setName(categoryToEdit.name);
       setType(categoryToEdit.type);
@@ -59,8 +62,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('Zadejte prosím název kategorie.');
+    const nextErrors: FieldErrors<'name' | 'parent'> = {};
+    if (!name.trim()) nextErrors.name = 'Zadejte prosím název kategorie.';
+    if (!isEditMode && !isMainCategoryMode && !parentId) nextErrors.parent = 'Vyberte prosím nadřazenou hlavní kategorii.';
+    setErrors(nextErrors);
+    if (nextErrors.name || nextErrors.parent) {
+      focusFirstInvalid(nextErrors, [['name', `${fieldId}-1`], ['parent', `${fieldId}-2`]]);
       return;
     }
 
@@ -90,11 +97,8 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         status: 'active',
       });
     } else {
-      // Vytvoření Nové podkategorie
-      if (!parentId) {
-        alert('Vyberte prosím nadřazenou hlavní kategorii.');
-        return;
-      }
+      // Vytvoření Nové podkategorie (nadřazená kategorie je ověřená výše)
+      if (!parentId) return;
       const parentCat = categories.find(c => c.id === parentId);
       const subType = parentCat ? parentCat.type : type;
 
@@ -131,7 +135,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       subtitle={modalSubtitle}
       maxWidth="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div>
           <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název kategorie *
@@ -141,9 +145,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             required
             placeholder="např. Bydlení, Restaurace, Mzda"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+            onChange={(e) => { setName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })); }}
+            {...fieldErrorProps(`${fieldId}-1`, errors.name)}
+            className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.name)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
           />
+          <FieldError inputId={`${fieldId}-1`} message={errors.name} />
         </div>
 
         {/* Typ kategorie (pouze pro hlavní kategorie) */}
@@ -189,12 +195,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               onChange={(e) => {
                 const newParentId = e.target.value || null;
                 setParentId(newParentId);
+                setErrors(prev => ({ ...prev, parent: undefined }));
                 const parentCat = categories.find(c => c.id === newParentId);
                 if (parentCat) {
                   setType(parentCat.type);
                 }
               }}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...fieldErrorProps(`${fieldId}-2`, errors.parent)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.parent)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
             >
               {isSubcategoryMode && !parentId && (
                 <option value="">-- Vyberte hlavní kategorii --</option>
@@ -205,6 +213,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 </option>
               ))}
             </select>
+            <FieldError inputId={`${fieldId}-2`} message={errors.parent} />
           </div>
         )}
 

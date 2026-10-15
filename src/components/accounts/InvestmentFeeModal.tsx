@@ -6,6 +6,7 @@ import { getAccountFees } from '../../services/investmentPerformanceService';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { generatePeriodsBetween, getPeriodForDate } from '../../services/periodService';
 import { Info } from 'lucide-react';
+import { FieldError, fieldBorderClass, fieldErrorProps } from '../common/FieldError';
 
 interface InvestmentFeeModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
   const [selectedKey, setSelectedKey] = useState('');
   const [amountStr, setAmountStr] = useState('');
   const [note, setNote] = useState('');
+  const [amountError, setAmountError] = useState<string | null>(null);
 
   const accountFees = useMemo(() => account ? getAccountFees(investmentFees, account.id) : [], [account, investmentFees]);
 
@@ -39,6 +41,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
     const source = existing ?? previous;
     setAmountStr(source ? halerToInputValue(source.amountInHaler) : '');
     setNote(existing?.note ?? '');
+    setAmountError(null);
   };
 
   useEffect(() => {
@@ -53,8 +56,9 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
-      alert('Zadejte platnou částku poplatku.');
+    if (!amountStr.trim() || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
+      setAmountError('Zadejte platnou částku poplatku.');
+      document.getElementById(`${fieldId}-2`)?.focus();
       return;
     }
     saveInvestmentFee(account.id, selectedKey, amountInHaler, note);
@@ -69,7 +73,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
       subtitle="Měsíční poplatek obchodníka"
       maxWidth="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">Období *</label>
@@ -93,9 +97,11 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
               min="0"
               required
               value={amountStr}
-              onChange={(e) => setAmountStr(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
+              onChange={(e) => { setAmountStr(e.target.value); setAmountError(null); }}
+              {...fieldErrorProps(`${fieldId}-2`, amountError)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(amountError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold`}
             />
+            <FieldError inputId={`${fieldId}-2`} message={amountError} />
           </div>
         </div>
 
