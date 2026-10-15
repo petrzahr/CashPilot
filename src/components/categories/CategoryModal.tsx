@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { COLOR_PALETTE } from '../../constants/colors';
@@ -219,7 +219,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Volba při změně rodičovské kategorie v editaci */}
         {isEditMode && categoryToEdit && categoryToEdit.parentId !== parentId && parentId && (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
             <p className="font-semibold">Přesunujete tuto podkategorii do jiné hlavní kategorie:</p>
             <label className="flex items-start gap-2 cursor-pointer mt-1">
               <input
@@ -255,7 +255,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -269,7 +269,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           >
             {isEditMode ? 'Uložit' : 'Vytvořit'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

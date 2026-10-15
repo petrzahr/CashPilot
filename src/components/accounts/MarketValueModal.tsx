@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account, MarketValueSnapshot } from '../../types/finance';
 import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
@@ -176,14 +176,14 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           />
         </div>
 
-        <div className="flex items-start gap-2 p-3 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
+        <div className="flex items-start gap-2 p-4 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             Změna tržní hodnoty majetkového účtu není příjem ani výdaj a neovlivňuje provozní rozpočet ani použitelné peníze. Ovlivňuje pouze hodnotu tohoto účtu a celkový čistý majetek.
           </span>
         </div>
 
-        <div className="mt-5 flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -199,7 +199,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           >
             {isSubmitting ? 'Ukládám...' : 'Uložit hodnotu'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

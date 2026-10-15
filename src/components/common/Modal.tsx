@@ -75,42 +75,56 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         className="fixed inset-0 bg-scrim/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          aria-describedby={subtitle ? subtitleId : undefined}
-          tabIndex={-1}
-          onKeyDown={handleTrapKeyDown}
-          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 w-full ${maxWidth} border border-slate-200/80 focus:outline-none`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <div>
-              <h3 id={titleId} className="text-lg font-semibold text-slate-900">{title}</h3>
-              {subtitle && <p id={subtitleId} className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Zavřít"
-              className="rounded-lg p-3 -m-1.5 md:p-1.5 md:m-0 text-slate-500 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {/* Hlavička a patička stojí, posouvá se jen obsah; dialog se vždy vejde do viditelné výšky */}
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={subtitle ? subtitleId : undefined}
+        tabIndex={-1}
+        onKeyDown={handleTrapKeyDown}
+        className={`relative flex flex-col w-full ${maxWidth} max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-2xl bg-white text-left shadow-xl border border-slate-200/80 focus:outline-none`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-slate-100 px-5 sm:px-6 py-4">
+          <div className="min-w-0">
+            <h3 id={titleId} className="text-lg font-semibold text-slate-900">{title}</h3>
+            {subtitle && <p id={subtitleId} className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
-          <div className="px-6 py-5 max-h-[80vh] overflow-y-auto">
-            {children}
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Zavřít"
+            className="shrink-0 rounded-lg p-3 -m-1.5 md:p-1.5 md:m-0 text-slate-500 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="modal-body flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 has-[.modal-footer]:pb-0">
+          {children}
         </div>
       </div>
     </div>
   );
 };
+
+/**
+ * Akční lišta dialogu. Při dlouhém obsahu zůstává přilepená ke spodnímu okraji,
+ * ale patří do formuláře, takže odesílací tlačítko dál funguje přes onSubmit.
+ */
+export const ModalFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = 'justify-end',
+}) => (
+  <div
+    className={`modal-footer sticky bottom-0 z-10 -mx-5 sm:-mx-6 !mt-6 px-5 sm:px-6 py-4 bg-white border-t border-slate-100 flex items-center gap-3 [&>button]:whitespace-nowrap [&>button]:min-h-10 max-md:[&>button]:min-h-11 max-sm:[&>button]:flex-auto max-sm:[&>button]:justify-center ${className}`}
+  >
+    {children}
+  </div>
+);

@@ -11,6 +11,20 @@
   }
 }
 
+@layer components {
+  /* Pole ve formulářových dialozích: jednotná výška bez ohledu na typ (datum, výběr, číslo mají jiné výchozí výšky prohlížeče) */
+  .modal-body :is(input:not([type='checkbox'], [type='radio'], [type='color'], [type='file'], [type='range']), select) {
+    height: 2.5rem;
+  }
+
+  /* Na dotyku dosahují pole 44px */
+  @media (max-width: 767.98px) {
+    .modal-body :is(input:not([type='checkbox'], [type='radio'], [type='color'], [type='file'], [type='range']), select) {
+      height: 2.75rem;
+    }
+  }
+}
+
 /* Custom scrollbar for clean aesthetic */
 ::-webkit-scrollbar {
   width: 6px;

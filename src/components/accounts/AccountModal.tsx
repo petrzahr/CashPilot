@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { COLOR_PALETTE } from '../../constants/colors';
@@ -216,7 +216,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         </div>
 
         {/* Přepínače zahrnutí a výchozí účet */}
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -274,7 +274,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -288,7 +288,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           >
             {isEditing ? 'Uložit změny' : 'Vytvořit účet'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

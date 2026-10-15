@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { AlertTriangle, Download, Check } from 'lucide-react';
 
 export interface AffectedRecordGroup {
@@ -158,7 +158,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         )}
 
         {/* Tlačítka akce */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <ModalFooter>
           <button
             ref={cancelButtonRef}
             type="button"
@@ -183,7 +183,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
           >
             {confirmButtonText}
           </button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

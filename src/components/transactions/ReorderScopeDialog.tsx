@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { ArrowUpDown, Repeat } from 'lucide-react';
 
 interface ReorderScopeDialogProps {
@@ -123,7 +123,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           </label>
         </div>
 
-        <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -138,7 +138,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           >
             <span>Potvrdit</span>
           </button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

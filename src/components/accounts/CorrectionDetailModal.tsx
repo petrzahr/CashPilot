@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { Transaction, BalanceCorrection } from '../../types/finance';
 import { formatCurrency } from '../../services/currencyService';
@@ -143,7 +143,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </form>
 
           {/* Upozornění na neměnnost finanční částky */}
-          <div className="flex items-start gap-2 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+          <div className="flex items-start gap-2 p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
               Částku evidované korekce nelze přímo změnit, aby byla zachována integrita navazujících výpočtů. Pokud potřebujete stav opravit, smažte tuto korekci a zadejte skutečný stav znovu.
@@ -151,7 +151,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </div>
 
           {/* Patička s akcemi */}
-          <div className="pt-2 flex justify-between items-center border-t border-slate-100">
+          <ModalFooter className="justify-between">
             <button
               type="button"
               onClick={() => setIsConfirmDeleteOpen(true)}
@@ -168,7 +168,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
             >
               Zavřít
             </button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
 

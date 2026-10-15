@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account } from '../../types/finance';
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getAccountBalanceAtDate } from '../../services/financialEngine';
@@ -176,11 +176,11 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 bg-sky-50/70 p-3 rounded-xl border border-sky-100">
+        <p className="text-xs text-slate-500 bg-sky-50/70 p-4 rounded-xl border border-sky-100">
           💡 <strong>Princip CashPilot:</strong> Aplikace nikdy potají nepřepisuje historické položky ani původní počáteční stav. Rozdíl se uloží jako transparentní korekce zůstatku k tomuto datu a promítne se do navazujícího výhledu.
         </p>
 
-        <div className="mt-5 flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -196,7 +196,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           >
             {isSubmitting ? 'Ukládám...' : diffInHaler === 0 ? 'Potvrdit shodu stavu' : 'Uložit skutečný stav'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

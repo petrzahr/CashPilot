@@ -203,6 +203,11 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 - **Border:** 1px vlasová linka.
 - **Internal Padding:** 20px (24px u sekcí Nastavení).
 
+### Dialogs
+- **Structure:** pevná hlavička, posouvající se obsah a akční lišta `ModalFooter` přilepená ke spodnímu okraji; dialog se vždy vejde do viditelné výšky (okraj 16px, od 640px 24px) a nikdy se neposouvá dvakrát.
+- **Spacing:** vnitřní okraj 20px na mobilu, 24px od 640px; pole 16px od sebe, 24px nad akční lištou.
+- **Fields & actions:** pole i tlačítka v liště mají 40px, na dotyku 44px; na úzkém mobilu se tlačítka roztáhnou na šířku lišty.
+
 ### Inputs / Fields
 - **Style:** povrch, 1px linka, zaoblení 12px, text 14px.
 - **Focus:** okraj do modré a jemná modrá aura.

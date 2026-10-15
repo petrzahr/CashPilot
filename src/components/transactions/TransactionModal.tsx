@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
@@ -447,7 +447,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Režim úpravy pravidelné položky */}
         {isEditing && isLinkedToRecurring && (
-          <div className="p-3 bg-sky-50 border border-sky-100 rounded-xl space-y-2">
+          <div className="p-4 bg-sky-50 border border-sky-100 rounded-xl space-y-2">
             <div className="flex items-center gap-2 text-xs font-semibold text-sky-800">
               <Repeat className="w-4 h-4" />
               <span>Tato položka je součástí pravidelné série</span>
@@ -650,7 +650,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 <select id={`${fieldId}-8`}
                   value={categoryId}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 >
                   <option value="">-- Žádná --</option>
                   {relevantCategories.map((cat) => (
@@ -669,7 +669,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   disabled={!categoryId || subcategories.length === 0}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-50 disabled:text-slate-400"
+                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-50 disabled:text-slate-400"
                 >
                   <option value="">-- Žádná --</option>
                   {subcategories.map((sub) => (
@@ -708,7 +708,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </label>
 
             {isRecurring && (
-              <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className={`grid ${frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   <div>
                     <label htmlFor={`${fieldId}-10`} className="block text-xs font-semibold text-slate-500 mb-1">
@@ -717,7 +717,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-                      className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
                     >
                       <option value="monthly">Každý měsíc</option>
                       <option value="bi_monthly">Každé 2 měsíce</option>
@@ -740,7 +740,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           const val = parseInt(e.target.value, 10);
                           setDayOfMonth(isNaN(val) ? 0 : val);
                         }}
-                        className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                     </div>
                   )}
@@ -755,7 +755,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     min={date}
                     onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
-                    className={`w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
                   />
                   <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">
@@ -787,7 +787,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         <FormError message={saveError} />
 
         {/* Akční tlačítka */}
-        <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -803,7 +803,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isEditing ? 'Uložit změny' : 'Vytvořit položku'}</span>
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );
