@@ -1221,11 +1221,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             } ${isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
+                              {/* Úchyt pro přetažení a šipky pro posun tvoří jeden úzký ovladač pořadí */}
+                              <div className="flex items-center gap-0.5 shrink-0">
                               <div aria-hidden="true" className="max-md:hidden text-slate-500 hover:text-slate-600 cursor-grab p-0.5">
                                 <GripVertical className="w-4 h-4" />
                               </div>
 
                               <MoveButtons
+                                layout="stack"
                                 className="max-md:-ml-2 shrink-0"
                                 itemLabel={tx.title}
                                 canMoveUp={stepIndex > 0}
@@ -1237,6 +1240,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   direction
                                 )}
                               />
+                              </div>
 
                               <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 shrink-0">
                                 #{tx.sequence || 1}
