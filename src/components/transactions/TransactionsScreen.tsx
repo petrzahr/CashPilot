@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
-import { formatCzechDate } from '../../services/periodService';
+import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
+import { StatusBadgeMenu, PAST_PLANNED_HINT } from '../shared/StatusBadgeMenu';
 import {
   Plus,
   Search,
@@ -81,6 +82,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   // Stav probíhající změny stavu položky (Akce sloupec)
   const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
+
+  // Dnešní datum v pražském čase: minulé položky se nedají vrátit do plánu (uskuteční se samy)
+  const todayIso = getTodayInPrague();
 
   const handleStatusChange = async (txId: string, newStatus: TransactionStatus) => {
     if (updatingStatusTxId) return;
@@ -553,7 +557,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((tx) => {
+                filteredTransactions.map((tx, rowIndex) => {
                   const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                   const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                   const cat = categories.find(c => c.id === tx.categoryId);
@@ -653,19 +657,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="py-3 px-4 overflow-hidden">
-                        {isExecuted ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <Check className="w-3 h-3" /> Uskutečněná
-                          </span>
-                        ) : isCancelled ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                            <Ban className="w-3 h-3" /> Zrušená
+                      <td className="py-3 px-4">
+                        {/* Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek */}
+                        {isCorrection ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                            Korekce
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            <Clock className="w-3 h-3" /> Plánovaná
-                          </span>
+                          <StatusBadgeMenu
+                            tx={tx}
+                            todayIso={todayIso}
+                            isUpdating={updatingStatusTxId === tx.id}
+                            onChange={(status) => handleStatusChange(tx.id, status)}
+                            openUp={rowIndex >= filteredTransactions.length - 3 && filteredTransactions.length > 3}
+                          />
                         )}
                       </td>
                       <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
@@ -719,8 +724,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               ) : (
                                 <button
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Vrátit do plánovaných"
+                                  disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
+                                  title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
                                   aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >

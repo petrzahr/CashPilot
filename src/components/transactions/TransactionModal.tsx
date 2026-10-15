@@ -5,7 +5,7 @@ import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } fro
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
-import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../../services/periodService';
+import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
 import { Hash, Loader2 } from 'lucide-react';
@@ -168,6 +168,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     // rozepsaný formulář uživateli pod rukama.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactionToEdit?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
+
+  // Plánovaná položka s dnešním či starším datem se sama uskuteční, proto ji tak nejde nastavit
+  const isPastOrToday = !!date && date <= getTodayInPrague();
 
   // Rychlý zápis: nová položka začíná rovnou v poli Částka (na telefonu se otevře klávesnice)
   const addAnotherRef = useRef(false);
@@ -563,10 +566,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               onChange={(e) => setStatus(e.target.value as TransactionStatus)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             >
-              <option value="planned">Plánovaná</option>
+              <option value="planned" disabled={isPastOrToday && status !== 'planned'}>Plánovaná</option>
               <option value="executed">Uskutečněná</option>
               <option value="cancelled">Zrušená</option>
             </select>
+            {isPastOrToday && (
+              <p className="text-xs text-slate-500 mt-1">Položky s dnešním nebo starším datem se uskuteční automaticky.</p>
+            )}
           </div>
         </div>
 

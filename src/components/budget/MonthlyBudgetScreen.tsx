@@ -37,6 +37,7 @@ import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MoveButtons } from '../shared/MoveButtons';
+import { StatusBadgeMenu, PAST_PLANNED_HINT } from '../shared/StatusBadgeMenu';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
 
@@ -52,34 +53,6 @@ const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
   { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
   { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
 ].sort((a, b) => czechStringCompare(a.label, b.label));
-
-// Volby nabídky stavu položky: jantar čeká, zelená proběhla, šedá je zrušená
-const STATUS_MENU_ITEMS: { value: TransactionStatus; label: string; Icon: LucideIcon; activeClass: string; iconClass: string }[] = [
-  { value: 'planned', label: 'Plánovaná', Icon: Clock, activeClass: 'text-amber-700 bg-amber-50/60', iconClass: 'text-amber-600' },
-  { value: 'executed', label: 'Uskutečněná', Icon: Check, activeClass: 'text-emerald-700 bg-emerald-50/60', iconClass: 'text-emerald-600' },
-  { value: 'cancelled', label: 'Zrušená', Icon: Ban, activeClass: 'text-slate-500 bg-slate-100', iconClass: 'text-slate-500' },
-];
-
-/** Klávesnice v nabídce stavu: šipky mezi volbami, Escape zavře a vrátí fokus na štítek. */
-const createStatusMenuKeyHandler = (close: () => void) => (e: React.KeyboardEvent<HTMLDivElement>) => {
-  const trigger = e.currentTarget.querySelector<HTMLButtonElement>('button[aria-haspopup]');
-  const items = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'));
-  if (e.key === 'Escape' && items.length > 0) {
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-    trigger?.focus();
-    return;
-  }
-  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  if (items.length === 0) return;
-  e.preventDefault();
-  const current = items.indexOf(document.activeElement as HTMLButtonElement);
-  const next = current === -1
-    ? (e.key === 'ArrowDown' ? 0 : items.length - 1)
-    : (current + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
-  items[next].focus();
-};
 
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
@@ -172,93 +145,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     }
   };
 
-  const handleStatusMenuKeyDown = createStatusMenuKeyHandler(() => setActiveStatusMenuTxId(null));
-
-  const renderStatusBadge = (tx: Transaction) => {
-    const isUpdating = updatingStatusTxId === tx.id;
-    const isMenuOpen = activeStatusMenuTxId === tx.id;
-
-    let badgeClass = 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-    let Icon = Clock;
-    let label = 'Plánovaná';
-
-    if (tx.status === 'executed') {
-      badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-      Icon = Check;
-      label = 'Uskutečněná';
-    } else if (tx.status === 'cancelled') {
-      badgeClass = 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200';
-      Icon = Ban;
-      label = 'Zrušená';
-    }
-
-    return (
-      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()} onKeyDown={handleStatusMenuKeyDown}>
-        {isMenuOpen && (
-          <div
-            className="fixed inset-0 z-20 cursor-default"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveStatusMenuTxId(null);
-            }}
-          />
-        )}
-        <button
-          type="button"
-          disabled={isUpdating}
-          aria-haspopup="menu"
-          aria-expanded={isMenuOpen}
-          aria-label={`Stav položky ${tx.title}: ${label}. Změnit stav`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setActiveStatusMenuTxId(isMenuOpen ? null : tx.id);
-          }}
-          title="Změnit stav položky (Plánovaná, Uskutečněná, Zrušená)"
-          className={`max-md:min-h-6 relative max-md:after:absolute max-md:after:-inset-2.5 max-md:after:content-[''] inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer select-none ${badgeClass} ${
-            isUpdating ? 'opacity-70 cursor-wait' : ''
-          }`}
-        >
-          {isUpdating ? (
-            <Loader2 className="w-3 h-3 animate-spin text-sky-600" aria-hidden="true" />
-          ) : (
-            <Icon className="w-3 h-3 shrink-0" aria-hidden="true" />
-          )}
-          <span>{label}</span>
-          <ChevronDown aria-hidden="true" className={`w-2.5 h-2.5 opacity-60 transition-transform motion-reduce:transition-none ${isMenuOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {isMenuOpen && (
-          <div
-            role="menu"
-            aria-label={`Stav položky ${tx.title}`}
-            className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl shadow-lg border border-slate-200 py-1 min-w-[140px] text-xs font-normal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {STATUS_MENU_ITEMS.map(({ value, label: itemLabel, Icon: ItemIcon, activeClass, iconClass }) => {
-              const isCurrent = tx.status === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={isCurrent}
-                  disabled={isUpdating}
-                  onClick={() => handleStatusChange(tx.id, value)}
-                  className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-100 transition-colors ${
-                    isCurrent ? `font-bold ${activeClass}` : 'text-slate-500'
-                  }`}
-                >
-                  <ItemIcon className={`w-3.5 h-3.5 ${iconClass}`} aria-hidden="true" />
-                  <span>{itemLabel}</span>
-                  {isCurrent && <Check className={`w-3 h-3 ml-auto ${iconClass}`} aria-hidden="true" />}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
+  // Štítek stavu je ve všech seznamech stejný sdílený ovladač (viz StatusBadgeMenu)
+  const renderStatusBadge = (tx: Transaction, openUp = false) => (
+    <StatusBadgeMenu
+      tx={tx}
+      todayIso={todayIso}
+      isUpdating={updatingStatusTxId === tx.id}
+      onChange={(status) => handleStatusChange(tx.id, status)}
+      openUp={openUp}
+    />
+  );
 
   // Filtry v rámci období (multi-select - prázdný výběr = bez omezení)
   const [searchQuery, setSearchQuery] = useState('');
@@ -1353,8 +1249,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     ) : (
                                       <button
                                         onClick={() => handleStatusChange(tx.id, 'planned')}
-                                        disabled={updatingStatusTxId === tx.id}
-                                        title="Vrátit do plánovaných"
+                                        disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
+                                        title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
                                         aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                         className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                       >
@@ -1462,7 +1358,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   </td>
                 </tr>
               ) : (
-                sortedListTransactions.map((tx) => {
+                sortedListTransactions.map((tx, rowIndex) => {
                   const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                   const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                   const cat = categories.find(c => c.id === tx.categoryId);
@@ -1551,19 +1447,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="py-3 px-4 overflow-hidden">
-                        {isExecuted || isCorrection ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <Check className="w-3 h-3" /> Uskutečněná
-                          </span>
-                        ) : isCancelled ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                            <Ban className="w-3 h-3" /> Zrušená
+                      <td className="py-3 px-4">
+                        {/* Stejný štítek jako v zobrazení po dnech: korekce má vlastní štítek, ostatní stav lze změnit */}
+                        {isCorrection ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                            Korekce
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            <Clock className="w-3 h-3" /> Plánovaná
-                          </span>
+                          renderStatusBadge(tx, rowIndex >= sortedListTransactions.length - 3 && sortedListTransactions.length > 3)
                         )}
                       </td>
                       <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
@@ -1617,8 +1508,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               ) : (
                                 <button
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Vrátit do plánovaných"
+                                  disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
+                                  title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
                                   aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >

@@ -33,9 +33,23 @@ export const ToastContainer: React.FC = () => {
             role={toast.type === 'error' ? 'alert' : undefined}
             className={`pointer-events-auto flex items-center justify-between p-4 rounded-xl border shadow-lg backdrop-blur-sm transition-all duration-200 ${bgClass}`}
           >
-            <div className="flex items-center gap-3">
-              <span className="shrink-0" aria-hidden="true">{icon}</span>
-              <span className="text-sm font-medium">{toast.text}</span>
+            <div className="flex items-start gap-3 min-w-0">
+              <span className="shrink-0 mt-0.5" aria-hidden="true">{icon}</span>
+              <div className="min-w-0 space-y-2">
+                <span className="block text-sm font-medium">{toast.text}</span>
+                {toast.action && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      removeToast(toast.id);
+                      toast.action?.onClick();
+                    }}
+                    className="max-md:min-h-11 inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-colors"
+                  >
+                    {toast.action.label}
+                  </button>
+                )}
+              </div>
             </div>
             <button
               type="button"

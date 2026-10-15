@@ -48,6 +48,18 @@
   }
 }
 
+/* Akční lišta dialogu na úzkém telefonu: tlačítka se zalomí místo přetečení.
+   Při třech tlačítkách jde hlavní akce (poslední) na celou šířku nahoru, vedlejší se dělí o řádek pod ní. */
+@media (max-width: 639.98px) {
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+  .modal-footer:has(> button:nth-of-type(3)) > button:last-of-type {
+    flex-basis: 100%;
+    order: -1;
+  }
+}
+
 /* Custom scrollbar for clean aesthetic */
 ::-webkit-scrollbar {
   width: 6px;
