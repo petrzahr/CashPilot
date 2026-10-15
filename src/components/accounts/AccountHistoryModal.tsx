@@ -227,7 +227,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           <div>Vklady: {formatCurrency(snapInvested)}</div>
                           {snapFees !== 0 && <>
                             <div>Poplatky: {formatCurrency(-snapFees)}</div>
-                            <div>Vklady po poplatcích: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
+                            <div>Investováno: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
                           </>}
                           <div>Výnos: {formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
                         </div>
