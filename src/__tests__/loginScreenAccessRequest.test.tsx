@@ -127,12 +127,13 @@ describe('CashPilot - Přihlašovací stránka a žádost o přístup přes Gmai
   it('12. Původní přihlášení přes Google zůstalo zachováno jako primární akce', () => {
     const html = renderScreen();
     const loginBtnIndex = html.indexOf('Přihlásit se přes Google');
-    const dividerIndex = html.indexOf('nebo');
+    const accessHeadingIndex = html.indexOf('Nemáte přístup?');
     const gmailBtnIndex = html.indexOf('Požádat o přístup přes Gmail');
 
+    // Přihlášení je první akce, žádost o přístup až pod ním
     expect(loginBtnIndex).toBeGreaterThan(-1);
-    expect(dividerIndex).toBeGreaterThan(loginBtnIndex);
-    expect(gmailBtnIndex).toBeGreaterThan(dividerIndex);
+    expect(accessHeadingIndex).toBeGreaterThan(loginBtnIndex);
+    expect(gmailBtnIndex).toBeGreaterThan(accessHeadingIndex);
   });
 
   it('13. Adresa pzahradn@gmail.com se nikde v souvislosti se žádostí nepoužívá', () => {
@@ -142,12 +143,13 @@ describe('CashPilot - Přihlašovací stránka a žádost o přístup přes Gmai
     expect(html).not.toContain('pzahradn@gmail.com');
   });
 
-  it('14. Úvodní text a 3 vlastnosti odpovídají novému znění bez kontokorentu', () => {
+  it('14. Minimální přihlášení: bez úvodního textu a seznamu vlastností, s žádostí o přístup', () => {
     const html = renderScreen();
-    expect(html).toContain('Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou');
-    expect(html).toContain('Soukromé úložiště Google Disk');
-    expect(html).toContain('Automatická synchronizace');
-    expect(html).toContain('Plánování a statistiky');
+    expect(html).not.toContain('Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou');
+    expect(html).not.toContain('Soukromé úložiště Google Disk');
+    expect(html).not.toContain('Automatická synchronizace');
+    expect(html).not.toContain('Plánování a statistiky');
+    expect(html).toContain('Nemáte přístup?');
     expect(html.toLowerCase()).not.toContain('kontokorent');
     expect(html.toLowerCase()).not.toContain('bankovních limitech');
   });

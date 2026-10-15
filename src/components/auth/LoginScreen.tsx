@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { GoogleIcon } from '../common/GoogleIcon';
-import { ShieldCheck, Zap, TrendingUp, AlertCircle, Loader2, Mail, Check } from 'lucide-react';
+import { AlertCircle, Loader2, Mail, Check } from 'lucide-react';
 import { buildGmailComposeUrl, ACCESS_REQUEST_EMAIL } from '../../constants/authConfig';
 
 export const LoginScreen: React.FC = () => {
@@ -38,57 +38,22 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 select-none">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/60 p-7 sm:p-9 space-y-7">
-        
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 select-none">
+      {/* Minimální vstup: kdo jsem, jedna akce, cesta pro ty, kdo přístup nemají */}
+      <div className="max-w-sm w-full bg-white rounded-2xl border border-slate-200/80 shadow-sm p-7 sm:p-8 space-y-6">
+
         {/* Logo a hlavička */}
         <div className="text-center space-y-3">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg mb-1 ${isSyncing ? 'animate-pulse motion-reduce:animate-none' : ''}`}>
+          <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl ${isSyncing ? 'animate-pulse motion-reduce:animate-none' : ''}`}>
             <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 leading-tight">
               CashPilot
             </h1>
-            <p className="text-xs text-sky-600 font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-sm text-slate-500 mt-1">
               Vaše osobní finance pod kontrolou
             </p>
-          </div>
-          <p className="text-sm text-slate-500 pt-1 leading-relaxed">
-            Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou. Data jsou bezpečně uložena v soukromém prostoru vašeho účtu Google.
-          </p>
-        </div>
-
-        {/* Přehled výhod */}
-        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/60 space-y-3 text-xs text-slate-500">
-          <div className="flex items-start gap-3">
-            <div className="p-1 rounded-lg bg-sky-100 text-sky-700 shrink-0 mt-0.5">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-semibold text-slate-900 block">Soukromé úložiště Google Disk</span>
-              <span>Vaše finanční data jsou bezpečně uložena v neveřejném aplikačním prostoru vašeho účtu Google.</span>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-1 rounded-lg bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-semibold text-slate-900 block">Automatická synchronizace</span>
-              <span>Aplikace pracuje rychle s místní mezipamětí a všechny změny průběžně ukládá na pozadí.</span>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-1 rounded-lg bg-indigo-100 text-indigo-700 shrink-0 mt-0.5">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-semibold text-slate-900 block">Plánování a statistiky</span>
-              <span>Plánujte budoucí příjmy a výdaje a sledujte vývoj svých financí v přehledných statistikách.</span>
-            </div>
           </div>
         </div>
 
@@ -104,12 +69,12 @@ export const LoginScreen: React.FC = () => {
         )}
 
         {/* Hlavní akce - Tlačítko přihlášení */}
-        <div className="space-y-3 pt-1">
+        <div>
           <button
             type="button"
             onClick={connectGoogleDrive}
             disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-300 shadow-md shadow-slate-200/50 hover:border-sky-300 hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm"
+            className="w-full min-h-12 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-300 shadow-sm hover:border-sky-300 transition-colors active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
           >
             {isSyncing ? (
               <>
@@ -123,42 +88,24 @@ export const LoginScreen: React.FC = () => {
               </>
             )}
           </button>
-
-          <p className="text-xs text-center text-slate-500">
-            Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.
-          </p>
         </div>
 
-        {/* Oddělovač */}
-        <div className="relative flex items-center py-0.5">
-          <div className="flex-grow border-t border-slate-200" />
-          <span className="flex-shrink mx-3 text-xs font-medium text-slate-500">nebo</span>
-          <div className="flex-grow border-t border-slate-200" />
-        </div>
-
-        {/* Žádost o přístup do testovacího režimu */}
-        <div className="space-y-3 text-center sm:text-left">
-          <div className="space-y-1">
-            <h2 className="text-sm font-bold text-slate-900">Nemáte přístup?</h2>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.
-            </p>
-          </div>
-
-          <a
-            href={buildGmailComposeUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
-          >
-            <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>Požádat o přístup přes Gmail</span>
-          </a>
-
-          <div className="flex flex-col items-center sm:items-start pt-0.5">
+        {/* Žádost o přístup: aplikace je jen pro schválené testovací uživatele */}
+        <div className="pt-5 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1">
+          <h2 className="font-semibold text-slate-600">Nemáte přístup?</h2>
+          <div className="flex flex-col items-center">
+            <a
+              href={buildGmailComposeUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-h-11 md:min-h-8 inline-flex items-center gap-1.5 px-2 rounded-lg font-semibold text-sky-700 hover:bg-sky-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+            >
+              <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>Požádat o přístup přes Gmail</span>
+            </a>
             {copiedEmail ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-                <Check className="w-3.5 h-3.5" />
+              <span role="status" className="min-h-11 md:min-h-8 inline-flex items-center gap-1.5 px-2 font-medium text-emerald-600">
+                <Check className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>E-mailová adresa byla zkopírována.</span>
               </span>
             ) : (
@@ -166,14 +113,13 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={handleCopyEmail}
                 title={`Zkopírovat adresu ${ACCESS_REQUEST_EMAIL}`}
-                className="min-h-11 md:min-h-8 inline-flex items-center px-2 text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+                className="min-h-11 md:min-h-8 inline-flex items-center px-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
               >
                 Zkopírovat kontaktní e-mail
               </button>
             )}
           </div>
         </div>
-
       </div>
 
       {/* Patička */}
