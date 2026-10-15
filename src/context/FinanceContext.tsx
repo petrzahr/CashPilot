@@ -555,58 +555,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       if (period.key > latestPeriod.key) latestPeriod = period;
     }
 
-    for (const tx of data.transactions) {
-      if (tx.date) {
-        const p = getPeriodForDate(tx.date, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
-    }
+    // Období na sebe navazují, takže pozdější datum nikdy nepatří do dřívějšího období. Stačí proto
+    // najít nejmenší a největší datum a období spočítat jen pro ně (ne pro každou položku zvlášť).
+    const dates: { min: string | null; max: string | null } = { min: null, max: null };
+    const consider = (date: string | undefined, extendsEnd: boolean) => {
+      if (!date) return;
+      if (dates.min === null || date < dates.min) dates.min = date;
+      if (extendsEnd && (dates.max === null || date > dates.max)) dates.max = date;
+    };
+    for (const tx of data.transactions) consider(tx.date, true);
+    for (const c of data.corrections) consider(c.checkDate, true);
+    for (const s of data.marketValueSnapshots) consider(s.date, true);
+    for (const r of data.recurringRules) consider(r.startDate, false);
+    for (const a of data.accounts) consider(a.initialBalanceDate, false);
 
-    for (const c of data.corrections) {
-      if (c.checkDate) {
-        const p = getPeriodForDate(c.checkDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
+    if (dates.min !== null) {
+      const p = getPeriodForDate(dates.min, startDay);
+      if (p.startDate < earliestPeriod.startDate) earliestPeriod = p;
     }
-
-    for (const s of data.marketValueSnapshots) {
-      if (s.date) {
-        const p = getPeriodForDate(s.date, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
-    }
-
-    for (const r of data.recurringRules) {
-      if (r.startDate) {
-        const p = getPeriodForDate(r.startDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-      }
-    }
-
-    for (const a of data.accounts) {
-      if (a.initialBalanceDate) {
-        const p = getPeriodForDate(a.initialBalanceDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-      }
+    if (dates.max !== null) {
+      const p = getPeriodForDate(dates.max, startDay);
+      if (p.startDate > latestPeriod.startDate) latestPeriod = p;
     }
 
     return { earliestPeriod, latestPeriod };
