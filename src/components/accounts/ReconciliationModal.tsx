@@ -7,7 +7,7 @@ import { getAccountBalanceAtDate } from '../../services/financialEngine';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
-import { FieldError, FieldErrors, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
+import { FieldError, FieldErrors, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface ReconciliationModalProps {
   isOpen: boolean;
@@ -138,7 +138,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
               value={actualBalanceStr}
               onChange={(e) => { setActualBalanceStr(e.target.value); setErrors(prev => ({ ...prev, balance: undefined })); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.balance)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.balance)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.balance, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
             />
             <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
           </div>
@@ -157,7 +157,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
               value={checkDate}
               onChange={(e) => { setCheckDate(e.target.value); setErrors(prev => ({ ...prev, date: undefined })); }}
               {...fieldErrorProps(`${fieldId}-2`, errors.date)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.date)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.date, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
             />
             <FieldError inputId={`${fieldId}-2`} message={errors.date} />
           </div>

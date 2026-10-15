@@ -6,7 +6,7 @@ import { getAccountFees } from '../../services/investmentPerformanceService';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { generatePeriodsBetween, getPeriodForDate } from '../../services/periodService';
 import { Info } from 'lucide-react';
-import { FieldError, fieldBorderClass, fieldErrorProps } from '../common/FieldError';
+import { FieldError, fieldStateClass, fieldErrorProps } from '../common/FieldError';
 
 interface InvestmentFeeModalProps {
   isOpen: boolean;
@@ -99,7 +99,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
               value={amountStr}
               onChange={(e) => { setAmountStr(e.target.value); setAmountError(null); }}
               {...fieldErrorProps(`${fieldId}-2`, amountError)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(amountError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(amountError, 'border-slate-200 focus:ring-2 focus:ring-purple-500')} font-semibold`}
             />
             <FieldError inputId={`${fieldId}-2`} message={amountError} />
           </div>
