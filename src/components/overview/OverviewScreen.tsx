@@ -299,7 +299,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                   <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                                     <span>{acc.name}</span>
-                                    {acc.institution && <span className="text-slate-500 text-[10px]">({acc.institution})</span>}
+                                    {acc.institution && <span className="text-slate-500 text-xs">({acc.institution})</span>}
                                   </div>
                                 </td>
                                 <td className="py-2.5 px-4 w-[140px] text-right text-slate-500 font-medium">
@@ -369,7 +369,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         <div className="min-w-0">
                           <span className="truncate max-w-[140px] block text-xs font-semibold text-slate-900">{acc.name}</span>
                           {acc.institution && (
-                            <span className="text-[10px] text-slate-500 truncate block font-normal leading-tight">{acc.institution}</span>
+                            <span className="text-xs text-slate-500 truncate block font-normal leading-tight">{acc.institution}</span>
                           )}
                         </div>
                       </div>
@@ -394,12 +394,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <div className="flex items-center justify-end gap-1.5 leading-tight">
                               <span
                                 title="P – počáteční stav"
-                                className="text-[10px] font-medium text-slate-500 select-none uppercase tracking-wider cursor-help"
+                                className="text-xs font-medium text-slate-500 select-none uppercase tracking-wider cursor-help"
                               >
                                 P
                               </span>
                               <span
-                                className={`text-[11px] font-normal whitespace-nowrap ${
+                                className={`text-xs font-normal whitespace-nowrap ${
                                   isOpeningNegative ? 'text-red-500 font-medium' : 'text-slate-500'
                                 }`}
                               >
@@ -411,7 +411,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <div className="flex items-center justify-end gap-1.5 leading-tight">
                               <span
                                 title="K – konečný stav"
-                                className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
+                                className={`text-xs font-bold select-none uppercase tracking-wider cursor-help ${
                                   isClosingNegative ? 'text-red-600' : 'text-slate-500'
                                 }`}
                               >
@@ -437,7 +437,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-10">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-900">Celkový majetek</span>
-                      <span className="text-[10px] font-normal text-slate-500">Zahrnuté účty</span>
+                      <span className="text-xs font-normal text-slate-500">Zahrnuté účty</span>
                     </div>
                   </td>
                   {accountPeriods.map((p) => {
@@ -452,12 +452,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <div className="flex items-center justify-end gap-1.5 leading-tight">
                             <span
                               title="P – počáteční stav"
-                              className="text-[10px] font-semibold text-slate-500 select-none uppercase tracking-wider cursor-help"
+                              className="text-xs font-semibold text-slate-500 select-none uppercase tracking-wider cursor-help"
                             >
                               P
                             </span>
                             <span
-                              className={`text-[11px] font-medium whitespace-nowrap ${
+                              className={`text-xs font-medium whitespace-nowrap ${
                                 isOpeningNegative ? 'text-red-500' : 'text-slate-500'
                               }`}
                             >
@@ -467,7 +467,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <div className="flex items-center justify-end gap-1.5 leading-tight">
                             <span
                               title="K – konečný stav"
-                              className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
+                              className={`text-xs font-bold select-none uppercase tracking-wider cursor-help ${
                                 isClosingNegative ? 'text-red-600' : 'text-slate-500'
                               }`}
                             >

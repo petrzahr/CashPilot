@@ -193,7 +193,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                   <span>Smazat i již uskutečněné historické položky</span>
                 </label>
                 {!deleteHistoricalExecuted && (
-                  <p className="text-[11px] text-amber-700/90 italic">
+                  <p className="text-xs text-amber-700/90 italic">
                     Uskutečněné položky zůstanou bez výslovného zaškrtnutí v historii zachovány.
                   </p>
                 )}

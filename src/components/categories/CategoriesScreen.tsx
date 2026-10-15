@@ -146,7 +146,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.2 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaná
                         </span>
                       )}
@@ -210,7 +210,7 @@ export const CategoriesScreen: React.FC = () => {
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color || mainCat.color }} />
                         <span className="font-medium">{sub.name}</span>
                         {sub.status === 'archived' && (
-                          <span className="text-[10px] text-slate-500">(archiv)</span>
+                          <span className="text-xs text-slate-500">(archiv)</span>
                         )}
                       </div>
 

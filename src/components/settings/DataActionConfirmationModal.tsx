@@ -113,7 +113,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-slate-900">Doporučení před pokračováním</p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               Stáhněte si kompletní JSON zálohu všech vašich dat do počítače.
             </p>
           </div>

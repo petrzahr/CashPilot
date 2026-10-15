@@ -219,7 +219,7 @@ export const AnalyticsScreen: React.FC = () => {
 
                     {t.changePercent !== null ? (
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border tabular-nums ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border tabular-nums ${
                           isDecrease
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : isIncrease
@@ -232,7 +232,7 @@ export const AnalyticsScreen: React.FC = () => {
                         {t.changePercent.toFixed(1)} %
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                         —
                       </span>
                     )}
@@ -254,7 +254,7 @@ export const AnalyticsScreen: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             {/* Nejvyšší příjem */}
             <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-emerald-800">
+              <span className="text-xs font-medium text-emerald-800">
                 Nejvyšší příjem za období
               </span>
               <div className="text-sm font-bold text-emerald-900 tabular-nums">
@@ -262,14 +262,14 @@ export const AnalyticsScreen: React.FC = () => {
                   ? formatCurrency(extremes.highestIncomeMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-emerald-600 font-medium truncate">
+              <p className="text-xs text-emerald-600 font-medium truncate">
                 {extremes.highestIncomeMonth?.label || 'Žádná data'}
               </p>
             </div>
 
             {/* Nejvyšší výdaje */}
             <div className="p-3 bg-red-50/70 border border-red-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-red-800">
+              <span className="text-xs font-medium text-red-800">
                 Nejvyšší výdaje za období
               </span>
               <div className="text-sm font-bold text-red-900 tabular-nums">
@@ -277,14 +277,14 @@ export const AnalyticsScreen: React.FC = () => {
                   ? formatCurrency(extremes.highestExpenseMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-red-600 font-medium truncate">
+              <p className="text-xs text-red-600 font-medium truncate">
                 {extremes.highestExpenseMonth?.label || 'Žádná data'}
               </p>
             </div>
 
             {/* Nejlepší čistá bilance */}
             <div className="p-3 bg-sky-50/70 border border-sky-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-sky-800">
+              <span className="text-xs font-medium text-sky-800">
                 Nejlepší čistá bilance
               </span>
               <div className="text-sm font-bold text-sky-900 tabular-nums">
@@ -292,14 +292,14 @@ export const AnalyticsScreen: React.FC = () => {
                   ? formatCurrency(extremes.bestNetMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-sky-600 font-medium truncate">
+              <p className="text-xs text-sky-600 font-medium truncate">
                 {extremes.bestNetMonth?.label || 'Žádná data'}
               </p>
             </div>
 
             {/* Nejhorší čistá bilance */}
             <div className="p-3 bg-amber-50/70 border border-amber-100 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-amber-800">
+              <span className="text-xs font-medium text-amber-800">
                 Nejhorší čistá bilance
               </span>
               <div className="text-sm font-bold text-amber-900 tabular-nums">
@@ -307,25 +307,25 @@ export const AnalyticsScreen: React.FC = () => {
                   ? formatCurrency(extremes.worstNetMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-[10px] text-amber-600 font-medium truncate">
+              <p className="text-xs text-amber-600 font-medium truncate">
                 {extremes.worstNetMonth?.label || 'Žádná data'}
               </p>
             </div>
 
             {/* Průměrný příjem */}
             <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-xs font-medium text-slate-500">
                 Průměrný příjem za období
               </span>
               <div className="text-sm font-bold text-slate-900 tabular-nums">
                 {formatCurrency(extremes.avgMonthlyIncomeInHaler)}
               </div>
-              <p className="text-[10px] text-slate-500">Za zvolené období</p>
+              <p className="text-xs text-slate-500">Za zvolené období</p>
             </div>
 
             {/* Průměrná čistá změna */}
             <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-xs font-medium text-slate-500">
                 Průměrná čistá bilance
               </span>
               <div
@@ -337,7 +337,7 @@ export const AnalyticsScreen: React.FC = () => {
               >
                 {formatCurrency(extremes.avgMonthlyNetChangeInHaler)}
               </div>
-              <p className="text-[10px] text-slate-500">/ období</p>
+              <p className="text-xs text-slate-500">/ období</p>
             </div>
           </div>
         </div>

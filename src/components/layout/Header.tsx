@@ -132,14 +132,14 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="font-bold text-slate-900 truncate">
                       {driveUser?.displayName || 'Google Disk'}
                     </p>
-                    <p className="text-[11px] text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 truncate">
                       {driveUser?.emailAddress || 'Prostor appDataFolder'}
                     </p>
                   </div>
                 </div>
 
                 {/* Informace o synchronizaci */}
-                <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-[11px]">
+                <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-xs">
                   <div className="flex items-center justify-between text-slate-500">
                     <span>Stav:</span>
                     <span className="font-semibold flex items-center gap-1">
@@ -172,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   {driveError && (
-                    <p className="text-[10px] text-red-600 pt-1 border-t border-slate-200 mt-1">
+                    <p className="text-xs text-red-600 pt-1 border-t border-slate-200 mt-1">
                       {driveError}
                     </p>
                   )}
@@ -240,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-bold text-slate-900 block leading-tight whitespace-nowrap">
               {selectedPeriod.name}
             </span>
-            <span className="text-[10px] text-slate-500 hidden md:block whitespace-nowrap">
+            <span className="text-xs text-slate-500 hidden md:block whitespace-nowrap">
               {formatPeriodRange(selectedPeriod)}
             </span>
           </div>

@@ -454,7 +454,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <span>Tato položka je součástí pravidelné série</span>
             </div>
             {linkedRule && (
-              <div className="text-[11px] text-slate-500 space-y-0.5">
+              <div className="text-xs text-slate-500 space-y-0.5">
                 <p>
                   Opakuje se od {formatCzechDate(linkedRule.startDate)} do{' '}
                   {linkedRule.endDate ? formatCzechDate(linkedRule.endDate) : 'neomezeno'}
@@ -755,7 +755,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     onChange={(e) => setRecurringEndDate(e.target.value)}
                     className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Prázdné pole = opakování bez konce.
                   </p>
                 </div>

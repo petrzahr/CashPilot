@@ -75,7 +75,7 @@ const CATEGORY_ROW_BG = 'bg-[#fcfdfe]';
 const NON_MONTHLY_ROW_BG = 'bg-[#f8f6ff]';
 
 const iconButtonClass =
-  'p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
+  'p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
 
 interface Draft {
   title: string;
@@ -183,7 +183,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             </select>
             {isTransfer && (
               <>
-                <span className="text-slate-400">→</span>
+                <span className="text-slate-500">→</span>
                 <select className={inputClass} value={addDraft.targetAccountId} onChange={(e) => set({ targetAccountId: e.target.value })}>
                   {accountOptions.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
@@ -196,7 +196,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className="py-2 px-4">
           <FrequencySelect value={addDraft.frequency} onChange={(frequency) => set({ frequency })} />
         </td>
-        <td className="py-2 px-4 text-slate-400">—</td>
+        <td className="py-2 px-4 text-slate-500">—</td>
         <td className="py-2 px-4">
           <input className={`${inputClass} text-right w-24`} inputMode="decimal" placeholder="Kč" value={addDraft.amount} onChange={(e) => set({ amount: e.target.value })} />
         </td>
@@ -232,8 +232,8 @@ const SectionTable: React.FC<SectionTableProps> = ({
         : item.simState === 'added' ? 'bg-emerald-50'
         : !isDeleted && item.frequency !== 'monthly' ? NON_MONTHLY_ROW_BG
         : 'bg-white';
-    const rowClass = `${rowBg} ${isDeleted ? 'text-slate-400' : ''}`;
-    const strike = isDeleted ? 'line-through text-slate-400' : '';
+    const rowClass = `${rowBg} ${isDeleted ? 'text-slate-500' : ''}`;
+    const strike = isDeleted ? 'line-through text-slate-500' : '';
 
     if (isEditing) {
       const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
@@ -248,7 +248,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           <td className="py-2 px-4">
             <FrequencySelect value={draft.frequency} onChange={(frequency) => set({ frequency })} />
           </td>
-          <td className="py-2 px-4 text-slate-400">—</td>
+          <td className="py-2 px-4 text-slate-500">—</td>
           <td className="py-2 px-4">
             <input className={`${inputClass} text-right w-24`} inputMode="decimal" value={draft.amount} onChange={(e) => set({ amount: e.target.value })} />
           </td>
@@ -279,7 +279,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
       <tr key={item.ruleId} className={rowClass}>
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
-          {item.simState === 'added' && <span className="ml-1.5 text-[10px] font-semibold text-emerald-700">nová</span>}
+          {item.simState === 'added' && <span className="ml-1.5 text-xs font-semibold text-emerald-700">nová</span>}
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
         <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.accountLabel}</td>
@@ -290,7 +290,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 px-4 text-right tabular-nums whitespace-nowrap ${strike || 'text-slate-600'}`}>
           {formatRounded(item.amountInHaler)}
           {item.original && item.original.amountInHaler !== item.amountInHaler && (
-            <span className="block text-[10px] text-slate-400 line-through">{formatRounded(item.original.amountInHaler)}</span>
+            <span className="block text-xs text-slate-500 line-through">{formatRounded(item.original.amountInHaler)}</span>
           )}
         </td>
         <td className={`py-2 px-4 text-right tabular-nums font-semibold whitespace-nowrap ${strike || 'text-slate-900'}`}>
@@ -430,7 +430,7 @@ const CHANGE_KIND_COLORS: Record<MandatoryUpcomingChange['kind'], string> = {
 const BeforeAfter: React.FC<{ before?: string; after: string }> = ({ before, after }) => (
   <>
     {before !== undefined && before !== after && (
-      <span className="text-slate-400 font-normal line-through mr-1.5">{before}</span>
+      <span className="text-slate-500 font-normal line-through mr-1.5">{before}</span>
     )}
     {after}
   </>
@@ -467,7 +467,7 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
               </td>
               <td className="py-2 px-4 font-medium text-slate-900">
                 {change.previous && change.previous.title !== change.title && (
-                  <span className="text-slate-400 line-through mr-1.5">{change.previous.title}</span>
+                  <span className="text-slate-500 line-through mr-1.5">{change.previous.title}</span>
                 )}
                 {change.title}
               </td>
@@ -642,7 +642,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
               {formatRounded(card.value)}
             </span>
             {isSimulating && card.value !== card.base && (
-              <span className="text-[10px] text-slate-500 block mt-0.5 tabular-nums">
+              <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
                 výchozí {formatRounded(card.base)}
               </span>
             )}

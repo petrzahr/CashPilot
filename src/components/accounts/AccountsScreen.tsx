@@ -251,7 +251,7 @@ export const AccountsScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.2 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaný
                         </span>
                       )}
@@ -299,7 +299,7 @@ export const AccountsScreen: React.FC = () => {
 
               {/* Finanční zůstatek */}
               <div className="p-3.5 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
-                <span className="text-[11px] text-slate-500 font-medium block">
+                <span className="text-xs text-slate-500 font-medium block">
                   {`Očekávaný stav k ${selectedPeriod.name}`}
                 </span>
                 <div className={`text-xl font-extrabold truncate ${
@@ -325,7 +325,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Informace o kontrole nebo ocenění */}
-              <div className="text-[11px] text-slate-500 space-y-1">
+              <div className="text-xs text-slate-500 space-y-1">
                 {isInvestment ? (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
@@ -360,7 +360,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Příznaky zahrnutí do rozpočtu */}
-              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <div className="flex items-center gap-2 text-xs text-slate-500">
                 {acc.isUsableCash && (
                   <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 font-semibold">
                     Použitelné peníze

@@ -58,7 +58,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
           <td className={`${stickyCell} bg-white group-hover:bg-slate-50 py-2 px-4 font-semibold text-slate-900 whitespace-nowrap`}>
             <span className="flex items-center gap-1.5">
               <ChevronRight
-                className={`w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform ${
+                className={`w-3.5 h-3.5 shrink-0 text-slate-500 transition-transform ${
                   canExpand ? '' : 'invisible'
                 } ${isExpanded ? 'rotate-90' : ''}`}
               />
@@ -103,7 +103,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
               <td className="py-1.5 px-4 text-right tabular-nums text-slate-500 whitespace-nowrap">
                 {formatCurrency(Math.round(child.totalInHaler / periodCount))}
               </td>
-              <td className="py-1.5 px-4 text-right tabular-nums text-slate-400 whitespace-nowrap">
+              <td className="py-1.5 px-4 text-right tabular-nums text-slate-500 whitespace-nowrap">
                 {row.group === 'transfer' ? '—' : formatShare(child.totalInHaler, base)}
               </td>
             </tr>

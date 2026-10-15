@@ -124,7 +124,7 @@ export const LoginScreen: React.FC = () => {
             )}
           </button>
 
-          <p className="text-[11px] text-center text-slate-500">
+          <p className="text-xs text-center text-slate-500">
             Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.
           </p>
         </div>

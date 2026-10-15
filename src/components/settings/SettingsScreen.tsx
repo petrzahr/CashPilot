@@ -171,7 +171,7 @@ export const SettingsScreen: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {budgetStartDay === 1
                   ? 'Období odpovídá celému kalendářnímu měsíci (např. 1. 9. – 30. 9.).'
                   : `Např. ${budgetStartDay}. den znamená období od ${budgetStartDay}. dne do dne předcházejícího v dalším měsíci.`}
@@ -194,7 +194,7 @@ export const SettingsScreen: React.FC = () => {
                 />
                 <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
               </p>
             </div>
@@ -286,7 +286,7 @@ export const SettingsScreen: React.FC = () => {
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <span>Google Disk – Cloudová synchronizace</span>
                 {isDriveConnected && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <CheckCircle2 className="w-3 h-3" />
                     Připojeno
                   </span>
@@ -340,7 +340,7 @@ export const SettingsScreen: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-1 text-slate-500">
               <li><strong>Offline-first:</strong> Aplikace i nadále běží bleskově a ukládá změny lokálně na vašem zařízení.</li>
-              <li><strong>Bezpečný soukromý prostor:</strong> Data se ukládají do skrytého prostoru <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[11px]">appDataFolder</code>, kam nemá přístup žádná jiná aplikace ani běžné vyhledávání na Disku.</li>
+              <li><strong>Bezpečný soukromý prostor:</strong> Data se ukládají do skrytého prostoru <code className="bg-slate-200/80 px-1 py-0.5 rounded text-xs">appDataFolder</code>, kam nemá přístup žádná jiná aplikace ani běžné vyhledávání na Disku.</li>
               <li><strong>Automatické zálohování:</strong> Každá úprava rozpočtu, účtu či platby se na pozadí synchronizuje na váš Google Disk.</li>
             </ul>
           </div>
@@ -361,7 +361,7 @@ export const SettingsScreen: React.FC = () => {
                 )}
                 <div>
                   <p className="font-bold text-slate-900">{driveUser?.displayName || 'Google Účet'}</p>
-                  <p className="text-[11px] text-slate-500">{driveUser?.emailAddress || 'Propojeno s Google Drive'}</p>
+                  <p className="text-xs text-slate-500">{driveUser?.emailAddress || 'Propojeno s Google Drive'}</p>
                 </div>
               </div>
 
@@ -384,7 +384,7 @@ export const SettingsScreen: React.FC = () => {
                     </>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'Při této relaci'}
                 </p>
               </div>
@@ -422,12 +422,12 @@ export const SettingsScreen: React.FC = () => {
             <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h4 className="text-sm font-bold text-slate-900">Automatické JSON zálohy</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 max-w-md">
+                <p className="text-xs text-slate-500 mt-0.5 max-w-md">
                   Při startu appky (max. jednou za 24 h) uloží časově označenou kopii dat do viditelné
                   složky <strong>„CashPilot zalohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
                   Při častém spouštění během vývoje se hodí dočasně vypnout.
                 </p>
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Poslední záloha: {lastDriveBackupTime ? lastDriveBackupTime.toLocaleString('cs-CZ') : 'Zatím žádná'}
                 </p>
               </div>
@@ -475,7 +475,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <Download className="w-5 h-5 text-sky-600" />
             <span className="text-xs font-bold text-slate-900">Exportovat JSON zálohu</span>
-            <span className="text-[10px] text-slate-500">Kompletní stav aplikace</span>
+            <span className="text-xs text-slate-500">Kompletní stav aplikace</span>
           </button>
 
           <button
@@ -484,7 +484,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <Upload className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-            <span className="text-[10px] text-slate-500">Sloučí .json se stávajícími daty</span>
+            <span className="text-xs text-slate-500">Sloučí .json se stávajícími daty</span>
           </button>
           <input
             ref={fileInputRef}
@@ -500,7 +500,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <FileText className="w-5 h-5 text-purple-600" />
             <span className="text-xs font-bold text-slate-900">Export položek (CSV)</span>
-            <span className="text-[10px] text-slate-500">Pro Excel či tabulky</span>
+            <span className="text-xs text-slate-500">Pro Excel či tabulky</span>
           </button>
         </div>
       </div>
