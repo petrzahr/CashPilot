@@ -9,7 +9,7 @@ import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../.
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
 import { Repeat, Hash, Loader2 } from 'lucide-react';
-import { FieldError, FieldErrors, FormError, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
+import { FieldError, FieldErrors, FormError, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
 
@@ -512,7 +512,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               value={title}
               onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.title)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.title)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.title, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             />
             <FieldError inputId={`${fieldId}-1`} message={errors.title} />
           </div>
@@ -531,7 +531,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 value={amountStr}
                 onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
                 {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.amount)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium`}
+                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
               />
               <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500 pointer-events-none">
                 Kč
@@ -600,7 +600,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               value={sourceAccountId}
               onChange={(e) => { setSourceAccountId(e.target.value); clearError('source'); }}
               {...fieldErrorProps(`${fieldId}-6`, errors.source || sourceAccError)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.source || sourceAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.source || sourceAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             >
               <option value="">-- Žádný --</option>
               {activeAccounts.map((acc) => {
@@ -625,7 +625,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 value={targetAccountId}
                 onChange={(e) => { setTargetAccountId(e.target.value); clearError('target'); }}
                 {...fieldErrorProps(`${fieldId}-7`, errors.target || targetAccError)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.target || targetAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.target || targetAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
               >
                 <option value="">-- Žádný --</option>
                 {activeAccounts
@@ -755,7 +755,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     min={date}
                     onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
-                    className={`w-full px-3 py-2 text-sm bg-white border ${fieldBorderClass(errors.endDate)} rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500`}
+                    className={`w-full px-3 py-2 text-sm bg-white border rounded-lg focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
                   />
                   <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">

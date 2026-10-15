@@ -4,7 +4,7 @@ import { Modal } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { COLOR_PALETTE } from '../../constants/colors';
-import { FieldError, FieldErrors, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
+import { FieldError, FieldErrors, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -147,7 +147,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             value={name}
             onChange={(e) => { setName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })); }}
             {...fieldErrorProps(`${fieldId}-1`, errors.name)}
-            className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.name)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
+            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.name, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
           />
           <FieldError inputId={`${fieldId}-1`} message={errors.name} />
         </div>
@@ -202,7 +202,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 }
               }}
               {...fieldErrorProps(`${fieldId}-2`, errors.parent)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.parent)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.parent, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
             >
               {isSubcategoryMode && !parentId && (
                 <option value="">-- Vyberte hlavní kategorii --</option>

@@ -14,9 +14,12 @@ export const fieldErrorId = (inputId: string) => `${inputId}-error`;
 export const fieldErrorProps = (inputId: string, message?: string | null) =>
   message ? { 'aria-invalid': true as const, 'aria-describedby': fieldErrorId(inputId) } : {};
 
-/** Okraj pole: červený při chybě, jinak běžná vlasová linka. */
-export const fieldBorderClass = (message?: string | null) =>
-  message ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200';
+/**
+ * Okraj a fokus pole. Při chybě zůstává pole červené i s fokusem (fokus se na chybné pole
+ * přesouvá automaticky, takže modrý fokus by chybu skryl); bez chyby platí běžné třídy pole.
+ */
+export const fieldStateClass = (message: string | null | undefined, normal: string) =>
+  message ? 'border-red-500 ring-1 ring-red-500 focus:ring-2 focus:ring-red-500/30' : normal;
 
 export const FieldError: React.FC<{ inputId: string; message?: string | null }> = ({ inputId, message }) =>
   message ? (

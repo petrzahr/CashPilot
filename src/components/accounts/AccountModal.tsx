@@ -4,7 +4,7 @@ import { Modal } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { COLOR_PALETTE } from '../../constants/colors';
-import { FieldError, FormError, fieldBorderClass, fieldErrorProps } from '../common/FieldError';
+import { FieldError, FormError, fieldStateClass, fieldErrorProps } from '../common/FieldError';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -144,7 +144,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             value={name}
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
             {...fieldErrorProps(`${fieldId}-1`, nameError)}
-            className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(nameError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
+            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(nameError, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
           />
           <FieldError inputId={`${fieldId}-1`} message={nameError} />
         </div>
