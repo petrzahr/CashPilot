@@ -29,7 +29,7 @@ Aplikace je stavěná na míru: každá funkce vychází z konkrétních individ
 
 ## Capabilities and Constraints
 
-- Obrazovky: Měsíční rozpočet, Přehledy, Analýza & trendy, Mandatorní výdaje, Všechny položky, Správa účtů, Kategorie, Nastavení.
+- Obrazovky: Měsíční rozpočet, Přehledy, Analýza & trendy, Mandatorní výdaje, Všechny položky, Účty, Kategorie, Nastavení.
 - Položky mají stav Plánovaná / Uskutečněná / Zrušená; plánované položky s dnešním nebo starším datem se automaticky označí jako uskutečněné.
 - Pravidelné položky (opakovaná pravidla), převody mezi účty, korekce zůstatku podle banky, investiční účty s tržní hodnotou a poplatky.
 - Pořadí položek v rámci dne a průběžný zůstatek po každé položce.

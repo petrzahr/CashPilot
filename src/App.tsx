@@ -87,7 +87,7 @@ const MainLayout: React.FC = () => {
       case 'analytics': return 'Analýza & trendy';
       case 'mandatory': return 'Mandatorní výdaje';
       case 'transactions': return 'Všechny položky';
-      case 'accounts': return 'Správa účtů';
+      case 'accounts': return 'Účty';
       case 'categories': return 'Kategorie';
       case 'settings': return 'Nastavení';
     }

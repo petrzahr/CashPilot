@@ -355,7 +355,7 @@ export const AccountsScreen: React.FC = () => {
               {/* Finanční zůstatek */}
               <div className="p-4 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
-                  {`Očekávaný zůstatek na konci období ${selectedPeriod.name}`}
+                  Očekávaný zůstatek
                 </span>
                 <div className={`text-xl font-extrabold truncate ${
                   closingBalance < 0 ? 'text-red-600' : 'text-slate-900'
@@ -369,7 +369,7 @@ export const AccountsScreen: React.FC = () => {
                       {`Vklady: ${formatCurrency(contributedPrincipal)}`}
                       {feesTotal !== 0 && <>
                         <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>
-                        <span className="block">{`Vklady po poplatcích: ${formatCurrency(investedPrincipal)}`}</span>
+                        <span className="block">{`Investováno: ${formatCurrency(investedPrincipal)}`}</span>
                       </>}
                     </span>
                     <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>

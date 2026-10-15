@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, Edit3, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
@@ -77,6 +77,8 @@ const NON_MONTHLY_ROW_BG = 'bg-table-nonmonthly';
 
 const iconButtonClass =
   'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
+const deleteButtonClass =
+  'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
 
 interface Draft {
   title: string;
@@ -315,10 +317,11 @@ const SectionTable: React.FC<SectionTableProps> = ({
                 </button>
               )}
               <button type="button" title="Upravit v simulaci" aria-label={`Upravit v simulaci: ${item.title}`} className={iconButtonClass} onClick={() => startEdit(item)}>
-                <Pencil className="w-3.5 h-3.5" />
+                <Edit3 className="w-4 h-4" />
               </button>
-              <button type="button" title="Smazat ze simulace" aria-label={`Smazat ze simulace: ${item.title}`} className={iconButtonClass} onClick={() => onDelete(item)}>
-                <Trash2 className="w-3.5 h-3.5" />
+              {/* Stejné ikony a barvy jako u akcí v seznamu položek: úprava šedě, mazání červeně */}
+              <button type="button" title="Smazat ze simulace" aria-label={`Smazat ze simulace: ${item.title}`} className={deleteButtonClass} onClick={() => onDelete(item)}>
+                <Trash2 className="w-4 h-4" />
               </button>
             </>
           )}
