@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { formatMonthsCount, formatCzechDate } from '../../services/periodService';
-import { BudgetPeriodInfo, DualPeriodRange } from '../../services/analyticsEngine';
+import { DualPeriodRange } from '../../services/analyticsEngine';
 import { PeriodRangeSelector } from './PeriodRangeSelector';
 import { Calendar } from 'lucide-react';
 
 interface DualPeriodFilterPanelProps {
   range: DualPeriodRange;
   onRangeChange: (range: DualPeriodRange) => void;
-  periods: BudgetPeriodInfo[];
+  // Stačí klíč a hranice období – vyhovuje BudgetPeriod i BudgetPeriodInfo
+  periods: { key: string; startDate: string; endDate: string }[];
   currentPeriodKey: string;
   ariaLabel: string;
 }
@@ -79,7 +80,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
       <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
         <Calendar className="w-3.5 h-3.5" />
         {formatCzechDate(firstPeriod.startDate)} – {formatCzechDate(lastPeriod.endDate)}
-        {periods.some(p => p.isCurrentPeriod) && <span>· Včetně aktuálního rozpočtového období</span>}
+        {periods.some(p => p.key === currentPeriodKey) && <span>· Včetně aktuálního rozpočtového období</span>}
       </p>
     </div>
   );
