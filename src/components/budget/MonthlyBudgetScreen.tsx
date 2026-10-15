@@ -693,14 +693,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
           <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
-          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+          <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block mt-1 truncate">
             {formatCurrency(aggregateSummary.usableClosingInHaler)}
           </span>
         </div>
 
         <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
           <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
-          <span className="text-2xl font-extrabold text-slate-900 block mt-1 truncate">
+          <span className="text-xl sm:text-2xl font-extrabold text-slate-900 block mt-1 truncate">
             {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
           </span>
         </div>
@@ -1161,19 +1161,19 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 #{tx.sequence || 1}
                               </span>
 
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                   {isCorrection ? (
                                     <button
                                       type="button"
                                       onClick={() => setSelectedCorrection(tx)}
-                                      className="text-xs font-bold text-slate-900 hover:text-amber-800 hover:underline truncate text-left flex items-center gap-1.5"
+                                      className="min-w-0 max-w-full text-xs font-bold text-slate-900 hover:text-amber-800 hover:underline text-left flex items-center gap-1.5"
                                     >
-                                      <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700" />
-                                      {tx.title}
+                                      <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                      <span className="truncate">{tx.title}</span>
                                     </button>
                                   ) : (
-                                    <span className="text-xs font-bold text-slate-900 truncate">
+                                    <span className="min-w-0 max-w-full text-xs font-bold text-slate-900 truncate">
                                       {tx.title}
                                     </span>
                                   )}
@@ -1191,7 +1191,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   )}
                                 </div>
 
-                                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                                <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 mt-0.5">
                                   {isCorrection ? (
                                     <span className="text-amber-700 font-medium text-xs">Korekce zůstatku</span>
                                   ) : cat ? (
@@ -1204,9 +1204,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-4 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 text-xs">
+                            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-x-4 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 text-xs">
                               <div className="text-right">
-                                <span className={`font-bold block ${
+                                <span className={`font-bold block whitespace-nowrap ${
                                   isCorrection
                                     ? (diff >= 0 ? 'text-emerald-700' : 'text-amber-700')
                                     : tx.type === 'income' 
@@ -1232,7 +1232,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center justify-end gap-1 max-sm:w-full max-sm:-mr-2">
                                 {isCorrection ? (
                                   <>
                                     <button
@@ -1428,7 +1428,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
