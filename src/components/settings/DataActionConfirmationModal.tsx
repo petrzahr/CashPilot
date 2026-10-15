@@ -178,7 +178,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
             }}
             className={`px-4 py-2 text-sm font-semibold text-white rounded-xl transition-all ${
               isConfirmed
-                ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200 cursor-pointer'
+                ? 'bg-red-600 hover:bg-red-700 shadow-sm cursor-pointer'
                 : 'bg-red-300 cursor-not-allowed opacity-60'
             }`}
           >

@@ -101,7 +101,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             {/* Tlačítko Obnovit ze zálohy */}
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center gap-2.5 px-4 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/30 transition-all"
+              className="flex items-center justify-center gap-2.5 px-4 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg transition-all"
             >
               <Upload className="w-4 h-4" />
               <span>Obnovit ze zálohy (JSON)</span>

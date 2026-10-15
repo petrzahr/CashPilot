@@ -788,7 +788,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="submit"
             disabled={isSaving}
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isEditing ? 'Uložit změny' : 'Vytvořit položku'}</span>

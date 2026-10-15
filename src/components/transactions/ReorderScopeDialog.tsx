@@ -71,7 +71,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           <button
             type="button"
             onClick={handleConfirm}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm shadow-sky-200 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm transition-all cursor-pointer"
           >
             <span>Uložit pořadí</span>
           </button>

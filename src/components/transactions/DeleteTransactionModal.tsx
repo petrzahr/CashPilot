@@ -148,7 +148,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-sm shadow-red-200 disabled:opacity-60 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-sm disabled:opacity-60 transition-all cursor-pointer"
           >
             {isDeleting ? (
               <>

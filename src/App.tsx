@@ -20,6 +20,9 @@ import { Loader2, Plus } from 'lucide-react';
 
 const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'mandatory', 'transactions', 'accounts', 'categories', 'settings'];
 
+// Obrazovky, které vybrané rozpočtové období nepoužívají (Analýza má vlastní filtr období)
+const SCREENS_WITHOUT_PERIOD: NavScreen[] = ['analytics', 'categories', 'settings'];
+
 function parseScreenFromUrl(): NavScreen {
   if (typeof window === 'undefined') return 'budget';
   const hash = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
@@ -86,7 +89,7 @@ const MainLayout: React.FC = () => {
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Správa účtů';
       case 'categories': return 'Kategorie';
-      case 'settings': return 'Nastavení aplikace';
+      case 'settings': return 'Nastavení';
     }
   };
 
@@ -105,6 +108,7 @@ const MainLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Header
           activeScreenTitle={getScreenTitle()}
+          showPeriodNavigator={!SCREENS_WITHOUT_PERIOD.includes(currentScreen)}
           onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
 
@@ -225,7 +229,7 @@ export function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center space-y-4 p-6" role="status">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg shadow-sky-500/25 animate-pulse motion-reduce:animate-none">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg animate-pulse motion-reduce:animate-none">
             <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">CashPilot</h1>

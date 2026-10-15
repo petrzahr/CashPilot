@@ -371,7 +371,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             </button>
             <button
               onClick={() => onOpenTransactionModal()}
-              className="max-md:min-h-11 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+              className="max-md:min-h-11 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Přidat položku</span>

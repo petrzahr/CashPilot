@@ -10,11 +10,13 @@ import { ConfirmationModal } from '../common/ConfirmationModal';
 interface HeaderProps {
   onToggleMobileMenu: () => void;
   activeScreenTitle: string;
+  showPeriodNavigator?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleMobileMenu,
   activeScreenTitle,
+  showPeriodNavigator = true,
 }) => {
   const {
     selectedPeriod,
@@ -229,6 +231,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
+        {/* Navigace obdobím jen tam, kde obrazovka vybrané období skutečně používá */}
+        {showPeriodNavigator && (<>
         <button
           type="button"
           onClick={goToCurrentPeriod}
@@ -273,6 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+        </>)}
       </div>
     </header>
 
