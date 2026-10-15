@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
+import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { 
   LayoutDashboard, 
   CalendarDays, 
@@ -97,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: { id: NavScreen; label: string; icon: React.ReactNode }[] = [
     { id: 'budget', label: 'Měsíční rozpočet', icon: <CalendarDays className="w-4 h-4" /> },
     { id: 'overview', label: 'Přehledy', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'analytics', label: 'Analýza & trendy', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'analytics', label: 'Analýza a trendy', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'mandatory', label: 'Mandatorní výdaje', icon: <Repeat className="w-4 h-4" /> },
     { id: 'transactions', label: 'Všechny položky', icon: <Receipt className="w-4 h-4" /> },
     { id: 'accounts', label: 'Účty', icon: <Landmark className="w-4 h-4" /> },
@@ -194,6 +195,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
+          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví */}
+          <p className="font-semibold text-slate-500">K dnešku {formatCzechDate(getTodayInPrague())}</p>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>

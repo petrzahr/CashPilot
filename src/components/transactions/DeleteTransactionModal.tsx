@@ -81,7 +81,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
 
         {/* Hlavní varovná zpráva */}
         <div className="flex items-start gap-3">
-          <div className="p-2.5 rounded-xl shrink-0 bg-red-50 text-red-600 border border-red-100">
+          <div className="p-2.5 rounded-xl shrink-0 bg-red-50 text-red-600">
             <Trash2 className="w-5 h-5" />
           </div>
           <div className="text-sm text-slate-500 leading-relaxed">

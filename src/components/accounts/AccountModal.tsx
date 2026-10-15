@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
-import { COLOR_PALETTE } from '../../constants/colors';
+import { COLOR_NAMES, COLOR_PALETTE } from '../../constants/colors';
 import { FieldError, FormError, fieldStateClass, fieldErrorProps } from '../common/FieldError';
 
 interface AccountModalProps {
@@ -132,7 +132,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <FormError message={errorMessage} />
         <div>
           <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název účtu *
@@ -262,7 +261,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <button
                 key={c}
                 type="button"
-                aria-label={`Barva ${i + 1}`}
+                aria-label={COLOR_NAMES[i] ?? `Barva ${i + 1}`}
+                title={COLOR_NAMES[i]}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 max-md:w-9 max-md:h-9 relative max-md:after:absolute max-md:after:-inset-1 max-md:after:content-[''] rounded-full transition-transform motion-reduce:transition-none ${
@@ -273,6 +273,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Chyba uložení stojí u tlačítek jako v ostatních formulářích */}
+        <FormError message={errorMessage} />
 
         <ModalFooter>
           <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, ModalFooter } from './Modal';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -29,8 +29,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
       <div className="flex items-start gap-3">
-        <div className={`p-2 rounded-xl shrink-0 ${isDestructive ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
-          <AlertTriangle className="w-6 h-6" />
+        {/* Čistě informační dialog (jediné tlačítko) nevaruje, jen sděluje */}
+        <div className={`p-2.5 rounded-xl shrink-0 ${
+          isDestructive ? 'bg-red-50 text-red-600' : !showCancel ? 'bg-sky-50 text-sky-600' : 'bg-amber-50 text-amber-600'
+        }`}>
+          {!showCancel && !isDestructive
+            ? <Info className="w-5 h-5" aria-hidden="true" />
+            : <AlertTriangle className="w-5 h-5" aria-hidden="true" />}
         </div>
         <div className="text-sm text-slate-500 space-y-2">
           <p>{message}</p>

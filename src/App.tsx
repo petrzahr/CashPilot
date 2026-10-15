@@ -82,7 +82,7 @@ const MainLayout: React.FC = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
       case 'overview': return 'Přehledy';
-      case 'analytics': return 'Analýza & trendy';
+      case 'analytics': return 'Analýza a trendy';
       case 'mandatory': return 'Mandatorní výdaje';
       case 'transactions': return 'Všechny položky';
       case 'accounts': return 'Účty';

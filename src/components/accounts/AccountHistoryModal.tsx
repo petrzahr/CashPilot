@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Eye,
   Receipt,
+  Clock,
+  Ban,
 } from 'lucide-react';
 
 interface AccountHistoryModalProps {
@@ -312,6 +314,17 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           }`}>
                             {typeBadge}
                           </span>
+                          {/* Historie obsahuje i plán: stav musí být vidět, jinak se plánovaná tváří jako proběhlá */}
+                          {!isCorrection && tx.status === 'planned' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-3 h-3" aria-hidden="true" /> Plánovaná
+                            </span>
+                          )}
+                          {!isCorrection && tx.status === 'cancelled' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                              <Ban className="w-3 h-3" aria-hidden="true" /> Zrušená
+                            </span>
+                          )}
                           {tx.sequence !== undefined && (
                             <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 shrink-0">
                               #{tx.sequence}
@@ -326,7 +339,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className={`font-bold ${amountClass}`}>
+                      <span className={`font-bold ${tx.status === 'cancelled' ? 'line-through text-slate-500' : amountClass}`}>
                         {amountDisplay}
                       </span>
                       {isCorrection && (

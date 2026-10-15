@@ -387,7 +387,7 @@ export const AnalyticsScreen: React.FC = () => {
                     <td className="py-2.5 px-4 text-slate-500 font-medium">
                       {item.accountName}
                     </td>
-                    <td className="py-2.5 px-4 text-right font-extrabold text-slate-900 tabular-nums whitespace-nowrap">
+                    <td className="py-2.5 px-4 text-right font-extrabold text-red-600 tabular-nums whitespace-nowrap">
                       {formatCurrency(
                         item.transaction.actualAmountInHaler !== undefined
                           ? item.transaction.actualAmountInHaler

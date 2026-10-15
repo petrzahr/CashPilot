@@ -38,7 +38,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <div className="p-2.5 rounded-xl shrink-0 bg-sky-50 text-sky-600 border border-sky-100">
+          <div className="p-2.5 rounded-xl shrink-0 bg-sky-50 text-sky-600">
             <ArrowUpDown className="w-5 h-5" />
           </div>
           <div className="text-sm text-slate-500 leading-relaxed">

@@ -166,7 +166,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={handleCopyEmail}
                 title={`Zkopírovat adresu ${ACCESS_REQUEST_EMAIL}`}
-                className="max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:px-2 text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+                className="min-h-11 md:min-h-8 inline-flex items-center px-2 text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
               >
                 Zkopírovat kontaktní e-mail
               </button>
