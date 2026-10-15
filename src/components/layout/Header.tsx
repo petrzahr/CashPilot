@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, AlertCirc
 
 import { GoogleIcon } from '../common/GoogleIcon';
 import { ConfirmationModal } from '../common/ConfirmationModal';
+import { describeSyncError } from '../../services/syncErrorText';
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
@@ -33,6 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   } = useFinance();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const isSyncProblem = driveSyncStatus === 'error' || driveSyncStatus === 'conflict';
   const [confirmDisconnectOpen, setConfirmDisconnectOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -109,9 +111,20 @@ export const Header: React.FC<HeaderProps> = ({
               title="Stav synchronizace s Google Diskem"
               aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
               aria-expanded={menuOpen}
-              className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              className={`max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border shadow-sm transition-all active:scale-[0.98] cursor-pointer ${
+                isSyncProblem
+                  ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                  : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:border-sky-300'
+              }`}
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
+              {/* Chyba a konflikt mají vlastní ikonu a text na každé šířce; běžné stavy stačí tečkou */}
+              {isSyncProblem ? (
+                <>
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" aria-hidden="true" />
+                  <span className="xl:hidden">{driveSyncStatus === 'conflict' ? 'Konflikt' : 'Chyba'}</span>
+                </>
+              ) : (
               <span className="relative flex h-2 w-2">
                 {driveSyncStatus === 'syncing' && (
                   <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
@@ -126,6 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 ></span>
               </span>
+              )}
               {/* Text stavu ustupuje názvu obrazovky; do 1280px stačí barevná tečka a popisek tlačítka */}
               <span className="hidden xl:inline">
                 {SYNC_LABELS[driveSyncStatus]}
@@ -167,10 +181,15 @@ export const Header: React.FC<HeaderProps> = ({
                           <RefreshCw className="w-3 h-3 animate-spin text-sky-600" />
                           <span className="text-sky-600">Ukládám…</span>
                         </>
+                      ) : isSyncProblem ? (
+                        <>
+                          <AlertCircle className="w-3 h-3 text-red-600" />
+                          <span className="text-red-700">{SYNC_LABELS[driveSyncStatus]}</span>
+                        </>
                       ) : driveSyncStatus !== 'synced' ? (
                         <>
                           <AlertCircle className="w-3 h-3 text-amber-600" />
-                          <span className="text-amber-600">{SYNC_LABELS[driveSyncStatus]}</span>
+                          <span className="text-amber-700">{SYNC_LABELS[driveSyncStatus]}</span>
                         </>
                       ) : (
                         <>
@@ -192,7 +211,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                   {driveError && (
                     <p className="text-xs text-red-600 pt-1 border-t border-slate-200 mt-1">
-                      {driveError}
+                      {describeSyncError(driveError)}
                     </p>
                   )}
                 </div>

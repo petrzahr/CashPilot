@@ -60,6 +60,7 @@ import { getAccountFees } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
 import { getCategoryUsage, isInUse } from '../services/usageService';
+import { describeSyncError } from '../services/syncErrorText';
 import {
   GoogleUser,
   fetchGoogleUserProfile,
@@ -250,6 +251,8 @@ export interface ToastMessage {
   id: string;
   type: 'success' | 'info' | 'warning' | 'error';
   text: string;
+  /** Volitelná akce přímo v oznámení, např. „Zkusit znovu“ */
+  action?: { label: string; onClick: () => void };
 }
 
 interface FinanceContextType {
@@ -279,7 +282,7 @@ interface FinanceContextType {
 
   // Notifikace
   toasts: ToastMessage[];
-  showToast: (text: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
+  showToast: (text: string, type?: 'success' | 'info' | 'warning' | 'error', action?: ToastMessage['action']) => void;
   removeToast: (id: string) => void;
 
   // Transakce a pořadí
@@ -421,9 +424,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, []);
 
   // Chyby a varování zůstávají, dokud je uživatel nezavře; potvrzení úspěchu zmizí samo
-  const showToast = useCallback((text: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+  const showToast = useCallback((
+    text: string,
+    type: 'success' | 'info' | 'warning' | 'error' = 'success',
+    action?: ToastMessage['action']
+  ) => {
     const id = `${Date.now()}_${Math.random()}`;
-    setToasts(prev => [...prev, { id, text, type }]);
+    setToasts(prev => [...prev, { id, text, type, action }]);
     if (type === 'error' || type === 'warning') return;
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
@@ -2288,6 +2295,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       else await connectGoogleDrive();
     }
   }, [startCloudSession, connectGoogleDrive]);
+
+  // Selhání synchronizace se nesmí ztratit v barevné tečce: při přechodu do chyby nebo konfliktu
+  // zůstane oznámení s možností zkusit to znovu, po obnovení přijde krátké potvrzení.
+  const lastSyncProblemRef = useRef(false);
+  useEffect(() => {
+    const isProblem = driveSyncStatus === 'error' || driveSyncStatus === 'conflict';
+    if (!isCloudReady) return;
+    if (isProblem && !lastSyncProblemRef.current) {
+      lastSyncProblemRef.current = true;
+      const text = driveSyncStatus === 'conflict'
+        ? 'Změny z jiného zařízení se nepodařilo sloučit. Zkuste synchronizaci znovu, vaše data zůstávají v tomto zařízení.'
+        : describeSyncError(driveError);
+      showToast(text, 'error', { label: 'Zkusit znovu', onClick: () => { void syncWithGoogleDrive(); } });
+    } else if (driveSyncStatus === 'synced' && lastSyncProblemRef.current) {
+      lastSyncProblemRef.current = false;
+      showToast('Změny jsou znovu uložené na Google Disku.');
+    }
+  }, [driveSyncStatus, driveError, isCloudReady, showToast, syncWithGoogleDrive]);
 
   const setDriveBackupEnabled = useCallback((enabled: boolean) => {
     persistDriveBackupEnabled(enabled);

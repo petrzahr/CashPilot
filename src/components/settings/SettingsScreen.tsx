@@ -5,6 +5,7 @@ import { halerToInputValue, parseInputToHaler } from '../../services/currencySer
 import { isDemoModeEnabled } from '../../services/storageService';
 import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
+import { describeSyncError } from '../../services/syncErrorText';
 import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
   Download, 
@@ -546,7 +547,7 @@ export const SettingsScreen: React.FC = () => {
                 {driveError && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{driveError}</span>
+                    <span>{describeSyncError(driveError)}</span>
                   </div>
                 )}
 
