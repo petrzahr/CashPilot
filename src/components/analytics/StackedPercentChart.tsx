@@ -155,7 +155,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               y1={getY(v)}
               x2={width - margin.right}
               y2={getY(v)}
-              stroke="#cbd5e1"
+              className="stroke-slate-300"
               strokeWidth={v === 0 ? '1.5' : '1'}
               strokeDasharray={v === 0 ? undefined : '4 4'}
               opacity={v === 0 ? 1 : 0.6}
@@ -184,7 +184,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                     y={margin.top}
                     width={slotWidth}
                     height={chartHeight}
-                    fill="#f1f5f9"
+                    className="fill-slate-100"
                     opacity="0.7"
                     rx="8"
                   />

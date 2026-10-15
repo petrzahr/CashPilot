@@ -69,10 +69,10 @@ const inputClass =
 const STICKY_LEFT = 'sticky left-0 z-10';
 const STICKY_RIGHT = 'sticky right-0 z-10';
 // Neprůhledné ekvivalenty bg-slate-50/75 a bg-slate-50/40 na bílé - ukotvené buňky nesmí prosvítat
-const HEADER_ROW_BG = 'bg-[#fafbfd]';
-const CATEGORY_ROW_BG = 'bg-[#fcfdfe]';
+const HEADER_ROW_BG = 'bg-table-header';
+const CATEGORY_ROW_BG = 'bg-table-category';
 // Lehce fialové podbarvení plateb, které se neopakují měsíčně (neprůhledné kvůli ukotveným buňkám)
-const NON_MONTHLY_ROW_BG = 'bg-[#f8f6ff]';
+const NON_MONTHLY_ROW_BG = 'bg-table-nonmonthly';
 
 const iconButtonClass =
   'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';

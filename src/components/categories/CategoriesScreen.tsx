@@ -73,7 +73,7 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div className="h-8 w-full sm:w-56 flex gap-2 p-1 bg-slate-200/60 rounded-xl shrink-0">
+        <div role="group" aria-label="Typ kategorií" className="h-8 w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('expense')}
             aria-pressed={activeTab === 'expense'}

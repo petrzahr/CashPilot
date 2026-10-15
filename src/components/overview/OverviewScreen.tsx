@@ -349,7 +349,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <table className="w-full text-xs text-left whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                  <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
+                  <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-20">Účet</th>
                   {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
@@ -367,7 +367,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <tbody className="divide-y divide-slate-100">
                 {activeAccounts.map((acc) => (
                   <tr key={acc.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 sticky left-0 bg-white shadow-[1px_0_0_0_#e2e8f0] z-10">
+                    <td className="py-2.5 px-4 font-semibold text-slate-900 sticky left-0 bg-white shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                         <div className="min-w-0">
@@ -438,7 +438,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </tbody>
               <tfoot className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold">
                 <tr>
-                  <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-10">
+                  <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-900">Celkový majetek</span>
                       <span className="text-xs font-normal text-slate-500">Zahrnuté účty</span>

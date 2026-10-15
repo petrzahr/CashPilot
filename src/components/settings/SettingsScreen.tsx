@@ -18,10 +18,21 @@ import {
   Cloud,
   RefreshCw,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  Palette,
+  Monitor,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
+import { getThemePreference, setThemePreference, ThemePreference } from '../../services/themeService';
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
+  { value: 'system', label: 'Podle systému', icon: <Monitor className="w-4 h-4" /> },
+  { value: 'light', label: 'Světlý', icon: <Sun className="w-4 h-4" /> },
+  { value: 'dark', label: 'Tmavý', icon: <Moon className="w-4 h-4" /> },
+];
 
 export const SettingsScreen: React.FC = () => {
   const fieldId = useId();
@@ -65,6 +76,12 @@ export const SettingsScreen: React.FC = () => {
     halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
   );
   const [roundAmounts, setRoundAmounts] = useState(settings.roundAmounts);
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => getThemePreference());
+
+  const handleThemeChange = (preference: ThemePreference) => {
+    setThemePreference(preference);
+    setThemePreferenceState(preference);
+  };
 
   // Potvrzovací dialogy
   const [confirmStartDayOpen, setConfirmStartDayOpen] = useState(false);
@@ -272,6 +289,41 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Vzhled aplikace (nastavení tohoto zařízení) */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <div className="p-2 rounded-xl bg-sky-50 text-sky-600">
+            <Palette className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Vzhled</h2>
+            <p className="text-xs text-slate-500">
+              Světlý nebo tmavý vzhled. Volba platí pro toto zařízení a nesynchronizuje se.
+            </p>
+          </div>
+        </div>
+
+        <div role="group" aria-label="Vzhled aplikace" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl max-w-md">
+          {THEME_OPTIONS.map((option) => {
+            const active = themePreference === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => handleThemeChange(option.value)}
+                className={`min-h-11 flex flex-col sm:flex-row items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span className={active ? 'text-sky-600' : ''}>{option.icon}</span>
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

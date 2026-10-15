@@ -6,6 +6,15 @@
     <title>CashPilot – Vaše osobní finance pod kontrolou</title>
     <meta name="description" content="CashPilot – Vaše osobní finance pod kontrolou. Inteligentní plánování příjmů, výdajů a předpověď zůstatků v privátním Google Disku." />
     <meta name="theme-color" content="#0284c7" />
+    <script>
+      // Vzhled se nastaví ještě před vykreslením, aby tmavý režim neproblikl světlým (viz src/services/themeService.ts)
+      (function () {
+        var pref = 'system';
+        try { pref = localStorage.getItem('cashpilot_theme') || 'system'; } catch (e) {}
+        var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
 
     <!-- Ikony a manifest -->
     <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=3" />
