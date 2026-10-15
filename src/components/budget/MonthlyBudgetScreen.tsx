@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
-import { formatCzechDate } from '../../services/periodService';
+import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
@@ -26,7 +26,9 @@ import {
   SlidersHorizontal,
   ArrowUp,
   ArrowDown,
-  Repeat
+  Repeat,
+  X,
+  type LucideIcon
 } from 'lucide-react';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
@@ -35,6 +37,7 @@ import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MoveButtons } from '../shared/MoveButtons';
+import { RowActionsMenu } from '../shared/RowActionsMenu';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
 
@@ -50,6 +53,34 @@ const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
   { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
   { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
 ].sort((a, b) => czechStringCompare(a.label, b.label));
+
+// Volby nabídky stavu položky: jantar čeká, zelená proběhla, šedá je zrušená
+const STATUS_MENU_ITEMS: { value: TransactionStatus; label: string; Icon: LucideIcon; activeClass: string; iconClass: string }[] = [
+  { value: 'planned', label: 'Plánovaná', Icon: Clock, activeClass: 'text-amber-700 bg-amber-50/60', iconClass: 'text-amber-600' },
+  { value: 'executed', label: 'Uskutečněná', Icon: Check, activeClass: 'text-emerald-700 bg-emerald-50/60', iconClass: 'text-emerald-600' },
+  { value: 'cancelled', label: 'Zrušená', Icon: Ban, activeClass: 'text-slate-500 bg-slate-100', iconClass: 'text-slate-500' },
+];
+
+/** Klávesnice v nabídce stavu: šipky mezi volbami, Escape zavře a vrátí fokus na štítek. */
+const createStatusMenuKeyHandler = (close: () => void) => (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const trigger = e.currentTarget.querySelector<HTMLButtonElement>('button[aria-haspopup]');
+  const items = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'));
+  if (e.key === 'Escape' && items.length > 0) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    trigger?.focus();
+    return;
+  }
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  if (items.length === 0) return;
+  e.preventDefault();
+  const current = items.indexOf(document.activeElement as HTMLButtonElement);
+  const next = current === -1
+    ? (e.key === 'ArrowDown' ? 0 : items.length - 1)
+    : (current + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+  items[next].focus();
+};
 
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
@@ -106,6 +137,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
+  // „Smazat korekci“ otevře detail rovnou s potvrzením smazání, oko jen detail
+  const [correctionDeleteFirst, setCorrectionDeleteFirst] = useState(false);
+  const openCorrection = (tx: Transaction, deleteFirst = false) => {
+    setCorrectionDeleteFirst(deleteFirst);
+    setSelectedCorrection(tx);
+  };
 
   const deletingTxHasExecutedHistorical = useMemo(() => {
     if (!deletingTx) return false;
@@ -136,6 +173,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     }
   };
 
+  const handleStatusMenuKeyDown = createStatusMenuKeyHandler(() => setActiveStatusMenuTxId(null));
+
   const renderStatusBadge = (tx: Transaction) => {
     const isUpdating = updatingStatusTxId === tx.id;
     const isMenuOpen = activeStatusMenuTxId === tx.id;
@@ -155,7 +194,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     }
 
     return (
-      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
+      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()} onKeyDown={handleStatusMenuKeyDown}>
         {isMenuOpen && (
           <div
             className="fixed inset-0 z-20 cursor-default"
@@ -168,6 +207,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <button
           type="button"
           disabled={isUpdating}
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+          aria-label={`Stav položky ${tx.title}: ${label}. Změnit stav`}
           onClick={(e) => {
             e.stopPropagation();
             setActiveStatusMenuTxId(isMenuOpen ? null : tx.id);
@@ -178,55 +220,41 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           }`}
         >
           {isUpdating ? (
-            <Loader2 className="w-3 h-3 animate-spin text-sky-600" />
+            <Loader2 className="w-3 h-3 animate-spin text-sky-600" aria-hidden="true" />
           ) : (
-            <Icon className="w-3 h-3 shrink-0" />
+            <Icon className="w-3 h-3 shrink-0" aria-hidden="true" />
           )}
           <span>{label}</span>
-          <ChevronDown className={`w-2.5 h-2.5 opacity-60 transition-transform motion-reduce:transition-none ${isMenuOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown aria-hidden="true" className={`w-2.5 h-2.5 opacity-60 transition-transform motion-reduce:transition-none ${isMenuOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isMenuOpen && (
           <div
+            role="menu"
+            aria-label={`Stav položky ${tx.title}`}
             className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl shadow-lg border border-slate-200 py-1 min-w-[140px] text-xs font-normal"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              disabled={isUpdating}
-              onClick={() => handleStatusChange(tx.id, 'planned')}
-              className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 transition-colors ${
-                tx.status === 'planned' ? 'font-bold text-amber-700 bg-amber-50/60' : 'text-slate-500'
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Plánovaná</span>
-              {tx.status === 'planned' && <Check className="w-3 h-3 ml-auto text-amber-600" />}
-            </button>
-            <button
-              type="button"
-              disabled={isUpdating}
-              onClick={() => handleStatusChange(tx.id, 'executed')}
-              className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 transition-colors ${
-                tx.status === 'executed' ? 'font-bold text-emerald-700 bg-emerald-50/60' : 'text-slate-500'
-              }`}
-            >
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Uskutečněná</span>
-              {tx.status === 'executed' && <Check className="w-3 h-3 ml-auto text-emerald-600" />}
-            </button>
-            <button
-              type="button"
-              disabled={isUpdating}
-              onClick={() => handleStatusChange(tx.id, 'cancelled')}
-              className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-slate-50 transition-colors ${
-                tx.status === 'cancelled' ? 'font-bold text-slate-500 bg-slate-100' : 'text-slate-500'
-              }`}
-            >
-              <Ban className="w-3.5 h-3.5 text-slate-500" />
-              <span>Zrušená</span>
-              {tx.status === 'cancelled' && <Check className="w-3 h-3 ml-auto text-slate-500" />}
-            </button>
+            {STATUS_MENU_ITEMS.map(({ value, label: itemLabel, Icon: ItemIcon, activeClass, iconClass }) => {
+              const isCurrent = tx.status === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={isCurrent}
+                  disabled={isUpdating}
+                  onClick={() => handleStatusChange(tx.id, value)}
+                  className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-100 transition-colors ${
+                    isCurrent ? `font-bold ${activeClass}` : 'text-slate-500'
+                  }`}
+                >
+                  <ItemIcon className={`w-3.5 h-3.5 ${iconClass}`} aria-hidden="true" />
+                  <span>{itemLabel}</span>
+                  {isCurrent && <Check className={`w-3 h-3 ml-auto ${iconClass}`} aria-hidden="true" />}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -444,10 +472,23 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     filterStatuses
   ]);
 
+  // Počet aktivních filtrů pro tlačítko „Zrušit filtry“
+  const activeFilterCount = [
+    searchQuery.trim(), filterAccounts, filterMainCategories, filterSubCategories, filterTypes, filterStatuses,
+  ].filter(f => f.length > 0).length;
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterAccounts([]);
+    setFilterMainCategories([]);
+    setFilterSubCategories([]);
+    setFilterTypes([]);
+    setFilterStatuses([]);
+  };
+
   // Prázdný seznam: odliší období bez položek od filtrů, které nic nenašly
   const emptyListMessage = allPeriodTransactions.length === 0
     ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Přidat položku.'
-    : 'Filtrům neodpovídá žádná položka. Upravte nebo zrušte filtry.';
+    : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const periodTransactionsSum = useMemo(() => {
@@ -488,6 +529,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   }, [accounts]);
 
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
+  // Dnešní den v pražském čase odděluje uskutečněnou minulost od plánu
+  const todayIso = getTodayInPrague();
+
   const dayGroups = useMemo(() => {
     const dateMap = new Map<string, Transaction[]>();
 
@@ -1009,7 +1053,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <MultiSelectDropdown
-              placeholder="Všechny účty"
+              label="Účet" placeholder="Všechny účty"
               selected={filterAccounts}
               onChange={setFilterAccounts}
               options={sortedAccounts.map(a => ({
@@ -1019,7 +1063,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             />
 
             <MultiSelectDropdown
-              placeholder="Všechny kategorie"
+              label="Kategorie" placeholder="Všechny kategorie"
               selected={filterMainCategories}
               onChange={handleMainCategoriesChange}
               options={availableMainCategories.map(c => ({
@@ -1029,7 +1073,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             />
 
             <MultiSelectDropdown
-              placeholder="Všechny podkategorie"
+              label="Podkategorie" placeholder="Všechny podkategorie"
               disabled={filterMainCategories.length === 0 || availableSubCategories.length === 0}
               disabledPlaceholder={filterMainCategories.length === 0 ? 'Nejprve vyberte hlavní kategorii' : 'Žádné podkategorie'}
               selected={filterSubCategories}
@@ -1041,19 +1085,32 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             />
 
             <MultiSelectDropdown
-              placeholder="Všechny typy"
+              label="Typ" placeholder="Všechny typy"
               selected={filterTypes}
               onChange={setFilterTypes}
               options={TYPE_OPTIONS.map(t => ({ value: t.value, label: t.label }))}
             />
 
             <MultiSelectDropdown
-              placeholder="Všechny stavy"
+              label="Stav" placeholder="Všechny stavy"
               selected={filterStatuses}
               onChange={setFilterStatuses}
               options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))}
             />
           </div>
+
+          {activeFilterCount > 0 && (
+            <div className="flex justify-end -mt-1">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+                Zrušit filtry ({activeFilterCount})
+              </button>
+            </div>
+          )}
       </div>
 
       {/* Seznam všech položek tohoto období */}
@@ -1066,17 +1123,34 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 {emptyListMessage}
               </div>
             ) : (
-              dayGroups.map(({ date, txs, intraDay }) => {
+              dayGroups.map(({ date, txs, intraDay }, groupIndex) => {
                 const hasNegative = intraDay.hasTemporaryNegative;
+                const isToday = date === todayIso;
+                // Hranice mezi minulostí a plánem: čára „Dnes“ před prvním dnem na druhé straně dneška
+                const prevDate = groupIndex > 0 ? dayGroups[groupIndex - 1].date : null;
+                const crossesToday = prevDate !== null && !isToday && prevDate !== todayIso
+                  && (prevDate < todayIso) !== (date < todayIso);
 
                 return (
-                  <div key={date} className="p-4 sm:p-5 space-y-3">
+                  <React.Fragment key={date}>
+                  {crossesToday && (
+                    <div role="separator" aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
+                      <span>Dnes · {formatCzechDate(todayIso)}</span>
+                      <span className="h-px flex-1 bg-slate-300" aria-hidden="true" />
+                    </div>
+                  )}
+                  <div className={`p-4 sm:p-5 space-y-3 ${isToday ? 'bg-slate-50/70' : ''}`}>
                     {/* Záhlaví dne */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <span className="font-bold text-slate-900 text-sm">
                           {formatCzechDate(date)}
                         </span>
+                        {isToday && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-900 text-white">
+                            Dnes
+                          </span>
+                        )}
                         <span className="text-xs text-slate-500">
                           ({txs.length} {txs.length === 1 ? 'položka' : txs.length < 5 ? 'položky' : 'položek'})
                         </span>
@@ -1140,11 +1214,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               draggedTxId === tx.id
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
-                                  ? 'bg-amber-50/40 border-amber-200/80 hover:border-amber-300'
+                                  ? 'bg-slate-50/60 border-slate-200/80 hover:border-slate-300'
                                   : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-red-200 hover:border-red-300'
                                     : 'bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-xs'
-                            } ${isCancelled ? 'opacity-50 line-through' : ''}`}
+                            } ${isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div aria-hidden="true" className="max-md:hidden text-slate-500 hover:text-slate-600 cursor-grab p-0.5">
@@ -1173,10 +1247,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   {isCorrection ? (
                                     <button
                                       type="button"
-                                      onClick={() => setSelectedCorrection(tx)}
-                                      className="min-w-0 max-w-full text-xs font-bold text-slate-900 hover:text-amber-800 hover:underline text-left flex items-center gap-1.5"
+                                      onClick={() => openCorrection(tx)}
+                                      className="min-w-0 max-w-full text-xs font-bold text-slate-900 hover:text-sky-700 hover:underline text-left flex items-center gap-1.5"
                                     >
-                                      <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
                                       <span className="truncate">{tx.title}</span>
                                     </button>
                                   ) : (
@@ -1190,7 +1264,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </span>
                                   )}
                                   {isCorrection ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                       Korekce
                                     </span>
                                   ) : (
@@ -1200,7 +1274,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                                 <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 mt-0.5">
                                   {isCorrection ? (
-                                    <span className="text-amber-700 font-medium text-xs">Korekce zůstatku</span>
+                                    <span className="text-slate-500 font-medium text-xs">Korekce zůstatku</span>
                                   ) : cat ? (
                                     <span>{cat.name} {subCat && `› ${subCat.name}`}</span>
                                   ) : tx.type !== 'transfer' ? (
@@ -1244,7 +1318,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   <>
                                     <button
                                       type="button"
-                                      onClick={() => setSelectedCorrection(tx)}
+                                      onClick={() => openCorrection(tx)}
                                       title="Detail a poznámka korekce"
                                       aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -1253,10 +1327,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => setSelectedCorrection(tx)}
+                                      onClick={() => openCorrection(tx, true)}
                                       title="Smazat korekci"
                                       aria-label={`Smazat korekci: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:text-red-600"
+                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:text-red-600"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1292,44 +1366,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     >
                                       <Edit3 className="w-4 h-4" />
                                     </button>
-                                    <button
-                                      onClick={() => duplicateTransaction(tx)}
-                                      title="Duplikovat položku"
-                                      aria-label={`Duplikovat položku: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    >
-                                      <Copy className="w-4 h-4" />
-                                    </button>
-                                    {tx.status !== 'cancelled' ? (
-                                      <button
-                                        onClick={() => handleStatusChange(tx.id, 'cancelled')}
-                                        disabled={updatingStatusTxId === tx.id}
-                                        title="Zrušit položku"
-                                        aria-label={`Zrušit položku: ${tx.title}`}
-                                        className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
-                                      >
-                                        <Ban className="w-4 h-4" />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleStatusChange(tx.id, 'planned')}
-                                        disabled={updatingStatusTxId === tx.id}
-                                        title="Vrátit zrušenou položku do plánovaných"
-                                        aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-                                        className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                      >
-                                        <Clock className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => setDeletingTx(tx)}
-                                      disabled={isDeletingTx}
-                                      title="Smazat položku"
-                                      aria-label={`Smazat položku: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <RowActionsMenu
+                                      itemLabel={tx.title}
+                                      actions={[
+                                        { label: 'Duplikovat', Icon: Copy, onSelect: () => duplicateTransaction(tx) },
+                                        tx.status !== 'cancelled'
+                                          ? { label: 'Zrušit položku', Icon: Ban, onSelect: () => handleStatusChange(tx.id, 'cancelled'), disabled: updatingStatusTxId === tx.id }
+                                          : { label: 'Obnovit do plánovaných', Icon: Clock, onSelect: () => handleStatusChange(tx.id, 'planned'), disabled: updatingStatusTxId === tx.id },
+                                        { label: 'Smazat položku', Icon: Trash2, onSelect: () => setDeletingTx(tx), disabled: isDeletingTx, destructive: true },
+                                      ]}
+                                    />
                                   </>
                                 )}
                               </div>
@@ -1339,6 +1385,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       })}
                     </div>
                   </div>
+                  </React.Fragment>
                 );
               })
             )}
@@ -1408,7 +1455,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                     <tr
                       key={tx.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isCancelled ? 'opacity-50 line-through' : isCorrection ? 'bg-amber-50/30' : ''
+                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : isCorrection ? 'bg-slate-50/60' : ''
                       }`}
                     >
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
@@ -1424,10 +1471,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           {isCorrection ? (
                             <button
                               type="button"
-                              onClick={() => setSelectedCorrection(tx)}
-                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
+                              onClick={() => openCorrection(tx)}
+                              className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
                             >
-                              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
                               <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
@@ -1439,7 +1486,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
@@ -1448,7 +1495,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {isCorrection ? (
-                          <span className="text-amber-800 font-medium text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                          <span className="text-slate-600 font-medium text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                             Korekce zůstatku
                           </span>
                         ) : cat ? (
@@ -1507,7 +1554,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             <>
                               <button
                                 type="button"
-                                onClick={() => setSelectedCorrection(tx)}
+                                onClick={() => openCorrection(tx)}
                                 title="Detail a poznámka korekce"
                                 aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -1516,10 +1563,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setSelectedCorrection(tx)}
+                                onClick={() => openCorrection(tx, true)}
                                 title="Smazat korekci"
                                 aria-label={`Smazat korekci: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1555,44 +1602,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat položku"
-                                aria-label={`Duplikovat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              {tx.status !== 'cancelled' ? (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'cancelled')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Zrušit položku"
-                                  aria-label={`Zrušit položku: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
-                                >
-                                  <Ban className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Vrátit zrušenou položku do plánovaných"
-                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                >
-                                  <Clock className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeletingTx(tx)}
-                                disabled={isDeletingTx}
-                                title="Smazat položku"
-                                aria-label={`Smazat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <RowActionsMenu
+                                itemLabel={tx.title}
+                                actions={[
+                                  { label: 'Duplikovat', Icon: Copy, onSelect: () => duplicateTransaction(tx) },
+                                  tx.status !== 'cancelled'
+                                    ? { label: 'Zrušit položku', Icon: Ban, onSelect: () => handleStatusChange(tx.id, 'cancelled'), disabled: updatingStatusTxId === tx.id }
+                                    : { label: 'Obnovit do plánovaných', Icon: Clock, onSelect: () => handleStatusChange(tx.id, 'planned'), disabled: updatingStatusTxId === tx.id },
+                                  { label: 'Smazat položku', Icon: Trash2, onSelect: () => setDeletingTx(tx), disabled: isDeletingTx, destructive: true },
+                                ]}
+                              />
                             </>
                           )}
                         </div>
@@ -1639,6 +1658,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
         correctionItem={selectedCorrection}
+        startWithDeleteConfirm={correctionDeleteFirst}
       />
     </div>
 );

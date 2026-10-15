@@ -173,11 +173,11 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="font-bold text-slate-700 mr-2">{formatCurrency(-fee.amountInHaler)}</span>
                         <button type="button" onClick={() => setEditingFeePeriodKey(fee.periodKey)} title="Upravit poplatek" aria-label={`Upravit poplatek: ${item.periodName}`}
-                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                          className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
-                          className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                          className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -215,11 +215,11 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         </span>
                         <div className="flex justify-end gap-1 mt-1">
                           <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní hodnotu" aria-label={`Upravit tržní hodnotu z ${formatCzechDate(snap.date)}`}
-                            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                            className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
-                            className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                            className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -277,15 +277,17 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                     key={tx.id}
                     className={`p-3 border rounded-xl flex items-center justify-between gap-3 text-sm transition-colors ${
                       isCorrection
-                        ? 'bg-amber-50/40 border-amber-200 hover:bg-amber-50/70'
+                        ? 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
                         : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`p-2 rounded-lg shrink-0 ${
                         isCorrection
-                          ? 'bg-amber-100 text-amber-800'
-                          : tx.type === 'income' || isIncomingTransfer
+                          ? 'bg-slate-100 text-slate-500'
+                          : tx.type === 'transfer'
+                            ? 'bg-slate-100 text-slate-500'
+                          : tx.type === 'income'
                             ? 'bg-emerald-50 text-emerald-600'
                             : 'bg-red-50 text-red-600'
                       }`}>
@@ -305,7 +307,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             isCorrection
-                              ? 'bg-amber-100 text-amber-800'
+                              ? 'bg-slate-100 text-slate-600'
                               : 'bg-slate-100 text-slate-500'
                           }`}>
                             {typeBadge}
@@ -331,7 +333,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setSelectedCorrection(tx)}
-                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                           title="Detail korekce"
                           aria-label={`Detail korekce z ${formatCzechDate(tx.date)}`}
                         >

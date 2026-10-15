@@ -11,6 +11,8 @@ interface MultiSelectDropdownProps {
   selected: string[];
   onChange: (values: string[]) => void;
   placeholder: string;
+  /** Název filtru pro čtečky, např. „Účet“ – z „Vybráno: 2“ samotného není poznat, o co jde */
+  label?: string;
   disabled?: boolean;
   disabledPlaceholder?: string;
   emptyOptionsLabel?: string;
@@ -23,6 +25,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   selected,
   onChange,
   placeholder,
+  label: filterLabel,
   disabled = false,
   disabledPlaceholder,
   emptyOptionsLabel = 'Žádné možnosti',
@@ -119,6 +122,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         type="button"
         disabled={disabled}
         aria-expanded={isOpen && !disabled}
+        aria-label={filterLabel ? `${filterLabel}: ${label}` : undefined}
         aria-controls={isOpen ? panelId : undefined}
         onClick={() => setIsOpen(prev => !prev)}
         onKeyDown={handleTriggerKeyDown}
@@ -135,7 +139,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           ref={panelRef}
           id={panelId}
           role="group"
-          aria-label={placeholder}
+          aria-label={filterLabel ?? placeholder}
           onKeyDown={handlePanelKeyDown}
           className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl shadow-lg border border-slate-200 py-1 min-w-full w-max max-w-[280px] max-h-64 max-md:max-h-80 overflow-y-auto text-xs"
           onClick={(e) => e.stopPropagation()}

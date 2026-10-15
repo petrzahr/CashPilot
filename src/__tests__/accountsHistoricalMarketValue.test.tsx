@@ -9,7 +9,7 @@ import { SyncController } from '../services/syncController';
 import { calculateForecast } from '../services/financialEngine';
 import { computeAssetAccountBalanceAtDate } from '../services/analyticsEngine';
 import { getPeriodForDate } from '../services/periodService';
-import { formatCurrency } from '../services/currencyService';
+import { formatCurrency, formatPercent } from '../services/currencyService';
 
 const bridge = vi.hoisted(() => ({ finance: null as ReturnType<typeof useFinance> | null }));
 vi.mock('../context/FinanceContext', async importOriginal => {
@@ -58,7 +58,7 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
     expect(computeAssetAccountBalanceAtDate(data.accounts[0], periods[index].endDate, [], data.marketValueSnapshots)).toBe(value);
     if (index > 0) {
       expect(html).toContain(`Vklady: ${formatCurrency(10000000)}`);
-      expect(html).toContain(`${((value - 10000000) / 10000000 * 100).toFixed(1)} %)`);
+      expect(html).toContain(`${formatPercent((value - 10000000) / 10000000 * 100, { showPlus: true })})`);
     }
     expect(JSON.stringify(data)).toBe(before);
   };

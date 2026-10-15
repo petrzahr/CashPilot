@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { 
@@ -13,6 +13,8 @@ import {
   TrendingUp,
   Repeat
 } from 'lucide-react';
+
+const MOBILE_QUERY = '(max-width: 767.98px)';
 
 export type NavScreen = 'budget' | 'overview' | 'analytics' | 'mandatory' | 'transactions' | 'accounts' | 'categories' | 'settings';
 
@@ -32,6 +34,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenTransactionModal,
 }) => {
   const { quickOverview } = useFinance();
+  const asideRef = useRef<HTMLElement>(null);
+
+  // Na mobilu je menu vysouvací vrstva: zavřené je mimo pořadí Tab, otevřené drží fokus a zavře se Escapem
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia(MOBILE_QUERY).matches
+      : false
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
+
+  const isDrawerOpen = isMobile && mobileOpen;
+  // Rodič předává novou funkci při každém vykreslení; ref zabrání opakovanému přesunu fokusu
+  const onCloseMobileRef = useRef(onCloseMobile);
+  onCloseMobileRef.current = onCloseMobile;
+
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    asideRef.current?.querySelector<HTMLElement>('button')?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCloseMobileRef.current();
+        return;
+      }
+      if (e.key !== 'Tab' || !asideRef.current) return;
+      const focusable = Array.from(asideRef.current.querySelectorAll<HTMLElement>('button, a[href]'));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus();
+    };
+  }, [isDrawerOpen]);
+
+  // React 18 typy atribut inert neznají; prázdný řetězec ho v DOM zapne
+  const drawerAttributes: Record<string, unknown> = isMobile
+    ? mobileOpen
+      ? { role: 'dialog', 'aria-modal': true, 'aria-label': 'Hlavní menu' }
+      : { inert: '', 'aria-hidden': true }
+    : {};
 
   const navItems: { id: NavScreen; label: string; icon: React.ReactNode }[] = [
     { id: 'budget', label: 'Měsíční rozpočet', icon: <CalendarDays className="w-4 h-4" /> },
@@ -60,6 +121,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
+        ref={asideRef}
+        {...drawerAttributes}
         className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-slate-200/80 flex flex-col transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
@@ -98,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenTransactionModal();
               onCloseMobile();
             }}
-            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:shadow-md hover:shadow-sky-400/20"
+            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nová položka</span>
@@ -166,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between">
             <span className="font-bold text-slate-500 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
-            <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+            <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}
             </span>
           </div>

@@ -18,7 +18,7 @@ import {
   calculatePortfolioComposition,
   calculateCashFlowComposition,
 } from '../../services/analyticsEngine';
-import { formatCurrency } from '../../services/currencyService';
+import { formatCurrency, formatPercent } from '../../services/currencyService';
 import {
   formatCzechDate,
   getTodayInPrague,
@@ -232,8 +232,9 @@ export const AnalyticsScreen: React.FC = () => {
                         }`}
                         title="Změna oproti celému předchozímu období"
                       >
-                        {isDecrease ? '↓ ' : isIncrease ? '↑ +' : ''}
-                        {t.changePercent.toFixed(1)} %
+                        {/* Směr nese šipka, číslo je bez znaménka, aby nevzniklo „↓ −5 %“ */}
+                        {isDecrease ? '↓ ' : isIncrease ? '↑ ' : ''}
+                        {formatPercent(isDecrease || isIncrease ? Math.abs(t.changePercent) : t.changePercent)}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">

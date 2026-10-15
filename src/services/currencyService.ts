@@ -40,6 +40,24 @@ export function formatCurrency(
 }
 
 /**
+ * Formátuje procenta česky jako částky: desetinná čárka, typografické mínus, např. "− 5,0 %".
+ */
+export function formatPercent(
+  value: number,
+  options: { showPlus?: boolean; fractionDigits?: number } = {}
+): string {
+  const { showPlus = false, fractionDigits = 1 } = options;
+  const factor = 10 ** fractionDigits;
+  const roundedAbs = Math.round(Math.abs(value) * factor) / factor;
+  const formatted = new Intl.NumberFormat('cs-CZ', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(roundedAbs);
+  const prefix = value < 0 && roundedAbs !== 0 ? '− ' : showPlus && value > 0 && roundedAbs !== 0 ? '+ ' : '';
+  return `${prefix}${formatted} %`;
+}
+
+/**
  * Převede uživatelský textový vstup (např. "125 400,50", "125400", "50.2") na celé haléře.
  */
 export function parseInputToHaler(input: string): number {

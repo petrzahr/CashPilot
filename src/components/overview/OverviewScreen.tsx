@@ -70,8 +70,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       {/* Hlavní tabulka forecastu */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-900">Vývoj zůstatků po obdobích</h2>
           {/* Přepínač: Použitelné peníze vs Všechny účty */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+          <div role="group" aria-label="Zobrazit zůstatky" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
               onClick={() => setForecastScope('usable')}
@@ -141,6 +142,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       >
                         {p.period.name}
                       </button>
+                      {isCurrent && (
+                        <span className="ml-2 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200/70">
+                          Aktuální
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
                       {formatCurrency(opening)}
@@ -175,8 +181,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       {/* Přehled účtů */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-slate-900">Účty</h2>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+            <div role="group" aria-label="Zobrazení účtů" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
                 onClick={() => setAccountViewMode('period')}

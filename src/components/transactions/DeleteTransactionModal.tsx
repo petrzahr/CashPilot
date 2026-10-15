@@ -156,7 +156,13 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 <span>Mazání…</span>
               </>
             ) : (
-              <span>Smazat položku</span>
+              <span>
+                {!isRecurring || recurringMode === 'occurrence'
+                  ? 'Smazat položku'
+                  : recurringMode === 'future'
+                    ? 'Smazat budoucí výskyty'
+                    : 'Smazat celou sérii'}
+              </span>
             )}
           </button>
         </ModalFooter>

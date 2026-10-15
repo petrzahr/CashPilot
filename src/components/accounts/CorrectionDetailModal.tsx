@@ -11,12 +11,15 @@ interface CorrectionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   correctionItem: Transaction | BalanceCorrection | null;
+  /** Otevřít rovnou s potvrzením smazání (akce „Smazat korekci“ v seznamu) */
+  startWithDeleteConfirm?: boolean;
 }
 
 export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   isOpen,
   onClose,
   correctionItem,
+  startWithDeleteConfirm = false,
 }) => {
   const { accounts, transactions, corrections, updateCorrectionNote, deleteCorrection } = useFinance();
   const [note, setNote] = useState('');
@@ -35,9 +38,9 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   useEffect(() => {
     if (currentItem && isOpen) {
       setNote(currentItem.note || '');
-      setIsConfirmDeleteOpen(false);
+      setIsConfirmDeleteOpen(startWithDeleteConfirm);
     }
-  }, [currentItem, isOpen]);
+  }, [currentItem, isOpen, startWithDeleteConfirm]);
 
   if (!currentItem) return null;
 
@@ -101,18 +104,13 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
               </span>
             </div>
 
-            <div className={`mt-2 p-2.5 rounded-lg flex items-center justify-between text-sm font-semibold ${
-              diff > 0
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : diff < 0
-                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                  : 'bg-slate-100 text-slate-500'
-            }`}>
+            <div className="mt-2 p-2.5 rounded-lg flex items-center justify-between text-sm font-semibold bg-slate-50 text-slate-900 border border-slate-200">
               <span className="flex items-center gap-1.5">
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4 text-slate-500" aria-hidden="true" />
                 Korekce
               </span>
-              <span className="font-bold text-base">
+              {/* Barva rozdílu jen podle znaménka, stejně jako v seznamech a při odsouhlasení */}
+              <span className={`font-bold text-base ${diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-red-600' : 'text-slate-500'}`}>
                 {formatCurrency(diff, { showPlus: true })}
               </span>
             </div>
