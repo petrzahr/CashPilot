@@ -41,7 +41,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
         onRestoreBackup(text);
         setRestoreError(null);
       } catch (err: any) {
-        setRestoreError(err.message || 'Soubor se zálohou nelze načíst.');
+        setRestoreError(err.message || 'Soubor se zálohou se nepodařilo načíst. Zkontrolujte, že jde o zálohu z CashPilotu (.json).');
       }
     };
     reader.readAsText(file);
@@ -61,18 +61,18 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             </h1>
             <div className="flex items-center gap-1.5 text-xs text-emerald-400 mt-1">
               <ShieldCheck className="w-4 h-4" />
-              <span>Původní data v úložišti nebyla přepsána</span>
+              <span>Uložená data zůstala beze změny</span>
             </div>
           </div>
         </div>
 
         <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-700/50 space-y-2 text-xs sm:text-sm text-slate-300">
           <p className="font-semibold text-slate-200">
-            {errorMessage || 'V lokálním úložišti byl nalezen neplatný nebo poškozený formát dat.'}
+            {errorMessage || 'Data uložená v tomto prohlížeči jsou poškozená nebo mají neplatný formát.'}
           </p>
           <p className="text-slate-400 text-xs">
-            Abychom zabránili ztrátě vašich skutečných financí, automatické ukládání bylo zastaveno.
-            {recoveryKey && ` Bezpečnostní kopie poškozeného stavu byla uložena pod klíčem "${recoveryKey}".`}
+            Automatické ukládání je pozastavené, aby se nic nepřepsalo.
+            {recoveryKey && ` Kopie poškozených dat je v prohlížeči uložená pod klíčem „${recoveryKey}“.`}
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
 
         <div className="space-y-3 pt-2">
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Doporučený postup nápravy
+            Jak pokračovat
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -95,7 +95,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
               className="flex items-center justify-center gap-2.5 px-4 py-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-50"
             >
               <Download className="w-4 h-4 text-sky-400" />
-              <span>Stáhnout kopii (JSON)</span>
+              <span>Stáhnout poškozená data (JSON)</span>
             </button>
 
             {/* Tlačítko Obnovit ze zálohy */}
@@ -121,7 +121,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
               className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Zkusit znovu načíst</span>
+              <span>Načíst znovu</span>
             </button>
 
             <button
@@ -129,7 +129,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
               className="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Založit čistou instalaci</span>
+              <span>Začít s prázdnými daty</span>
             </button>
           </div>
         </div>
@@ -139,9 +139,9 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
         isOpen={confirmResetOpen}
         onClose={() => setConfirmResetOpen(false)}
         onConfirm={onResetToFresh}
-        title="Založit novou čistou instalaci"
-        message="POZOR: Tato akce zahodí aktuálně poškozená data v lokálním úložišti a založí zcela čistou aplikaci bez účtů a transakcí. Doporučujeme si nejprve stáhnout kopii poškozených dat. Chcete pokračovat?"
-        confirmText="Ano, založit čistou aplikaci"
+        title="Začít s prázdnými daty?"
+        message="Poškozená data v tomto prohlížeči se zahodí a aplikace začne bez účtů a položek. Pokud jste si je ještě nestáhli, udělejte to nejdřív."
+        confirmText="Zahodit data a začít znovu"
         isDestructive
       />
     </div>

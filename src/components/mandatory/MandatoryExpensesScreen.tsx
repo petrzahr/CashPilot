@@ -51,7 +51,7 @@ const saveSimulation = (simulation: MandatorySimulation) => {
 const SECTION_TITLES: Record<MandatoryGroup, string> = {
   income: 'Pravidelné příjmy',
   expense: 'Mandatorní výdaje',
-  transfer: 'Pravidelné spoření & převody',
+  transfer: 'Pravidelné spoření a převody',
 };
 
 const SECTION_TOTAL_COLORS: Record<MandatoryGroup, string> = {
@@ -216,7 +216,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           >
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button type="button" title="Zrušit" aria-label="Zrušit přidání" className={iconButtonClass} onClick={() => setAddDraft(null)}>
+          <button type="button" title="Zrušit přidání" aria-label="Zrušit přidání" className={iconButtonClass} onClick={() => setAddDraft(null)}>
             <X className="w-3.5 h-3.5" />
           </button>
         </td>
@@ -269,7 +269,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             >
               <Check className="w-3.5 h-3.5" />
             </button>
-            <button type="button" title="Zrušit" aria-label={`Zrušit úpravy: ${item.title}`} className={iconButtonClass} onClick={cancelEdit}>
+            <button type="button" title="Zrušit úpravy" aria-label={`Zrušit úpravy: ${item.title}`} className={iconButtonClass} onClick={cancelEdit}>
               <X className="w-3.5 h-3.5" />
             </button>
           </td>
@@ -403,7 +403,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         </div>
       ) : (
         <div className="py-8 text-center text-xs text-slate-500">
-          Žádné aktivní opakované platby tohoto typu.
+          Žádné aktivní opakované platby tohoto typu. Do simulace je můžete přidat tlačítkem Přidat.
         </div>
       )}
     </div>
@@ -580,13 +580,13 @@ export const MandatoryExpensesScreen: React.FC = () => {
       className: overview.actuallySavedMonthlyInHaler < 0 ? 'text-red-600' : 'text-emerald-600',
       title: 'Příjmy − výdaje na běžných účtech a hotovosti, bez převodů',
     },
-    { label: 'Spoření & převody / měsíc', value: overview.transfer.monthlyInHaler, base: baseline.transfer.monthlyInHaler, className: 'text-sky-600' },
+    { label: 'Spoření a převody / měsíc', value: overview.transfer.monthlyInHaler, base: baseline.transfer.monthlyInHaler, className: 'text-sky-600' },
     {
       label: 'Zbývá / měsíc',
       value: overview.remainingMonthlyInHaler,
       base: baseline.remainingMonthlyInHaler,
       className: overview.remainingMonthlyInHaler < 0 ? 'text-red-600' : 'text-slate-900',
-      title: 'Příjmy − mandatorní výdaje − spoření & převody',
+      title: 'Příjmy − mandatorní výdaje − spoření a převody',
     },
   ];
 

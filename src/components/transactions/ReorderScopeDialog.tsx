@@ -32,7 +32,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Přeuspořádat pravidelnou položku"
+      title="Změnit pořadí pravidelné položky"
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
@@ -42,7 +42,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           </div>
           <div className="text-sm text-slate-500 leading-relaxed">
             <p>
-              Položka „<strong className="text-slate-900">{transactionTitle}</strong>“ patří do pravidelné série. Vyberte, na co se má nové pořadí vztahovat.
+              Položka „<strong className="text-slate-900">{transactionTitle}</strong>“ se opakuje. Vyberte, pro které výskyty má nové pořadí platit.
             </p>
           </div>
         </div>
@@ -50,7 +50,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
         <div className="pt-1 space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
             <Repeat className="w-4 h-4 text-sky-600" />
-            <span>Rozsah přeuspořádání</span>
+            <span>Platí pro</span>
           </div>
 
           <label
@@ -94,7 +94,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
             <div className="text-xs">
               <div className="font-semibold text-slate-900">Tento a všechny budoucí výskyty</div>
               <div className="text-slate-500 mt-0.5">
-                Pravidlo se rozdělí a nové pořadí bude platit od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.
+                Nové pořadí platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.
               </div>
             </div>
           </label>
@@ -117,7 +117,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
             <div className="text-xs">
               <div className="font-semibold text-slate-900">Celá série</div>
               <div className="text-slate-500 mt-0.5">
-                Nové pořadí bude platit pro všechny budoucí výskyty. Již zaznamenané minulé položky zůstanou beze změny.
+                Nové pořadí platí pro všechny výskyty. Minulé položky, které už jsou uložené, zůstanou beze změny.
               </div>
             </div>
           </label>
@@ -136,7 +136,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
             onClick={handleConfirm}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm shadow-sky-200 transition-all cursor-pointer"
           >
-            <span>Potvrdit</span>
+            <span>Uložit pořadí</span>
           </button>
         </ModalFooter>
       </div>

@@ -57,7 +57,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amountStr.trim() || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
-      setAmountError('Zadejte platnou částku poplatku.');
+      setAmountError('Zadejte částku poplatku (0 nebo více).');
       document.getElementById(`${fieldId}-2`)?.focus();
       return;
     }
@@ -84,13 +84,13 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
             >
               {periods.map(p => (
                 <option key={p.key} value={p.key}>
-                  {p.name}{accountFees.some(f => f.periodKey === p.key) ? ' ✓' : ''}
+                  {p.name}{accountFees.some(f => f.periodKey === p.key) ? ' (zadáno)' : ''}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">Poplatek ({account.currency}) *</label>
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">Částka poplatku ({account.currency === 'CZK' ? 'Kč' : account.currency}) *</label>
             <input id={`${fieldId}-2`}
               type="number"
               step="0.01"
@@ -106,7 +106,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
         </div>
 
         <div>
-          <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">Poznámka</label>
+          <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">Poznámka (nepovinné)</label>
           <input id={`${fieldId}-3`}
             type="text"
             placeholder="např. Výpis obchodníka za září"
@@ -120,9 +120,9 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {existing
-              ? 'Pro toto období už poplatek existuje, uložením ho přepíšete. '
-              : 'Za každé období lze zadat nejvýše jeden poplatek. '}
-            Poplatek snižuje vložený kapitál pro výpočet výnosu. Není to výdaj a neovlivňuje rozpočet.
+              ? 'Pro toto období už je poplatek zadaný – uložením ho přepíšete. '
+              : 'Za každé období jde zadat jen jeden poplatek. '}
+            Při výpočtu výnosu se poplatek odečte od vkladů. Není to výdaj, rozpočet nemění.
           </span>
         </div>
 

@@ -67,7 +67,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
     e.preventDefault();
     if (isSubmitting) return;
     const nextErrors: FieldErrors<'balance' | 'date'> = {};
-    if (!actualBalanceStr.trim()) nextErrors.balance = 'Zadejte skutečný zůstatek.';
+    if (!actualBalanceStr.trim()) nextErrors.balance = 'Zadejte zůstatek podle banky.';
     if (account.initialBalanceDate && checkDate < account.initialBalanceDate) {
       nextErrors.date = `Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
     }
@@ -89,21 +89,21 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Aktualizovat skutečný stav: ${account.name}`}
-      subtitle="Porovnání evidovaného a reálného bankovního zůstatku"
+      title={`Srovnat s bankou: ${account.name}`}
+      subtitle="Zadejte zůstatek podle banky. Rozdíl se uloží jako korekce zůstatku."
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-slate-500">Vypočítaný stav v aplikaci:</span>
+            <span className="text-slate-500">Zůstatek v CashPilotu</span>
             <span className="font-semibold text-slate-900">
               {formatCurrency(calculatedBalanceInHaler)}
             </span>
           </div>
 
           <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm">
-            <span className="text-slate-500">Zadaný skutečný stav:</span>
+            <span className="text-slate-500">Zůstatek podle banky</span>
             <span className="font-semibold text-slate-900">
               {formatCurrency(enteredActualHaler)}
             </span>
@@ -118,7 +118,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           }`}>
             <span className="flex items-center gap-1.5">
               {diffInHaler === 0 ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-              Rozdíl (korekce):
+              {diffInHaler === 0 ? 'Zůstatky se shodují' : 'Korekce'}
             </span>
             <span className="font-bold">
               {formatCurrency(diffInHaler, { showPlus: true })}
@@ -128,7 +128,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
 
         <div>
           <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
-            Skutečný zůstatek na výpisu / v bance (Kč) *
+            Zůstatek podle banky *
           </label>
           <div className="relative">
             <input id={`${fieldId}-1`}
@@ -148,7 +148,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Datum kontroly *
+              Ke dni *
             </label>
             <input id={`${fieldId}-2`}
               type="date"
@@ -164,11 +164,11 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
 
           <div>
             <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Poznámka ke kontrole
+              Poznámka (nepovinné)
             </label>
             <input id={`${fieldId}-3`}
               type="text"
-              placeholder="např. Bankovní výpis k 15. dni"
+              placeholder="např. výpis z banky k 15. 10."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -177,7 +177,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         </div>
 
         <p className="text-xs text-slate-500 bg-sky-50/70 p-4 rounded-xl border border-sky-100">
-          💡 <strong>Princip CashPilot:</strong> Aplikace nikdy potají nepřepisuje historické položky ani původní počáteční stav. Rozdíl se uloží jako transparentní korekce zůstatku k tomuto datu a promítne se do navazujícího výhledu.
+          Dosavadní položky ani počáteční zůstatek se nezmění. Rozdíl se uloží jako korekce k tomuto dni a promítne se do zůstatků od tohoto dne dál.
         </p>
 
         <ModalFooter>
@@ -194,7 +194,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
             disabled={isSubmitting}
             className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 disabled:opacity-50"
           >
-            {isSubmitting ? 'Ukládám...' : diffInHaler === 0 ? 'Potvrdit shodu stavu' : 'Uložit skutečný stav'}
+            {isSubmitting ? 'Ukládám…' : diffInHaler === 0 ? 'Potvrdit shodu' : 'Uložit korekci'}
           </button>
         </ModalFooter>
       </form>

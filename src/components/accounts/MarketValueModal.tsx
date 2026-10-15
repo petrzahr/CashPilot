@@ -61,7 +61,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   if (!account) return null;
 
   const isPension = account.type === 'pension';
-  const accountTypeLabel = isPension ? 'penzijního' : 'investičního';
+  const accountTypeLabel = isPension ? 'penzijní' : 'investiční';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +71,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
       nextErrors.date = `Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
     }
     if (!marketValueStr.trim() || !Number.isSafeInteger(enteredValHaler)) {
-      nextErrors.value = 'Zadejte platnou tržní hodnotu.';
+      nextErrors.value = 'Zadejte tržní hodnotu jako číslo, např. 125000.';
     }
     setErrors(nextErrors);
     if (nextErrors.date || nextErrors.value) {
@@ -96,30 +96,30 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${snapshot ? 'Upravit tržní ocenění' : 'Aktualizovat tržní hodnotu'}: ${account.name}`}
-      subtitle={`Ocenění ${accountTypeLabel} účtu`}
+      title={`${snapshot ? 'Upravit tržní hodnotu' : 'Zadat tržní hodnotu'}: ${account.name}`}
+      subtitle={`Kolik má ${accountTypeLabel} účet k danému dni hodnotu`}
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-500">Vložené prostředky:</span>
+            <span className="text-slate-500">Vklady</span>
             <span className="font-semibold text-slate-900">{formatCurrency(investedHaler)}</span>
           </div>
           {feesHaler !== 0 && (
             <div className="flex justify-between">
-              <span className="text-slate-500">Poplatky celkem:</span>
+              <span className="text-slate-500">Poplatky</span>
               <span className="font-semibold text-slate-900">{formatCurrency(-feesHaler)}</span>
             </div>
           )}
           {feesHaler !== 0 && (
             <div className="flex justify-between">
-              <span className="text-slate-500">Investováno:</span>
+              <span className="text-slate-500">Vklady po odečtení poplatků</span>
               <span className="font-semibold text-slate-900">{formatCurrency(returnBaseHaler)}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-slate-500">Nerealizovaný výnos / ztráta:</span>
+            <span className="text-slate-500">Výnos při této hodnotě</span>
             <span className={`font-bold ${gainLossHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
               {`${formatCurrency(gainLossHaler, { showPlus: true })} (${gainLossPct >= 0 ? '+' : ''}${gainLossPct.toFixed(1)} %)`}
             </span>
@@ -129,7 +129,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Datum ocenění *
+              Ke dni *
             </label>
             <input id={`${fieldId}-1`}
               type="date"
@@ -145,7 +145,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
           <div>
             <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
-              Aktuální tržní hodnota (Kč) *
+              Tržní hodnota *
             </label>
             <div className="relative">
               <input id={`${fieldId}-2`}
@@ -165,7 +165,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
         <div>
           <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
-            Poznámka (např. zdroj ocenění)
+            Poznámka (nepovinné)
           </label>
           <input id={`${fieldId}-3`}
             type="text"
@@ -179,7 +179,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         <div className="flex items-start gap-2 p-4 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            Změna tržní hodnoty majetkového účtu není příjem ani výdaj a neovlivňuje provozní rozpočet ani použitelné peníze. Ovlivňuje pouze hodnotu tohoto účtu a celkový čistý majetek.
+            Změna tržní hodnoty není příjem ani výdaj. Rozpočet ani použitelné peníze nemění, jen hodnotu tohoto účtu a celkový majetek.
           </span>
         </div>
 
@@ -197,7 +197,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             disabled={isSubmitting}
             className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-sm shadow-purple-200 disabled:opacity-50"
           >
-            {isSubmitting ? 'Ukládám...' : 'Uložit hodnotu'}
+            {isSubmitting ? 'Ukládám…' : 'Uložit tržní hodnotu'}
           </button>
         </ModalFooter>
       </form>

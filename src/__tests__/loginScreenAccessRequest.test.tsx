@@ -145,7 +145,7 @@ describe('CashPilot - Přihlašovací stránka a žádost o přístup přes Gmai
   it('14. Úvodní text a 3 vlastnosti odpovídají novému znění bez kontokorentu', () => {
     const html = renderScreen();
     expect(html).toContain('Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou');
-    expect(html).toContain('Soukromé úložiště Google Disk');
+    expect(html).toContain('Data ve vašem Google Disku');
     expect(html).toContain('Automatická synchronizace');
     expect(html).toContain('Plánování a statistiky');
     expect(html.toLowerCase()).not.toContain('kontokorent');

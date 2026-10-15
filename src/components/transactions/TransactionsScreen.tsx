@@ -295,6 +295,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     selectedPeriod
   ]);
 
+  // Prázdný seznam: odliší chybějící položky od filtrů, které nic nenašly
+  const emptyListMessage = baseTransactions.length === 0
+    ? (periodFilter === 'current'
+      ? 'V tomto období zatím nejsou žádné položky. Zobrazte všechny položky, nebo přidejte novou.'
+      : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Přidat položku.')
+    : 'Filtrům neodpovídá žádná položka. Upravte nebo zrušte filtry.';
+
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const filteredTransactionsSum = useMemo(() => {
     return filteredTransactions.reduce((sum, tx) => {
@@ -320,10 +327,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-            <span>Nalezeny položky před datem aktivace účtu ({dataConflicts.length})</span>
+            <span>Položky s datem před založením účtu ({dataConflicts.length})</span>
           </div>
           <p className="text-xs text-amber-800">
-            Následující položky mají datum dřívější než datum počátečního stavu příslušného účtu a nejsou započítány do zůstatků. Upravte prosím datum položky nebo datum počátečního stavu účtu.
+            Tyto položky jsou dřív, než začíná počáteční zůstatek jejich účtu, a do zůstatků se nepočítají. Posuňte datum položky, nebo u účtu dřívější datum počátečního zůstatku.
           </p>
           <ul className="text-xs text-amber-900 list-disc list-inside space-y-1 mt-1">
             {dataConflicts.slice(0, 5).map((c, i) => (
@@ -332,7 +339,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               </li>
             ))}
             {dataConflicts.length > 5 && (
-              <li>...a dalších {dataConflicts.length - 5} položek</li>
+              <li>…a další ({dataConflicts.length - 5})</li>
             )}
           </ul>
         </div>
@@ -347,7 +354,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                 {filteredTransactions.length}
               </span>
-              <h3 className="text-sm font-bold text-slate-900">Suma položek</h3>
+              <span className="text-xs font-semibold text-slate-500">Součet</span>
               <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                 {formatCurrency(filteredTransactionsSum, { showPlus: true })}
               </span>
@@ -360,7 +367,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               className="max-md:min-h-11 flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Exportovat CSV</span>
+              <span>Stáhnout CSV</span>
             </button>
             <button
               onClick={() => onOpenTransactionModal()}
@@ -378,7 +385,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <div className="relative sm:col-span-2 lg:col-span-2">
             <input
               type="text"
-              placeholder="Vyhledat v názvu..."
+              placeholder="Hledat v názvu…"
               aria-label="Vyhledat v názvu položky"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -395,8 +402,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               onChange={(e) => setPeriodFilter(e.target.value as 'current' | 'all')}
               className="max-md:min-h-11 w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-500"
             >
-              <option value="current">Aktuální období</option>
-              <option value="all">Všechny položky</option>
+              <option value="current">Vybrané období</option>
+              <option value="all">Všechna období</option>
             </select>
           </div>
 
@@ -505,7 +512,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500">
-                    Pro zadané filtry nebyly nalezeny žádné položky.
+                    {emptyListMessage}
                   </td>
                 </tr>
               ) : (
@@ -645,7 +652,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Detail a poznámka korekce"
-                                aria-label="Detail a poznámka korekce"
+                                aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Eye className="w-4 h-4" />
@@ -654,7 +661,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Smazat korekci"
-                                aria-label="Smazat korekci"
+                                aria-label={`Smazat korekci: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -667,7 +674,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'executed')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Označit jako uskutečněnou"
-                                  aria-label="Označit jako uskutečněnou"
+                                  aria-label={`Označit jako uskutečněnou: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <Check className="w-4 h-4" />
@@ -677,7 +684,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Vrátit do plánovaných"
-                                  aria-label="Vrátit do plánovaných"
+                                  aria-label={`Vrátit do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
@@ -686,15 +693,15 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               <button
                                 onClick={() => onEditTransaction(tx)}
                                 title="Upravit položku"
-                                aria-label="Upravit položku"
+                                aria-label={`Upravit položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat"
-                                aria-label="Duplikovat"
+                                title="Duplikovat položku"
+                                aria-label={`Duplikovat položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Copy className="w-4 h-4" />
@@ -704,7 +711,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'cancelled')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Zrušit položku"
-                                  aria-label="Zrušit položku"
+                                  aria-label={`Zrušit položku: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Ban className="w-4 h-4" />
@@ -713,8 +720,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 <button
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
-                                  title="Obnovit položku (do plánovaných)"
-                                  aria-label="Obnovit položku (do plánovaných)"
+                                  title="Vrátit zrušenou položku do plánovaných"
+                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
                                   className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
@@ -723,8 +730,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               <button
                                 onClick={() => setDeletingTx(tx)}
                                 disabled={isDeletingTx}
-                                title="Smazat"
-                                aria-label="Smazat"
+                                title="Smazat položku"
+                                aria-label={`Smazat položku: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                               >
                                 <Trash2 className="w-4 h-4" />

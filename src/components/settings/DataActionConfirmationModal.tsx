@@ -27,7 +27,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
   onConfirm,
   title,
   description,
-  warningMessage = 'Tuto operaci nelze běžně vrátit zpět.',
+  warningMessage = 'Smazání nelze vrátit. Data půjde obnovit jen ze zálohy.',
   affectedRecords,
   confirmButtonText,
   onDownloadBackup,
@@ -86,7 +86,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         {/* Počty dotčených záznamů */}
         <div className="space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Dotčené záznamy k odstranění:
+            Co se smaže
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {affectedRecords.map((item, idx) => (
@@ -112,9 +112,9 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         {/* Nabídka stažení JSON zálohy */}
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold text-slate-900">Doporučení před pokračováním</p>
+            <p className="text-xs font-bold text-slate-900">Nejdřív si stáhněte zálohu</p>
             <p className="text-xs text-slate-500">
-              Stáhněte si kompletní JSON zálohu všech vašich dat do počítače.
+              Ze souboru zálohy (JSON) obnovíte data v Nastavení → Záloha do souboru.
             </p>
           </div>
           <button
@@ -143,10 +143,11 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         {/* Potvrzovací fráze pro kompletní reset */}
         {requiresConfirmationPhrase && (
           <div className="space-y-1.5 pt-1">
-            <label className="block text-xs font-semibold text-slate-500">
-              Pro potvrzení zadejte přesný text: <span className="font-mono font-bold text-red-600 select-all">{confirmationPhrase}</span>
+            <label htmlFor="data-action-confirmation" className="block text-xs font-semibold text-slate-500">
+              Pro potvrzení napište <span className="font-mono font-bold text-red-600 select-all">{confirmationPhrase}</span>
             </label>
             <input
+              id="data-action-confirmation"
               type="text"
               autoComplete="off"
               value={confirmationInput}

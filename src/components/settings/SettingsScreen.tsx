@@ -37,11 +37,11 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: React.ReactN
 // Obsah stránky pro široké obrazovky; názvy odpovídají nadpisům sekcí.
 const SETTINGS_SECTIONS = [
   { id: 'nastaveni-obdobi', label: 'Rozpočtové období a pravidla' },
-  { id: 'nastaveni-ucty', label: 'Zahrnutí účtů do forecastu' },
+  { id: 'nastaveni-ucty', label: 'Započítání účtů' },
   { id: 'nastaveni-vzhled', label: 'Vzhled' },
-  { id: 'nastaveni-disk', label: 'Google Disk – Cloudová synchronizace' },
-  { id: 'nastaveni-zalohy', label: 'Zálohování a přenositelnost dat' },
-  { id: 'nastaveni-data', label: 'Správa dat a reset' },
+  { id: 'nastaveni-disk', label: 'Synchronizace s Google Diskem' },
+  { id: 'nastaveni-zalohy', label: 'Záloha do souboru' },
+  { id: 'nastaveni-data', label: 'Mazání dat' },
 ] as const;
 
 type SettingsSectionId = typeof SETTINGS_SECTIONS[number]['id'];
@@ -259,7 +259,7 @@ export const SettingsScreen: React.FC = () => {
               <div>
                 <h2 id="nastaveni-obdobi-title" className="text-base font-bold text-slate-900">Rozpočtové období a pravidla</h2>
                 <p className="text-xs text-slate-500">
-                  Konfigurace začátku rozpočtového měsíce a výše kontokorentu
+                  Kdy začíná rozpočtové období a jak hluboko smí výchozí účet do mínusu
                 </p>
               </div>
             </div>
@@ -269,7 +269,7 @@ export const SettingsScreen: React.FC = () => {
                 {/* Počáteční den období */}
                 <div>
                   <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
-                    Počáteční den rozpočtového měsíce
+                    Období začíná
                   </label>
                   <select id={`${fieldId}-1`}
                     value={budgetStartDay}
@@ -284,15 +284,15 @@ export const SettingsScreen: React.FC = () => {
                   </select>
                   <p className="text-xs text-slate-500 mt-1">
                     {budgetStartDay === 1
-                      ? 'Období odpovídá celému kalendářnímu měsíci (např. 1. 9. – 30. 9.).'
-                      : `Např. ${budgetStartDay}. den znamená období od ${budgetStartDay}. dne do dne předcházejícího v dalším měsíci.`}
+                      ? 'Období odpovídá kalendářnímu měsíci (např. 1. 9. – 30. 9.).'
+                      : `Období trvá od ${budgetStartDay}. dne v měsíci do ${budgetStartDay - 1}. dne následujícího měsíce.`}
                   </p>
                 </div>
 
                 {/* Výše kontokorentu */}
                 <div>
                   <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
-                    Výše kontokorentu (Kč)
+                    Kontokorent
                   </label>
                   <div className="relative">
                     <input id={`${fieldId}-2`}
@@ -306,7 +306,7 @@ export const SettingsScreen: React.FC = () => {
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
+                    Kolik smí výchozí účet jít do mínusu. Zadejte kladné číslo, např. 20 000.
                   </p>
                 </div>
 
@@ -329,7 +329,7 @@ export const SettingsScreen: React.FC = () => {
                   type="submit"
                   className="max-md:min-h-11 px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
                 >
-                  Uložit pravidla
+                  Uložit kontokorent
                 </button>
               </div>
             </form>
@@ -342,9 +342,9 @@ export const SettingsScreen: React.FC = () => {
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <h2 id="nastaveni-ucty-title" className="text-base font-bold text-slate-900">Zahrnutí účtů do forecastu</h2>
+                <h2 id="nastaveni-ucty-title" className="text-base font-bold text-slate-900">Započítání účtů</h2>
                 <p className="text-xs text-slate-500">
-                  Přepněte, zda se daný účet počítá do okamžitě použitelných peněz a celkového majetku
+                  Které účty se počítají do použitelných peněz a které do celkového majetku
                 </p>
               </div>
             </div>
@@ -356,7 +356,7 @@ export const SettingsScreen: React.FC = () => {
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                     <div>
                       <span className="font-bold text-slate-900 text-sm block">{acc.name}</span>
-                      <span className="text-slate-500">{acc.institution || 'Bez instituce'}</span>
+                      <span className="text-slate-500">{acc.institution || 'Banka neuvedena'}</span>
                     </div>
                   </div>
 
@@ -430,7 +430,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
                 <div>
                   <h2 id="nastaveni-disk-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span>Google Disk – Cloudová synchronizace</span>
+                    <span>Synchronizace s Google Diskem</span>
                     {isDriveConnected && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <CheckCircle2 className="w-3 h-3" />
@@ -439,7 +439,7 @@ export const SettingsScreen: React.FC = () => {
                     )}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Automatické ukládání a obnova dat v privátním prostoru vašeho Google účtu (appDataFolder)
+                    Data se průběžně ukládají do skryté složky aplikace ve vašem Google Disku
                   </p>
                 </div>
               </div>
@@ -452,7 +452,7 @@ export const SettingsScreen: React.FC = () => {
                   className="max-md:min-h-11 flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
                 >
                   <GoogleIcon className="w-4 h-4 shrink-0" />
-                  <span>{driveSyncStatus === 'syncing' ? 'Připojuji...' : 'Připojit Google Disk'}</span>
+                  <span>{driveSyncStatus === 'syncing' ? 'Připojuji…' : 'Připojit Google Disk'}</span>
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
@@ -485,9 +485,9 @@ export const SettingsScreen: React.FC = () => {
                   Proč připojit Google Disk?
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-slate-500">
-                  <li><strong>Offline-first:</strong> Aplikace i nadále běží bleskově a ukládá změny lokálně na vašem zařízení.</li>
-                  <li><strong>Bezpečný soukromý prostor:</strong> Data se ukládají do skrytého prostoru <code className="bg-slate-200/80 px-1 py-0.5 rounded text-xs">appDataFolder</code>, kam nemá přístup žádná jiná aplikace ani běžné vyhledávání na Disku.</li>
-                  <li><strong>Automatické zálohování:</strong> Každá úprava rozpočtu, účtu či platby se na pozadí synchronizuje na váš Google Disk.</li>
+                  <li><strong>Funguje i bez připojení:</strong> změny se uloží v zařízení a odešlou se, jakmile to půjde.</li>
+                  <li><strong>Soukromé úložiště:</strong> data leží ve skryté složce aplikace, kterou jiné aplikace ani vyhledávání na Disku nevidí.</li>
+                  <li><strong>Průběžná záloha:</strong> každá změna se na pozadí uloží na váš Google Disk.</li>
                 </ul>
               </div>
             ) : (
@@ -497,7 +497,7 @@ export const SettingsScreen: React.FC = () => {
                     {driveUser?.photoLink ? (
                       <img
                         src={driveUser.photoLink}
-                        alt={driveUser.displayName || 'Google'}
+                        alt={driveUser.displayName || 'Účet Google'}
                         className="w-10 h-10 rounded-full border border-slate-200 shrink-0"
                       />
                     ) : (
@@ -506,8 +506,8 @@ export const SettingsScreen: React.FC = () => {
                       </div>
                     )}
                     <div>
-                      <p className="font-bold text-slate-900">{driveUser?.displayName || 'Google Účet'}</p>
-                      <p className="text-xs text-slate-500">{driveUser?.emailAddress || 'Propojeno s Google Drive'}</p>
+                      <p className="font-bold text-slate-900">{driveUser?.displayName || 'Účet Google'}</p>
+                      <p className="text-xs text-slate-500">{driveUser?.emailAddress || 'Připojeno ke Google Disku'}</p>
                     </div>
                   </div>
 
@@ -516,7 +516,7 @@ export const SettingsScreen: React.FC = () => {
                       {driveSyncStatus === 'syncing' ? (
                         <>
                           <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
-                          <span className="text-sky-600">Probíhá synchronizace...</span>
+                          <span className="text-sky-600">Synchronizuji…</span>
                         </>
                       ) : driveSyncStatus !== 'synced' ? (
                         <>
@@ -531,7 +531,7 @@ export const SettingsScreen: React.FC = () => {
                       )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'Při této relaci'}
+                      Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'zatím neproběhla'}
                     </p>
                   </div>
                 </div>
@@ -551,7 +551,7 @@ export const SettingsScreen: React.FC = () => {
                     className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                    <span>Vynutit uložení na Google Disk</span>
+                    <span>Nahrát data na Google Disk</span>
                   </button>
 
                   <button
@@ -567,14 +567,13 @@ export const SettingsScreen: React.FC = () => {
 
                 <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Automatické JSON zálohy</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h4>
                     <p className="text-xs text-slate-500 mt-0.5 max-w-md">
-                      Při startu appky (max. jednou za 24 h) uloží časově označenou kopii dat do viditelné
-                      složky <strong>„CashPilot zalohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
-                      Při častém spouštění během vývoje se hodí dočasně vypnout.
+                      Při spuštění aplikace (nejvýše jednou za 24 hodin) se uloží kopie dat do složky
+                      <strong> „CashPilot zalohy“</strong> na vašem Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      Poslední záloha: {lastDriveBackupTime ? lastDriveBackupTime.toLocaleString('cs-CZ') : 'Zatím žádná'}
+                      Poslední záloha: {lastDriveBackupTime ? lastDriveBackupTime.toLocaleString('cs-CZ') : 'zatím žádná'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
@@ -592,7 +591,7 @@ export const SettingsScreen: React.FC = () => {
                         onChange={(e) => setDriveBackupEnabled(e.target.checked)}
                         className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
                       />
-                      <span className="text-xs font-medium text-slate-500">Povoleno</span>
+                      <span className="text-xs font-medium text-slate-500">Zálohovat automaticky</span>
                     </label>
                   </div>
                 </div>
@@ -607,9 +606,9 @@ export const SettingsScreen: React.FC = () => {
                 <Download className="w-5 h-5" />
               </div>
               <div>
-                <h2 id="nastaveni-zalohy-title" className="text-base font-bold text-slate-900">Zálohování a přenositelnost dat</h2>
+                <h2 id="nastaveni-zalohy-title" className="text-base font-bold text-slate-900">Záloha do souboru</h2>
                 <p className="text-xs text-slate-500">
-                  Uložte kompletní zálohu do jednoho souboru nebo obnovte data
+                  Stáhněte si všechna data do souboru nebo je ze souboru obnovte
                 </p>
               </div>
             </div>
@@ -620,8 +619,8 @@ export const SettingsScreen: React.FC = () => {
                 className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors text-center space-y-1.5"
               >
                 <Download className="w-5 h-5 text-sky-600" />
-                <span className="text-xs font-bold text-slate-900">Exportovat JSON zálohu</span>
-                <span className="text-xs text-slate-500">Kompletní stav aplikace</span>
+                <span className="text-xs font-bold text-slate-900">Stáhnout zálohu (JSON)</span>
+                <span className="text-xs text-slate-500">Všechna data a nastavení</span>
               </button>
 
               <button
@@ -630,7 +629,7 @@ export const SettingsScreen: React.FC = () => {
               >
                 <Upload className="w-5 h-5 text-emerald-600" />
                 <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-                <span className="text-xs text-slate-500">Sloučí .json se stávajícími daty</span>
+                <span className="text-xs text-slate-500">Sloučí soubor .json s aktuálními daty</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -645,8 +644,8 @@ export const SettingsScreen: React.FC = () => {
                 className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors text-center space-y-1.5"
               >
                 <FileText className="w-5 h-5 text-purple-600" />
-                <span className="text-xs font-bold text-slate-900">Export položek (CSV)</span>
-                <span className="text-xs text-slate-500">Pro Excel či tabulky</span>
+                <span className="text-xs font-bold text-slate-900">Stáhnout položky (CSV)</span>
+                <span className="text-xs text-slate-500">Pro Excel nebo jiné tabulky</span>
               </button>
             </div>
           </section>
@@ -658,9 +657,9 @@ export const SettingsScreen: React.FC = () => {
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h2 id="nastaveni-data-title" className="text-base font-bold text-slate-900">Správa dat a reset</h2>
+                <h2 id="nastaveni-data-title" className="text-base font-bold text-slate-900">Mazání dat</h2>
                 <p className="text-xs text-slate-500">
-                  Samostatná správa jednotlivých finančních dat nebo kompletní reset aplikace
+                  Smažte jen část dat, nebo všechno najednou. Před smazáním nabídneme stažení zálohy.
                 </p>
               </div>
             </div>
@@ -668,16 +667,16 @@ export const SettingsScreen: React.FC = () => {
             {/* Správa jednotlivých dat */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Správa jednotlivých dat
+                Smazat část dat
               </h3>
 
               <div className="space-y-2.5">
                 {/* 1. Vymazat všechny transakce */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Vymazat všechny transakce</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Smazat všechny položky</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Odstraní všechny finanční položky a související pohyby. Účty, kategorie a nastavení zůstanou zachované.
+                      Smaže položky, pravidelné položky a korekce zůstatků. Účty, kategorie a nastavení zůstanou.
                     </p>
                   </div>
                   <button
@@ -685,16 +684,16 @@ export const SettingsScreen: React.FC = () => {
                     onClick={() => setConfirmClearTransactionsOpen(true)}
                     className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
                   >
-                    Vymazat všechny transakce
+                    Smazat všechny položky
                   </button>
                 </div>
 
                 {/* 2. Vymazat všechny účty */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Vymazat všechny účty</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Smazat všechny účty</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Odstraní všechny účty a všechna data, která jsou na tyto účty přímo navázaná. Kategorie a nastavení zůstanou zachované.
+                      Smaže účty i všechno, co k nim patří: položky, převody, korekce a tržní hodnoty. Kategorie a nastavení zůstanou.
                     </p>
                   </div>
                   <button
@@ -702,16 +701,16 @@ export const SettingsScreen: React.FC = () => {
                     onClick={() => setConfirmClearAccountsOpen(true)}
                     className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
                   >
-                    Vymazat všechny účty
+                    Smazat všechny účty
                   </button>
                 </div>
 
                 {/* 3. Vymazat všechny kategorie */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-colors gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Vymazat všechny kategorie</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Smazat všechny kategorie</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Odstraní všechny hlavní kategorie a podkategorie. Finanční položky, účty a nastavení zůstanou zachované.
+                      Smaže kategorie i podkategorie. Položky zůstanou, jen budou bez kategorie.
                     </p>
                   </div>
                   <button
@@ -719,7 +718,7 @@ export const SettingsScreen: React.FC = () => {
                     onClick={() => setConfirmClearCategoriesOpen(true)}
                     className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
                   >
-                    Vymazat všechny kategorie
+                    Smazat všechny kategorie
                   </button>
                 </div>
               </div>
@@ -737,9 +736,9 @@ export const SettingsScreen: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Kompletně vymazat všechna data</h4>
+                    <h4 className="text-sm font-bold text-slate-900">Smazat všechna data</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Trvale odstraní všechna uživatelská data a vrátí aplikaci do čistého počátečního stavu.
+                      Smaže účty, položky, kategorie i nastavení. Aplikace začne od nuly.
                     </p>
                   </div>
                   <button
@@ -747,7 +746,7 @@ export const SettingsScreen: React.FC = () => {
                     onClick={() => setConfirmResetAllOpen(true)}
                     className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
                   >
-                    Kompletně vymazat všechna data
+                    Smazat všechna data
                   </button>
                 </div>
               </div>
@@ -761,7 +760,7 @@ export const SettingsScreen: React.FC = () => {
                   onClick={() => setConfirmLoadDemoOpen(true)}
                   className="max-md:min-h-11 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
                 >
-                  Načíst ukázková data (Demo režim)
+                  Načíst ukázková data (demo režim)
                 </button>
               </div>
             )}
@@ -775,9 +774,9 @@ export const SettingsScreen: React.FC = () => {
         isOpen={confirmStartDayOpen}
         onClose={handleCancelStartDayChange}
         onConfirm={handleConfirmStartDayChange}
-        title="Změna počátečního dne rozpočtového měsíce"
-        message="Změna počátečního dne přesune některé položky mezi rozpočtovými obdobími a přepočítá všechny navazující zůstatky. Chcete pokračovat?"
-        confirmText="Ano, pokračovat"
+        title="Změnit začátek období?"
+        message={`Období budou začínat ${pendingStartDay ?? budgetStartDay}. dnem v měsíci. Některé položky se tím přesunou do jiného období a zůstatky se přepočítají.`}
+        confirmText="Změnit začátek období"
       />
 
       {/* Potvrzovací dialog pro načtení demo dat (pouze demo režim) */}
@@ -785,9 +784,9 @@ export const SettingsScreen: React.FC = () => {
         isOpen={confirmLoadDemoOpen}
         onClose={() => setConfirmLoadDemoOpen(false)}
         onConfirm={loadDemoData}
-        title="Načíst ukázková data"
-        message="Tato akce nahradí stávající data ukázkovým portfoliem účtů, pravidelnou mzdou, hypotékou a výdaji. Přejete si pokračovat?"
-        confirmText="Načíst demo"
+        title="Nahradit data ukázkovými?"
+        message="Všechna současná data nahradí ukázkové účty, mzda, hypotéka a výdaje. Pokud chcete svá data zachovat, nejdřív si stáhněte zálohu."
+        confirmText="Nahradit ukázkovými daty"
       />
 
       {/* Dialog 1: Vymazat všechny transakce */}
@@ -798,16 +797,15 @@ export const SettingsScreen: React.FC = () => {
           clearAllTransactions();
           setConfirmClearTransactionsOpen(false);
         }}
-        title="Vymazat všechny transakce"
-        description="Odstraní všechny finanční položky a související pohyby. Účty, kategorie a nastavení zůstanou zachované."
-        warningMessage="Tuto operaci nelze běžně vrátit zpět."
+        title="Smazat všechny položky?"
+        description="Smaže položky, pravidelné položky a korekce zůstatků. Účty, kategorie a nastavení zůstanou."
         affectedRecords={[
-          { label: 'Finanční položky (transakce)', count: transactions.length },
-          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
-          { label: 'Výjimky opakovaných plateb', count: recurringExceptions.length },
+          { label: 'Položky', count: transactions.length },
+          { label: 'Pravidelné položky', count: recurringRules.length },
+          { label: 'Upravené výskyty pravidelných položek', count: recurringExceptions.length },
           { label: 'Korekce zůstatků', count: corrections.length },
         ]}
-        confirmButtonText="Vymazat všechny transakce"
+        confirmButtonText="Smazat všechny položky"
         onDownloadBackup={exportJSON}
       />
 
@@ -819,18 +817,17 @@ export const SettingsScreen: React.FC = () => {
           clearAllAccounts();
           setConfirmClearAccountsOpen(false);
         }}
-        title="Vymazat všechny účty"
-        description="Odstraní všechny účty a všechna data, která jsou na tyto účty přímo navázaná. Kategorie a nastavení zůstanou zachované."
-        warningMessage="Odstraněním účtů budou odstraněny také všechny transakce, převody, opakované platby, korekce a tržní hodnoty navázané na tyto účty. Tuto operaci nelze běžně vrátit zpět."
+        title="Smazat všechny účty?"
+        description="Smaže všechny účty i všechno, co k nim patří: položky, převody, pravidelné položky, korekce a tržní hodnoty. Kategorie a nastavení zůstanou."
         affectedRecords={[
-          { label: 'Účty (aktivní i archivované)', count: accounts.length },
-          { label: 'Finanční položky (transakce)', count: transactions.length },
-          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
-          { label: 'Výjimky opakovaných plateb', count: recurringExceptions.length },
+          { label: 'Účty (i archivované)', count: accounts.length },
+          { label: 'Položky', count: transactions.length },
+          { label: 'Pravidelné položky', count: recurringRules.length },
+          { label: 'Upravené výskyty pravidelných položek', count: recurringExceptions.length },
           { label: 'Korekce zůstatků', count: corrections.length },
-          { label: 'Tržní hodnoty investic a penzí', count: marketValueSnapshots.length },
+          { label: 'Tržní hodnoty', count: marketValueSnapshots.length },
         ]}
-        confirmButtonText="Vymazat všechny účty"
+        confirmButtonText="Smazat všechny účty"
         onDownloadBackup={exportJSON}
       />
 
@@ -842,16 +839,15 @@ export const SettingsScreen: React.FC = () => {
           clearAllCategories();
           setConfirmClearCategoriesOpen(false);
         }}
-        title="Vymazat všechny kategorie"
-        description="Odstraní všechny hlavní kategorie a podkategorie. Finanční položky, účty a nastavení zůstanou zachované."
-        warningMessage="U všech existujících transakcí a pravidel bude kategorie nastavena na „Bez kategorie“. Tuto operaci nelze běžně vrátit zpět."
+        title="Smazat všechny kategorie?"
+        description="Smaže všechny kategorie a podkategorie. Položky a pravidelné položky zůstanou, jen budou bez kategorie."
         affectedRecords={[
           { label: 'Hlavní kategorie', count: categories.filter(c => !c.parentId).length },
           { label: 'Podkategorie', count: categories.filter(c => !!c.parentId).length },
-          { label: 'Položky s přiřazenou kategorií', count: transactions.filter(t => t.categoryId).length },
-          { label: 'Pravidla s přiřazenou kategorií', count: recurringRules.filter(r => r.categoryId).length },
+          { label: 'Položky, které ztratí kategorii', count: transactions.filter(t => t.categoryId).length },
+          { label: 'Pravidelné položky, které ztratí kategorii', count: recurringRules.filter(r => r.categoryId).length },
         ]}
-        confirmButtonText="Vymazat všechny kategorie"
+        confirmButtonText="Smazat všechny kategorie"
         onDownloadBackup={exportJSON}
       />
 
@@ -863,18 +859,17 @@ export const SettingsScreen: React.FC = () => {
           resetAllData();
           setConfirmResetAllOpen(false);
         }}
-        title="Kompletně vymazat všechna data"
-        description="Budou odstraněny všechny účty, transakce, kategorie, opakované platby, korekce, tržní hodnoty a nastavení aplikace."
-        warningMessage="Trvale odstraní všechna uživatelská data a vrátí aplikaci do čistého počátečního stavu. Tuto operaci nelze vzít zpět."
+        title="Smazat všechna data?"
+        description="Smaže účty, položky, pravidelné položky, kategorie, korekce, tržní hodnoty i nastavení. Aplikace začne od nuly."
         affectedRecords={[
           { label: 'Účty', count: accounts.length },
-          { label: 'Finanční položky (transakce)', count: transactions.length },
-          { label: 'Pravidla opakovaných plateb', count: recurringRules.length },
+          { label: 'Položky', count: transactions.length },
+          { label: 'Pravidelné položky', count: recurringRules.length },
           { label: 'Korekce zůstatků', count: corrections.length },
           { label: 'Tržní hodnoty', count: marketValueSnapshots.length },
           { label: 'Kategorie a podkategorie', count: categories.length },
         ]}
-        confirmButtonText="Trvale vymazat vše"
+        confirmButtonText="Smazat všechna data"
         onDownloadBackup={exportJSON}
         requiresConfirmationPhrase={true}
         confirmationPhrase="VYMAZAT VŠE"

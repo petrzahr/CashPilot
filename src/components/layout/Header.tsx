@@ -80,10 +80,10 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">
-              {driveSyncStatus === 'syncing' ? 'Připojuji...' : 'Připojit Google Disk'}
+              {driveSyncStatus === 'syncing' ? 'Připojuji…' : 'Připojit Google Disk'}
             </span>
             <span className="sm:hidden">
-              {driveSyncStatus === 'syncing' ? '...' : 'Disk'}
+              {driveSyncStatus === 'syncing' ? '…' : 'Disk'}
             </span>
           </button>
         ) : (
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => setMenuOpen(prev => !prev)}
-              title="Google Disk připojen – klikněte pro podrobnosti a synchronizaci"
+              title="Stav synchronizace s Google Diskem"
               aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
               aria-expanded={menuOpen}
               className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {driveUser?.photoLink ? (
                     <img
                       src={driveUser.photoLink}
-                      alt={driveUser.displayName || 'Google Uživatel'}
+                      alt={driveUser.displayName || 'Účet Google'}
                       className="w-8 h-8 rounded-full border border-slate-200 shrink-0"
                     />
                   ) : (
@@ -137,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {driveUser?.displayName || 'Google Disk'}
                     </p>
                     <p className="text-xs text-slate-500 truncate">
-                      {driveUser?.emailAddress || 'Prostor appDataFolder'}
+                      {driveUser?.emailAddress || 'Připojeno ke Google Disku'}
                     </p>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {driveSyncStatus === 'syncing' ? (
                         <>
                           <RefreshCw className="w-3 h-3 animate-spin text-sky-600" />
-                          <span className="text-sky-600">Probíhá zápis</span>
+                          <span className="text-sky-600">Ukládám…</span>
                         </>
                       ) : driveSyncStatus !== 'synced' ? (
                         <>
@@ -171,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <span className="font-medium text-slate-500">
                       {lastDriveSyncTime
                         ? lastDriveSyncTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                        : 'Při této relaci'}
+                        : 'zatím neproběhlo'}
                     </span>
                   </div>
 
