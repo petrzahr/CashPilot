@@ -55,7 +55,7 @@ export const LoginScreen: React.FC = () => {
             </p>
           </div>
           <p className="text-sm text-slate-500 pt-1 leading-relaxed">
-            Plánujte příjmy a výdaje a uvidíte, kolik peněz vám zbude dnes i za několik měsíců.
+            Mějte své příjmy, výdaje i budoucí vývoj zůstatků pod kontrolou. Data jsou bezpečně uložena v soukromém prostoru vašeho účtu Google.
           </p>
         </div>
 
