@@ -62,7 +62,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         } ${selected.length > 0 ? 'font-semibold text-slate-900' : ''}`}
       >
         <span className="truncate">{label}</span>
-        <ChevronDown className={`w-3.5 h-3.5 shrink-0 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 opacity-60 transition-transform motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && !disabled && (

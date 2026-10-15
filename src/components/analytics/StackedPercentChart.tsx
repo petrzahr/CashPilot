@@ -274,7 +274,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
         {/* Hover Tooltip */}
         {hoveredItem && hoveredIdx !== null && (
           <div
-            className="absolute z-20 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-xl space-y-1.5 transition-all"
+            className="absolute z-20 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-xl space-y-1.5 transition-all motion-reduce:transition-none"
             style={{
               left: `${Math.min(
                 Math.max(

@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="relative flex h-2 w-2">
                 {driveSyncStatus === 'syncing' && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                 )}
                 <span
                   className={`relative inline-flex rounded-full h-2 w-2 ${

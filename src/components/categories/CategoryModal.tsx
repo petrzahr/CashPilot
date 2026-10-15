@@ -237,7 +237,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 aria-label={`Barva ${i + 1}`}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-transform ${
+                className={`w-7 h-7 rounded-full transition-transform motion-reduce:transition-none ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c }}

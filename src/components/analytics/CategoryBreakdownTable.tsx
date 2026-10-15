@@ -58,7 +58,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
           <td className={`${stickyCell} bg-white group-hover:bg-slate-50 py-2 px-4 font-semibold text-slate-900 whitespace-nowrap`}>
             <span className="flex items-center gap-1.5">
               <ChevronRight
-                className={`w-3.5 h-3.5 shrink-0 text-slate-500 transition-transform ${
+                className={`w-3.5 h-3.5 shrink-0 text-slate-500 transition-transform motion-reduce:transition-none ${
                   canExpand ? '' : 'invisible'
                 } ${isExpanded ? 'rotate-90' : ''}`}
               />

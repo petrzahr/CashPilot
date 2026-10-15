@@ -182,7 +182,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <Icon className="w-3 h-3 shrink-0" />
           )}
           <span>{label}</span>
-          <ChevronDown className={`w-2.5 h-2.5 opacity-60 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-2.5 h-2.5 opacity-60 transition-transform motion-reduce:transition-none ${isMenuOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isMenuOpen && (
