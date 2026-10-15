@@ -197,7 +197,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 onChange={(e) => setBalanceStr(e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
               />
-              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>
           </div>
 
@@ -265,7 +265,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 aria-label={`Barva ${i + 1}`}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-transform motion-reduce:transition-none ${
+                className={`w-7 h-7 max-md:w-9 max-md:h-9 relative max-md:after:absolute max-md:after:-inset-1 max-md:after:content-[''] rounded-full transition-transform motion-reduce:transition-none ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c }}

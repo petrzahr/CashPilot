@@ -33,11 +33,11 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
   if (!firstPeriod || !lastPeriod) return null;
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label={ariaLabel}>
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label={ariaLabel}>
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-slate-900 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+            <span className="text-sm font-bold text-slate-900 w-20 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
             {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
               const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
               return <button
@@ -53,7 +53,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
               </button>;
             })}
           </div>
-          <div className="ml-auto max-w-full">
+          <div className="ml-auto max-w-full max-sm:w-full">
             <PeriodRangeSelector
               from={drafts[direction].from}
               to={drafts[direction].to}

@@ -120,7 +120,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
           <button
             type="button"
             onClick={handleDownloadBackup}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+            className={`max-md:min-h-11 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
               backupDownloaded
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                 : 'bg-white text-slate-500 border border-slate-300 hover:bg-slate-100'

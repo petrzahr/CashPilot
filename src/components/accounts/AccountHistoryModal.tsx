@@ -304,8 +304,8 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900 truncate">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="min-w-0 max-w-full font-semibold text-slate-900 truncate">
                             {tx.title}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${

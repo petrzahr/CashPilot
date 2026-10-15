@@ -566,7 +566,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
@@ -588,10 +588,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             Korekce zůstatku
                           </span>
                         ) : cat ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                            <span className="truncate">{cat.name}</span>
-                            {subCat && <span className="text-slate-500 truncate">› {subCat.name}</span>}
+                          <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                              <span className="truncate">{cat.name}</span>
+                            </div>
+                            {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
                           </div>
                         ) : tx.type === 'transfer' ? (
                           <span className="text-sky-600 font-medium">Převod</span>
@@ -601,9 +603,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {sourceAcc ? (
-                          <span className="flex items-center gap-1" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : undefined}>
-                            <span className="truncate">{sourceAcc.name}</span>
-                            {targetAcc && <span className="text-sky-600 min-w-0 truncate">→ {targetAcc.name}</span>}
+                          <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
+                            <span className="block truncate">{sourceAcc.name}</span>
+                            {targetAcc && <span className="block text-sky-600 truncate">→ {targetAcc.name}</span>}
                           </span>
                         ) : '—'}
                       </td>

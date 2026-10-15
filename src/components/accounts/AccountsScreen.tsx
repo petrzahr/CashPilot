@@ -263,7 +263,7 @@ export const AccountsScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaný
                         </span>
                       )}

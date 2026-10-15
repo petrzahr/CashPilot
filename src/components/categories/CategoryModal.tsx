@@ -163,7 +163,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 aria-pressed={type === 'expense'}
                 onClick={() => setType('expense')}
-                className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`max-md:min-h-10 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
@@ -173,7 +173,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 aria-pressed={type === 'income'}
                 onClick={() => setType('income')}
-                className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`max-md:min-h-10 py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
                 }`}
               >
@@ -246,7 +246,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 aria-label={`Barva ${i + 1}`}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-transform motion-reduce:transition-none ${
+                className={`w-7 h-7 max-md:w-9 max-md:h-9 relative max-md:after:absolute max-md:after:-inset-1 max-md:after:content-[''] rounded-full transition-transform motion-reduce:transition-none ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c }}

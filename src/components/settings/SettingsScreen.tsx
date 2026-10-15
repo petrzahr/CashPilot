@@ -303,7 +303,7 @@ export const SettingsScreen: React.FC = () => {
                       onChange={(e) => setOverdraftLimitStr(e.target.value)}
                       className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
                     />
-                    <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
