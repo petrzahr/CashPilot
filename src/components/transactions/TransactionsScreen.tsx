@@ -601,9 +601,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {sourceAcc ? (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : undefined}>
                             <span className="truncate">{sourceAcc.name}</span>
-                            {targetAcc && <span className="text-sky-600 shrink-0">→ {targetAcc.name}</span>}
+                            {targetAcc && <span className="text-sky-600 min-w-0 truncate">→ {targetAcc.name}</span>}
                           </span>
                         ) : '—'}
                       </td>

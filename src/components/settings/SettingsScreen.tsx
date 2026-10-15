@@ -180,7 +180,7 @@ export const SettingsScreen: React.FC = () => {
               <select id={`${fieldId}-1`}
                 value={budgetStartDay}
                 onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
+                className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
               >
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>
@@ -207,7 +207,7 @@ export const SettingsScreen: React.FC = () => {
                   min="0"
                   value={overdraftLimitStr}
                   onChange={(e) => setOverdraftLimitStr(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
+                  className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
                 />
                 <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
               </div>
@@ -225,7 +225,7 @@ export const SettingsScreen: React.FC = () => {
                 type="text"
                 disabled
                 value="Kč (CZK)"
-                className="w-full px-3.5 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium cursor-not-allowed"
+                className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium cursor-not-allowed"
               />
             </div>
           </div>

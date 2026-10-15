@@ -600,56 +600,59 @@ export const MandatoryExpensesScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      <div
-        className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
-          isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
-        }`}
-      >
-        <p className="text-slate-500">
-          {isSimulating ? (
-            <>
-              <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
-              (ty zůstávají beze změny).
-            </>
-          ) : (
-            <>
-              Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
-              nepravidelné platby rozpočítané do měsíců{' '}
-              <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
-              Úpravy zde jsou jen simulace.
-            </>
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={() => setSimulation(EMPTY_SIMULATION)}
-          disabled={!isSimulating}
-          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+      {/* Vysvětlivka vymezuje období a režim souhrnných karet, proto drží těsně u nich */}
+      <div className="space-y-3">
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
+            isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
+          }`}
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Obnovit výchozí stav
-        </button>
-      </div>
-
-      {/* Souhrn měsíčních průměrů z opakovaných plateb */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm"
-            title={card.title}
-          >
-            <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
-            <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
-              {formatRounded(card.value)}
-            </span>
-            {isSimulating && card.value !== card.base && (
-              <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
-                výchozí {formatRounded(card.base)}
-              </span>
+          <p className="text-slate-500">
+            {isSimulating ? (
+              <>
+                <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
+                (ty zůstávají beze změny).
+              </>
+            ) : (
+              <>
+                Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
+                nepravidelné platby rozpočítané do měsíců{' '}
+                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
+                Úpravy zde jsou jen simulace.
+              </>
             )}
-          </div>
-        ))}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSimulation(EMPTY_SIMULATION)}
+            disabled={!isSimulating}
+            className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Obnovit výchozí stav
+          </button>
+        </div>
+
+        {/* Souhrn měsíčních průměrů z opakovaných plateb */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm"
+              title={card.title}
+            >
+              <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
+              <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
+                {formatRounded(card.value)}
+              </span>
+              {isSimulating && card.value !== card.base && (
+                <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
+                  výchozí {formatRounded(card.base)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {overview.upcomingChanges.length > 0 && <UpcomingChangesTable changes={overview.upcomingChanges} />}
