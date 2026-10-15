@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'analytics', label: 'Analýza & trendy', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'mandatory', label: 'Mandatorní výdaje', icon: <Repeat className="w-4 h-4" /> },
     { id: 'transactions', label: 'Všechny položky', icon: <Receipt className="w-4 h-4" /> },
-    { id: 'accounts', label: 'Správa účtů', icon: <Landmark className="w-4 h-4" /> },
+    { id: 'accounts', label: 'Účty', icon: <Landmark className="w-4 h-4" /> },
     { id: 'categories', label: 'Kategorie', icon: <FolderTree className="w-4 h-4" /> },
     { id: 'settings', label: 'Nastavení', icon: <Settings className="w-4 h-4" /> },
   ];

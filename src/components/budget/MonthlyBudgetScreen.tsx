@@ -763,7 +763,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h4>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Souhrn období se počítá z výchozího účtu. V <strong>Správě účtů</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
+                Souhrn období se počítá z výchozího účtu. V sekci <strong>Účty</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
               </p>
             </div>
           </div>
