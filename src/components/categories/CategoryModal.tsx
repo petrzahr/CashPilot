@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
@@ -22,6 +22,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   defaultParentId = null,
   mode,
 }) => {
+  const fieldId = useId();
   const { categories, addCategory, addMainCategory, updateCategory, moveSubcategory } = useFinance();
 
   const currentMode = mode || (categoryToEdit ? 'edit' : (defaultParentId ? 'sub' : 'main'));
@@ -132,10 +133,10 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název kategorie *
           </label>
-          <input
+          <input id={`${fieldId}-1`}
             type="text"
             required
             placeholder="např. Bydlení, Restaurace, Mzda"
@@ -148,12 +149,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Typ kategorie (pouze pro hlavní kategorie) */}
         {(isMainCategoryMode || (isEditMode && !categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <span id={`${fieldId}-type`} className="block text-xs font-semibold text-slate-500 mb-1">
               Typ kategorie
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            </span>
+            <div role="group" aria-labelledby={`${fieldId}-type`} className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
+                aria-pressed={type === 'expense'}
                 onClick={() => setType('expense')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
@@ -163,6 +165,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               </button>
               <button
                 type="button"
+                aria-pressed={type === 'income'}
                 onClick={() => setType('income')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
@@ -177,10 +180,10 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Výběr nadřazené kategorie - pouze pro vytváření podkategorie nebo editaci existující podkategorie */}
         {(isSubcategoryMode || (isEditMode && categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Nadřazená hlavní kategorie *
             </label>
-            <select
+            <select id={`${fieldId}-2`}
               required
               value={parentId || ''}
               onChange={(e) => {
@@ -223,14 +226,16 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Barva */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+          <span id={`${fieldId}-color`} className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva kategorie
-          </label>
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLOR_PALETTE.map((c) => (
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-color`} className="flex items-center gap-2 flex-wrap">
+            {COLOR_PALETTE.map((c, i) => (
               <button
                 key={c}
                 type="button"
+                aria-label={`Barva ${i + 1}`}
+                aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 rounded-full transition-transform ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'

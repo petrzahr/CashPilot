@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, MarketValueSnapshot } from '../../types/finance';
@@ -20,6 +20,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   account,
   snapshot,
 }) => {
+  const fieldId = useId();
   const { transactions, investmentFees = [], settings, updateMarketValue, editMarketValue } = useFinance();
   const [marketValueStr, setMarketValueStr] = useState('');
   const [valuationDate, setValuationDate] = useState(() => getTodayInPrague());
@@ -120,10 +121,10 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum ocenění *
             </label>
-            <input
+            <input id={`${fieldId}-1`}
               type="date"
               required
               min={account.initialBalanceDate}
@@ -134,11 +135,11 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Aktuální tržní hodnota (Kč) *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-2`}
                 type="number"
                 step="any"
                 required
@@ -152,10 +153,10 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
             Poznámka (např. zdroj ocenění)
           </label>
-          <input
+          <input id={`${fieldId}-3`}
             type="text"
             placeholder="např. Výpis z penzijní společnosti k 30. 9."
             value={note}

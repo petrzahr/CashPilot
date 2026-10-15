@@ -51,8 +51,10 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Levá strana: mobilní menu + název sekce */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
+          type="button"
           onClick={onToggleMobileMenu}
-          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 md:hidden shrink-0"
+          aria-label="Otevřít menu"
+          className="p-3 -m-1 rounded-xl text-slate-500 hover:bg-slate-100 md:hidden shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -228,7 +230,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={goToPreviousPeriod}
             title="Předchozí období"
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
+            aria-label="Předchozí období"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -245,7 +248,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={goToNextPeriod}
             title="Následující období"
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
+            aria-label="Následující období"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

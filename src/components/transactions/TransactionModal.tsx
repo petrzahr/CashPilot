@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
@@ -25,6 +25,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   initialType = 'expense',
   initialDate,
 }) => {
+  const fieldId = useId();
   const {
     accounts,
     categories,
@@ -502,10 +503,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Název a částka */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
               Název položky *
             </label>
-            <input
+            <input id={`${fieldId}-1`}
               type="text"
               required
               placeholder="např. Nákup potravin, Mzda"
@@ -516,11 +517,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Částka v Kč *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-2`}
                 type="number"
                 step="any"
                 min="0"
@@ -540,10 +541,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Datum, Pořadí v rámci dne a Stav */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum *
             </label>
-            <input
+            <input id={`${fieldId}-3`}
               type="date"
               required
               value={date}
@@ -553,11 +554,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
               <Hash className="w-3.5 h-3.5 text-sky-600" />
               <span>Pořadí v dni *</span>
             </label>
-            <input
+            <input id={`${fieldId}-4`}
               type="number"
               min="1"
               step="1"
@@ -570,10 +571,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-5`} className="block text-xs font-semibold text-slate-500 mb-1">
               Stav položky
             </label>
-            <select
+            <select id={`${fieldId}-5`}
               value={status}
               onChange={(e) => setStatus(e.target.value as TransactionStatus)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -588,10 +589,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Účty */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-6`} className="block text-xs font-semibold text-slate-500 mb-1">
               {type === 'transfer' ? 'Zdrojový účet (odkud) *' : 'Účet *'}
             </label>
-            <select
+            <select id={`${fieldId}-6`}
               required
               value={sourceAccountId}
               onChange={(e) => setSourceAccountId(e.target.value)}
@@ -614,10 +615,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
           {type === 'transfer' ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-7`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Cílový účet (kam) *
               </label>
-              <select
+              <select id={`${fieldId}-7`}
                 required
                 value={targetAccountId}
                 onChange={(e) => setTargetAccountId(e.target.value)}
@@ -642,10 +643,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                <label htmlFor={`${fieldId}-8`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Kategorie
                 </label>
-                <select
+                <select id={`${fieldId}-8`}
                   value={categoryId}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -660,10 +661,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                <label htmlFor={`${fieldId}-9`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Podkategorie
                 </label>
-                <select
+                <select id={`${fieldId}-9`}
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   disabled={!categoryId || subcategories.length === 0}
@@ -709,10 +710,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className={`grid ${frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    <label htmlFor={`${fieldId}-10`} className="block text-xs font-semibold text-slate-500 mb-1">
                       Frekvence opakování
                     </label>
-                    <select
+                    <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
                       className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -726,10 +727,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </div>
                   {frequency !== 'custom' && (
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      <label htmlFor={`${fieldId}-11`} className="block text-xs font-semibold text-slate-500 mb-1">
                         Den opakování v měsíci
                       </label>
-                      <input
+                      <input id={`${fieldId}-11`}
                         type="number"
                         min="1"
                         max="31"
@@ -744,10 +745,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  <label htmlFor={`${fieldId}-12`} className="block text-xs font-semibold text-slate-500 mb-1">
                     Platí do (nepovinné)
                   </label>
-                  <input
+                  <input id={`${fieldId}-12`}
                     type="date"
                     value={recurringEndDate}
                     min={date}
@@ -768,10 +769,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Poznámka */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-13`} className="block text-xs font-semibold text-slate-500 mb-1">
             Poznámka (volitelné)
           </label>
-          <input
+          <input id={`${fieldId}-13`}
             type="text"
             placeholder="např. Faktura č. 2026-04, účel platby..."
             value={note}

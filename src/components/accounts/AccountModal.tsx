@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
@@ -16,6 +16,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onClose,
   accountToEdit,
 }) => {
+  const fieldId = useId();
   const { addAccount, updateAccount, accounts } = useFinance();
 
   const [name, setName] = useState('');
@@ -133,10 +134,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
         )}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název účtu *
           </label>
-          <input
+          <input id={`${fieldId}-1`}
             type="text"
             required
             placeholder="např. Hlavní běžný účet, Spoření na rezervu"
@@ -148,10 +149,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Typ účtu *
             </label>
-            <select
+            <select id={`${fieldId}-2`}
               value={type}
               onChange={(e) => handleTypeChange(e.target.value as AccountType)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -166,10 +167,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Finanční instituce (banka / broker)
             </label>
-            <input
+            <input id={`${fieldId}-3`}
               type="text"
               placeholder="např. Česká spořitelna, Air Bank"
               value={institution}
@@ -181,11 +182,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1">
               Počáteční zůstatek (Kč) *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-4`}
                 type="number"
                 step="any"
                 required
@@ -199,10 +200,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-5`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum počátečního stavu *
             </label>
-            <input
+            <input id={`${fieldId}-5`}
               type="date"
               required
               value={initialBalanceDate}
@@ -251,14 +252,16 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         {/* Barva účtu */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+          <span id={`${fieldId}-color`} className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva účtu
-          </label>
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLOR_PALETTE.map((c) => (
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-color`} className="flex items-center gap-2 flex-wrap">
+            {COLOR_PALETTE.map((c, i) => (
               <button
                 key={c}
                 type="button"
+                aria-label={`Barva ${i + 1}`}
+                aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 rounded-full transition-transform ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'

@@ -1,5 +1,5 @@
 import { SYNC_LABELS } from '../../services/syncController';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { isDemoModeEnabled } from '../../services/storageService';
@@ -24,6 +24,7 @@ import {
 import { GoogleIcon } from '../common/GoogleIcon';
 
 export const SettingsScreen: React.FC = () => {
+  const fieldId = useId();
   const {
     settings,
     updateSettings,
@@ -156,10 +157,10 @@ export const SettingsScreen: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Počáteční den období */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Počáteční den rozpočtového měsíce
               </label>
-              <select
+              <select id={`${fieldId}-1`}
                 value={budgetStartDay}
                 onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
                 className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
@@ -179,11 +180,11 @@ export const SettingsScreen: React.FC = () => {
 
             {/* Výše kontokorentu */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Výše kontokorentu (Kč)
               </label>
               <div className="relative">
-                <input
+                <input id={`${fieldId}-2`}
                   type="number"
                   step="any"
                   min="0"
@@ -200,10 +201,10 @@ export const SettingsScreen: React.FC = () => {
 
             {/* Měna */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Základní měna
               </label>
-              <input
+              <input id={`${fieldId}-3`}
                 type="text"
                 disabled
                 value="Kč (CZK)"

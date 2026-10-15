@@ -5,10 +5,13 @@ import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react'
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useFinance();
 
-  if (toasts.length === 0) return null;
-
+  // Kontejner zůstává v DOM i bez toastů, aby čtečky obrazovky spolehlivě ohlásily nově přidané zprávy
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+    >
       {toasts.map((toast) => {
         let icon = <CheckCircle2 className="w-5 h-5 text-emerald-600" />;
         let bgClass = 'bg-white border-slate-200 text-slate-900';
@@ -27,15 +30,18 @@ export const ToastContainer: React.FC = () => {
         return (
           <div
             key={toast.id}
+            role={toast.type === 'error' ? 'alert' : undefined}
             className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-lg backdrop-blur-sm transition-all duration-200 ${bgClass}`}
           >
             <div className="flex items-center gap-3">
-              <span className="shrink-0">{icon}</span>
+              <span className="shrink-0" aria-hidden="true">{icon}</span>
               <span className="text-sm font-medium">{toast.text}</span>
             </div>
             <button
+              type="button"
               onClick={() => removeToast(toast.id)}
-              className="ml-3 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+              aria-label="Zavřít oznámení"
+              className="ml-3 p-3.5 -m-2.5 md:p-1 md:m-0 md:ml-3 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

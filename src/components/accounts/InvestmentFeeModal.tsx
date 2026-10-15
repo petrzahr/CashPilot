@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
@@ -16,6 +16,7 @@ interface InvestmentFeeModalProps {
 }
 
 export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, onClose, account, periodKey }) => {
+  const fieldId = useId();
   const { investmentFees = [], currentPeriod, settings, saveInvestmentFee } = useFinance();
   const [selectedKey, setSelectedKey] = useState('');
   const [amountStr, setAmountStr] = useState('');
@@ -71,8 +72,8 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Období *</label>
-            <select
+            <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">Období *</label>
+            <select id={`${fieldId}-1`}
               value={selectedKey}
               onChange={(e) => fillForPeriod(e.target.value)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -85,8 +86,8 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">Poplatek ({account.currency}) *</label>
-            <input
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">Poplatek ({account.currency}) *</label>
+            <input id={`${fieldId}-2`}
               type="number"
               step="0.01"
               min="0"
@@ -99,8 +100,8 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">Poznámka</label>
-          <input
+          <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">Poznámka</label>
+          <input id={`${fieldId}-3`}
             type="text"
             placeholder="např. Výpis obchodníka za září"
             value={note}

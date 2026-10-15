@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account } from '../../types/finance';
@@ -19,6 +19,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
   onClose,
   account,
 }) => {
+  const fieldId = useId();
   const { transactions, corrections, accounts, reconcileBalance } = useFinance();
   const [actualBalanceStr, setActualBalanceStr] = useState('');
   const [checkDate, setCheckDate] = useState(() => getTodayInPrague());
@@ -117,11 +118,11 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Skutečný zůstatek na výpisu / v bance (Kč) *
           </label>
           <div className="relative">
-            <input
+            <input id={`${fieldId}-1`}
               type="number"
               step="any"
               required
@@ -135,10 +136,10 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum kontroly *
             </label>
-            <input
+            <input id={`${fieldId}-2`}
               type="date"
               required
               min={account.initialBalanceDate}
@@ -149,10 +150,10 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Poznámka ke kontrole
             </label>
-            <input
+            <input id={`${fieldId}-3`}
               type="text"
               placeholder="např. Bankovní výpis k 15. dni"
               value={note}

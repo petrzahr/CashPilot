@@ -641,7 +641,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Detail a poznámka korekce"
-                                className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label="Detail a poznámka korekce"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
@@ -649,7 +650,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 type="button"
                                 onClick={() => setSelectedCorrection(tx)}
                                 title="Smazat korekci"
-                                className="p-1 rounded text-red-500 hover:bg-red-50"
+                                aria-label="Smazat korekci"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -661,7 +663,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'executed')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Označit jako uskutečněnou"
-                                  className="p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                  aria-label="Označit jako uskutečněnou"
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <Check className="w-4 h-4" />
                                 </button>
@@ -670,7 +673,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Vrátit do plánovaných"
-                                  className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                  aria-label="Vrátit do plánovaných"
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
                                 </button>
@@ -678,14 +682,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               <button
                                 onClick={() => onEditTransaction(tx)}
                                 title="Upravit položku"
-                                className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label="Upravit položku"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => duplicateTransaction(tx)}
                                 title="Duplikovat"
-                                className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                aria-label="Duplikovat"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                               >
                                 <Copy className="w-4 h-4" />
                               </button>
@@ -694,7 +700,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'cancelled')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Zrušit položku"
-                                  className="p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                  aria-label="Zrušit položku"
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
                                 >
                                   <Ban className="w-4 h-4" />
                                 </button>
@@ -703,7 +710,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                   onClick={() => handleStatusChange(tx.id, 'planned')}
                                   disabled={updatingStatusTxId === tx.id}
                                   title="Obnovit položku (do plánovaných)"
-                                  className="p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                  aria-label="Obnovit položku (do plánovaných)"
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                                 >
                                   <Clock className="w-4 h-4" />
                                 </button>
@@ -712,7 +720,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                                 onClick={() => setDeletingTx(tx)}
                                 disabled={isDeletingTx}
                                 title="Smazat"
-                                className="p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
+                                aria-label="Smazat"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
