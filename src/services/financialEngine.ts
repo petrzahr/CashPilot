@@ -465,6 +465,43 @@ export function getAccountBalanceBeforeDate(
   return balance;
 }
 
+/**
+ * Roztřídí položky do období podle data jedním průchodem (binární hledání v obdobích seřazených
+ * podle začátku). Vrací null, pokud se období překrývají - pak volající filtruje postaru.
+ */
+export function groupTransactionsByPeriod(
+  periods: BudgetPeriod[],
+  transactions: Transaction[]
+): Map<BudgetPeriod, Transaction[]> | null {
+  const sorted = [...periods].sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0));
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].startDate <= sorted[i - 1].endDate) return null;
+  }
+
+  const groups = new Map<BudgetPeriod, Transaction[]>();
+  for (const period of sorted) groups.set(period, []);
+
+  for (const tx of transactions) {
+    if (!tx.date) continue;
+    let lo = 0;
+    let hi = sorted.length - 1;
+    let found = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (sorted[mid].startDate <= tx.date) {
+        found = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    if (found >= 0 && tx.date <= sorted[found].endDate) {
+      groups.get(sorted[found])!.push(tx);
+    }
+  }
+  return groups;
+}
+
 export function calculateForecast(
   periods: BudgetPeriod[],
   accounts: Account[],
@@ -560,16 +597,29 @@ export function calculateForecast(
 
   let overallMinBalance = Infinity;
 
+  // Položky se do období roztřídí jednou předem, místo filtrování celé historie pro každé období.
+  // Výsledné položky období se pak znovu použijí i pro předpověď (stejné vstupy => stejný výsledek).
+  const txsByPeriod = groupTransactionsByPeriod(periods, safeTxs);
+  const effectiveByPeriod = new Map<BudgetPeriod, Transaction[]>();
+  const getEffectiveForPeriod = (period: BudgetPeriod): Transaction[] => {
+    let effective = effectiveByPeriod.get(period);
+    if (!effective) {
+      effective = getEffectiveTransactionsForPeriod(
+        period,
+        txsByPeriod ? txsByPeriod.get(period) || [] : safeTxs,
+        safeRules,
+        safeExceptions,
+        settings.budgetStartDay,
+        todayStr,
+        safeAccounts
+      );
+      effectiveByPeriod.set(period, effective);
+    }
+    return effective;
+  };
+
   for (const period of periods) {
-    const effectiveTxs = getEffectiveTransactionsForPeriod(
-      period,
-      safeTxs,
-      safeRules,
-      safeExceptions,
-      settings.budgetStartDay,
-      todayStr,
-      safeAccounts
-    );
+    const effectiveTxs = getEffectiveForPeriod(period);
 
     const periodCorrections = safeCorrections.filter(c => {
       if (!isDateInPeriod(c.checkDate, period)) return false;
@@ -858,9 +908,8 @@ export function calculateForecast(
     .map(a => [a.id, getCurrentAssetValue(a, safeTxs, safeSnapshots, today)]));
   const forecastPeriods = historicalForecastPeriods.map(summary => {
     const projected = { ...summary, accountBalances: { ...summary.accountBalances } };
-    const remainingTxs = getEffectiveTransactionsForPeriod(
-      summary.period, safeTxs, safeRules, safeExceptions, settings.budgetStartDay, todayStr, safeAccounts
-    ).filter(t => t.status !== 'cancelled' && !(t.status === 'executed' && t.date <= today));
+    const remainingTxs = getEffectiveForPeriod(summary.period)
+      .filter(t => t.status !== 'cancelled' && !(t.status === 'executed' && t.date <= today));
     for (const acc of safeAccounts) {
       const opening = assetValues.get(acc.id);
       if (opening === undefined) continue;

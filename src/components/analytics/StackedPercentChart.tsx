@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { formatCurrency } from '../../services/currencyService';
 
 export interface StackedPercentSegment {
@@ -45,8 +45,20 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   segmentOrder = 'bottomUp',
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  // Skutečná šířka plochy grafu v px - podle ní se na úzkých displejích ředí popisky osy X
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(0);
+  const hasData = !!data && data.length > 0;
 
-  if (!data || data.length === 0) {
+  useEffect(() => {
+    const el = plotRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => setPlotWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasData]);
+
+  if (!hasData) {
     return (
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-500 text-xs">
         {emptyText}
@@ -98,7 +110,8 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   // Rozměry SVG
   const width = 800;
   const height = 300;
-  const margin = { top: 25, right: 25, bottom: 40, left: 35 };
+  // Popisky osy Y leží v pevném HTML okraji vlevo od SVG, proto je levý okraj SVG minimální
+  const margin = { top: 25, right: 25, bottom: 40, left: 6 };
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
@@ -111,6 +124,10 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   const slotWidth = chartWidth / count;
   const barWidth = Math.min(slotWidth * 0.6, 60);
 
+  // Popisek období ("Lis 2025") potřebuje zhruba 56 px; když se sloty zúží, zobrazí se jen každý n-tý
+  const slotPx = plotWidth > 0 ? (plotWidth * slotWidth) / width : Infinity;
+  const xLabelStep = Math.max(1, Math.ceil(56 / slotPx));
+
   const hoveredItem = hoveredIdx !== null ? data[hoveredIdx] : null;
 
   return (
@@ -122,7 +139,8 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
       </div>
 
       {/* SVG Canvas */}
-      <div className="relative w-full overflow-hidden">
+      <div className="w-full overflow-hidden pl-11">
+      <div ref={plotRef} className="relative">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-auto overflow-visible select-none"
@@ -137,7 +155,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               y1={getY(v)}
               x2={width - margin.right}
               y2={getY(v)}
-              stroke="#cbd5e1"
+              className="stroke-slate-300"
               strokeWidth={v === 0 ? '1.5' : '1'}
               strokeDasharray={v === 0 ? undefined : '4 4'}
               opacity={v === 0 ? 1 : 0.6}
@@ -166,7 +184,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                     y={margin.top}
                     width={slotWidth}
                     height={chartHeight}
-                    fill="#f1f5f9"
+                    className="fill-slate-100"
                     opacity="0.7"
                     rx="8"
                   />
@@ -215,11 +233,11 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
           {gridValues.map((v) => (
             <span
               key={`grid-label-${v}`}
-              className="absolute text-[8px] font-medium text-slate-500 whitespace-nowrap"
+              className="absolute text-xs font-medium text-slate-500 whitespace-nowrap tabular-nums"
               style={{
-                left: `${((margin.left - 6) / width) * 100}%`,
+                right: '100%',
                 top: `${(getY(v) / height) * 100}%`,
-                transform: 'translate(-100%, -50%)',
+                transform: 'translate(-6px, -50%)',
               }}
             >
               {v}%
@@ -229,6 +247,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
           {data.map((item, idx) => {
             const slotCenterX = margin.left + idx * slotWidth + slotWidth / 2;
             const isHovered = hoveredIdx === idx;
+            if (idx % xLabelStep !== 0) return null;
 
             return (
               <div
@@ -241,7 +260,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                 }}
               >
                 <span
-                  className={`text-[8px] font-medium whitespace-nowrap transition-colors ${
+                  className={`text-xs font-medium whitespace-nowrap transition-colors ${
                     isHovered ? 'text-slate-900 font-bold' : 'text-slate-500'
                   }`}
                 >
@@ -255,7 +274,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
         {/* Hover Tooltip */}
         {hoveredItem && hoveredIdx !== null && (
           <div
-            className="absolute z-20 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-xl space-y-1.5 transition-all"
+            className="absolute z-20 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-xl space-y-1.5 transition-all motion-reduce:transition-none"
             style={{
               left: `${Math.min(
                 Math.max(
@@ -274,7 +293,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               </div>
             </div>
 
-            <div className="space-y-1 pt-0.5 text-[11px] min-w-[220px]">
+            <div className="space-y-1 pt-0.5 text-xs min-w-[220px]">
               {hoveredItem.segments.map((seg) => (
                 <div
                   key={seg.key}
@@ -310,6 +329,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
             </div>
           </div>
         )}
+      </div>
       </div>
       </div>
 

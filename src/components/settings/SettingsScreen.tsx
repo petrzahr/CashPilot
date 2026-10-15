@@ -1,5 +1,5 @@
 import { SYNC_LABELS } from '../../services/syncController';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { isDemoModeEnabled } from '../../services/storageService';
@@ -18,12 +18,24 @@ import {
   Cloud,
   RefreshCw,
   LogOut,
-  AlertCircle
+  AlertCircle,
+  Palette,
+  Monitor,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
+import { getThemePreference, setThemePreference, ThemePreference } from '../../services/themeService';
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
+  { value: 'system', label: 'Podle systému', icon: <Monitor className="w-4 h-4" /> },
+  { value: 'light', label: 'Světlý', icon: <Sun className="w-4 h-4" /> },
+  { value: 'dark', label: 'Tmavý', icon: <Moon className="w-4 h-4" /> },
+];
 
 export const SettingsScreen: React.FC = () => {
+  const fieldId = useId();
   const {
     settings,
     updateSettings,
@@ -64,6 +76,12 @@ export const SettingsScreen: React.FC = () => {
     halerToInputValue(settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0)
   );
   const [roundAmounts, setRoundAmounts] = useState(settings.roundAmounts);
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => getThemePreference());
+
+  const handleThemeChange = (preference: ThemePreference) => {
+    setThemePreference(preference);
+    setThemePreferenceState(preference);
+  };
 
   // Potvrzovací dialogy
   const [confirmStartDayOpen, setConfirmStartDayOpen] = useState(false);
@@ -156,10 +174,10 @@ export const SettingsScreen: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Počáteční den období */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Počáteční den rozpočtového měsíce
               </label>
-              <select
+              <select id={`${fieldId}-1`}
                 value={budgetStartDay}
                 onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
                 className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
@@ -170,7 +188,7 @@ export const SettingsScreen: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {budgetStartDay === 1
                   ? 'Období odpovídá celému kalendářnímu měsíci (např. 1. 9. – 30. 9.).'
                   : `Např. ${budgetStartDay}. den znamená období od ${budgetStartDay}. dne do dne předcházejícího v dalším měsíci.`}
@@ -179,11 +197,11 @@ export const SettingsScreen: React.FC = () => {
 
             {/* Výše kontokorentu */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Výše kontokorentu (Kč)
               </label>
               <div className="relative">
-                <input
+                <input id={`${fieldId}-2`}
                   type="number"
                   step="any"
                   min="0"
@@ -193,17 +211,17 @@ export const SettingsScreen: React.FC = () => {
                 />
                 <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Limit povoleného záporného zůstatku pro výchozí účet (zadává se kladně, např. 20 000 Kč).
               </p>
             </div>
 
             {/* Měna */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Základní měna
               </label>
-              <input
+              <input id={`${fieldId}-3`}
                 type="text"
                 disabled
                 value="Kč (CZK)"
@@ -215,7 +233,7 @@ export const SettingsScreen: React.FC = () => {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+              className="max-md:min-h-11 px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
             >
               Uložit pravidla
             </button>
@@ -274,6 +292,41 @@ export const SettingsScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* Vzhled aplikace (nastavení tohoto zařízení) */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <div className="p-2 rounded-xl bg-sky-50 text-sky-600">
+            <Palette className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Vzhled</h2>
+            <p className="text-xs text-slate-500">
+              Světlý nebo tmavý vzhled. Volba platí pro toto zařízení a nesynchronizuje se.
+            </p>
+          </div>
+        </div>
+
+        <div role="group" aria-label="Vzhled aplikace" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl max-w-md">
+          {THEME_OPTIONS.map((option) => {
+            const active = themePreference === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => handleThemeChange(option.value)}
+                className={`min-h-11 flex flex-col sm:flex-row items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span className={active ? 'text-sky-600' : ''}>{option.icon}</span>
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 3. Google Disk – Cloudová synchronizace */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
@@ -285,7 +338,7 @@ export const SettingsScreen: React.FC = () => {
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <span>Google Disk – Cloudová synchronizace</span>
                 {isDriveConnected && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <CheckCircle2 className="w-3 h-3" />
                     Připojeno
                   </span>
@@ -302,7 +355,7 @@ export const SettingsScreen: React.FC = () => {
               type="button"
               onClick={connectGoogleDrive}
               disabled={driveSyncStatus === 'syncing'}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              className="max-md:min-h-11 flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-4 h-4 shrink-0" />
               <span>{driveSyncStatus === 'syncing' ? 'Připojuji...' : 'Připojit Google Disk'}</span>
@@ -313,7 +366,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('upload')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
+                className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                 <span>Synchronizovat</span>
@@ -322,7 +375,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={disconnectGoogleDrive}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Odpojit</span>
@@ -339,7 +392,7 @@ export const SettingsScreen: React.FC = () => {
             </p>
             <ul className="list-disc list-inside space-y-1 text-slate-500">
               <li><strong>Offline-first:</strong> Aplikace i nadále běží bleskově a ukládá změny lokálně na vašem zařízení.</li>
-              <li><strong>Bezpečný soukromý prostor:</strong> Data se ukládají do skrytého prostoru <code className="bg-slate-200/80 px-1 py-0.5 rounded text-[11px]">appDataFolder</code>, kam nemá přístup žádná jiná aplikace ani běžné vyhledávání na Disku.</li>
+              <li><strong>Bezpečný soukromý prostor:</strong> Data se ukládají do skrytého prostoru <code className="bg-slate-200/80 px-1 py-0.5 rounded text-xs">appDataFolder</code>, kam nemá přístup žádná jiná aplikace ani běžné vyhledávání na Disku.</li>
               <li><strong>Automatické zálohování:</strong> Každá úprava rozpočtu, účtu či platby se na pozadí synchronizuje na váš Google Disk.</li>
             </ul>
           </div>
@@ -360,7 +413,7 @@ export const SettingsScreen: React.FC = () => {
                 )}
                 <div>
                   <p className="font-bold text-slate-900">{driveUser?.displayName || 'Google Účet'}</p>
-                  <p className="text-[11px] text-slate-500">{driveUser?.emailAddress || 'Propojeno s Google Drive'}</p>
+                  <p className="text-xs text-slate-500">{driveUser?.emailAddress || 'Propojeno s Google Drive'}</p>
                 </div>
               </div>
 
@@ -383,7 +436,7 @@ export const SettingsScreen: React.FC = () => {
                     </>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'Při této relaci'}
                 </p>
               </div>
@@ -401,7 +454,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('upload')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                 <span>Vynutit uložení na Google Disk</span>
@@ -411,7 +464,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('download')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Stáhnout data z Google Disku</span>
@@ -421,12 +474,12 @@ export const SettingsScreen: React.FC = () => {
             <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h4 className="text-sm font-bold text-slate-900">Automatické JSON zálohy</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 max-w-md">
+                <p className="text-xs text-slate-500 mt-0.5 max-w-md">
                   Při startu appky (max. jednou za 24 h) uloží časově označenou kopii dat do viditelné
                   složky <strong>„CashPilot zalohy“</strong> na Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
                   Při častém spouštění během vývoje se hodí dočasně vypnout.
                 </p>
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Poslední záloha: {lastDriveBackupTime ? lastDriveBackupTime.toLocaleString('cs-CZ') : 'Zatím žádná'}
                 </p>
               </div>
@@ -434,7 +487,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void runDriveBackupNow()}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                  className="max-md:min-h-11 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
                 >
                   Zálohovat nyní
                 </button>
@@ -474,7 +527,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <Download className="w-5 h-5 text-sky-600" />
             <span className="text-xs font-bold text-slate-900">Exportovat JSON zálohu</span>
-            <span className="text-[10px] text-slate-500">Kompletní stav aplikace</span>
+            <span className="text-xs text-slate-500">Kompletní stav aplikace</span>
           </button>
 
           <button
@@ -483,7 +536,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <Upload className="w-5 h-5 text-emerald-600" />
             <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-            <span className="text-[10px] text-slate-500">Sloučí .json se stávajícími daty</span>
+            <span className="text-xs text-slate-500">Sloučí .json se stávajícími daty</span>
           </button>
           <input
             ref={fileInputRef}
@@ -499,7 +552,7 @@ export const SettingsScreen: React.FC = () => {
           >
             <FileText className="w-5 h-5 text-purple-600" />
             <span className="text-xs font-bold text-slate-900">Export položek (CSV)</span>
-            <span className="text-[10px] text-slate-500">Pro Excel či tabulky</span>
+            <span className="text-xs text-slate-500">Pro Excel či tabulky</span>
           </button>
         </div>
       </div>
@@ -536,7 +589,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearTransactionsOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny transakce
               </button>
@@ -553,7 +606,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearAccountsOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny účty
               </button>
@@ -570,7 +623,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearCategoriesOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny kategorie
               </button>
@@ -598,7 +651,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmResetAllOpen(true)}
-                className="px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
               >
                 Kompletně vymazat všechna data
               </button>
@@ -612,7 +665,7 @@ export const SettingsScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => setConfirmLoadDemoOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
+              className="max-md:min-h-11 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
             >
               Načíst ukázková data (Demo režim)
             </button>

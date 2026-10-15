@@ -54,13 +54,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobilní backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 md:hidden"
+          className="fixed inset-0 bg-scrim/30 backdrop-blur-xs z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-200 ease-in-out ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -75,15 +75,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
                   CashPilot
                 </span>
-                <span className="text-[10px] text-slate-500 font-medium tracking-wide block mt-0.5">
+                <span className="text-xs text-slate-500 font-medium tracking-wide block mt-0.5">
                   Vaše osobní finance pod kontrolou
                 </span>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={onCloseMobile}
-              className="p-1 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
+              aria-label="Zavřít menu"
+              className="p-3 -m-2 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
             >
               <X className="w-5 h-5" />
             </button>
@@ -95,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenTransactionModal();
               onCloseMobile();
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
+            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
           >
             <Plus className="w-4 h-4" />
             <span>Nová položka</span>
@@ -109,7 +111,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`max-md:min-h-11 w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-sky-50 text-sky-700 shadow-xs'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, MarketValueSnapshot } from '../../types/finance';
@@ -6,6 +6,7 @@ import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/in
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { Info } from 'lucide-react';
+import { FieldError, FieldErrors, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface MarketValueModalProps {
   isOpen: boolean;
@@ -20,13 +21,16 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   account,
   snapshot,
 }) => {
+  const fieldId = useId();
   const { transactions, investmentFees = [], settings, updateMarketValue, editMarketValue } = useFinance();
   const [marketValueStr, setMarketValueStr] = useState('');
   const [valuationDate, setValuationDate] = useState(() => getTodayInPrague());
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<'date' | 'value'>>({});
 
   useEffect(() => {
+    setErrors({});
     if (account && isOpen) {
       const val = snapshot?.marketValueInHaler ?? account.currentMarketValueInHaler ?? account.initialBalanceInHaler;
       setMarketValueStr((val / 100).toString());
@@ -62,12 +66,16 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    if (!Number.isSafeInteger(enteredValHaler)) {
-      alert('Zadejte platnou tržní hodnotu.');
-      return;
-    }
+    const nextErrors: FieldErrors<'date' | 'value'> = {};
     if (account.initialBalanceDate && valuationDate < account.initialBalanceDate) {
-      alert(`Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`);
+      nextErrors.date = `Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
+    }
+    if (!marketValueStr.trim() || !Number.isSafeInteger(enteredValHaler)) {
+      nextErrors.value = 'Zadejte platnou tržní hodnotu.';
+    }
+    setErrors(nextErrors);
+    if (nextErrors.date || nextErrors.value) {
+      focusFirstInvalid(nextErrors, [['date', `${fieldId}-1`], ['value', `${fieldId}-2`]]);
       return;
     }
     setIsSubmitting(true);
@@ -92,7 +100,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
       subtitle={`Ocenění ${accountTypeLabel} účtu`}
       maxWidth="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Vložené prostředky:</span>
@@ -120,42 +128,46 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum ocenění *
             </label>
-            <input
+            <input id={`${fieldId}-1`}
               type="date"
               required
               min={account.initialBalanceDate}
               value={valuationDate}
-              onChange={(e) => setValuationDate(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={(e) => { setValuationDate(e.target.value); setErrors(prev => ({ ...prev, date: undefined })); }}
+              {...fieldErrorProps(`${fieldId}-1`, errors.date)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.date)} rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500`}
             />
+            <FieldError inputId={`${fieldId}-1`} message={errors.date} />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Aktuální tržní hodnota (Kč) *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-2`}
                 type="number"
                 step="any"
                 required
                 value={marketValueStr}
-                onChange={(e) => setMarketValueStr(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold"
+                onChange={(e) => { setMarketValueStr(e.target.value); setErrors(prev => ({ ...prev, value: undefined })); }}
+                {...fieldErrorProps(`${fieldId}-2`, errors.value)}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.value)} rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-semibold`}
               />
               <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
             </div>
+            <FieldError inputId={`${fieldId}-2`} message={errors.value} />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
             Poznámka (např. zdroj ocenění)
           </label>
-          <input
+          <input id={`${fieldId}-3`}
             type="text"
             placeholder="např. Výpis z penzijní společnosti k 30. 9."
             value={note}

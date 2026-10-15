@@ -208,7 +208,7 @@ export function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center space-y-4 p-6" role="status">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg shadow-sky-500/25 animate-pulse">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg shadow-sky-500/25 animate-pulse motion-reduce:animate-none">
             <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">CashPilot</h1>
@@ -217,7 +217,7 @@ export function AppContent() {
             <p>{SYNC_LABELS[driveSyncStatus]}</p>
           </div>
           {driveError && <p className="text-red-700">{driveError}</p>}
-          {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2 bg-sky-600 text-white rounded">Zkusit znovu</button>}
+          {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>}
         </div>
       </div>
     );

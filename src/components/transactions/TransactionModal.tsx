@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
@@ -9,6 +9,9 @@ import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../.
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
 import { Repeat, Hash, Loader2 } from 'lucide-react';
+import { FieldError, FieldErrors, FormError, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
+
+type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -25,6 +28,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   initialType = 'expense',
   initialDate,
 }) => {
+  const fieldId = useId();
   const {
     accounts,
     categories,
@@ -79,6 +83,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   // Dialog úpravy pravidelné položky
   const [recurringEditMode, setRecurringEditMode] = useState<'occurrence' | 'future' | 'series'>('occurrence');
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<TxField>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const clearError = (field: TxField) => setErrors(prev => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   const isEditing = !!transactionToEdit;
   const isLinkedToRecurring = !!transactionToEdit?.recurringRuleId;
@@ -106,6 +113,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     .sort((a, b) => czechStringCompare(a.name, b.name));
 
   useEffect(() => {
+    setErrors({});
+    setSaveError(null);
     if (transactionToEdit) {
       setTitle(transactionToEdit.title);
       const haler = transactionToEdit.status === 'executed' && transactionToEdit.actualAmountInHaler !== undefined
@@ -219,38 +228,29 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     const amountInHaler = parseInputToHaler(amountStr);
     const sequenceNum = Math.max(1, parseInt(sequenceStr, 10) || 1);
 
-    if (!title.trim()) {
-      alert('Zadejte prosím název položky.');
-      return;
-    }
-    if (amountInHaler <= 0) {
-      alert('Částka musí být kladné číslo.');
-      return;
-    }
-    if (!sourceAccountId) {
-      alert('Vyberte prosím účet.');
-      return;
-    }
-    if (sourceAccError) {
-      alert(sourceAccError);
-      return;
-    }
+    const nextErrors: FieldErrors<TxField> = {};
+    if (!title.trim()) nextErrors.title = 'Zadejte prosím název položky.';
+    if (amountInHaler <= 0) nextErrors.amount = 'Částka musí být kladné číslo.';
+    if (!sourceAccountId) nextErrors.source = 'Vyberte prosím účet.';
+    else if (sourceAccError) nextErrors.source = sourceAccError;
     if (type === 'transfer') {
-      if (!targetAccountId) {
-        alert('Pro převod vyberte cílový účet.');
-        return;
-      }
-      if (sourceAccountId === targetAccountId) {
-        alert('Zdrojový a cílový účet převodu se musí lišit.');
-        return;
-      }
-      if (targetAccError) {
-        alert(targetAccError);
-        return;
-      }
+      if (!targetAccountId) nextErrors.target = 'Pro převod vyberte cílový účet.';
+      else if (sourceAccountId === targetAccountId) nextErrors.target = 'Zdrojový a cílový účet převodu se musí lišit.';
+      else if (targetAccError) nextErrors.target = targetAccError;
     }
     if (isRecurring && !isLinkedToRecurring && recurringEndDate && recurringEndDate < date) {
-      alert('Datum konce opakování nemůže být dříve než datum první platby.');
+      nextErrors.endDate = 'Datum konce opakování nemůže být dříve než datum první platby.';
+    }
+    setErrors(nextErrors);
+    setSaveError(null);
+    if (Object.values(nextErrors).some(Boolean)) {
+      focusFirstInvalid(nextErrors, [
+        ['title', `${fieldId}-1`],
+        ['amount', `${fieldId}-2`],
+        ['source', `${fieldId}-6`],
+        ['target', `${fieldId}-7`],
+        ['endDate', `${fieldId}-12`],
+      ]);
       return;
     }
 
@@ -394,7 +394,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Při ukládání položky došlo k chybě.');
+      setSaveError(err instanceof Error && err.message ? err.message : 'Při ukládání položky došlo k chybě.');
     } finally {
       setIsSaving(false);
     }
@@ -407,7 +407,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       title={isEditing ? 'Upravit položku' : 'Nová položka'}
       maxWidth="max-w-xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Přepínač typu pohybu */}
         <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
           <button
@@ -453,7 +453,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <span>Tato položka je součástí pravidelné série</span>
             </div>
             {linkedRule && (
-              <div className="text-[11px] text-slate-500 space-y-0.5">
+              <div className="text-xs text-slate-500 space-y-0.5">
                 <p>
                   Opakuje se od {formatCzechDate(linkedRule.startDate)} do{' '}
                   {linkedRule.endDate ? formatCzechDate(linkedRule.endDate) : 'neomezeno'}
@@ -502,48 +502,52 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Název a částka */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
               Název položky *
             </label>
-            <input
+            <input id={`${fieldId}-1`}
               type="text"
               required
               placeholder="např. Nákup potravin, Mzda"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
+              {...fieldErrorProps(`${fieldId}-1`, errors.title)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.title)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
             />
+            <FieldError inputId={`${fieldId}-1`} message={errors.title} />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Částka v Kč *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-2`}
                 type="number"
                 step="any"
                 min="0"
                 required
                 placeholder="0"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
+                onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
+                {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.amount)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium`}
               />
               <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500 pointer-events-none">
                 Kč
               </span>
             </div>
+            <FieldError inputId={`${fieldId}-2`} message={errors.amount} />
           </div>
         </div>
 
         {/* Datum, Pořadí v rámci dne a Stav */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum *
             </label>
-            <input
+            <input id={`${fieldId}-3`}
               type="date"
               required
               value={date}
@@ -553,11 +557,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
+            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1 flex items-center gap-1">
               <Hash className="w-3.5 h-3.5 text-sky-600" />
               <span>Pořadí v dni *</span>
             </label>
-            <input
+            <input id={`${fieldId}-4`}
               type="number"
               min="1"
               step="1"
@@ -570,10 +574,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-5`} className="block text-xs font-semibold text-slate-500 mb-1">
               Stav položky
             </label>
-            <select
+            <select id={`${fieldId}-5`}
               value={status}
               onChange={(e) => setStatus(e.target.value as TransactionStatus)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -588,14 +592,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         {/* Účty */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-6`} className="block text-xs font-semibold text-slate-500 mb-1">
               {type === 'transfer' ? 'Zdrojový účet (odkud) *' : 'Účet *'}
             </label>
-            <select
+            <select id={`${fieldId}-6`}
               required
               value={sourceAccountId}
-              onChange={(e) => setSourceAccountId(e.target.value)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border ${sourceAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+              onChange={(e) => { setSourceAccountId(e.target.value); clearError('source'); }}
+              {...fieldErrorProps(`${fieldId}-6`, errors.source || sourceAccError)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.source || sourceAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
             >
               <option value="">-- Žádný --</option>
               {activeAccounts.map((acc) => {
@@ -607,21 +612,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 );
               })}
             </select>
-            {sourceAccError && (
-              <p className="text-xs text-red-600 font-medium mt-1">{sourceAccError}</p>
-            )}
+            <FieldError inputId={`${fieldId}-6`} message={errors.source || sourceAccError} />
           </div>
 
           {type === 'transfer' ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">
+              <label htmlFor={`${fieldId}-7`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Cílový účet (kam) *
               </label>
-              <select
+              <select id={`${fieldId}-7`}
                 required
                 value={targetAccountId}
-                onChange={(e) => setTargetAccountId(e.target.value)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border ${targetAccError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
+                onChange={(e) => { setTargetAccountId(e.target.value); clearError('target'); }}
+                {...fieldErrorProps(`${fieldId}-7`, errors.target || targetAccError)}
+                className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.target || targetAccError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500`}
               >
                 <option value="">-- Žádný --</option>
                 {activeAccounts
@@ -635,17 +639,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     );
                   })}
               </select>
-              {targetAccError && (
-                <p className="text-xs text-red-600 font-medium mt-1">{targetAccError}</p>
-              )}
+              <FieldError inputId={`${fieldId}-7`} message={errors.target || targetAccError} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                <label htmlFor={`${fieldId}-8`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Kategorie
                 </label>
-                <select
+                <select id={`${fieldId}-8`}
                   value={categoryId}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -660,10 +662,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                <label htmlFor={`${fieldId}-9`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Podkategorie
                 </label>
-                <select
+                <select id={`${fieldId}-9`}
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   disabled={!categoryId || subcategories.length === 0}
@@ -709,10 +711,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className={`grid ${frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    <label htmlFor={`${fieldId}-10`} className="block text-xs font-semibold text-slate-500 mb-1">
                       Frekvence opakování
                     </label>
-                    <select
+                    <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
                       className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -726,10 +728,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </div>
                   {frequency !== 'custom' && (
                     <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      <label htmlFor={`${fieldId}-11`} className="block text-xs font-semibold text-slate-500 mb-1">
                         Den opakování v měsíci
                       </label>
-                      <input
+                      <input id={`${fieldId}-11`}
                         type="number"
                         min="1"
                         max="31"
@@ -744,17 +746,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  <label htmlFor={`${fieldId}-12`} className="block text-xs font-semibold text-slate-500 mb-1">
                     Platí do (nepovinné)
                   </label>
-                  <input
+                  <input id={`${fieldId}-12`}
                     type="date"
                     value={recurringEndDate}
                     min={date}
-                    onChange={(e) => setRecurringEndDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
+                    {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
+                    className={`w-full px-3 py-2 text-sm bg-white border ${fieldBorderClass(errors.endDate)} rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500`}
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
+                  <p className="text-xs text-slate-500 mt-1">
                     Prázdné pole = opakování bez konce.
                   </p>
                 </div>
@@ -768,10 +772,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Poznámka */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-13`} className="block text-xs font-semibold text-slate-500 mb-1">
             Poznámka (volitelné)
           </label>
-          <input
+          <input id={`${fieldId}-13`}
             type="text"
             placeholder="např. Faktura č. 2026-04, účel platby..."
             value={note}
@@ -779,6 +783,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
+
+        <FormError message={saveError} />
 
         {/* Akční tlačítka */}
         <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">

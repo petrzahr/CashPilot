@@ -30,6 +30,7 @@ function form(render: () => React.ReactNode) {
   }) as typeof React.useState);
   const effect = vi.spyOn(ReactHooks, 'useEffect').mockImplementation(fn => { effects.push(fn); });
   const memo = vi.spyOn(ReactHooks, 'useMemo').mockImplementation(fn => fn());
+  const id = vi.spyOn(ReactHooks, 'useId').mockReturnValue(':form:');
   let tree: React.ReactNode;
   const refresh = () => { cursor = 0; tree = render(); };
   refresh();
@@ -45,7 +46,7 @@ function form(render: () => React.ReactNode) {
     nodes,
     change: (node: React.ReactElement<any>, value: string) => { node.props.onChange({ target: { value } }); refresh(); },
     submit: () => nodes().find(node => node.type === 'form')!.props.onSubmit({ preventDefault() {} }),
-    close: () => { state.mockRestore(); effect.mockRestore(); memo.mockRestore(); },
+    close: () => { state.mockRestore(); effect.mockRestore(); memo.mockRestore(); id.mockRestore(); },
   };
 }
 

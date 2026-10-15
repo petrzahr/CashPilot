@@ -69,13 +69,13 @@ const inputClass =
 const STICKY_LEFT = 'sticky left-0 z-10';
 const STICKY_RIGHT = 'sticky right-0 z-10';
 // Neprůhledné ekvivalenty bg-slate-50/75 a bg-slate-50/40 na bílé - ukotvené buňky nesmí prosvítat
-const HEADER_ROW_BG = 'bg-[#fafbfd]';
-const CATEGORY_ROW_BG = 'bg-[#fcfdfe]';
+const HEADER_ROW_BG = 'bg-table-header';
+const CATEGORY_ROW_BG = 'bg-table-category';
 // Lehce fialové podbarvení plateb, které se neopakují měsíčně (neprůhledné kvůli ukotveným buňkám)
-const NON_MONTHLY_ROW_BG = 'bg-[#f8f6ff]';
+const NON_MONTHLY_ROW_BG = 'bg-table-nonmonthly';
 
 const iconButtonClass =
-  'p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
+  'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
 
 interface Draft {
   title: string;
@@ -100,7 +100,7 @@ const FrequencySelect: React.FC<{ value: RecurrenceFrequency; onChange: (f: Recu
   value,
   onChange,
 }) => (
-  <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value as RecurrenceFrequency)}>
+  <select aria-label="Frekvence" className={inputClass} value={value} onChange={(e) => onChange(e.target.value as RecurrenceFrequency)}>
     {[...STANDARD_FREQUENCIES, ...(value === 'custom' ? (['custom'] as RecurrenceFrequency[]) : [])].map((f) => (
       <option key={f} value={f}>
         {FREQUENCY_LABELS[f]}
@@ -162,11 +162,11 @@ const SectionTable: React.FC<SectionTableProps> = ({
     return (
       <tr className="bg-emerald-50">
         <td className={`py-2 px-4 ${STICKY_LEFT} bg-emerald-50`}>
-          <input autoFocus className={inputClass} placeholder="Název" value={addDraft.title} onChange={(e) => set({ title: e.target.value })} />
+          <input autoFocus aria-label="Název" className={inputClass} placeholder="Název" value={addDraft.title} onChange={(e) => set({ title: e.target.value })} />
         </td>
         {!isTransfer && (
           <td className="py-2 px-4">
-            <select className={inputClass} value={addDraft.categoryId} onChange={(e) => set({ categoryId: e.target.value })}>
+            <select aria-label="Kategorie" className={inputClass} value={addDraft.categoryId} onChange={(e) => set({ categoryId: e.target.value })}>
               <option value="">Bez kategorie</option>
               {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -176,15 +176,15 @@ const SectionTable: React.FC<SectionTableProps> = ({
         )}
         <td className="py-2 px-4">
           <div className="flex items-center gap-1">
-            <select className={inputClass} value={addDraft.sourceAccountId} onChange={(e) => set({ sourceAccountId: e.target.value })}>
+            <select aria-label="Zdrojový účet" className={inputClass} value={addDraft.sourceAccountId} onChange={(e) => set({ sourceAccountId: e.target.value })}>
               {accountOptions.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
             {isTransfer && (
               <>
-                <span className="text-slate-400">→</span>
-                <select className={inputClass} value={addDraft.targetAccountId} onChange={(e) => set({ targetAccountId: e.target.value })}>
+                <span className="text-slate-500">→</span>
+                <select aria-label="Cílový účet" className={inputClass} value={addDraft.targetAccountId} onChange={(e) => set({ targetAccountId: e.target.value })}>
                   {accountOptions.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
@@ -196,9 +196,9 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className="py-2 px-4">
           <FrequencySelect value={addDraft.frequency} onChange={(frequency) => set({ frequency })} />
         </td>
-        <td className="py-2 px-4 text-slate-400">—</td>
+        <td className="py-2 px-4 text-slate-500">—</td>
         <td className="py-2 px-4">
-          <input className={`${inputClass} text-right w-24`} inputMode="decimal" placeholder="Kč" value={addDraft.amount} onChange={(e) => set({ amount: e.target.value })} />
+          <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24`} inputMode="decimal" placeholder="Kč" value={addDraft.amount} onChange={(e) => set({ amount: e.target.value })} />
         </td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
@@ -206,6 +206,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           <button
             type="button"
             title="Přidat do simulace"
+            aria-label="Přidat do simulace"
             className={iconButtonClass}
             disabled={!isDraftValid(addDraft, true)}
             onClick={() => {
@@ -215,7 +216,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           >
             <Check className="w-3.5 h-3.5" />
           </button>
-          <button type="button" title="Zrušit" className={iconButtonClass} onClick={() => setAddDraft(null)}>
+          <button type="button" title="Zrušit" aria-label="Zrušit přidání" className={iconButtonClass} onClick={() => setAddDraft(null)}>
             <X className="w-3.5 h-3.5" />
           </button>
         </td>
@@ -232,8 +233,8 @@ const SectionTable: React.FC<SectionTableProps> = ({
         : item.simState === 'added' ? 'bg-emerald-50'
         : !isDeleted && item.frequency !== 'monthly' ? NON_MONTHLY_ROW_BG
         : 'bg-white';
-    const rowClass = `${rowBg} ${isDeleted ? 'text-slate-400' : ''}`;
-    const strike = isDeleted ? 'line-through text-slate-400' : '';
+    const rowClass = `${rowBg} ${isDeleted ? 'text-slate-500' : ''}`;
+    const strike = isDeleted ? 'line-through text-slate-500' : '';
 
     if (isEditing) {
       const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
@@ -241,16 +242,16 @@ const SectionTable: React.FC<SectionTableProps> = ({
       return (
         <tr key={item.ruleId} className="bg-sky-50">
           <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} ${STICKY_LEFT} bg-sky-50`}>
-            <input autoFocus className={inputClass} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
+            <input autoFocus aria-label="Název" className={inputClass} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
           </td>
           {!isTransfer && <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.categoryLabel}</td>}
           <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.accountLabel}</td>
           <td className="py-2 px-4">
             <FrequencySelect value={draft.frequency} onChange={(frequency) => set({ frequency })} />
           </td>
-          <td className="py-2 px-4 text-slate-400">—</td>
+          <td className="py-2 px-4 text-slate-500">—</td>
           <td className="py-2 px-4">
-            <input className={`${inputClass} text-right w-24`} inputMode="decimal" value={draft.amount} onChange={(e) => set({ amount: e.target.value })} />
+            <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24`} inputMode="decimal" value={draft.amount} onChange={(e) => set({ amount: e.target.value })} />
           </td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
@@ -258,6 +259,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             <button
               type="button"
               title="Uložit do simulace"
+              aria-label={`Uložit do simulace: ${item.title}`}
               className={iconButtonClass}
               disabled={!isDraftValid(draft, false)}
               onClick={() => {
@@ -267,7 +269,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             >
               <Check className="w-3.5 h-3.5" />
             </button>
-            <button type="button" title="Zrušit" className={iconButtonClass} onClick={cancelEdit}>
+            <button type="button" title="Zrušit" aria-label={`Zrušit úpravy: ${item.title}`} className={iconButtonClass} onClick={cancelEdit}>
               <X className="w-3.5 h-3.5" />
             </button>
           </td>
@@ -279,7 +281,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
       <tr key={item.ruleId} className={rowClass}>
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
-          {item.simState === 'added' && <span className="ml-1.5 text-[10px] font-semibold text-emerald-700">nová</span>}
+          {item.simState === 'added' && <span className="ml-1.5 text-xs font-semibold text-emerald-700">nová</span>}
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
         <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.accountLabel}</td>
@@ -290,7 +292,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 px-4 text-right tabular-nums whitespace-nowrap ${strike || 'text-slate-600'}`}>
           {formatRounded(item.amountInHaler)}
           {item.original && item.original.amountInHaler !== item.amountInHaler && (
-            <span className="block text-[10px] text-slate-400 line-through">{formatRounded(item.original.amountInHaler)}</span>
+            <span className="block text-xs text-slate-500 line-through">{formatRounded(item.original.amountInHaler)}</span>
           )}
         </td>
         <td className={`py-2 px-4 text-right tabular-nums font-semibold whitespace-nowrap ${strike || 'text-slate-900'}`}>
@@ -301,20 +303,20 @@ const SectionTable: React.FC<SectionTableProps> = ({
         </td>
         <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} ${rowBg}`}>
           {isDeleted ? (
-            <button type="button" title="Vrátit zpět" className={iconButtonClass} onClick={() => onRestore(item)}>
+            <button type="button" title="Vrátit zpět" aria-label={`Vrátit zpět: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           ) : (
             <>
               {item.simState === 'edited' && (
-                <button type="button" title="Vrátit původní hodnoty" className={iconButtonClass} onClick={() => onRestore(item)}>
+                <button type="button" title="Vrátit původní hodnoty" aria-label={`Vrátit původní hodnoty: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
               )}
-              <button type="button" title="Upravit v simulaci" className={iconButtonClass} onClick={() => startEdit(item)}>
+              <button type="button" title="Upravit v simulaci" aria-label={`Upravit v simulaci: ${item.title}`} className={iconButtonClass} onClick={() => startEdit(item)}>
                 <Pencil className="w-3.5 h-3.5" />
               </button>
-              <button type="button" title="Smazat ze simulace" className={iconButtonClass} onClick={() => onDelete(item)}>
+              <button type="button" title="Smazat ze simulace" aria-label={`Smazat ze simulace: ${item.title}`} className={iconButtonClass} onClick={() => onDelete(item)}>
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </>
@@ -335,7 +337,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             setAddDraft(emptyDraft());
           }}
           disabled={!!addDraft || accountOptions.length === 0}
-          className="-my-1 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="max-md:min-h-11 -my-1 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Přidat
@@ -430,7 +432,7 @@ const CHANGE_KIND_COLORS: Record<MandatoryUpcomingChange['kind'], string> = {
 const BeforeAfter: React.FC<{ before?: string; after: string }> = ({ before, after }) => (
   <>
     {before !== undefined && before !== after && (
-      <span className="text-slate-400 font-normal line-through mr-1.5">{before}</span>
+      <span className="text-slate-500 font-normal line-through mr-1.5">{before}</span>
     )}
     {after}
   </>
@@ -467,7 +469,7 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
               </td>
               <td className="py-2 px-4 font-medium text-slate-900">
                 {change.previous && change.previous.title !== change.title && (
-                  <span className="text-slate-400 line-through mr-1.5">{change.previous.title}</span>
+                  <span className="text-slate-500 line-through mr-1.5">{change.previous.title}</span>
                 )}
                 {change.title}
               </td>
@@ -597,7 +599,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fadeIn">
+    <div className="space-y-6 pb-12">
       <div
         className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
           isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
@@ -622,7 +624,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
           type="button"
           onClick={() => setSimulation(EMPTY_SIMULATION)}
           disabled={!isSimulating}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Obnovit výchozí stav
@@ -642,7 +644,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
               {formatRounded(card.value)}
             </span>
             {isSimulating && card.value !== card.base && (
-              <span className="text-[10px] text-slate-500 block mt-0.5 tabular-nums">
+              <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
                 výchozí {formatRounded(card.base)}
               </span>
             )}

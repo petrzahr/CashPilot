@@ -163,7 +163,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-slate-900">Poplatek obchodníka</span>
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">Poplatek</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500">Poplatek</span>
                           </div>
                           <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>{item.periodName}</span>
@@ -217,7 +217,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <span className="font-bold text-purple-900 text-base">
                           {formatCurrency(snap.marketValueInHaler)}
                         </span>
-                        <div className="text-[11px] text-purple-600 font-medium">Tržní hodnota</div>
+                        <div className="text-xs text-purple-600 font-medium">Tržní hodnota</div>
                         <div className="flex justify-end gap-1 mt-1">
                           <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní ocenění" aria-label="Upravit tržní ocenění"
                             className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
@@ -228,7 +228,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           <div>Vloženo: {formatCurrency(snapInvested)}</div>
                           {snapFees !== 0 && <>
                             <div>Poplatky: {formatCurrency(-snapFees)}</div>
@@ -308,7 +308,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           <span className="font-semibold text-slate-900 truncate">
                             {tx.title}
                           </span>
-                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             isCorrection
                               ? 'bg-amber-100 text-amber-800'
                               : 'bg-slate-100 text-slate-500'
@@ -316,7 +316,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             {typeBadge}
                           </span>
                           {tx.sequence !== undefined && (
-                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 shrink-0">
+                            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 shrink-0">
                               #{tx.sequence}
                             </span>
                           )}

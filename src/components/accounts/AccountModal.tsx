@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Account, AccountType } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { COLOR_PALETTE } from '../../constants/colors';
+import { FieldError, FormError, fieldBorderClass, fieldErrorProps } from '../common/FieldError';
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onClose,
   accountToEdit,
 }) => {
+  const fieldId = useId();
   const { addAccount, updateAccount, accounts } = useFinance();
 
   const [name, setName] = useState('');
@@ -29,11 +31,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [institution, setInstitution] = useState('');
   const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const isEditing = !!accountToEdit;
 
   useEffect(() => {
     setErrorMessage(null);
+    setNameError(null);
     if (accountToEdit) {
       setName(accountToEdit.name);
       setType(accountToEdit.type);
@@ -74,7 +78,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert('Zadejte prosím název účtu.');
+      setNameError('Zadejte prosím název účtu.');
+      document.getElementById(`${fieldId}-1`)?.focus();
       return;
     }
 
@@ -126,32 +131,30 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       subtitle={undefined}
       maxWidth="max-w-lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {errorMessage && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium leading-relaxed">
-            {errorMessage}
-          </div>
-        )}
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <FormError message={errorMessage} />
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název účtu *
           </label>
-          <input
+          <input id={`${fieldId}-1`}
             type="text"
             required
             placeholder="např. Hlavní běžný účet, Spoření na rezervu"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+            onChange={(e) => { setName(e.target.value); setNameError(null); }}
+            {...fieldErrorProps(`${fieldId}-1`, nameError)}
+            className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(nameError)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
           />
+          <FieldError inputId={`${fieldId}-1`} message={nameError} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Typ účtu *
             </label>
-            <select
+            <select id={`${fieldId}-2`}
               value={type}
               onChange={(e) => handleTypeChange(e.target.value as AccountType)}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -166,10 +169,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-3`} className="block text-xs font-semibold text-slate-500 mb-1">
               Finanční instituce (banka / broker)
             </label>
-            <input
+            <input id={`${fieldId}-3`}
               type="text"
               placeholder="např. Česká spořitelna, Air Bank"
               value={institution}
@@ -181,11 +184,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-4`} className="block text-xs font-semibold text-slate-500 mb-1">
               Počáteční zůstatek (Kč) *
             </label>
             <div className="relative">
-              <input
+              <input id={`${fieldId}-4`}
                 type="number"
                 step="any"
                 required
@@ -199,10 +202,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-5`} className="block text-xs font-semibold text-slate-500 mb-1">
               Datum počátečního stavu *
             </label>
-            <input
+            <input id={`${fieldId}-5`}
               type="date"
               required
               value={initialBalanceDate}
@@ -251,16 +254,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
 
         {/* Barva účtu */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+          <span id={`${fieldId}-color`} className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva účtu
-          </label>
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLOR_PALETTE.map((c) => (
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-color`} className="flex items-center gap-2 flex-wrap">
+            {COLOR_PALETTE.map((c, i) => (
               <button
                 key={c}
                 type="button"
+                aria-label={`Barva ${i + 1}`}
+                aria-pressed={color === c}
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-transform ${
+                className={`w-7 h-7 rounded-full transition-transform motion-reduce:transition-none ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c }}

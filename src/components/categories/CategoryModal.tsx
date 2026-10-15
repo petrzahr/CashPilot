@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal } from '../common/Modal';
 import { Category, CategoryType } from '../../types/finance';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { COLOR_PALETTE } from '../../constants/colors';
+import { FieldError, FieldErrors, fieldBorderClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   defaultParentId = null,
   mode,
 }) => {
+  const fieldId = useId();
   const { categories, addCategory, addMainCategory, updateCategory, moveSubcategory } = useFinance();
 
   const currentMode = mode || (categoryToEdit ? 'edit' : (defaultParentId ? 'sub' : 'main'));
@@ -34,6 +36,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   const [parentId, setParentId] = useState<string | null>(isMainCategoryMode ? null : defaultParentId);
   const [color, setColor] = useState(COLOR_PALETTE[0]);
   const [updateHistorical, setUpdateHistorical] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<'name' | 'parent'>>({});
 
   // Hlavní kategorie stejného typu pro výběr nadřazené kategorie (seřazeno A–Z)
   const mainCategories = sortCategoriesAlphabetically(
@@ -41,6 +44,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   );
 
   useEffect(() => {
+    setErrors({});
     if (categoryToEdit) {
       setName(categoryToEdit.name);
       setType(categoryToEdit.type);
@@ -58,8 +62,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('Zadejte prosím název kategorie.');
+    const nextErrors: FieldErrors<'name' | 'parent'> = {};
+    if (!name.trim()) nextErrors.name = 'Zadejte prosím název kategorie.';
+    if (!isEditMode && !isMainCategoryMode && !parentId) nextErrors.parent = 'Vyberte prosím nadřazenou hlavní kategorii.';
+    setErrors(nextErrors);
+    if (nextErrors.name || nextErrors.parent) {
+      focusFirstInvalid(nextErrors, [['name', `${fieldId}-1`], ['parent', `${fieldId}-2`]]);
       return;
     }
 
@@ -89,11 +97,8 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         status: 'active',
       });
     } else {
-      // Vytvoření Nové podkategorie
-      if (!parentId) {
-        alert('Vyberte prosím nadřazenou hlavní kategorii.');
-        return;
-      }
+      // Vytvoření Nové podkategorie (nadřazená kategorie je ověřená výše)
+      if (!parentId) return;
       const parentCat = categories.find(c => c.id === parentId);
       const subType = parentCat ? parentCat.type : type;
 
@@ -130,30 +135,33 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
       subtitle={modalSubtitle}
       maxWidth="max-w-md"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1">
+          <label htmlFor={`${fieldId}-1`} className="block text-xs font-semibold text-slate-500 mb-1">
             Název kategorie *
           </label>
-          <input
+          <input id={`${fieldId}-1`}
             type="text"
             required
             placeholder="např. Bydlení, Restaurace, Mzda"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+            onChange={(e) => { setName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })); }}
+            {...fieldErrorProps(`${fieldId}-1`, errors.name)}
+            className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.name)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
           />
+          <FieldError inputId={`${fieldId}-1`} message={errors.name} />
         </div>
 
         {/* Typ kategorie (pouze pro hlavní kategorie) */}
         {(isMainCategoryMode || (isEditMode && !categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <span id={`${fieldId}-type`} className="block text-xs font-semibold text-slate-500 mb-1">
               Typ kategorie
-            </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            </span>
+            <div role="group" aria-labelledby={`${fieldId}-type`} className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
+                aria-pressed={type === 'expense'}
                 onClick={() => setType('expense')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
@@ -163,6 +171,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               </button>
               <button
                 type="button"
+                aria-pressed={type === 'income'}
                 onClick={() => setType('income')}
                 className={`py-1.5 text-xs font-medium rounded-lg transition-all ${
                   type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
@@ -177,21 +186,23 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         {/* Výběr nadřazené kategorie - pouze pro vytváření podkategorie nebo editaci existující podkategorie */}
         {(isSubcategoryMode || (isEditMode && categoryToEdit?.parentId)) && (
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">
               Nadřazená hlavní kategorie *
             </label>
-            <select
+            <select id={`${fieldId}-2`}
               required
               value={parentId || ''}
               onChange={(e) => {
                 const newParentId = e.target.value || null;
                 setParentId(newParentId);
+                setErrors(prev => ({ ...prev, parent: undefined }));
                 const parentCat = categories.find(c => c.id === newParentId);
                 if (parentCat) {
                   setType(parentCat.type);
                 }
               }}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...fieldErrorProps(`${fieldId}-2`, errors.parent)}
+              className={`w-full px-3.5 py-2 text-sm bg-white border ${fieldBorderClass(errors.parent)} rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500`}
             >
               {isSubcategoryMode && !parentId && (
                 <option value="">-- Vyberte hlavní kategorii --</option>
@@ -202,6 +213,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 </option>
               ))}
             </select>
+            <FieldError inputId={`${fieldId}-2`} message={errors.parent} />
           </div>
         )}
 
@@ -223,16 +235,18 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Barva */}
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+          <span id={`${fieldId}-color`} className="block text-xs font-semibold text-slate-500 mb-1.5">
             Barva kategorie
-          </label>
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLOR_PALETTE.map((c) => (
+          </span>
+          <div role="group" aria-labelledby={`${fieldId}-color`} className="flex items-center gap-2 flex-wrap">
+            {COLOR_PALETTE.map((c, i) => (
               <button
                 key={c}
                 type="button"
+                aria-label={`Barva ${i + 1}`}
+                aria-pressed={color === c}
                 onClick={() => setColor(c)}
-                className={`w-7 h-7 rounded-full transition-transform ${
+                className={`w-7 h-7 rounded-full transition-transform motion-reduce:transition-none ${
                   color === c ? 'scale-125 ring-2 ring-offset-2 ring-slate-400' : 'hover:scale-110'
                 }`}
                 style={{ backgroundColor: c }}

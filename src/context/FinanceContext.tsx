@@ -385,6 +385,25 @@ interface FinanceContextType {
 
 export type AppLoadState = 'loading' | 'ready' | 'loadError';
 
+/**
+ * Synchronizace data po nahrání znovu parsuje, takže obsahově stejné části mají nové reference
+ * a zbytečně by přepočítaly předpověď. Nezměněné části proto převezme z předchozích dat.
+ */
+export function reuseUnchangedSlices(prev: AppData, next: AppData): AppData {
+  if (prev === next) return prev;
+  const shared = { ...next } as Record<string, unknown>;
+  const prevSlices = prev as unknown as Record<string, unknown>;
+  let identical = Object.keys(prevSlices).length === Object.keys(shared).length;
+  for (const key of Object.keys(shared)) {
+    const before = prevSlices[key];
+    const after = shared[key];
+    const comparable = before !== after && before !== null && after !== null && typeof before === 'object' && typeof after === 'object'
+      && (!Array.isArray(before) || (Array.isArray(after) && before.length === after.length));
+    if (comparable && JSON.stringify(before) === JSON.stringify(after)) shared[key] = before;
+    if (shared[key] !== before) identical = false;  }
+  return identical ? prev : (shared as unknown as AppData);
+}
+
 const FinanceContext = createContext<FinanceContextType | null>(null);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?: SyncController }> = ({ children, syncSession }) => {
@@ -514,7 +533,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return selectedPeriod.startDate === currentPeriod.startDate && selectedPeriod.endDate === currentPeriod.endDate;
   }, [selectedPeriod.startDate, selectedPeriod.endDate, currentPeriod.startDate, currentPeriod.endDate]);
 
-  const allPeriodsSequence = useMemo(() => {
+  // Rozsah období podle dat - nezávisí na vybraném období, aby přepnutí měsíce nepřepočítávalo celou předpověď
+  const dataPeriodBounds = useMemo(() => {
     const startDay = data.settings.budgetStartDay || 15;
     const forecastMonths = 12;
 
@@ -530,76 +550,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     let earliestPeriod = getOverviewPeriods(currentPeriod, { direction: 'past', months: 12 }, startDay)[0];
     let latestPeriod = lastForecastPeriod;
 
-    if (selectedPeriod.startDate < earliestPeriod.startDate) {
-      earliestPeriod = selectedPeriod;
-    }
-    if (selectedPeriod.startDate > latestPeriod.startDate) {
-      latestPeriod = selectedPeriod;
-    }
-
     for (const period of overviewPeriodBounds || []) {
       if (period.key < earliestPeriod.key) earliestPeriod = period;
       if (period.key > latestPeriod.key) latestPeriod = period;
     }
 
-    for (const tx of data.transactions) {
-      if (tx.date) {
-        const p = getPeriodForDate(tx.date, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
+    // Období na sebe navazují, takže pozdější datum nikdy nepatří do dřívějšího období. Stačí proto
+    // najít nejmenší a největší datum a období spočítat jen pro ně (ne pro každou položku zvlášť).
+    const dates: { min: string | null; max: string | null } = { min: null, max: null };
+    const consider = (date: string | undefined, extendsEnd: boolean) => {
+      if (!date) return;
+      if (dates.min === null || date < dates.min) dates.min = date;
+      if (extendsEnd && (dates.max === null || date > dates.max)) dates.max = date;
+    };
+    for (const tx of data.transactions) consider(tx.date, true);
+    for (const c of data.corrections) consider(c.checkDate, true);
+    for (const s of data.marketValueSnapshots) consider(s.date, true);
+    for (const r of data.recurringRules) consider(r.startDate, false);
+    for (const a of data.accounts) consider(a.initialBalanceDate, false);
+
+    if (dates.min !== null) {
+      const p = getPeriodForDate(dates.min, startDay);
+      if (p.startDate < earliestPeriod.startDate) earliestPeriod = p;
+    }
+    if (dates.max !== null) {
+      const p = getPeriodForDate(dates.max, startDay);
+      if (p.startDate > latestPeriod.startDate) latestPeriod = p;
     }
 
-    for (const c of data.corrections) {
-      if (c.checkDate) {
-        const p = getPeriodForDate(c.checkDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
-    }
-
-    for (const s of data.marketValueSnapshots) {
-      if (s.date) {
-        const p = getPeriodForDate(s.date, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-        if (p.startDate > latestPeriod.startDate) {
-          latestPeriod = p;
-        }
-      }
-    }
-
-    for (const r of data.recurringRules) {
-      if (r.startDate) {
-        const p = getPeriodForDate(r.startDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-      }
-    }
-
-    for (const a of data.accounts) {
-      if (a.initialBalanceDate) {
-        const p = getPeriodForDate(a.initialBalanceDate, startDay);
-        if (p.startDate < earliestPeriod.startDate) {
-          earliestPeriod = p;
-        }
-      }
-    }
-
-    return generatePeriodsBetween(earliestPeriod, latestPeriod, startDay);
+    return { earliestPeriod, latestPeriod };
   }, [
     currentPeriod,
-    selectedPeriod,
     overviewPeriodBounds,
     data.transactions,
     data.corrections,
@@ -608,6 +589,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     data.accounts,
     data.settings.budgetStartDay
   ]);
+
+  // Vybrané období rozšiřuje rozsah jen tehdy, když leží mimo něj; sekvence se mění jen se změnou hranic
+  const rangeStart = selectedPeriod.startDate < dataPeriodBounds.earliestPeriod.startDate ? selectedPeriod : dataPeriodBounds.earliestPeriod;
+  const rangeEnd = selectedPeriod.startDate > dataPeriodBounds.latestPeriod.startDate ? selectedPeriod : dataPeriodBounds.latestPeriod;
+  const allPeriodsSequence = useMemo(
+    () => generatePeriodsBetween(rangeStart, rangeEnd, data.settings.budgetStartDay || 15),
+    // Období je plně určeno svými hranicemi, proto stačí závislost na datech hranic
+    [rangeStart.startDate, rangeStart.endDate, rangeEnd.startDate, rangeEnd.endDate, data.settings.budgetStartDay]
+  );
 
   const forecast = useMemo(() => {
     return calculateForecast(
@@ -2212,8 +2202,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       setLastDriveBackupTime(getLastDriveBackupAt(user.permissionId));
       const controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
         if (generation !== authGeneration.current) return;
-        latestDataRef.current = next;
-        publishData(next);
+        const shared = reuseUnchangedSlices(latestDataRef.current, next);
+        latestDataRef.current = shared;
+        publishData(shared);
         setDriveSyncStatus(status);
         setIsCloudReady(ready);
         setDriveError(error || null);

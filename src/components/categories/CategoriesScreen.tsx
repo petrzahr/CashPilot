@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Category, CategoryType } from '../../types/finance';
 import { CategoryModal } from './CategoryModal';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import { 
   Plus, 
@@ -14,7 +15,8 @@ import {
 } from 'lucide-react';
 
 export const CategoriesScreen: React.FC = () => {
-  const { categories, archiveCategory, restoreCategory, deleteCategory } = useFinance();
+  const { categories, archiveCategory, restoreCategory, deleteCategory, showToast } = useFinance();
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showArchived, setShowArchived] = useState(false);
@@ -60,11 +62,14 @@ export const CategoriesScreen: React.FC = () => {
   };
 
   const handleDelete = (cat: Category) => {
-    if (confirm(`Opravdu chcete smazat kategorii „${cat.name}“?`)) {
-      const res = deleteCategory(cat.id);
-      if (!res.success && res.message) {
-        alert(res.message);
-      }
+    setDeletingCategory(cat);
+  };
+
+  const confirmDelete = () => {
+    if (!deletingCategory) return;
+    const res = deleteCategory(deletingCategory.id);
+    if (!res.success && res.message) {
+      showToast(res.message, 'error');
     }
   };
 
@@ -73,9 +78,10 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div className="h-8 w-full sm:w-56 flex gap-2 p-1 bg-slate-200/60 rounded-xl shrink-0">
+        <div role="group" aria-label="Typ kategorií" className="h-8 max-md:h-[52px] w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('expense')}
+            aria-pressed={activeTab === 'expense'}
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'expense'
                 ? 'bg-white text-red-600 shadow-sm'
@@ -87,6 +93,7 @@ export const CategoriesScreen: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('income')}
+            aria-pressed={activeTab === 'income'}
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm'
@@ -111,7 +118,7 @@ export const CategoriesScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAddMain}
-            className="h-8 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Nová hlavní kategorie</span>
@@ -146,7 +153,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.2 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaná
                         </span>
                       )}
@@ -158,14 +165,16 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleOpenAddSub(mainCat.id)}
                     title="Přidat podkategorii"
-                    className="p-1 rounded-lg text-sky-600 hover:bg-sky-50 transition-colors"
+                    aria-label={`Přidat podkategorii: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-sky-600 hover:bg-sky-50 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleOpenEdit(mainCat)}
                     title="Upravit kategorii"
-                    className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    aria-label={`Upravit kategorii: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -173,7 +182,8 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => archiveCategory(mainCat.id)}
                       title="Archivovat"
-                      className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      aria-label={`Archivovat: ${mainCat.name}`}
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -181,7 +191,8 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => restoreCategory(mainCat.id)}
                       title="Obnovit"
-                      className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                      aria-label={`Obnovit: ${mainCat.name}`}
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -189,7 +200,8 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleDelete(mainCat)}
                     title="Smazat"
-                    className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    aria-label={`Smazat: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -210,7 +222,7 @@ export const CategoriesScreen: React.FC = () => {
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color || mainCat.color }} />
                         <span className="font-medium">{sub.name}</span>
                         {sub.status === 'archived' && (
-                          <span className="text-[10px] text-slate-500">(archiv)</span>
+                          <span className="text-xs text-slate-500">(archiv)</span>
                         )}
                       </div>
 
@@ -218,7 +230,8 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
-                          className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                          aria-label={`Upravit nebo přesunout: ${sub.name}`}
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -226,7 +239,8 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => archiveCategory(sub.id)}
                             title="Archivovat"
-                            className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            aria-label={`Archivovat: ${sub.name}`}
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
@@ -234,7 +248,8 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => restoreCategory(sub.id)}
                             title="Obnovit"
-                            className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            aria-label={`Obnovit: ${sub.name}`}
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
@@ -242,7 +257,8 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
-                          className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label={`Smazat: ${sub.name}`}
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -263,6 +279,16 @@ export const CategoriesScreen: React.FC = () => {
         defaultType={activeTab}
         defaultParentId={defaultParentId}
         mode={modalMode}
+      />
+
+      <ConfirmationModal
+        isOpen={!!deletingCategory}
+        onClose={() => setDeletingCategory(null)}
+        onConfirm={confirmDelete}
+        title="Smazat kategorii"
+        message={`Opravdu chcete smazat kategorii „${deletingCategory?.name ?? ''}“?`}
+        confirmText="Smazat kategorii"
+        isDestructive
       />
     </div>
   );

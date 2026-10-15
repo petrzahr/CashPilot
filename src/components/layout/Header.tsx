@@ -47,17 +47,20 @@ export const Header: React.FC<HeaderProps> = ({
   }, [menuOpen]);
 
   return (
-    <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 sm:px-6 flex items-center justify-between gap-2 select-none">
+    <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 max-[359px]:px-2 sm:px-6 flex items-center justify-between gap-2 max-[359px]:gap-1 select-none">
       {/* Levá strana: mobilní menu + název sekce */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
+          type="button"
           onClick={onToggleMobileMenu}
-          className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 md:hidden shrink-0"
+          aria-label="Otevřít menu"
+          className="p-3 -m-1 rounded-xl text-slate-500 hover:bg-slate-100 md:hidden shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0">
+        {/* Na úzkém mobilu se název nevejde vedle navigace obdobím; aktivní sekci ukazuje menu */}
+        <div className="min-w-0 hidden sm:block">
           <h1 className="text-base font-bold text-slate-900 leading-tight truncate">
             {activeScreenTitle}
           </h1>
@@ -65,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Střed / Pravá strana: Google Disk + Tlačítko Aktuální období a navigace rozpočtovým obdobím */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2 max-[359px]:gap-1 sm:gap-3 shrink-0">
         {/* Google Drive tlačítko / stavový indikátor */}
         {!isDriveConnected ? (
           <button
@@ -73,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={connectGoogleDrive}
             disabled={driveSyncStatus === 'syncing'}
             title="Připojit Google Disk pro automatické zálohování a synchronizaci"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+            className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
           >
             <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">
@@ -89,12 +92,14 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setMenuOpen(prev => !prev)}
               title="Google Disk připojen – klikněte pro podrobnosti a synchronizaci"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
+              aria-expanded={menuOpen}
+              className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="relative flex h-2 w-2">
                 {driveSyncStatus === 'syncing' && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                 )}
                 <span
                   className={`relative inline-flex rounded-full h-2 w-2 ${
@@ -106,13 +111,13 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 ></span>
               </span>
-              <span className="hidden sm:inline">
+              <span className="hidden lg:inline">
                 {SYNC_LABELS[driveSyncStatus]}
               </span>
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-3.5 z-50 space-y-3 text-xs animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-3.5 z-50 space-y-3 text-xs">
                 {/* Uživatelský profil / Stav */}
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                   {driveUser?.photoLink ? (
@@ -130,14 +135,14 @@ export const Header: React.FC<HeaderProps> = ({
                     <p className="font-bold text-slate-900 truncate">
                       {driveUser?.displayName || 'Google Disk'}
                     </p>
-                    <p className="text-[11px] text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 truncate">
                       {driveUser?.emailAddress || 'Prostor appDataFolder'}
                     </p>
                   </div>
                 </div>
 
                 {/* Informace o synchronizaci */}
-                <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-[11px]">
+                <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-xs">
                   <div className="flex items-center justify-between text-slate-500">
                     <span>Stav:</span>
                     <span className="font-semibold flex items-center gap-1">
@@ -170,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
 
                   {driveError && (
-                    <p className="text-[10px] text-red-600 pt-1 border-t border-slate-200 mt-1">
+                    <p className="text-xs text-red-600 pt-1 border-t border-slate-200 mt-1">
                       {driveError}
                     </p>
                   )}
@@ -214,30 +219,31 @@ export const Header: React.FC<HeaderProps> = ({
           disabled={isCurrentPeriodSelected}
           title={isCurrentPeriodSelected ? 'Aktuální rozpočtové období je již vybrané.' : 'Přejít na aktuální rozpočtové období'}
           aria-label={isCurrentPeriodSelected ? 'Aktuální rozpočtové období je již vybrané.' : 'Přejít na aktuální rozpočtové období'}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 max-md:min-w-11 max-md:min-h-11 md:px-2.5 md:py-1.5 lg:px-3 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
             isCurrentPeriodSelected
               ? 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-60'
               : 'bg-white text-slate-500 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-sm hover:border-sky-300 active:scale-[0.98] cursor-pointer'
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-          <span className="whitespace-nowrap">Aktuální období</span>
+          <span className="hidden lg:inline whitespace-nowrap">Aktuální období</span>
         </button>
 
-        <div className="flex items-center bg-slate-100/80 rounded-xl p-1 text-xs shrink-0">
+        <div className="flex items-center bg-slate-100/80 rounded-xl p-1 max-[359px]:p-0 text-xs shrink-0">
           <button
             onClick={goToPreviousPeriod}
             title="Předchozí období"
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
+            aria-label="Předchozí období"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="px-2.5 text-center min-w-[70px] md:min-w-[140px]">
+          <div className="px-2.5 max-[359px]:px-1 text-center min-w-[70px] md:min-w-[140px]">
             <span className="font-bold text-slate-900 block leading-tight whitespace-nowrap">
               {selectedPeriod.name}
             </span>
-            <span className="text-[10px] text-slate-500 hidden md:block whitespace-nowrap">
+            <span className="text-xs text-slate-500 hidden md:block whitespace-nowrap">
               {formatPeriodRange(selectedPeriod)}
             </span>
           </div>
@@ -245,7 +251,8 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={goToNextPeriod}
             title="Následující období"
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
+            aria-label="Následující období"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

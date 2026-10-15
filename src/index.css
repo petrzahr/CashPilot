@@ -1,10 +1,13 @@
-﻿@tailwind base;
+@import './theme.css';
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  html {
-    color-scheme: light;
+  /* Výchozí barva odsazení ringu je v Tailwindu napevno bílá; v tmavém vzhledu musí sledovat povrch */
+  *, ::before, ::after {
+    --tw-ring-offset-color: rgb(var(--c-white));
   }
 }
 
@@ -15,14 +18,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: rgb(var(--c-slate-100));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgb(var(--c-slate-300));
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: rgb(var(--c-slate-400));
 }

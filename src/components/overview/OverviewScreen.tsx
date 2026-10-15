@@ -79,7 +79,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   type="button"
                   aria-pressed={active}
                   onClick={() => { setRange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
+                  className={`max-md:min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'}`}
                 >
@@ -124,7 +124,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('usable')}
-              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+              aria-pressed={forecastScope === 'usable'}
+              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'usable'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
@@ -135,7 +136,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('all')}
-              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+              aria-pressed={forecastScope === 'all'}
+              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
@@ -219,7 +221,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('period')}
-                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+                aria-pressed={accountViewMode === 'period'}
+                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -228,7 +231,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
-                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+                aria-pressed={accountViewMode === 'matrix'}
+                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -299,7 +303,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                   <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                                     <span>{acc.name}</span>
-                                    {acc.institution && <span className="text-slate-500 text-[10px]">({acc.institution})</span>}
+                                    {acc.institution && <span className="text-slate-500 text-xs">({acc.institution})</span>}
                                   </div>
                                 </td>
                                 <td className="py-2.5 px-4 w-[140px] text-right text-slate-500 font-medium">
@@ -345,7 +349,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <table className="w-full text-xs text-left whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                  <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-20">Účet</th>
+                  <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-20">Účet</th>
                   {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
@@ -363,13 +367,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <tbody className="divide-y divide-slate-100">
                 {activeAccounts.map((acc) => (
                   <tr key={acc.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-2.5 px-4 font-semibold text-slate-900 sticky left-0 bg-white shadow-[1px_0_0_0_#e2e8f0] z-10">
+                    <td className="py-2.5 px-4 font-semibold text-slate-900 sticky left-0 bg-white shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                         <div className="min-w-0">
                           <span className="truncate max-w-[140px] block text-xs font-semibold text-slate-900">{acc.name}</span>
                           {acc.institution && (
-                            <span className="text-[10px] text-slate-500 truncate block font-normal leading-tight">{acc.institution}</span>
+                            <span className="text-xs text-slate-500 truncate block font-normal leading-tight">{acc.institution}</span>
                           )}
                         </div>
                       </div>
@@ -394,12 +398,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <div className="flex items-center justify-end gap-1.5 leading-tight">
                               <span
                                 title="P – počáteční stav"
-                                className="text-[10px] font-medium text-slate-500 select-none uppercase tracking-wider cursor-help"
+                                className="text-xs font-medium text-slate-500 select-none uppercase tracking-wider cursor-help"
                               >
                                 P
                               </span>
                               <span
-                                className={`text-[11px] font-normal whitespace-nowrap ${
+                                className={`text-xs font-normal whitespace-nowrap ${
                                   isOpeningNegative ? 'text-red-500 font-medium' : 'text-slate-500'
                                 }`}
                               >
@@ -411,7 +415,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             <div className="flex items-center justify-end gap-1.5 leading-tight">
                               <span
                                 title="K – konečný stav"
-                                className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
+                                className={`text-xs font-bold select-none uppercase tracking-wider cursor-help ${
                                   isClosingNegative ? 'text-red-600' : 'text-slate-500'
                                 }`}
                               >
@@ -434,10 +438,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </tbody>
               <tfoot className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold">
                 <tr>
-                  <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] z-10">
+                  <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-slate-900">Celkový majetek</span>
-                      <span className="text-[10px] font-normal text-slate-500">Zahrnuté účty</span>
+                      <span className="text-xs font-normal text-slate-500">Zahrnuté účty</span>
                     </div>
                   </td>
                   {accountPeriods.map((p) => {
@@ -452,12 +456,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <div className="flex items-center justify-end gap-1.5 leading-tight">
                             <span
                               title="P – počáteční stav"
-                              className="text-[10px] font-semibold text-slate-500 select-none uppercase tracking-wider cursor-help"
+                              className="text-xs font-semibold text-slate-500 select-none uppercase tracking-wider cursor-help"
                             >
                               P
                             </span>
                             <span
-                              className={`text-[11px] font-medium whitespace-nowrap ${
+                              className={`text-xs font-medium whitespace-nowrap ${
                                 isOpeningNegative ? 'text-red-500' : 'text-slate-500'
                               }`}
                             >
@@ -467,7 +471,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <div className="flex items-center justify-end gap-1.5 leading-tight">
                             <span
                               title="K – konečný stav"
-                              className={`text-[10px] font-bold select-none uppercase tracking-wider cursor-help ${
+                              className={`text-xs font-bold select-none uppercase tracking-wider cursor-help ${
                                 isClosingNegative ? 'text-red-600' : 'text-slate-500'
                               }`}
                             >
