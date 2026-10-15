@@ -124,6 +124,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('usable')}
+              aria-pressed={forecastScope === 'usable'}
               className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'usable'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -135,6 +136,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <button
               type="button"
               onClick={() => setForecastScope('all')}
+              aria-pressed={forecastScope === 'all'}
               className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -219,6 +221,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('period')}
+                aria-pressed={accountViewMode === 'period'}
                 className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
@@ -228,6 +231,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <button
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
+                aria-pressed={accountViewMode === 'matrix'}
                 className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}

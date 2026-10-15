@@ -76,6 +76,7 @@ export const CategoriesScreen: React.FC = () => {
         <div className="h-8 w-full sm:w-56 flex gap-2 p-1 bg-slate-200/60 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('expense')}
+            aria-pressed={activeTab === 'expense'}
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'expense'
                 ? 'bg-white text-red-600 shadow-sm'
@@ -87,6 +88,7 @@ export const CategoriesScreen: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('income')}
+            aria-pressed={activeTab === 'income'}
             className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
               activeTab === 'income'
                 ? 'bg-white text-emerald-600 shadow-sm'
@@ -158,14 +160,16 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleOpenAddSub(mainCat.id)}
                     title="Přidat podkategorii"
-                    className="p-1 rounded-lg text-sky-600 hover:bg-sky-50 transition-colors"
+                    aria-label={`Přidat podkategorii: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-sky-600 hover:bg-sky-50 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleOpenEdit(mainCat)}
                     title="Upravit kategorii"
-                    className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    aria-label={`Upravit kategorii: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -173,7 +177,8 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => archiveCategory(mainCat.id)}
                       title="Archivovat"
-                      className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      aria-label={`Archivovat: ${mainCat.name}`}
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -181,7 +186,8 @@ export const CategoriesScreen: React.FC = () => {
                     <button
                       onClick={() => restoreCategory(mainCat.id)}
                       title="Obnovit"
-                      className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                      aria-label={`Obnovit: ${mainCat.name}`}
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -189,7 +195,8 @@ export const CategoriesScreen: React.FC = () => {
                   <button
                     onClick={() => handleDelete(mainCat)}
                     title="Smazat"
-                    className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    aria-label={`Smazat: ${mainCat.name}`}
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -218,7 +225,8 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
-                          className="p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                          aria-label={`Upravit nebo přesunout: ${sub.name}`}
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
@@ -226,7 +234,8 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => archiveCategory(sub.id)}
                             title="Archivovat"
-                            className="p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            aria-label={`Archivovat: ${sub.name}`}
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
@@ -234,7 +243,8 @@ export const CategoriesScreen: React.FC = () => {
                           <button
                             onClick={() => restoreCategory(sub.id)}
                             title="Obnovit"
-                            className="p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            aria-label={`Obnovit: ${sub.name}`}
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
@@ -242,7 +252,8 @@ export const CategoriesScreen: React.FC = () => {
                         <button
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
-                          className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          aria-label={`Smazat: ${sub.name}`}
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

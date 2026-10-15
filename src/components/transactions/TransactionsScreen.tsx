@@ -379,6 +379,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <input
               type="text"
               placeholder="Vyhledat v názvu..."
+              aria-label="Vyhledat v názvu položky"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -389,6 +390,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 2. Období */}
           <div>
             <select
+              aria-label="Období"
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as 'current' | 'all')}
               className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-500"

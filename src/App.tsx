@@ -217,7 +217,7 @@ export function AppContent() {
             <p>{SYNC_LABELS[driveSyncStatus]}</p>
           </div>
           {driveError && <p className="text-red-700">{driveError}</p>}
-          {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2 bg-sky-600 text-white rounded">Zkusit znovu</button>}
+          {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>}
         </div>
       </div>
     );

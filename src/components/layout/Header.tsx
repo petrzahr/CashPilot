@@ -92,6 +92,8 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => setMenuOpen(prev => !prev)}
               title="Google Disk připojen – klikněte pro podrobnosti a synchronizaci"
+              aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
+              aria-expanded={menuOpen}
               className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
@@ -115,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-3.5 z-50 space-y-3 text-xs animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-3.5 z-50 space-y-3 text-xs">
                 {/* Uživatelský profil / Stav */}
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                   {driveUser?.photoLink ? (

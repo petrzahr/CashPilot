@@ -954,6 +954,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('daily')}
+                  aria-pressed={viewMode === 'daily'}
                   className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
                     viewMode === 'daily' ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -965,6 +966,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
+                  aria-pressed={viewMode === 'list'}
                   className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
                     viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -991,6 +993,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <input
                 type="text"
                 placeholder="Vyhledat v názvu..."
+                aria-label="Vyhledat v názvu položky"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
