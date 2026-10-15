@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalFooter } from '../common/Modal';
-import { ArrowUpDown, Repeat } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
+import { RecurrenceScopePicker } from '../shared/RecurrenceScopePicker';
 
 interface ReorderScopeDialogProps {
   isOpen: boolean;
@@ -47,81 +48,17 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           </div>
         </div>
 
-        <div className="pt-1 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
-            <Repeat className="w-4 h-4 text-sky-600" />
-            <span>Platí pro</span>
-          </div>
-
-          <label
-            className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-              mode === 'occurrence'
-                ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-            }`}
-          >
-            <input
-              type="radio"
-              name="reorderScopeMode"
-              value="occurrence"
-              checked={mode === 'occurrence'}
-              onChange={() => setMode('occurrence')}
-              className="mt-0.5 text-sky-600 focus:ring-sky-500"
-            />
-            <div className="text-xs">
-              <div className="font-semibold text-slate-900">Jen tento výskyt</div>
-              <div className="text-slate-500 mt-0.5">
-                Nové pořadí se uplatní pouze v aktuálně zobrazeném období.
-              </div>
-            </div>
-          </label>
-
-          <label
-            className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-              mode === 'future'
-                ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-            }`}
-          >
-            <input
-              type="radio"
-              name="reorderScopeMode"
-              value="future"
-              checked={mode === 'future'}
-              onChange={() => setMode('future')}
-              className="mt-0.5 text-sky-600 focus:ring-sky-500"
-            />
-            <div className="text-xs">
-              <div className="font-semibold text-slate-900">Tento a všechny budoucí výskyty</div>
-              <div className="text-slate-500 mt-0.5">
-                Nové pořadí platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.
-              </div>
-            </div>
-          </label>
-
-          <label
-            className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-              mode === 'series'
-                ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-            }`}
-          >
-            <input
-              type="radio"
-              name="reorderScopeMode"
-              value="series"
-              checked={mode === 'series'}
-              onChange={() => setMode('series')}
-              className="mt-0.5 text-sky-600 focus:ring-sky-500"
-            />
-            <div className="text-xs">
-              <div className="font-semibold text-slate-900">Celá série</div>
-              <div className="text-slate-500 mt-0.5">
-                Nové pořadí platí pro všechny výskyty. Minulé položky, které už jsou uložené, zůstanou beze změny.
-              </div>
-            </div>
-          </label>
-        </div>
+        <RecurrenceScopePicker
+          legend="Platí pro"
+          name="reorderScopeMode"
+          value={mode}
+          onChange={setMode}
+          descriptions={{
+            occurrence: 'Nové pořadí se uplatní pouze v aktuálně zobrazeném období.',
+            future: 'Nové pořadí platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.',
+            series: 'Nové pořadí platí pro všechny výskyty. Minulé položky, které už jsou uložené, zůstanou beze změny.',
+          }}
+        />
 
         <ModalFooter>
           <button
@@ -134,7 +71,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           <button
             type="button"
             onClick={handleConfirm}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm shadow-sky-200 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm transition-all cursor-pointer"
           >
             <span>Uložit pořadí</span>
           </button>

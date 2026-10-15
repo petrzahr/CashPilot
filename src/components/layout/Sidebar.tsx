@@ -38,8 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'overview', label: 'Přehledy', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'analytics', label: 'Analýza & trendy', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'mandatory', label: 'Mandatorní výdaje', icon: <Repeat className="w-4 h-4" /> },
-    { id: 'transactions', label: 'Položky', icon: <Receipt className="w-4 h-4" /> },
-    { id: 'accounts', label: 'Účty', icon: <Landmark className="w-4 h-4" /> },
+    { id: 'transactions', label: 'Všechny položky', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'accounts', label: 'Správa účtů', icon: <Landmark className="w-4 h-4" /> },
     { id: 'categories', label: 'Kategorie', icon: <FolderTree className="w-4 h-4" /> },
     { id: 'settings', label: 'Nastavení', icon: <Settings className="w-4 h-4" /> },
   ];
@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Logo a záhlaví: výška a spodní linka navazují na hlavičku obsahu */}
         <div className="h-16 shrink-0 px-5 border-b border-slate-200/80 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md">
               <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
             </div>
             <div className="min-w-0">
@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenTransactionModal();
               onCloseMobile();
             }}
-            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
+            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:shadow-md hover:shadow-sky-400/20"
           >
             <Plus className="w-4 h-4" />
             <span>Nová položka</span>

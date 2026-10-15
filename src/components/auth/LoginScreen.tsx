@@ -43,7 +43,7 @@ export const LoginScreen: React.FC = () => {
         
         {/* Logo a hlavička */}
         <div className="text-center space-y-3">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg shadow-sky-500/25 mb-1 ${isSyncing ? 'animate-pulse motion-reduce:animate-none' : ''}`}>
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg mb-1 ${isSyncing ? 'animate-pulse motion-reduce:animate-none' : ''}`}>
             <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <div>
@@ -139,7 +139,7 @@ export const LoginScreen: React.FC = () => {
         {/* Žádost o přístup do testovacího režimu */}
         <div className="space-y-3 text-center sm:text-left">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-900">Nemáte přístup?</h3>
+            <h2 className="text-sm font-bold text-slate-900">Nemáte přístup?</h2>
             <p className="text-xs text-slate-500 leading-relaxed">
               CashPilot je momentálně dostupný pouze schváleným testovacím uživatelům. Pošlete žádost o přístup a po schválení se budete moci přihlásit svým účtem Google.
             </p>

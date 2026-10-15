@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalFooter } from '../common/Modal';
 import { Transaction } from '../../types/finance';
-import { AlertTriangle, Loader2, Repeat, Trash2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { RecurrenceScopePicker } from '../shared/RecurrenceScopePicker';
 
 interface DeleteTransactionModalProps {
   isOpen: boolean;
@@ -93,88 +94,19 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
         {/* Volby pro pravidelné položky */}
         {isRecurring && (
           <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
-              <Repeat className="w-4 h-4 text-sky-600" />
-              <span>Pravidelná položka – co chcete smazat?</span>
-            </div>
-
-            <div className="space-y-2">
-              {/* 1. Pouze tato položka */}
-              <label
-                className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                  recurringMode === 'occurrence'
-                    ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="recurringDeleteMode"
-                  value="occurrence"
-                  checked={recurringMode === 'occurrence'}
-                  onChange={() => setRecurringMode('occurrence')}
-                  disabled={isDeleting}
-                  className="mt-0.5 text-sky-600 focus:ring-sky-500"
-                />
-                <div className="text-xs">
-                  <div className="font-semibold text-slate-900">Jen tento výskyt</div>
-                  <div className="text-slate-500 mt-0.5">
-                    Ostatní výskyty série zůstanou beze změny.
-                  </div>
-                </div>
-              </label>
-
-              {/* 2. Tato a všechny budoucí položky */}
-              <label
-                className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                  recurringMode === 'future'
-                    ? 'border-sky-500 bg-sky-50/60 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="recurringDeleteMode"
-                  value="future"
-                  checked={recurringMode === 'future'}
-                  onChange={() => setRecurringMode('future')}
-                  disabled={isDeleting}
-                  className="mt-0.5 text-sky-600 focus:ring-sky-500"
-                />
-                <div className="text-xs">
-                  <div className="font-semibold text-slate-900">Tento a všechny budoucí výskyty</div>
-                  <div className="text-slate-500 mt-0.5">
-                    Opakování skončí před tímto výskytem. Minulé výskyty zůstanou.
-                  </div>
-                </div>
-              </label>
-
-              {/* 3. Celá série */}
-              <label
-                className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                  recurringMode === 'series'
-                    ? 'border-red-500 bg-red-50/50 text-slate-900 shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="recurringDeleteMode"
-                  value="series"
-                  checked={recurringMode === 'series'}
-                  onChange={() => setRecurringMode('series')}
-                  disabled={isDeleting}
-                  className="mt-0.5 text-red-600 focus:ring-red-500"
-                />
-                <div className="text-xs">
-                  <div className="font-semibold text-slate-900">Celá série</div>
-                  <div className="text-slate-500 mt-0.5">
-                    Smaže opakování i všechny jeho výskyty.
-                  </div>
-                </div>
-              </label>
-            </div>
-
+            <RecurrenceScopePicker
+              legend="Pravidelná položka – co chcete smazat?"
+              name="recurringDeleteMode"
+              value={recurringMode}
+              onChange={setRecurringMode}
+              disabled={isDeleting}
+              destructiveScope="series"
+              descriptions={{
+                occurrence: 'Ostatní výskyty série zůstanou beze změny.',
+                future: 'Opakování skončí před tímto výskytem. Minulé výskyty zůstanou.',
+                series: 'Smaže opakování i všechny jeho výskyty.',
+              }}
+            />
             {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}
             {(recurringMode === 'future' || recurringMode === 'series') && hasExecutedHistorical && (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
@@ -216,7 +148,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-sm shadow-red-200 disabled:opacity-60 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl shadow-sm disabled:opacity-60 transition-all cursor-pointer"
           >
             {isDeleting ? (
               <>

@@ -221,14 +221,32 @@ export const SettingsScreen: React.FC = () => {
     setConfirmStartDayOpen(false);
   };
 
-  const handleSaveGeneral = (e: React.FormEvent) => {
-    e.preventDefault();
-    const overdraftHaler = parseInputToHaler(overdraftLimitStr);
+  // Kontokorent se ukládá sám po opuštění pole nebo Enteru, stejně jako ostatní nastavení
+  const [overdraftSaved, setOverdraftSaved] = useState(false);
+  useEffect(() => {
+    if (!overdraftSaved) return;
+    const timer = window.setTimeout(() => setOverdraftSaved(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [overdraftSaved]);
+
+  const saveOverdraft = () => {
+    const overdraftHaler = Math.abs(parseInputToHaler(overdraftLimitStr));
+    const currentHaler = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
+    if (overdraftHaler === currentHaler) {
+      setOverdraftLimitStr(halerToInputValue(currentHaler));
+      return;
+    }
     updateSettings({
       overdraftLimitInHaler: overdraftHaler,
       minReserveInHaler: overdraftHaler, // Pro zpětnou kompatibilitu
       roundAmounts,
     });
+    setOverdraftSaved(true);
+  };
+
+  const handleSaveGeneral = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveOverdraft();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,17 +314,27 @@ export const SettingsScreen: React.FC = () => {
                   </label>
                   <div className="relative">
                     <input id={`${fieldId}-2`}
-                      type="number"
-                      step="any"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
                       value={overdraftLimitStr}
                       onChange={(e) => setOverdraftLimitStr(e.target.value)}
-                      className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
+                      onBlur={saveOverdraft}
+                      aria-describedby={`${fieldId}-2-hint`}
+                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Kolik smí výchozí účet jít do mínusu. Zadejte kladné číslo, např. 20 000.
+                  <p id={`${fieldId}-2-hint`} className="text-xs text-slate-500 mt-1">
+                    Kolik smí výchozí účet jít do mínusu, např. 20 000. Uloží se po opuštění pole.
+                  </p>
+                  <p role="status" className="text-xs font-semibold text-emerald-600 mt-1 min-h-[1rem] flex items-center gap-1">
+                    {overdraftSaved && (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        Kontokorent uložen
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -322,15 +350,6 @@ export const SettingsScreen: React.FC = () => {
                     className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium cursor-not-allowed"
                   />
                 </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  className="max-md:min-h-11 px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
-                >
-                  Uložit kontokorent
-                </button>
               </div>
             </form>
           </section>
@@ -744,7 +763,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmResetAllOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
+                    className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
                   >
                     Smazat všechna data
                   </button>

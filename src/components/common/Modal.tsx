@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-slate-100 px-5 sm:px-6 py-4">
           <div className="min-w-0">
-            <h3 id={titleId} className="text-lg font-semibold text-slate-900">{title}</h3>
+            <h2 id={titleId} className="text-base font-bold text-slate-900">{title}</h2>
             {subtitle && <p id={subtitleId} className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
           <button

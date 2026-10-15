@@ -512,11 +512,11 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     // Položka je v menu přítomna
     expect(sidebarHtml).toContain('Analýza &amp; trendy');
 
-    // Ověříme pořadí: Měsíční rozpočet -> Přehled -> Analýza & trendy -> Položky
+    // Ověříme pořadí: Měsíční rozpočet -> Přehled -> Analýza & trendy -> Všechny položky
     const idxBudget = sidebarHtml.indexOf('Měsíční rozpočet');
     const idxOverview = sidebarHtml.indexOf('Přehled');
     const idxAnalytics = sidebarHtml.indexOf('Analýza &amp; trendy');
-    const idxTransactions = sidebarHtml.indexOf('Položky');
+    const idxTransactions = sidebarHtml.indexOf('Všechny položky');
 
     expect(idxBudget).toBeLessThan(idxOverview);
     expect(idxOverview).toBeLessThan(idxAnalytics);

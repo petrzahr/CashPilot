@@ -49,8 +49,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           }}
           className={`px-4 py-2 text-sm font-medium text-white rounded-xl transition-colors ${
             isDestructive 
-              ? 'bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200' 
-              : 'bg-sky-600 hover:bg-sky-700 shadow-sm shadow-sky-200'
+              ? 'bg-red-600 hover:bg-red-700 shadow-sm' 
+              : 'bg-sky-600 hover:bg-sky-700 shadow-sm'
           }`}
         >
           {confirmText}

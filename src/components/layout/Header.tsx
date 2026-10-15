@@ -5,15 +5,18 @@ import { formatPeriodRange } from '../../services/periodService';
 import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 
 interface HeaderProps {
   onToggleMobileMenu: () => void;
   activeScreenTitle: string;
+  showPeriodNavigator?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleMobileMenu,
   activeScreenTitle,
+  showPeriodNavigator = true,
 }) => {
   const {
     selectedPeriod,
@@ -32,7 +35,20 @@ export const Header: React.FC<HeaderProps> = ({
   } = useFinance();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDisconnectOpen, setConfirmDisconnectOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Escape zavře nabídku synchronizace a vrátí fokus na její tlačítko
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMenuOpen(false);
+      menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -47,6 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [menuOpen]);
 
   return (
+    <>
     <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 max-[359px]:px-2 sm:px-6 flex items-center justify-between gap-2 max-[359px]:gap-1 select-none">
       {/* Levá strana: mobilní menu + název sekce */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -200,8 +217,8 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      disconnectGoogleDrive();
                       setMenuOpen(false);
+                      setConfirmDisconnectOpen(true);
                     }}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 font-medium transition-colors cursor-pointer"
                   >
@@ -214,6 +231,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
+        {/* Navigace obdobím jen tam, kde obrazovka vybrané období skutečně používá */}
+        {showPeriodNavigator && (<>
         <button
           type="button"
           onClick={goToCurrentPeriod}
@@ -258,7 +277,23 @@ export const Header: React.FC<HeaderProps> = ({
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+        </>)}
       </div>
     </header>
+
+    {/* Dialog stojí mimo hlavičku: její backdrop-blur by jinak uvěznil fixní vrstvu uvnitř hlavičky */}
+    <ConfirmationModal
+      isOpen={confirmDisconnectOpen}
+      onClose={() => setConfirmDisconnectOpen(false)}
+      onConfirm={() => void disconnectGoogleDrive()}
+      title="Odpojit Google Disk?"
+      message={
+        driveSyncStatus === 'synced'
+          ? 'Aplikace se odhlásí a vrátí na přihlašovací obrazovku. Vaše data zůstávají na Google Disku a po novém přihlášení se znovu načtou.'
+          : 'Některé změny ještě nemusí být uložené na Google Disku. Doporučujeme nejdřív počkat na dokončení synchronizace. Aplikace se odhlásí a vrátí na přihlašovací obrazovku.'
+      }
+      confirmText="Odpojit a odhlásit"
+    />
+    </>
   );
 };

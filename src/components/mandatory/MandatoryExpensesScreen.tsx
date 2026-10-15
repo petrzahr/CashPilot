@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Pencil, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
@@ -503,6 +504,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   const budgetStartDay = settings?.budgetStartDay || 15;
 
   const [simulation, setSimulation] = useState<MandatorySimulation>(loadSimulation);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   useEffect(() => saveSimulation(simulation), [simulation]);
   const isSimulating = !isSimulationEmpty(simulation);
 
@@ -624,7 +626,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={() => setSimulation(EMPTY_SIMULATION)}
+            onClick={() => setConfirmResetOpen(true)}
             disabled={!isSimulating}
             className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
@@ -660,6 +662,16 @@ export const MandatoryExpensesScreen: React.FC = () => {
       <SectionTable section={overview.income} categoryOptions={categoryOptions('income')} {...sectionProps} />
       <SectionTable section={overview.expense} categoryOptions={categoryOptions('expense')} {...sectionProps} />
       <SectionTable section={overview.transfer} categoryOptions={[]} {...sectionProps} />
+
+      <ConfirmationModal
+        isOpen={confirmResetOpen}
+        onClose={() => setConfirmResetOpen(false)}
+        onConfirm={() => setSimulation(EMPTY_SIMULATION)}
+        title="Zahodit simulaci?"
+        message="Všechny upravené, přidané i odebrané platby v simulaci se vrátí do výchozího stavu. Skutečné opakované platby se nemění."
+        confirmText="Zahodit simulaci"
+        isDestructive
+      />
     </div>
   );
 };

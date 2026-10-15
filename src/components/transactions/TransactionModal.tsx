@@ -8,7 +8,8 @@ import { getEffectiveTransactionsForPeriod } from '../../services/financialEngin
 import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate } from '../../services/periodService';
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
-import { Repeat, Hash, Loader2 } from 'lucide-react';
+import { Hash, Loader2 } from 'lucide-react';
+import { RecurrenceScopePicker } from '../shared/RecurrenceScopePicker';
 import { FieldError, FieldErrors, FormError, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
@@ -450,11 +451,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Režim úpravy pravidelné položky */}
         {isEditing && isLinkedToRecurring && (
-          <div className="p-4 bg-sky-50 border border-sky-100 rounded-xl space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-sky-800">
-              <Repeat className="w-4 h-4" />
-              <span>Pravidelná položka – co chcete upravit?</span>
-            </div>
+          <div className="space-y-2">
+            <RecurrenceScopePicker
+              legend="Pravidelná položka – co chcete upravit?"
+              name="recMode"
+              value={recurringEditMode}
+              onChange={setRecurringEditMode}
+              descriptions={{
+                occurrence: `Změna platí jen v období ${selectedPeriod.name}.`,
+                future: 'Změna platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.',
+                series: 'Změna platí pro všechny výskyty včetně minulých.',
+              }}
+            />
             {linkedRule && (
               <p className="text-xs text-slate-500">
                 {linkedRule.endDate
@@ -462,41 +470,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   : `Opakuje se od ${formatCzechDate(linkedRule.startDate)} bez konce.`}
               </p>
             )}
-            <div className="space-y-1 text-xs text-slate-500">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="recMode"
-                  value="occurrence"
-                  checked={recurringEditMode === 'occurrence'}
-                  onChange={() => setRecurringEditMode('occurrence')}
-                  className="text-sky-600 focus:ring-sky-500"
-                />
-                <span>Jen tento výskyt ({selectedPeriod.name})</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="recMode"
-                  value="future"
-                  checked={recurringEditMode === 'future'}
-                  onChange={() => setRecurringEditMode('future')}
-                  className="text-sky-600 focus:ring-sky-500"
-                />
-                <span>Tento a všechny budoucí výskyty</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="recMode"
-                  value="series"
-                  checked={recurringEditMode === 'series'}
-                  onChange={() => setRecurringEditMode('series')}
-                  className="text-sky-600 focus:ring-sky-500"
-                />
-                <span>Celá série (včetně minulých výskytů)</span>
-              </label>
-            </div>
           </div>
         )}
 
@@ -815,7 +788,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="submit"
             disabled={isSaving}
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isEditing ? 'Uložit změny' : 'Vytvořit položku'}</span>
