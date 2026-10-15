@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={connectGoogleDrive}
             disabled={driveSyncStatus === 'syncing'}
             title="Připojit Google Disk pro automatické zálohování a synchronizaci"
-            className="flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+            className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
           >
             <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">
@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Google Disk připojen – klikněte pro podrobnosti a synchronizaci"
               aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
               aria-expanded={menuOpen}
-              className="flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
               <span className="relative flex h-2 w-2">

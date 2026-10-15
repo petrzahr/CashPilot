@@ -357,14 +357,14 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={exportCSV}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
+              className="max-md:min-h-11 flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Exportovat CSV</span>
             </button>
             <button
               onClick={() => onOpenTransactionModal()}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+              className="max-md:min-h-11 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Přidat položku</span>
@@ -382,7 +382,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               aria-label="Vyhledat v názvu položky"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-2" />
           </div>
@@ -393,7 +393,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               aria-label="Období"
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as 'current' | 'all')}
-              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-500"
+              className="max-md:min-h-11 w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-500"
             >
               <option value="current">Aktuální období</option>
               <option value="all">Všechny položky</option>

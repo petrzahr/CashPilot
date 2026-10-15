@@ -174,7 +174,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             setActiveStatusMenuTxId(isMenuOpen ? null : tx.id);
           }}
           title="Změnit stav položky (Plánovaná, Uskutečněná, Zrušená)"
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer select-none ${badgeClass} ${
+          className={`max-md:min-h-6 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer select-none ${badgeClass} ${
             isUpdating ? 'opacity-70 cursor-wait' : ''
           }`}
         >
@@ -950,7 +950,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-              <div className="h-8 flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
+              <div className="h-8 max-md:h-[52px] flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
                 <button
                   type="button"
                   onClick={() => setViewMode('daily')}
@@ -979,7 +979,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenTransactionModal()}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors shrink-0"
+                className="max-md:min-h-11 w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 <span>Přidat položku</span>
@@ -996,7 +996,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 aria-label="Vyhledat v názvu položky"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-2" />
             </div>

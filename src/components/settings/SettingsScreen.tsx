@@ -233,7 +233,7 @@ export const SettingsScreen: React.FC = () => {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
+              className="max-md:min-h-11 px-5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm shadow-sky-200 transition-colors"
             >
               Uložit pravidla
             </button>
@@ -355,7 +355,7 @@ export const SettingsScreen: React.FC = () => {
               type="button"
               onClick={connectGoogleDrive}
               disabled={driveSyncStatus === 'syncing'}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+              className="max-md:min-h-11 flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
             >
               <GoogleIcon className="w-4 h-4 shrink-0" />
               <span>{driveSyncStatus === 'syncing' ? 'Připojuji...' : 'Připojit Google Disk'}</span>
@@ -366,7 +366,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('upload')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
+                className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                 <span>Synchronizovat</span>
@@ -375,7 +375,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={disconnectGoogleDrive}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Odpojit</span>
@@ -454,7 +454,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('upload')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                 <span>Vynutit uložení na Google Disk</span>
@@ -464,7 +464,7 @@ export const SettingsScreen: React.FC = () => {
                 type="button"
                 onClick={() => syncWithGoogleDrive('download')}
                 disabled={driveSyncStatus === 'syncing'}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                className="max-md:min-h-11 px-3.5 py-2 text-xs font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Stáhnout data z Google Disku</span>
@@ -487,7 +487,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => void runDriveBackupNow()}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                  className="max-md:min-h-11 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
                 >
                   Zálohovat nyní
                 </button>
@@ -589,7 +589,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearTransactionsOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny transakce
               </button>
@@ -606,7 +606,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearAccountsOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny účty
               </button>
@@ -623,7 +623,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmClearCategoriesOpen(true)}
-                className="px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
               >
                 Vymazat všechny kategorie
               </button>
@@ -651,7 +651,7 @@ export const SettingsScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmResetAllOpen(true)}
-                className="px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
+                className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm shadow-red-200 transition-colors shrink-0 self-start sm:self-center"
               >
                 Kompletně vymazat všechna data
               </button>
@@ -665,7 +665,7 @@ export const SettingsScreen: React.FC = () => {
             <button
               type="button"
               onClick={() => setConfirmLoadDemoOpen(true)}
-              className="px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
+              className="max-md:min-h-11 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
             >
               Načíst ukázková data (Demo režim)
             </button>

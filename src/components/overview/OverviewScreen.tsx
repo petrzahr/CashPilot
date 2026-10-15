@@ -79,7 +79,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   type="button"
                   aria-pressed={active}
                   onClick={() => { setRange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
+                  className={`max-md:min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
                     ? 'bg-sky-600 text-white border-sky-600 shadow-sm shadow-sky-500/20'
                     : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'}`}
                 >
@@ -125,7 +125,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               type="button"
               onClick={() => setForecastScope('usable')}
               aria-pressed={forecastScope === 'usable'}
-              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'usable'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
@@ -137,7 +137,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               type="button"
               onClick={() => setForecastScope('all')}
               aria-pressed={forecastScope === 'all'}
-              className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
@@ -222,7 +222,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('period')}
                 aria-pressed={accountViewMode === 'period'}
-                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -232,7 +232,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
                 aria-pressed={accountViewMode === 'matrix'}
-                className={`min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
+                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                   accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >

@@ -149,7 +149,7 @@ export const LoginScreen: React.FC = () => {
             href={buildGmailComposeUrl()}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
+            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 active:scale-[0.99] cursor-pointer"
           >
             <Mail className="w-4 h-4 text-slate-500 shrink-0" />
             <span>Požádat o přístup přes Gmail</span>
@@ -166,7 +166,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={handleCopyEmail}
                 title={`Zkopírovat adresu ${ACCESS_REQUEST_EMAIL}`}
-                className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
+                className="max-md:min-h-11 max-md:inline-flex max-md:items-center max-md:px-2 text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 rounded"
               >
                 Zkopírovat kontaktní e-mail
               </button>

@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenTransactionModal();
               onCloseMobile();
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
+            className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-sky-300 transition-all hover:shadow-md hover:shadow-sky-400/20"
           >
             <Plus className="w-4 h-4" />
             <span>Nová položka</span>
@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`max-md:min-h-11 w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-sky-50 text-sky-700 shadow-xs'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'

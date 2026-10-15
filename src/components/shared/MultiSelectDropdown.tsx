@@ -57,7 +57,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-left truncate transition-colors ${
+        className={`max-md:min-h-11 w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-left truncate transition-colors ${
           disabled ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-slate-500 hover:bg-slate-100/80'
         } ${selected.length > 0 ? 'font-semibold text-slate-900' : ''}`}
       >
