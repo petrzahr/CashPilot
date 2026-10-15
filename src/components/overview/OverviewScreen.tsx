@@ -242,8 +242,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
                             <th className="py-2.5 px-4 w-[360px]">Účet</th>
                             <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
-                            <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
-                            <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
+                            {/* U účtů se do pohybů počítají i korekce a změny tržní hodnoty, proto jiné názvy než Příjmy/Výdaje */}
+                            <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600" title="Příjmy, kladné korekce zůstatku a růst tržní hodnoty">Přírůstky</th>
+                            <th className="py-2.5 px-4 w-[120px] text-right text-red-600" title="Výdaje, záporné korekce zůstatku a pokles tržní hodnoty">Úbytky</th>
                             <th className="py-2.5 px-4 w-[120px] text-right">Převody</th>
                             <th className="py-2.5 px-4 w-[130px] text-right">Čistá změna</th>
                             <th className="py-2.5 px-4 w-[140px] text-right">Konečný stav</th>
@@ -303,6 +304,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           })}
                         </tbody>
                       </table>
+                      <p className="px-4 pt-2 text-xs text-slate-500">
+                        Přírůstky a úbytky zahrnují kromě příjmů a výdajů i korekce zůstatku a změny tržní hodnoty. Převody jsou čisté (příchozí − odchozí).
+                      </p>
                     </div>
                   )}
                 </div>

@@ -10,7 +10,7 @@ import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import {
-  Pencil,
+  Edit3,
   Trash2,
   ArrowDownLeft,
   ArrowUpRight,
@@ -174,7 +174,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <span className="font-bold text-slate-700 mr-2">{formatCurrency(-fee.amountInHaler)}</span>
                         <button type="button" onClick={() => setEditingFeePeriodKey(fee.periodKey)} title="Upravit poplatek" aria-label={`Upravit poplatek: ${item.periodName}`}
                           className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                          <Pencil className="w-4 h-4" />
+                          <Edit3 className="w-4 h-4" />
                         </button>
                         <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
                           className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
@@ -216,7 +216,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                         <div className="flex justify-end gap-1 mt-1">
                           <button type="button" onClick={() => setEditingSnapshotId(snap.id)} title="Upravit tržní hodnotu" aria-label={`Upravit tržní hodnotu z ${formatCzechDate(snap.date)}`}
                             className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                            <Pencil className="w-4 h-4" />
+                            <Edit3 className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
                             className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">

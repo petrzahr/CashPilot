@@ -579,13 +579,14 @@ export const MandatoryExpensesScreen: React.FC = () => {
     { label: 'Příjmy / měsíc', value: overview.income.monthlyInHaler, base: baseline.income.monthlyInHaler, className: 'text-emerald-600' },
     { label: 'Mandatorní výdaje / měsíc', value: overview.expense.monthlyInHaler, base: baseline.expense.monthlyInHaler, className: 'text-red-600' },
     {
-      label: 'Skutečně uspořeno / měsíc',
+      // Jiný název než „Skutečně uspořeno“ v rozpočtu: tady jde o průměr z opakovaných plateb, ne o skutečnost období
+      label: 'Průměrně ušetří / měsíc',
       value: overview.actuallySavedMonthlyInHaler,
       base: baseline.actuallySavedMonthlyInHaler,
       className: overview.actuallySavedMonthlyInHaler < 0 ? 'text-red-600' : 'text-emerald-600',
       title: 'Příjmy − výdaje na běžných účtech a hotovosti, bez převodů',
     },
-    { label: 'Spoření a převody / měsíc', value: overview.transfer.monthlyInHaler, base: baseline.transfer.monthlyInHaler, className: 'text-sky-600' },
+    { label: 'Spoření a převody / měsíc', value: overview.transfer.monthlyInHaler, base: baseline.transfer.monthlyInHaler, className: 'text-slate-900' },
     {
       label: 'Zbývá / měsíc',
       value: overview.remainingMonthlyInHaler,
@@ -626,6 +627,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
                 Úpravy zde jsou jen simulace.
               </>
             )}
+            {' '}Částky jsou zaokrouhlené na 100 Kč, součty se počítají z přesných hodnot.
           </p>
           <button
             type="button"

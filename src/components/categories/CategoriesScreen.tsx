@@ -224,7 +224,7 @@ export const CategoriesScreen: React.FC = () => {
                     onClick={() => handleDelete(mainCat)}
                     title="Smazat"
                     aria-label={`Smazat kategorii: ${mainCat.name}`}
-                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -256,7 +256,7 @@ export const CategoriesScreen: React.FC = () => {
                           aria-label={`Upravit nebo přesunout: ${sub.name}`}
                           className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-4 h-4" />
                         </button>
                         {sub.status === 'active' ? (
                           <button
@@ -281,9 +281,9 @@ export const CategoriesScreen: React.FC = () => {
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
                           aria-label={`Smazat kategorii: ${sub.name}`}
-                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { formatPeriodRange } from '../../services/periodService';
 import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
-import { ConfirmationModal } from '../common/ConfirmationModal';
+import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
 import { describeSyncError } from '../../services/syncErrorText';
 
 interface HeaderProps {
@@ -297,18 +297,7 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
 
     {/* Dialog stojí mimo hlavičku: její backdrop-blur by jinak uvěznil fixní vrstvu uvnitř hlavičky */}
-    <ConfirmationModal
-      isOpen={confirmDisconnectOpen}
-      onClose={() => setConfirmDisconnectOpen(false)}
-      onConfirm={() => void disconnectGoogleDrive()}
-      title="Odpojit Google Disk?"
-      message={
-        driveSyncStatus === 'synced'
-          ? 'Aplikace se odhlásí a vrátí na přihlašovací obrazovku. Vaše data zůstávají na Google Disku a po novém přihlášení se znovu načtou.'
-          : 'Některé změny ještě nemusí být uložené na Google Disku. Doporučujeme nejdřív počkat na dokončení synchronizace. Aplikace se odhlásí a vrátí na přihlašovací obrazovku.'
-      }
-      confirmText="Odpojit a odhlásit"
-    />
+    <DisconnectDriveDialog isOpen={confirmDisconnectOpen} onClose={() => setConfirmDisconnectOpen(false)} />
     </>
   );
 };
