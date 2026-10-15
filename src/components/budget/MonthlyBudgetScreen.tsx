@@ -688,7 +688,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   const isOverdraftExceeded = defaultWithOverdraft < 0;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Panel ukazatelů: řádky čísel patří k sobě, proto užší rozestup než mezi sekcemi */}
       <div className="space-y-4">
         {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
@@ -728,29 +728,29 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
                 <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-emerald-600 block font-semibold">+ Příjmy</span>
                 <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
                   {formatCurrency(defaultIncomeBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-red-600 block font-semibold">− Výdaje</span>
                 <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
                   {formatCurrency(defaultExpenseBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-sky-600 block font-semibold">Převody</span>
                 <span
                   className={`text-base font-bold block mt-0.5 truncate ${
@@ -762,7 +762,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
                 <span className={`text-base font-bold block mt-0.5 truncate ${
                   defaultNetChange >= 0 ? 'text-emerald-600' : 'text-red-600'
@@ -771,7 +771,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
                 <span className={`text-base font-bold block mt-0.5 truncate ${
                   isOverdraftExceeded
@@ -784,7 +784,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className={`p-3.5 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
+              <div className={`p-3 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
                 isOverdraftExceeded
                   ? 'bg-red-50/90 border-red-300'
                   : 'bg-white border-slate-200/80'
@@ -812,8 +812,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
         {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
         <div className="space-y-2.5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
               <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.actuallySavedInHaler >= 0 ? 'text-emerald-600' : 'text-red-600'
@@ -822,14 +822,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-emerald-600 block font-semibold">Skutečně uspořeno %</span>
               <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
                 {formatPercent(aggregateSummary.actuallySavedPct)}
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-sky-600 block font-semibold">Uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.savedInHaler >= 0 ? 'text-sky-600' : 'text-red-600'
@@ -838,14 +838,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-sky-600 block font-semibold">Uspořeno %</span>
               <span className="text-base font-bold text-sky-600 block mt-0.5 truncate">
                 {formatPercent(aggregateSummary.savedPct)}
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-purple-600 block font-semibold">Investováno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
@@ -854,14 +854,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
               <span className="text-xs text-purple-600 block font-semibold">Investováno %</span>
               <span className="text-base font-bold text-purple-600 block mt-0.5 truncate">
                 {formatPercent(aggregateSummary.investedPct)}
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
               <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.investmentChange === null
@@ -878,11 +878,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       {/* Dynamické sekce rozpočtu podle kategorií */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
         <h3 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
             <div
               key={category.id}
-              className="p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/40 hover:bg-slate-50 transition-colors space-y-2"
+              className="p-3 rounded-xl border border-slate-200/70 bg-slate-50/40 hover:bg-slate-50 transition-colors space-y-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -910,7 +910,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           ))}
 
           {/* Sekce Spoření a převody */}
-          <div className="p-3.5 rounded-xl border border-sky-100 bg-sky-50/40 space-y-2">
+          <div className="p-3 rounded-xl border border-sky-100 bg-sky-50/40 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="w-3.5 h-3.5 text-sky-600" />
@@ -991,7 +991,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           </div>
 
           {/* Filtry položek (stejné jako v sekci Položky, bez filtru období) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-3 border-t border-slate-100 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2.5 pt-3 border-t border-slate-100 text-xs">
             <div className="relative sm:col-span-2 lg:col-span-2">
               <input
                 type="text"

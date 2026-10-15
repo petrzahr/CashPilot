@@ -599,7 +599,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Vysvětlivka vymezuje období a režim souhrnných karet, proto drží těsně u nich */}
       <div className="space-y-3">
         <div
@@ -638,7 +638,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
           {cards.map((card) => (
             <div
               key={card.label}
-              className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm"
+              className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm"
               title={card.title}
             >
               <span className="text-xs text-slate-500 block font-medium">{card.label}</span>

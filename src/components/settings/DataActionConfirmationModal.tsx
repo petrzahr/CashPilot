@@ -75,7 +75,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-lg">
       <div className="space-y-4 text-sm text-slate-500" onKeyDown={handleKeyDown}>
         {/* Varování a popis */}
-        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-semibold text-xs sm:text-sm text-red-900">{description}</p>
@@ -110,7 +110,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         </div>
 
         {/* Nabídka stažení JSON zálohy */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-slate-900">Doporučení před pokračováním</p>
             <p className="text-xs text-slate-500">

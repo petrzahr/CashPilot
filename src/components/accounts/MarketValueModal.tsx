@@ -101,7 +101,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Vložené prostředky:</span>
             <span className="font-semibold text-slate-900">{formatCurrency(investedHaler)}</span>

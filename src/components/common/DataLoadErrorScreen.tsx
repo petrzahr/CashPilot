@@ -52,7 +52,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
     <div className="theme-light min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6">
       <div className="max-w-xl w-full bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
         <div className="flex items-center gap-4">
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <AlertTriangle className="w-8 h-8" />
           </div>
           <div>

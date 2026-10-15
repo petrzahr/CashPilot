@@ -169,7 +169,7 @@ export const AnalyticsScreen: React.FC = () => {
   }, [dateRange.periods, transactions, recurringRules, recurringExceptions, categories, accounts, budgetStartDay]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* 1. Hlavní filtr období (shodný se sekcí Přehledy) */}
       <DualPeriodFilterPanel
         range={range}

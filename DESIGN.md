@@ -165,7 +165,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 
 ## Layout
 
-Postranní panel 256px vlevo (na mobilu vysouvací zásuvka), hlavička 64px a obsah v kontejneru do 1280px s okrajem 16px (mobil) / 24px (od 640px). Obsah tvoří mřížky karet: KPI v řadách po 2–7, přehledy po 1–4 sloupcích. Rytmus stojí na 4px kroku; uvnitř karet převažují mezery 8–12px, mezi kartami 16–24px. Zlomy: 640px (sm), 768px (md, objeví se postranní panel), 1024px (lg, v hlavičce se ukážou textové popisky). Široké tabulky se posouvají vodorovně ve vlastním kontejneru, stránka nikdy.
+Postranní panel 256px vlevo (na mobilu vysouvací zásuvka), hlavička 64px a obsah v kontejneru do 1280px s okrajem 16px (mobil) / 24px (od 640px). Obsah tvoří mřížky karet: KPI v řadách po 2–7, přehledy po 1–4 sloupcích. Rytmus stojí na 4px kroku; uvnitř karet převažují mezery 8–12px, mezi kartami 16–24px. Husté číselné dlaždice mají vnitřní okraj 12px, vnořené informační panely 16px; mezi sekcemi obrazovky je 24px, související bloky (např. řady KPI) drží u sebe 12–16px. Spodní okraj 64px patří rámci aplikace, ne jednotlivým obrazovkám. Řady se 7–8 dlaždicemi nebo filtry se plně rozkládají až od 1280px (xl), pod tím se lámou do 4 sloupců. Nastavení má od 1280px vpravo lepkavý obsah stránky se zvýrazněním aktuální sekce. Zlomy: 640px (sm), 768px (md, objeví se postranní panel), 1024px (lg, v hlavičce se ukáže popisek „Aktuální období“), 1280px (xl, text stavu synchronizace). Široké tabulky se posouvají vodorovně ve vlastním kontejneru, stránka nikdy.
 
 ## Elevation & Depth
 

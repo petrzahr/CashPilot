@@ -163,7 +163,7 @@ export const AccountsScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Hlavička správy účtů */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
@@ -320,7 +320,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Finanční zůstatek */}
-              <div className="p-3.5 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
+              <div className="p-4 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
                   {`Očekávaný stav k ${selectedPeriod.name}`}
                 </span>

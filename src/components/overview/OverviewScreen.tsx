@@ -66,7 +66,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label="Období přehledů">
         {(['future', 'past'] as const).map(direction => (
           <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>

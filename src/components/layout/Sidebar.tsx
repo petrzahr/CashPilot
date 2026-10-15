@@ -130,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
-        <div className="shrink-0 p-3.5 m-3 mt-0 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
+        <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>

@@ -109,7 +109,7 @@ const MainLayout: React.FC = () => {
         />
 
         <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
+          <main className="flex-1 p-4 pb-16 sm:p-6 sm:pb-16 max-w-7xl w-full mx-auto">
             {currentScreen === 'budget' && (
               <MonthlyBudgetScreen
                 onOpenTransactionModal={handleOpenNewTx}

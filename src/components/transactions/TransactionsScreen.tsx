@@ -315,7 +315,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   }, [filteredTransactions]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {dataConflicts && dataConflicts.length > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
@@ -373,7 +373,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         </div>
 
         {/* Společný panel filtrů */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-3 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-3 border-t border-slate-100 text-xs">
           {/* 1. Vyhledávání */}
           <div className="relative sm:col-span-2 lg:col-span-2">
             <input
