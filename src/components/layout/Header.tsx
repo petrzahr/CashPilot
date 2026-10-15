@@ -208,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setMenuOpen(false);
                     }}
                     disabled={driveSyncStatus === 'syncing'}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition-colors cursor-pointer"
+                    className="max-md:min-h-11 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait disabled:hover:bg-sky-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                     <span>Synchronizovat nyní</span>

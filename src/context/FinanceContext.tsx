@@ -59,6 +59,7 @@ import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit 
 import { getAccountFees } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { addHaler, subHaler } from '../services/currencyService';
+import { getCategoryUsage, isInUse } from '../services/usageService';
 import {
   GoogleUser,
   fetchGoogleUserProfile,
@@ -419,9 +420,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     controllerRef.current?.change(action);
   }, []);
 
+  // Chyby a varování zůstávají, dokud je uživatel nezavře; potvrzení úspěchu zmizí samo
   const showToast = useCallback((text: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = `${Date.now()}_${Math.random()}`;
     setToasts(prev => [...prev, { id, text, type }]);
+    if (type === 'error' || type === 'warning') return;
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
@@ -1929,10 +1932,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [showToast]);
 
   const deleteCategory = useCallback((id: string) => {
-    const isUsedInTxs = data.transactions.some(t => t.categoryId === id || t.subcategoryId === id);
-    const isUsedInRules = data.recurringRules.some(r => r.categoryId === id || r.subcategoryId === id);
-
-    if (isUsedInTxs || isUsedInRules) {
+    // Smazání hlavní kategorie odstraní i podkategorie, proto se počítá i jejich použití
+    if (isInUse(getCategoryUsage(id, data.categories, data.transactions, data.recurringRules))) {
       return {
         success: false,
         message: 'Kategorii používají položky nebo pravidelné položky, a proto ji nejde smazat. Můžete ji archivovat – zmizí z nabídek, ale historie zůstane.'
@@ -1945,7 +1946,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }));
     showToast('Kategorie byla smazána.');
     return { success: true };
-  }, [data.transactions, data.recurringRules, showToast]);
+  }, [data.categories, data.transactions, data.recurringRules, showToast]);
 
   // ------------------- NASTAVENÍ A DATA -------------------
 

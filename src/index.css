@@ -40,6 +40,14 @@
   }
 }
 
+/* Na telefonu mají pole 16px písmo, jinak iOS Safari při fokusu přiblíží stránku.
+   Pravidlo stojí za utilitami a selektor s atributem přebije třídy text-xs/text-sm. */
+@media (max-width: 767.98px) {
+  :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='color'], [type='file'], [type='range']) {
+    font-size: 1rem;
+  }
+}
+
 /* Custom scrollbar for clean aesthetic */
 ::-webkit-scrollbar {
   width: 6px;

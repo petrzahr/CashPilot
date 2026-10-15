@@ -92,14 +92,14 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
           <div>
             <label htmlFor={`${fieldId}-2`} className="block text-xs font-semibold text-slate-500 mb-1">Částka poplatku ({account.currency === 'CZK' ? 'Kč' : account.currency}) *</label>
             <input id={`${fieldId}-2`}
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
               required
               value={amountStr}
               onChange={(e) => { setAmountStr(e.target.value); setAmountError(null); }}
               {...fieldErrorProps(`${fieldId}-2`, amountError)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(amountError, 'border-slate-200 focus:ring-2 focus:ring-purple-500')} font-semibold`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(amountError, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
             />
             <FieldError inputId={`${fieldId}-2`} message={amountError} />
           </div>

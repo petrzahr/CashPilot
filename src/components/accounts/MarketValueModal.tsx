@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { Account, MarketValueSnapshot } from '../../types/finance';
 import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
-import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
+import { formatCurrency, formatPercent, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { Info } from 'lucide-react';
 import { FieldError, FieldErrors, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
@@ -121,7 +121,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           <div className="flex justify-between">
             <span className="text-slate-500">Výnos při této hodnotě</span>
             <span className={`font-bold ${gainLossHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {`${formatCurrency(gainLossHaler, { showPlus: true })} (${gainLossPct >= 0 ? '+' : ''}${gainLossPct.toFixed(1)} %)`}
+              {`${formatCurrency(gainLossHaler, { showPlus: true })} (${formatPercent(gainLossPct, { showPlus: true })})`}
             </span>
           </div>
         </div>
@@ -149,13 +149,14 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             </label>
             <div className="relative">
               <input id={`${fieldId}-2`}
-                type="number"
-                step="any"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 required
                 value={marketValueStr}
                 onChange={(e) => { setMarketValueStr(e.target.value); setErrors(prev => ({ ...prev, value: undefined })); }}
                 {...fieldErrorProps(`${fieldId}-2`, errors.value)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.value, 'border-slate-200 focus:ring-2 focus:ring-purple-500')} font-semibold`}
+                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.value, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>

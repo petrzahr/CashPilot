@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { formatCurrency } from '../../services/currencyService';
+import { formatCurrency, formatPercent } from '../../services/currencyService';
 
 export interface StackedPercentSegment {
   key: string;
@@ -311,7 +311,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                     {seg.pct !== null && (
                       <span className="text-slate-400 font-normal">
                         {' '}
-                        ({(isEffectivelyNegative(seg) ? seg.pct : Math.abs(seg.pct)).toFixed(1)} %)
+                        ({formatPercent(isEffectivelyNegative(seg) ? seg.pct : Math.abs(seg.pct))})
                       </span>
                     )}
                   </span>

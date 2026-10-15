@@ -189,13 +189,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             </label>
             <div className="relative">
               <input id={`${fieldId}-4`}
-                type="number"
-                step="any"
+                type="text"
+                autoComplete="off"
                 required
                 placeholder="0"
                 value={balanceStr}
                 onChange={(e) => setBalanceStr(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
+                className="w-full pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>

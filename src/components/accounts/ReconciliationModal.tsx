@@ -6,7 +6,7 @@ import { formatCurrency, parseInputToHaler, subHaler } from '../../services/curr
 import { getAccountBalanceAtDate } from '../../services/financialEngine';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
-import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, SlidersHorizontal } from 'lucide-react';
 import { FieldError, FieldErrors, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface ReconciliationModalProps {
@@ -112,15 +112,16 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           <div className={`p-2.5 rounded-lg flex items-center justify-between text-sm font-medium ${
             diffInHaler === 0 
               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-              : diffInHaler > 0 
-                ? 'bg-sky-50 text-sky-700 border border-sky-200' 
-                : 'bg-amber-50 text-amber-700 border border-amber-200'
+              : 'bg-slate-50 text-slate-900 border border-slate-200'
           }`}>
             <span className="flex items-center gap-1.5">
-              {diffInHaler === 0 ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+              {diffInHaler === 0
+                ? <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                : <SlidersHorizontal className="w-4 h-4 text-slate-500" aria-hidden="true" />}
               {diffInHaler === 0 ? 'Zůstatky se shodují' : 'Korekce'}
             </span>
-            <span className="font-bold">
+            {/* Barva rozdílu jen podle znaménka: přibývá zeleně, ubývá červeně – stejně jako v seznamech */}
+            <span className={`font-bold ${diffInHaler > 0 ? 'text-emerald-600' : diffInHaler < 0 ? 'text-red-600' : ''}`}>
               {formatCurrency(diffInHaler, { showPlus: true })}
             </span>
           </div>
@@ -132,13 +133,13 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </label>
           <div className="relative">
             <input id={`${fieldId}-1`}
-              type="number"
-              step="any"
+              type="text"
+              autoComplete="off"
               required
               value={actualBalanceStr}
               onChange={(e) => { setActualBalanceStr(e.target.value); setErrors(prev => ({ ...prev, balance: undefined })); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.balance)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.balance, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
+              className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.balance, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
             />
             <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
           </div>

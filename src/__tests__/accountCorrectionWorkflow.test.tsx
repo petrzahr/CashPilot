@@ -50,6 +50,9 @@ function form(render: () => React.ReactNode) {
   };
 }
 
+// Peněžní pole jsou textová (česká desetinná čárka), poznají se podle vypnutého automatického doplňování
+const isMoneyInput = (n: React.ReactElement<any>) => n.props.autoComplete === 'off';
+
 afterEach(() => { bridge.finance = null; vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 it('saves valuations and monthly fees separately and keeps them through general editing', () => {
@@ -72,9 +75,9 @@ it('saves valuations and monthly fees separately and keeps them through general 
   capture();
   const accountForm = form(() => AccountModal({ isOpen: true, onClose() {} }));
   accountForm.change(accountForm.nodes().find(n => n.type === 'select')!, 'investment');
-  accountForm.change(accountForm.nodes().find(n => n.type === 'input' && n.props.type === 'text')!, 'Investment');
-  accountForm.change(accountForm.nodes().find(n => n.type === 'input' && n.props.type === 'number')!, '100000');
-  expect(accountForm.nodes().filter(n => n.type === 'input' && n.props.type === 'number')).toHaveLength(1);
+  accountForm.change(accountForm.nodes().find(n => n.type === 'input' && n.props.type === 'text' && !isMoneyInput(n))!, 'Investment');
+  accountForm.change(accountForm.nodes().find(n => n.type === 'input' && isMoneyInput(n))!, '100000');
+  expect(accountForm.nodes().filter(n => n.type === 'input' && isMoneyInput(n))).toHaveLength(1);
   accountForm.submit();
   accountForm.close();
   expect(data.accounts[0]).not.toHaveProperty('investedAmountAdjustmentInHaler');
@@ -82,7 +85,7 @@ it('saves valuations and monthly fees separately and keeps them through general 
   for (const [feeInput, previousFee] of [['1000', ''], ['2500', '1000']]) {
     capture();
     const market = form(() => MarketValueModal({ isOpen: true, onClose() {}, account: data.accounts[0] }));
-    const numbers = market.nodes().filter(n => n.type === 'input' && n.props.type === 'number');
+    const numbers = market.nodes().filter(n => n.type === 'input' && isMoneyInput(n));
     expect(numbers).toHaveLength(1);
     market.change(numbers[0], '120000');
     market.submit();
@@ -92,7 +95,7 @@ it('saves valuations and monthly fees separately and keeps them through general 
     // Poplatek se zadává zvlášť, nejvýše jeden za období; existující se předvyplní a přepíše.
     capture();
     const feeForm = form(() => InvestmentFeeModal({ isOpen: true, onClose() {}, account: data.accounts[0] }));
-    const feeAmount = feeForm.nodes().find(n => n.type === 'input' && n.props.type === 'number')!;
+    const feeAmount = feeForm.nodes().find(n => n.type === 'input' && isMoneyInput(n))!;
     expect(feeAmount.props.value).toBe(previousFee);
     feeForm.change(feeAmount, feeInput);
     feeForm.submit();
@@ -101,8 +104,8 @@ it('saves valuations and monthly fees separately and keeps them through general 
     const expected = -Number(feeInput) * 100;
     capture();
     const edit = form(() => AccountModal({ isOpen: true, onClose() {}, accountToEdit: data.accounts[0] }));
-    expect(edit.nodes().filter(n => n.type === 'input' && n.props.type === 'number')).toHaveLength(1);
-    edit.change(edit.nodes().find(n => n.type === 'input' && n.props.type === 'text')!, 'Renamed investment');
+    expect(edit.nodes().filter(n => n.type === 'input' && isMoneyInput(n))).toHaveLength(1);
+    edit.change(edit.nodes().find(n => n.type === 'input' && n.props.type === 'text' && !isMoneyInput(n))!, 'Renamed investment');
     edit.submit();
     edit.close();
     saveStoredData(data, 'workflow-test');

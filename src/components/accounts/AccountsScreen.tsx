@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
-import { formatCurrency, subHaler } from '../../services/currencyService';
+import { formatCurrency, formatPercent, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
 import { ReconciliationModal } from './ReconciliationModal';
@@ -14,6 +14,7 @@ import { ConfirmationModal } from '../common/ConfirmationModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MoveButtons } from '../shared/MoveButtons';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
+import { describeUsage, getAccountUsage, isInUse, UsageCount } from '../../services/usageService';
 import {
   Plus, 
   Archive, 
@@ -34,6 +35,7 @@ export const AccountsScreen: React.FC = () => {
     transactions,
     corrections,
     marketValueSnapshots,
+    recurringRules,
     archiveAccount,
     restoreAccount,
     deleteAccount,
@@ -42,7 +44,11 @@ export const AccountsScreen: React.FC = () => {
   } = useFinance();
 
   // Čekající potvrzení archivace nebo smazání účtu (vlastní dialog místo window.confirm)
-  const [pendingAction, setPendingAction] = useState<{ kind: 'archive' | 'delete'; account: Account } | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: 'archive' | 'delete'; account: Account }
+    | { kind: 'blocked'; account: Account; usage: UsageCount }
+    | null
+  >(null);
 
   const [showArchived, setShowArchived] = useState(false);
   const [typeFilters, setTypeFilters] = useState<AccountType[]>([]);
@@ -129,14 +135,22 @@ export const AccountsScreen: React.FC = () => {
     runArchive(acc);
   };
 
+  // Použitý účet smazat nejde – místo varování „nelze vrátit“ rovnou nabídneme archivaci
   const handleDelete = (acc: Account) => {
-    setPendingAction({ kind: 'delete', account: acc });
+    const usage = getAccountUsage(acc.id, transactions, recurringRules);
+    setPendingAction(isInUse(usage)
+      ? { kind: 'blocked', account: acc, usage }
+      : { kind: 'delete', account: acc });
   };
 
   const confirmPendingAction = () => {
     if (!pendingAction) return;
     if (pendingAction.kind === 'archive') {
       runArchive(pendingAction.account);
+      return;
+    }
+    if (pendingAction.kind === 'blocked') {
+      if (pendingAction.account.status === 'active') runArchive(pendingAction.account);
       return;
     }
     const res = deleteAccount(pendingAction.account.id);
@@ -147,6 +161,12 @@ export const AccountsScreen: React.FC = () => {
 
   const pendingMessage = !pendingAction
     ? ''
+    : pendingAction.kind === 'blocked'
+      ? `Účet „${pendingAction.account.name}“ používá ${describeUsage(pendingAction.usage)}, proto ho nejde smazat. ${
+          pendingAction.account.status === 'active'
+            ? `Můžete ho archivovat: zmizí z nabídek, ale historie zůstane.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`
+            : 'Účet už je archivovaný, v nabídkách se nezobrazuje.'
+        }`
     : pendingAction.kind === 'archive'
       ? `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`
       : `Účet „${pendingAction.account.name}“ se smaže. Smazání nelze vrátit.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`;
@@ -353,7 +373,7 @@ export const AccountsScreen: React.FC = () => {
                       </>}
                     </span>
                     <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {unrealizedProfitHaler >= 0 ? '+' : ''}{formatCurrency(unrealizedProfitHaler)} ({unrealizedPct >= 0 ? '+' : ''}{unrealizedPct.toFixed(1)} %)
+                      {formatCurrency(unrealizedProfitHaler, { showPlus: true })} ({formatPercent(unrealizedPct, { showPlus: true })})
                     </span>
                   </div>
                 )}
@@ -487,9 +507,18 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!pendingAction}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmPendingAction}
-        title={pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet?' : 'Smazat účet?'}
+        title={
+          pendingAction?.kind === 'blocked' ? 'Účet nejde smazat'
+            : pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet?'
+            : 'Smazat účet?'
+        }
         message={pendingMessage}
-        confirmText={pendingAction?.kind === 'archive' ? 'Archivovat účet' : 'Smazat účet'}
+        confirmText={
+          pendingAction?.kind === 'blocked'
+            ? (pendingAction.account.status === 'active' ? 'Archivovat účet' : 'Rozumím')
+            : pendingAction?.kind === 'archive' ? 'Archivovat účet' : 'Smazat účet'
+        }
+        showCancel={!(pendingAction?.kind === 'blocked' && pendingAction.account.status !== 'active')}
         isDestructive={pendingAction?.kind === 'delete'}
       />
     </div>

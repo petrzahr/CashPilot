@@ -6,7 +6,7 @@ import { AccountsScreen } from '../components/accounts/AccountsScreen';
 import { Account, Transaction } from '../types/finance';
 import { AppData, getInitialData } from '../services/storageService';
 import { SyncController } from '../services/syncController';
-import { formatCurrency } from '../services/currencyService';
+import { formatCurrency, formatPercent } from '../services/currencyService';
 
 afterEach(() => vi.useRealTimers());
 
@@ -36,5 +36,5 @@ it('shows the current period investment card at period end, like the expected ba
   expect(html).toContain(`Vklady: ${formatCurrency(10500000)}`);
   expect(html).toContain(`Vklady po poplatcích: ${formatCurrency(10480000)}`);
   // Výnos = 115 000 − (105 000 − 200) = 10 200 Kč; plánovaný vklad ho nemění.
-  expect(html).toContain(`+${formatCurrency(1020000)} (+9.7 %)`);
+  expect(html).toContain(`${formatCurrency(1020000, { showPlus: true })} (${formatPercent(9.7, { showPlus: true })})`);
 });

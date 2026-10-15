@@ -18,7 +18,8 @@ import {
   Eye,
   SlidersHorizontal,
   AlertTriangle,
-  Repeat
+  Repeat,
+  X
 } from 'lucide-react';
 import { } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
@@ -26,6 +27,7 @@ import { czechStringCompare } from '../../services/categoryService';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
+import { RowActionsMenu } from '../shared/RowActionsMenu';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
   { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
@@ -71,6 +73,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
+  // „Smazat korekci“ otevře detail rovnou s potvrzením smazání, oko jen detail
+  const [correctionDeleteFirst, setCorrectionDeleteFirst] = useState(false);
+  const openCorrection = (tx: Transaction, deleteFirst = false) => {
+    setCorrectionDeleteFirst(deleteFirst);
+    setSelectedCorrection(tx);
+  };
 
   // Stav probíhající změny stavu položky (Akce sloupec)
   const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
@@ -295,12 +303,25 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     selectedPeriod
   ]);
 
+  // Počet aktivních filtrů pro tlačítko „Zrušit filtry“ (volba období je samostatný přepínač)
+  const activeFilterCount = [
+    search.trim(), accountFilter, mainCategoryFilter, subCategoryFilter, typeFilter, statusFilter,
+  ].filter(f => f.length > 0).length;
+  const clearFilters = () => {
+    setSearch('');
+    setAccountFilter([]);
+    setMainCategoryFilter([]);
+    setSubCategoryFilter([]);
+    setTypeFilter([]);
+    setStatusFilter([]);
+  };
+
   // Prázdný seznam: odliší chybějící položky od filtrů, které nic nenašly
   const emptyListMessage = baseTransactions.length === 0
     ? (periodFilter === 'current'
       ? 'V tomto období zatím nejsou žádné položky. Zobrazte všechny položky, nebo přidejte novou.'
       : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Přidat položku.')
-    : 'Filtrům neodpovídá žádná položka. Upravte nebo zrušte filtry.';
+    : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const filteredTransactionsSum = useMemo(() => {
@@ -410,7 +431,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 3. Účet */}
           <div>
             <MultiSelectDropdown
-              placeholder="Všechny účty"
+              label="Účet" placeholder="Všechny účty"
               selected={accountFilter}
               onChange={setAccountFilter}
               options={sortedAccounts.map(a => ({
@@ -423,7 +444,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 4. Hlavní kategorie */}
           <div>
             <MultiSelectDropdown
-              placeholder="Všechny kategorie"
+              label="Kategorie" placeholder="Všechny kategorie"
               selected={mainCategoryFilter}
               onChange={handleMainCategoryChange}
               options={availableMainCategories.map(c => ({
@@ -436,7 +457,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 5. Podkategorie */}
           <div>
             <MultiSelectDropdown
-              placeholder="Všechny podkategorie"
+              label="Podkategorie" placeholder="Všechny podkategorie"
               disabled={mainCategoryFilter.length === 0 || availableSubCategories.length === 0}
               disabledPlaceholder={mainCategoryFilter.length === 0 ? 'Nejprve vyberte hlavní kategorii' : 'Žádné podkategorie'}
               selected={subCategoryFilter}
@@ -451,7 +472,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 6. Typ */}
           <div>
             <MultiSelectDropdown
-              placeholder="Všechny typy"
+              label="Typ" placeholder="Všechny typy"
               selected={typeFilter}
               onChange={setTypeFilter}
               options={TYPE_OPTIONS.map(t => ({ value: t.value, label: t.label }))}
@@ -461,13 +482,26 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* 7. Stav */}
           <div>
             <MultiSelectDropdown
-              placeholder="Všechny stavy"
+              label="Stav" placeholder="Všechny stavy"
               selected={statusFilter}
               onChange={setStatusFilter}
               options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))}
             />
           </div>
         </div>
+
+        {activeFilterCount > 0 && (
+          <div className="flex justify-end -mt-1">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" aria-hidden="true" />
+              Zrušit filtry ({activeFilterCount})
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabulka položek */}
@@ -546,7 +580,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                     <tr
                       key={tx.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isCancelled ? 'opacity-50 line-through' : isCorrection ? 'bg-amber-50/30' : conflict ? 'bg-rose-50/30' : ''
+                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : isCorrection ? 'bg-slate-50/60' : conflict ? 'bg-rose-50/30' : ''
                       }`}
                     >
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
@@ -562,10 +596,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                           {isCorrection ? (
                             <button
                               type="button"
-                              onClick={() => setSelectedCorrection(tx)}
-                              className="hover:text-amber-800 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
+                              onClick={() => openCorrection(tx)}
+                              className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
                             >
-                              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
                               <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
@@ -577,7 +611,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
@@ -595,7 +629,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {isCorrection ? (
-                          <span className="text-amber-800 font-medium text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                          <span className="text-slate-600 font-medium text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                             Korekce zůstatku
                           </span>
                         ) : cat ? (
@@ -637,12 +671,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </td>
                       <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
                         isCorrection
-                          ? (diff >= 0 ? 'text-emerald-700' : 'text-amber-700')
+                          ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
                           : tx.type === 'income' 
                             ? 'text-emerald-600' 
                             : tx.type === 'expense' 
-                              ? 'text-red-600' 
-                              : 'text-sky-600'
+                              ? 'text-red-600'
+                              : 'text-slate-900'
                       }`}>
                         {isCorrection
                           ? formatCurrency(diff, { showPlus: true })
@@ -654,7 +688,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             <>
                               <button
                                 type="button"
-                                onClick={() => setSelectedCorrection(tx)}
+                                onClick={() => openCorrection(tx)}
                                 title="Detail a poznámka korekce"
                                 aria-label={`Detail a poznámka korekce: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
@@ -663,10 +697,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setSelectedCorrection(tx)}
+                                onClick={() => openCorrection(tx, true)}
                                 title="Smazat korekci"
                                 aria-label={`Smazat korekci: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50"
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -702,44 +736,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat položku"
-                                aria-label={`Duplikovat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              {!isCancelled ? (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'cancelled')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Zrušit položku"
-                                  aria-label={`Zrušit položku: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
-                                >
-                                  <Ban className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Vrátit zrušenou položku do plánovaných"
-                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                >
-                                  <Clock className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeletingTx(tx)}
-                                disabled={isDeletingTx}
-                                title="Smazat položku"
-                                aria-label={`Smazat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-500 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              <RowActionsMenu
+                                itemLabel={tx.title}
+                                actions={[
+                                  { label: 'Duplikovat', Icon: Copy, onSelect: () => duplicateTransaction(tx) },
+                                  tx.status !== 'cancelled'
+                                    ? { label: 'Zrušit položku', Icon: Ban, onSelect: () => handleStatusChange(tx.id, 'cancelled'), disabled: updatingStatusTxId === tx.id }
+                                    : { label: 'Obnovit do plánovaných', Icon: Clock, onSelect: () => handleStatusChange(tx.id, 'planned'), disabled: updatingStatusTxId === tx.id },
+                                  { label: 'Smazat položku', Icon: Trash2, onSelect: () => setDeletingTx(tx), disabled: isDeletingTx, destructive: true },
+                                ]}
+                              />
                             </>
                           )}
                         </div>
@@ -778,6 +784,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
         correctionItem={selectedCorrection}
+        startWithDeleteConfirm={correctionDeleteFirst}
       />
     </div>
   );

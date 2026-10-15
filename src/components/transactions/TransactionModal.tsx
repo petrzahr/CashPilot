@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useId, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
@@ -169,6 +169,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transactionToEdit?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
 
+  // Rychlý zápis: nová položka začíná rovnou v poli Částka (na telefonu se otevře klávesnice)
+  const addAnotherRef = useRef(false);
+  const focusAmountField = () => {
+    requestAnimationFrame(() => document.getElementById(`${fieldId}-2`)?.focus());
+  };
+  useEffect(() => {
+    if (isOpen && !transactionToEdit) focusAmountField();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, transactionToEdit?.id]);
+
   // Při změně data v editačním formuláři ihned přepočti a předvyplň pořadí pro nově zvolený den
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
@@ -225,6 +235,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Které tlačítko formulář odeslalo; příznak se hned shodí, aby nepřežil neúspěšnou validaci
+    const addAnother = addAnotherRef.current;
+    addAnotherRef.current = false;
     if (isSaving) return;
     const amountInHaler = parseInputToHaler(amountStr);
     const sequenceNum = Math.max(1, parseInt(sequenceStr, 10) || 1);
@@ -392,7 +405,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             note,
         });
       }
-      onClose();
+      if (addAnother && !isEditing && !isRecurring) {
+        // „Uložit a další“: datum, typ, účet a kategorie zůstávají, vyplňuje se jen částka a název
+        setTitle('');
+        setAmountStr('');
+        setNote('');
+        setSequenceStr(String(sequenceNum + 1));
+        setErrors({});
+        focusAmountField();
+      } else {
+        onClose();
+      }
     } catch (err) {
       console.error(err);
       setSaveError(err instanceof Error && err.message ? err.message : 'Položku se nepodařilo uložit. Zkuste to prosím znovu.');
@@ -785,6 +808,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           >
             Zrušit
           </button>
+          {!isEditing && !isRecurring && (
+            <button
+              type="submit"
+              disabled={isSaving}
+              onClick={() => { addAnotherRef.current = true; }}
+              className="px-4 py-2 text-sm font-semibold text-sky-700 bg-white border border-slate-200 rounded-xl hover:bg-sky-50 transition-colors disabled:opacity-50"
+            >
+              Uložit a další
+            </button>
+          )}
           <button
             type="submit"
             disabled={isSaving}
