@@ -60,37 +60,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-slate-200/80 flex flex-col transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-5 space-y-6">
-          {/* Logo a záhlaví */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
-                <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
-              </div>
-              <div>
-                <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
-                  CashPilot
-                </span>
-                <span className="text-xs text-slate-500 font-medium tracking-wide block mt-0.5">
-                  Vaše osobní finance pod kontrolou
-                </span>
-              </div>
+        {/* Logo a záhlaví: výška a spodní linka navazují na hlavičku obsahu */}
+        <div className="h-16 shrink-0 px-5 border-b border-slate-200/80 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+              <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
             </div>
-
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              aria-label="Zavřít menu"
-              className="p-3 -m-2 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="min-w-0">
+              <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
+                CashPilot
+              </span>
+              <span className="text-xs leading-4 text-slate-500 font-medium block mt-1">
+                Vaše osobní finance pod kontrolou
+              </span>
+            </div>
           </div>
 
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            aria-label="Zavřít menu"
+            className="p-3 -m-2 shrink-0 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Akce a navigace: při nízkém okně se posouvá, přehled majetku zůstává dole */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 pb-3 space-y-6">
           {/* Rychlé tlačítko přidání */}
           <button
             onClick={() => {
@@ -129,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
-        <div className="p-3.5 m-3 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
+        <div className="shrink-0 p-3.5 m-3 mt-0 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>

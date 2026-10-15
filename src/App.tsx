@@ -91,7 +91,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-dvh bg-slate-50 overflow-hidden">
       {/* Postranní navigace */}
       <Sidebar
         currentScreen={currentScreen}

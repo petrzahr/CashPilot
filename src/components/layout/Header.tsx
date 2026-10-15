@@ -111,7 +111,8 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 ></span>
               </span>
-              <span className="hidden lg:inline">
+              {/* Text stavu ustupuje názvu obrazovky; do 1280px stačí barevná tečka a popisek tlačítka */}
+              <span className="hidden xl:inline">
                 {SYNC_LABELS[driveSyncStatus]}
               </span>
             </button>
