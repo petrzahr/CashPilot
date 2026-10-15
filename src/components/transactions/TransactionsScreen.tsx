@@ -466,7 +466,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       {/* Tabulka položek */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap table-fixed">
+          <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
                 <th
