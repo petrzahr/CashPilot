@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { PeriodRangeSelector } from '../components/shared/PeriodRangeSelector';
+import { DualPeriodFilterPanel } from '../components/shared/DualPeriodFilterPanel';
 import { calculateForecast } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 import { getInitialData } from '../services/storageService';
@@ -38,6 +39,8 @@ function render() {
 }
 function nodes(element: any): any[] {
   if (!element || typeof element !== 'object') return [];
+  // Rozbalí sdílený filtr, aby byla jeho tlačítka a výběr měsíců dostupná
+  if (element.type === DualPeriodFilterPanel) return [element, ...nodes(DualPeriodFilterPanel(element.props))];
   return [element, ...React.Children.toArray(element.props?.children).flatMap(nodes)];
 }
 function click(text: string) {

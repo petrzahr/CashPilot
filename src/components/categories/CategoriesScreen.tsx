@@ -74,7 +74,7 @@ export const CategoriesScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {/* Hlavička správy kategorií */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
@@ -153,7 +153,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.2 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
+                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-500 rounded">
                           Archivovaná
                         </span>
                       )}

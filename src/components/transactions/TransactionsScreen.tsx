@@ -315,7 +315,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   }, [filteredTransactions]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6">
       {dataConflicts && dataConflicts.length > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
@@ -373,7 +373,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         </div>
 
         {/* Společný panel filtrů */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-3 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-3 border-t border-slate-100 text-xs">
           {/* 1. Vyhledávání */}
           <div className="relative sm:col-span-2 lg:col-span-2">
             <input
@@ -566,7 +566,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold shrink-0">
                               Korekce
                             </span>
                           )}
@@ -588,10 +588,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                             Korekce zůstatku
                           </span>
                         ) : cat ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                            <span className="truncate">{cat.name}</span>
-                            {subCat && <span className="text-slate-500 truncate">› {subCat.name}</span>}
+                          <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                              <span className="truncate">{cat.name}</span>
+                            </div>
+                            {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
                           </div>
                         ) : tx.type === 'transfer' ? (
                           <span className="text-sky-600 font-medium">Převod</span>
@@ -601,9 +603,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                       </td>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {sourceAcc ? (
-                          <span className="flex items-center gap-1">
-                            <span className="truncate">{sourceAcc.name}</span>
-                            {targetAcc && <span className="text-sky-600 shrink-0">→ {targetAcc.name}</span>}
+                          <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
+                            <span className="block truncate">{sourceAcc.name}</span>
+                            {targetAcc && <span className="block text-sky-600 truncate">→ {targetAcc.name}</span>}
                           </span>
                         ) : '—'}
                       </td>

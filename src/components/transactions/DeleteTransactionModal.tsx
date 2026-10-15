@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Transaction } from '../../types/finance';
 import { AlertTriangle, Loader2, Repeat, Trash2 } from 'lucide-react';
 
@@ -73,7 +73,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
       <div className="space-y-4">
         {/* Chybová zpráva, pokud nastala chyba */}
         {errorMessage && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
             {errorMessage}
           </div>
         )}
@@ -177,7 +177,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
 
             {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}
             {(recurringMode === 'future' || recurringMode === 'series') && hasExecutedHistorical && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   <span>Série obsahuje již uskutečněné historické položky</span>
@@ -203,7 +203,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
         )}
 
         {/* Tlačítka akce */}
-        <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -227,7 +227,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               <span>Smazat položku</span>
             )}
           </button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

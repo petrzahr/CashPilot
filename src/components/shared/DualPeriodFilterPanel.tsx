@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { formatMonthsCount, formatCzechDate } from '../../services/periodService';
-import { BudgetPeriodInfo, DualPeriodRange } from '../../services/analyticsEngine';
+import { DualPeriodRange } from '../../services/analyticsEngine';
 import { PeriodRangeSelector } from './PeriodRangeSelector';
 import { Calendar } from 'lucide-react';
 
 interface DualPeriodFilterPanelProps {
   range: DualPeriodRange;
   onRangeChange: (range: DualPeriodRange) => void;
-  periods: BudgetPeriodInfo[];
+  // Stačí klíč a hranice období – vyhovuje BudgetPeriod i BudgetPeriodInfo
+  periods: { key: string; startDate: string; endDate: string }[];
   currentPeriodKey: string;
   ariaLabel: string;
 }
@@ -33,11 +34,11 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
   if (!firstPeriod || !lastPeriod) return null;
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label={ariaLabel}>
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label={ariaLabel}>
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-slate-900 w-20">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+            <span className="text-sm font-bold text-slate-900 w-20 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
             {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
               const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
               return <button
@@ -53,7 +54,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
               </button>;
             })}
           </div>
-          <div className="ml-auto max-w-full">
+          <div className="ml-auto max-w-full max-sm:w-full">
             <PeriodRangeSelector
               from={drafts[direction].from}
               to={drafts[direction].to}
@@ -79,7 +80,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
       <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
         <Calendar className="w-3.5 h-3.5" />
         {formatCzechDate(firstPeriod.startDate)} – {formatCzechDate(lastPeriod.endDate)}
-        {periods.some(p => p.isCurrentPeriod) && <span>· Včetně aktuálního rozpočtového období</span>}
+        {periods.some(p => p.key === currentPeriodKey) && <span>· Včetně aktuálního rozpočtového období</span>}
       </p>
     </div>
   );

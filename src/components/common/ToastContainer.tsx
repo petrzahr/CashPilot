@@ -31,7 +31,7 @@ export const ToastContainer: React.FC = () => {
           <div
             key={toast.id}
             role={toast.type === 'error' ? 'alert' : undefined}
-            className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-lg backdrop-blur-sm transition-all duration-200 ${bgClass}`}
+            className={`pointer-events-auto flex items-center justify-between p-4 rounded-xl border shadow-lg backdrop-blur-sm transition-all duration-200 ${bgClass}`}
           >
             <div className="flex items-center gap-3">
               <span className="shrink-0" aria-hidden="true">{icon}</span>

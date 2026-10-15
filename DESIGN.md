@@ -165,7 +165,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 
 ## Layout
 
-Postranní panel 256px vlevo (na mobilu vysouvací zásuvka), hlavička 64px a obsah v kontejneru do 1280px s okrajem 16px (mobil) / 24px (od 640px). Obsah tvoří mřížky karet: KPI v řadách po 2–7, přehledy po 1–4 sloupcích. Rytmus stojí na 4px kroku; uvnitř karet převažují mezery 8–12px, mezi kartami 16–24px. Zlomy: 640px (sm), 768px (md, objeví se postranní panel), 1024px (lg, v hlavičce se ukážou textové popisky). Široké tabulky se posouvají vodorovně ve vlastním kontejneru, stránka nikdy.
+Postranní panel 256px vlevo (na mobilu vysouvací zásuvka), hlavička 64px a obsah v kontejneru do 1280px s okrajem 16px (mobil) / 24px (od 640px). Obsah tvoří mřížky karet: KPI v řadách po 2–7, přehledy po 1–4 sloupcích. Rytmus stojí na 4px kroku; uvnitř karet převažují mezery 8–12px, mezi kartami 16–24px. Husté číselné dlaždice mají vnitřní okraj 12px, vnořené informační panely 16px; mezi sekcemi obrazovky je 24px, související bloky (např. řady KPI) drží u sebe 12–16px. Spodní okraj 64px patří rámci aplikace, ne jednotlivým obrazovkám. Řady se 7–8 dlaždicemi nebo filtry se plně rozkládají až od 1280px (xl), pod tím se lámou do 4 sloupců. Nastavení má od 1280px vpravo lepkavý obsah stránky se zvýrazněním aktuální sekce. Zlomy: 640px (sm), 768px (md, objeví se postranní panel), 1024px (lg, v hlavičce se ukáže popisek „Aktuální období“), 1280px (xl, text stavu synchronizace). Široké tabulky se posouvají vodorovně ve vlastním kontejneru, stránka nikdy.
 
 ## Elevation & Depth
 
@@ -202,6 +202,11 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 - **Shadow Strategy:** stín Karta.
 - **Border:** 1px vlasová linka.
 - **Internal Padding:** 20px (24px u sekcí Nastavení).
+
+### Dialogs
+- **Structure:** pevná hlavička, posouvající se obsah a akční lišta `ModalFooter` přilepená ke spodnímu okraji; dialog se vždy vejde do viditelné výšky (okraj 16px, od 640px 24px) a nikdy se neposouvá dvakrát.
+- **Spacing:** vnitřní okraj 20px na mobilu, 24px od 640px; pole 16px od sebe, 24px nad akční lištou.
+- **Fields & actions:** pole i tlačítka v liště mají 40px, na dotyku 44px; na úzkém mobilu se tlačítka roztáhnou na šířku lišty.
 
 ### Inputs / Fields
 - **Style:** povrch, 1px linka, zaoblení 12px, text 14px.

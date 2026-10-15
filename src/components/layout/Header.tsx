@@ -111,13 +111,14 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 ></span>
               </span>
-              <span className="hidden lg:inline">
+              {/* Text stavu ustupuje názvu obrazovky; do 1280px stačí barevná tečka a popisek tlačítka */}
+              <span className="hidden xl:inline">
                 {SYNC_LABELS[driveSyncStatus]}
               </span>
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-3.5 z-50 space-y-3 text-xs">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-4 z-50 space-y-3 text-xs">
                 {/* Uživatelský profil / Stav */}
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                   {driveUser?.photoLink ? (

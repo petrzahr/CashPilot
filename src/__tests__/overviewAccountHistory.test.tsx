@@ -17,7 +17,7 @@ vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 // default (it used to auto-expand the current period). This test needs that
 // breakdown table rendered to check per-account computed values, and the
 // project has no jsdom/testing-library set up to click the accordion open,
-// so when explicitly enabled we force the 6th useState call
+// so when explicitly enabled we force the 4th useState call
 // (expandedPeriodKey, in source order) to the desired key instead of its
 // normal `null` default. Disabled by default so it never touches any other
 // component's hooks (e.g. AccountsScreen, rendered elsewhere in this file).
@@ -30,7 +30,7 @@ vi.mock('react', async importOriginal => {
     useState: (initial: unknown) => {
       if (!expandOverride.enabled) return actual.useState(initial);
       useStateCallIndex += 1;
-      return actual.useState(useStateCallIndex === 6 ? expandOverride.key : initial);
+      return actual.useState(useStateCallIndex === 4 ? expandOverride.key : initial);
     },
   };
 });

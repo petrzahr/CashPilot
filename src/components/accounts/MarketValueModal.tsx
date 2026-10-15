@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account, MarketValueSnapshot } from '../../types/finance';
 import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
@@ -101,7 +101,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
       maxWidth="max-w-md"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-500">Vložené prostředky:</span>
             <span className="font-semibold text-slate-900">{formatCurrency(investedHaler)}</span>
@@ -157,7 +157,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
                 {...fieldErrorProps(`${fieldId}-2`, errors.value)}
                 className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.value, 'border-slate-200 focus:ring-2 focus:ring-purple-500')} font-semibold`}
               />
-              <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>
             <FieldError inputId={`${fieldId}-2`} message={errors.value} />
           </div>
@@ -176,14 +176,14 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           />
         </div>
 
-        <div className="flex items-start gap-2 p-3 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
+        <div className="flex items-start gap-2 p-4 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             Změna tržní hodnoty majetkového účtu není příjem ani výdaj a neovlivňuje provozní rozpočet ani použitelné peníze. Ovlivňuje pouze hodnotu tohoto účtu a celkový čistý majetek.
           </span>
         </div>
 
-        <div className="mt-5 flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -199,7 +199,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
           >
             {isSubmitting ? 'Ukládám...' : 'Uložit hodnotu'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

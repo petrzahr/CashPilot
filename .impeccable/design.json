@@ -1,22 +1,33 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T12:00:00Z",
+  "generatedAt": "2026-10-15T15:30:00Z",
   "title": "Design System: CashPilot",
   "extensions": {
     "colorMeta": {
       "pilot-blue": { "role": "primary", "displayName": "Pilotní modř", "canonical": "rgb(var(--c-sky-600))", "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0278b6", "#0ea5e9", "#7dd3fc", "#e0f2fe"] },
+      "pilot-blue-deep": { "role": "primary", "displayName": "Hluboká pilotní modř", "canonical": "rgb(var(--c-sky-700))" },
+      "pilot-blue-tint": { "role": "primary", "displayName": "Modrý nádech", "canonical": "rgb(var(--c-sky-50))" },
+      "canvas": { "role": "neutral", "displayName": "Plátno", "canonical": "rgb(var(--c-slate-50))", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#607087", "#cbd5e1", "#f1f5f9", "#f8fafc"] },
+      "surface": { "role": "neutral", "displayName": "Povrch", "canonical": "rgb(var(--c-white))" },
+      "fill": { "role": "neutral", "displayName": "Výplň", "canonical": "rgb(var(--c-slate-100))" },
+      "hairline": { "role": "neutral", "displayName": "Linka", "canonical": "rgb(var(--c-slate-200))" },
+      "ink": { "role": "neutral", "displayName": "Inkoust", "canonical": "rgb(var(--c-slate-900))" },
+      "ink-secondary": { "role": "neutral", "displayName": "Vedlejší inkoust", "canonical": "rgb(var(--c-slate-500))" },
       "income-green": { "role": "secondary", "displayName": "Zelená příjmu", "canonical": "rgb(var(--c-emerald-600))", "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#04835d", "#10b981", "#6ee7b7", "#d1fae5"] },
       "expense-red": { "role": "secondary", "displayName": "Červená výdaje", "canonical": "rgb(var(--c-red-600))", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#d62424", "#ef4444", "#fca5a5", "#fee2e2"] },
       "planned-amber": { "role": "secondary", "displayName": "Jantar plánu", "canonical": "rgb(var(--c-amber-700))", "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#b85709", "#f59e0b", "#fcd34d", "#fef3c7"] },
+      "planned-amber-tint": { "role": "secondary", "displayName": "Jantarový nádech", "canonical": "rgb(var(--c-amber-50))" },
       "investment-purple": { "role": "secondary", "displayName": "Fialová investic", "canonical": "rgb(var(--c-purple-600))", "tonalRamp": ["#3b0764", "#581c87", "#6b21a8", "#7e22ce", "#9333ea", "#a855f7", "#d8b4fe", "#f3e8ff"] },
-      "canvas": { "role": "neutral", "displayName": "Plátno", "canonical": "rgb(var(--c-slate-50))", "tonalRamp": ["#0b1322", "#121c30", "#1a2640", "#263452", "#607087", "#cbd5e1", "#f1f5f9", "#f8fafc"] },
-      "ink": { "role": "neutral", "displayName": "Inkoust", "canonical": "rgb(var(--c-slate-900))" },
-      "night-canvas": { "role": "neutral", "displayName": "Noční plátno", "canonical": "#0b1322" },
-      "night-surface": { "role": "neutral", "displayName": "Noční povrch", "canonical": "#121c30" },
-      "night-blue": { "role": "primary", "displayName": "Noční modř", "canonical": "#38bdf8" }
+      "night-canvas": { "role": "neutral", "displayName": "Noční plátno", "canonical": "rgb(var(--c-slate-50)) v data-theme=dark", "tonalRamp": ["#0b1322", "#121c30", "#1a2640", "#263452", "#384a70", "#62759a", "#97a6c0", "#eef2f8"] },
+      "night-surface": { "role": "neutral", "displayName": "Noční povrch", "canonical": "rgb(var(--c-white)) v data-theme=dark" },
+      "night-fill": { "role": "neutral", "displayName": "Noční výplň", "canonical": "rgb(var(--c-slate-100)) v data-theme=dark" },
+      "night-hairline": { "role": "neutral", "displayName": "Noční linka", "canonical": "rgb(var(--c-slate-200)) v data-theme=dark" },
+      "night-ink": { "role": "neutral", "displayName": "Noční inkoust", "canonical": "rgb(var(--c-slate-900)) v data-theme=dark" },
+      "night-ink-secondary": { "role": "neutral", "displayName": "Noční vedlejší inkoust", "canonical": "rgb(var(--c-slate-500)) v data-theme=dark" },
+      "night-blue": { "role": "primary", "displayName": "Noční modř", "canonical": "rgb(var(--c-sky-600)) v data-theme=dark", "tonalRamp": ["#102941", "#0f334f", "#0a466e", "#056fa9", "#0ea5e9", "#38bdf8", "#7dd3fc", "#e0f2fe"] }
     },
     "typographyMeta": {
-      "kpi": { "displayName": "KPI", "purpose": "Hlavní čísla na kartách rozpočtu." },
+      "kpi": { "displayName": "KPI", "purpose": "Hlavní čísla na kartách rozpočtu. Na telefonu (pod 640px) ve dvousloupcové řadě o stupeň menší (20px), aby se celé částky vešly bez oříznutí." },
       "headline": { "displayName": "Headline", "purpose": "Název obrazovky a nadpisy sekcí." },
       "title": { "displayName": "Title", "purpose": "Nadpisy karet, kategorií a účtů." },
       "body": { "displayName": "Body", "purpose": "Data, tabulky, popisy; spodní hranice 12px." },
@@ -62,9 +73,17 @@
       "name": "KPI Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "Rozpočtová karta s popiskem a hlavním číslem.",
+      "description": "Rozpočtová karta s popiskem a hlavním číslem; na telefonu číslo 20px, od 640px 24px.",
       "html": "<div class=\"ds-card\"><span class=\"ds-card-label\">Použitelný zůstatek</span><span class=\"ds-card-value\">364 630 Kč</span></div>",
-      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; padding: 20px; background: rgb(var(--c-white, 255 255 255)); border: 1px solid rgb(var(--c-slate-200, 226 232 240) / 0.8); border-radius: 16px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-card-label { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: rgb(var(--c-slate-500, 96 112 135)); } .ds-card-value { font-size: 24px; font-weight: 800; color: rgb(var(--c-slate-900, 15 23 42)); font-variant-numeric: tabular-nums; }"
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 4px; padding: 20px; background: rgb(var(--c-white, 255 255 255)); border: 1px solid rgb(var(--c-slate-200, 226 232 240) / 0.8); border-radius: 16px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; } .ds-card-label { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: rgb(var(--c-slate-500, 96 112 135)); } .ds-card-value { font-size: 20px; font-weight: 800; color: rgb(var(--c-slate-900, 15 23 42)); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } @media (min-width: 640px) { .ds-card-value { font-size: 24px; } }"
+    },
+    {
+      "name": "Budget Item Row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Položka dne v měsíčním rozpočtu: název, stav, kategorie a účet, částka a zůstatek po položce. Na telefonu se štítek stavu zalomí pod název a akce mají vlastní řádek.",
+      "html": "<div class=\"ds-row\"><div class=\"ds-row-main\"><div class=\"ds-row-title\"><strong>Záloha elektřina</strong><span class=\"ds-chip-planned\">Plánovaná</span></div><span class=\"ds-row-meta\">Bydlení › Elektřina • Běžný účet</span></div><div class=\"ds-row-figures\"><span class=\"ds-row-amount\">−2 400 Kč</span><span class=\"ds-row-balance\"><small>Zůstatek po položce:</small>78 250 Kč</span></div></div>",
+      "css": ".ds-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px; background: rgb(var(--c-white, 255 255 255)); border: 1px solid rgb(var(--c-slate-200, 226 232 240) / 0.8); border-radius: 12px; font: 500 12px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; color: rgb(var(--c-slate-900, 15 23 42)); transition: border-color 150ms; } .ds-row:hover { border-color: rgb(var(--c-slate-300, 203 213 225)); } .ds-row-main { min-width: 0; flex: 1; } .ds-row-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; } .ds-row-title strong { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; } .ds-chip-planned { padding: 2px 8px; border-radius: 9999px; font-weight: 600; background: rgb(var(--c-amber-50, 255 251 235)); color: rgb(var(--c-amber-700, 180 83 9)); border: 1px solid rgb(var(--c-amber-200, 253 230 138)); } .ds-row-meta { color: rgb(var(--c-slate-500, 96 112 135)); } .ds-row-figures { display: flex; gap: 16px; align-items: center; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; } .ds-row-amount { color: rgb(var(--c-red-600, 214 36 36)); } .ds-row-balance small { display: block; font-weight: 500; font-size: 12px; color: rgb(var(--c-slate-500, 96 112 135)); }"
     },
     {
       "name": "Text Field",
@@ -103,25 +122,25 @@
     ],
     "rules": [
       { "name": "The Meaning-Only Rule", "body": "Barva v rozhraní vždy znamená peníze nebo stav: zelená přichází, červená odchází, jantar čeká, fialová roste, modrá jedná. Kategorie mají vlastní uživatelské barvy jen jako tečky a pruhy grafů.", "section": "colors" },
-      { "name": "The Token Rule", "body": "Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple…, white) nebo tokeny scrim a table-*. Ty čtou proměnné ze src/theme.css, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.", "section": "colors" },
+      { "name": "The Token Rule", "body": "Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple…, white) nebo tokeny `scrim` a `table-*`. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.", "section": "colors" },
       { "name": "The AA Rule", "body": "Každá dvojice text/pozadí má v obou vzhledech kontrast alespoň 4,5:1 (ikony a ovládací prvky 3:1). Proto jsou světlé odstíny slate-500, sky/emerald/amber/red-600 oproti výchozímu Tailwindu mírně ztmavené.", "section": "colors" },
       { "name": "The 12px Floor Rule", "body": "Žádný text není menší než 12px, ani štítky, osy grafů a metadata. Méně důležité se odlišuje barvou a řezem, ne zmenšením.", "section": "typography" },
-      { "name": "The Scrim Rule", "body": "Pozadí pod dialogem a mobilním menu vždy ztmavuje (token scrim), v obou vzhledech.", "section": "elevation" }
+      { "name": "The Scrim Rule", "body": "Pozadí pod dialogem a mobilním menu vždy ztmavuje (token `scrim`), v obou vzhledech.", "section": "elevation" }
     ],
     "dos": [
-      "Do používej Tailwind třídy palety a tokeny scrim a table-*; nové barevné role přidávej do src/theme.css pro oba vzhledy současně.",
-      "Do ověř každý nový text v obou vzhledech na kontrast alespoň 4,5:1.",
-      "Do drž text na 12px a výš; důležitost odlišuj řezem a barvou.",
-      "Do dávej částkám tabulkové číslice a zarovnání vpravo.",
-      "Do ikonovým tlačítkům na mobilu 44px plochu a aria-label s názvem položky.",
-      "Do respektuj prefers-reduced-motion: pohyb mizí, změna stavu zůstává."
+      "**Do** používej Tailwind třídy palety a tokeny `scrim` a `table-*`; nové barevné role přidávej do `src/theme.css` pro oba vzhledy současně.",
+      "**Do** ověř každý nový text v obou vzhledech na kontrast alespoň 4,5:1.",
+      "**Do** drž text na 12px a výš; důležitost odlišuj řezem a barvou.",
+      "**Do** dávej částkám tabulkové číslice a zarovnání vpravo.",
+      "**Do** ikonovým tlačítkům na mobilu 44px plochu a `aria-label` s názvem položky.",
+      "**Do** respektuj `prefers-reduced-motion`: pohyb mizí, změna stavu zůstává."
     ],
     "donts": [
-      "Don't zapisuj hex barvy do komponent (kromě barev kategorií, sérií grafů a loga Google).",
-      "Don't používej bg-slate-900 a podobné pro ztmavení pozadí; v tmavém vzhledu se otočí do světla – použij scrim.",
-      "Don't používej barvu jako dekoraci nebo jediný nosič informace; stav má i text nebo ikonu.",
-      "Don't vnořuj karty do karet a nepřidávej barevné levé pruhy.",
-      "Don't zmenšuj text pod 12px ani v hustých tabulkách a grafech."
+      "**Don't** zapisuj hex barvy do komponent (kromě barev kategorií, sérií grafů a loga Google).",
+      "**Don't** používej `bg-slate-900` a podobné pro ztmavení pozadí; v tmavém vzhledu se otočí do světla – použij `scrim`.",
+      "**Don't** používej barvu jako dekoraci nebo jediný nosič informace; stav má i text nebo ikonu.",
+      "**Don't** vnořuj karty do karet a nepřidávej barevné levé pruhy.",
+      "**Don't** zmenšuj text pod 12px ani v hustých tabulkách a grafech."
     ]
   }
 }

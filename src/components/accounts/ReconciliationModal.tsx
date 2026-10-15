@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account } from '../../types/finance';
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
 import { getAccountBalanceAtDate } from '../../services/financialEngine';
@@ -140,7 +140,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
               {...fieldErrorProps(`${fieldId}-1`, errors.balance)}
               className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.balance, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
             />
-            <span className="absolute right-3.5 top-2 text-xs font-semibold text-slate-500">Kč</span>
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
           </div>
           <FieldError inputId={`${fieldId}-1`} message={errors.balance} />
         </div>
@@ -176,11 +176,11 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 bg-sky-50/70 p-3 rounded-xl border border-sky-100">
+        <p className="text-xs text-slate-500 bg-sky-50/70 p-4 rounded-xl border border-sky-100">
           💡 <strong>Princip CashPilot:</strong> Aplikace nikdy potají nepřepisuje historické položky ani původní počáteční stav. Rozdíl se uloží jako transparentní korekce zůstatku k tomuto datu a promítne se do navazujícího výhledu.
         </p>
 
-        <div className="mt-5 flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <button
             type="button"
             onClick={onClose}
@@ -196,7 +196,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           >
             {isSubmitting ? 'Ukládám...' : diffInHaler === 0 ? 'Potvrdit shodu stavu' : 'Uložit skutečný stav'}
           </button>
-        </div>
+        </ModalFooter>
       </form>
     </Modal>
   );

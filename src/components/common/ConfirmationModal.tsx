@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal } from './Modal';
+import { Modal, ModalFooter } from './Modal';
 import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -33,7 +33,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <p>{message}</p>
         </div>
       </div>
-      <div className="mt-6 flex justify-end gap-3">
+      <ModalFooter>
         <button
           type="button"
           onClick={onClose}
@@ -55,7 +55,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         >
           {confirmText}
         </button>
-      </div>
+      </ModalFooter>
     </Modal>
   );
 };

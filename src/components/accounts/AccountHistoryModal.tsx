@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { Account, Transaction, MarketValueSnapshot, InvestmentFee } from '../../types/finance';
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { createBudgetPeriod, formatCzechDate } from '../../services/periodService';
@@ -132,9 +132,9 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
         subtitle={isAssetAccount ? 'Historie vkladů, výběrů, poplatků a tržních ocenění' : 'Kompletní přehled pohybů a korekcí'}
         maxWidth="max-w-2xl"
       >
-        <div className="space-y-4 max-h-[70vh] flex flex-col">
+        <div className="space-y-4">
           {/* Počáteční stav */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500 shrink-0">
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-500">
             <span>Počáteční evidenční stav:</span>
             <span className="font-semibold text-slate-900 text-sm">
               {formatCurrency(account.initialBalanceInHaler)}
@@ -142,7 +142,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
           </div>
 
           {/* Seznam položek */}
-          <div className="overflow-y-auto space-y-2 pr-1 flex-1 min-h-[200px]">
+          <div className="space-y-2">
             {historyItems.length === 0 ? (
               <div className="text-center py-10 text-slate-500 text-sm">
                 Na tomto účtu zatím nejsou žádné zaznamenané pohyby.
@@ -304,8 +304,8 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900 truncate">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="min-w-0 max-w-full font-semibold text-slate-900 truncate">
                             {tx.title}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -349,7 +349,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
             )}
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end shrink-0">
+          <ModalFooter>
             <button
               type="button"
               onClick={onClose}
@@ -357,7 +357,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
             >
               Zavřít
             </button>
-          </div>
+          </ModalFooter>
         </div>
       </Modal>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal } from '../common/Modal';
+import { Modal, ModalFooter } from '../common/Modal';
 import { AlertTriangle, Download, Check } from 'lucide-react';
 
 export interface AffectedRecordGroup {
@@ -75,7 +75,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-lg">
       <div className="space-y-4 text-sm text-slate-500" onKeyDown={handleKeyDown}>
         {/* Varování a popis */}
-        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-semibold text-xs sm:text-sm text-red-900">{description}</p>
@@ -110,7 +110,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         </div>
 
         {/* Nabídka stažení JSON zálohy */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-slate-900">Doporučení před pokračováním</p>
             <p className="text-xs text-slate-500">
@@ -120,7 +120,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
           <button
             type="button"
             onClick={handleDownloadBackup}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+            className={`max-md:min-h-11 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
               backupDownloaded
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                 : 'bg-white text-slate-500 border border-slate-300 hover:bg-slate-100'
@@ -158,7 +158,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
         )}
 
         {/* Tlačítka akce */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+        <ModalFooter>
           <button
             ref={cancelButtonRef}
             type="button"
@@ -183,7 +183,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
           >
             {confirmButtonText}
           </button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

@@ -63,7 +63,7 @@ const SECTION_TOTAL_COLORS: Record<MandatoryGroup, string> = {
 const STANDARD_FREQUENCIES: RecurrenceFrequency[] = ['monthly', 'bi_monthly', 'quarterly', 'semi_annually', 'annually'];
 
 const inputClass =
-  'w-full h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
+  'w-full h-7 max-md:h-10 px-2 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
 
 // Název platby a akce zůstávají viditelné i při vodorovném posunu široké tabulky
 const STICKY_LEFT = 'sticky left-0 z-10';
@@ -100,7 +100,7 @@ const FrequencySelect: React.FC<{ value: RecurrenceFrequency; onChange: (f: Recu
   value,
   onChange,
 }) => (
-  <select aria-label="Frekvence" className={inputClass} value={value} onChange={(e) => onChange(e.target.value as RecurrenceFrequency)}>
+  <select aria-label="Frekvence" className={`${inputClass} min-w-[8rem]`} value={value} onChange={(e) => onChange(e.target.value as RecurrenceFrequency)}>
     {[...STANDARD_FREQUENCIES, ...(value === 'custom' ? (['custom'] as RecurrenceFrequency[]) : [])].map((f) => (
       <option key={f} value={f}>
         {FREQUENCY_LABELS[f]}
@@ -162,11 +162,11 @@ const SectionTable: React.FC<SectionTableProps> = ({
     return (
       <tr className="bg-emerald-50">
         <td className={`py-2 px-4 ${STICKY_LEFT} bg-emerald-50`}>
-          <input autoFocus aria-label="Název" className={inputClass} placeholder="Název" value={addDraft.title} onChange={(e) => set({ title: e.target.value })} />
+          <input autoFocus aria-label="Název" className={`${inputClass} min-w-[10rem]`} placeholder="Název" value={addDraft.title} onChange={(e) => set({ title: e.target.value })} />
         </td>
         {!isTransfer && (
           <td className="py-2 px-4">
-            <select aria-label="Kategorie" className={inputClass} value={addDraft.categoryId} onChange={(e) => set({ categoryId: e.target.value })}>
+            <select aria-label="Kategorie" className={`${inputClass} min-w-[8rem]`} value={addDraft.categoryId} onChange={(e) => set({ categoryId: e.target.value })}>
               <option value="">Bez kategorie</option>
               {categoryOptions.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -176,7 +176,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         )}
         <td className="py-2 px-4">
           <div className="flex items-center gap-1">
-            <select aria-label="Zdrojový účet" className={inputClass} value={addDraft.sourceAccountId} onChange={(e) => set({ sourceAccountId: e.target.value })}>
+            <select aria-label="Zdrojový účet" className={`${inputClass} min-w-[8rem]`} value={addDraft.sourceAccountId} onChange={(e) => set({ sourceAccountId: e.target.value })}>
               {accountOptions.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
@@ -184,7 +184,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             {isTransfer && (
               <>
                 <span className="text-slate-500">→</span>
-                <select aria-label="Cílový účet" className={inputClass} value={addDraft.targetAccountId} onChange={(e) => set({ targetAccountId: e.target.value })}>
+                <select aria-label="Cílový účet" className={`${inputClass} min-w-[8rem]`} value={addDraft.targetAccountId} onChange={(e) => set({ targetAccountId: e.target.value })}>
                   {accountOptions.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
@@ -198,7 +198,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         </td>
         <td className="py-2 px-4 text-slate-500">—</td>
         <td className="py-2 px-4">
-          <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24`} inputMode="decimal" placeholder="Kč" value={addDraft.amount} onChange={(e) => set({ amount: e.target.value })} />
+          <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24 min-w-[6rem]`} inputMode="decimal" placeholder="Kč" value={addDraft.amount} onChange={(e) => set({ amount: e.target.value })} />
         </td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
         <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
@@ -242,7 +242,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
       return (
         <tr key={item.ruleId} className="bg-sky-50">
           <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} ${STICKY_LEFT} bg-sky-50`}>
-            <input autoFocus aria-label="Název" className={inputClass} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
+            <input autoFocus aria-label="Název" className={`${inputClass} min-w-[10rem]`} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
           </td>
           {!isTransfer && <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.categoryLabel}</td>}
           <td className="py-2 px-4 text-slate-500 whitespace-nowrap">{item.accountLabel}</td>
@@ -251,7 +251,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           </td>
           <td className="py-2 px-4 text-slate-500">—</td>
           <td className="py-2 px-4">
-            <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24`} inputMode="decimal" value={draft.amount} onChange={(e) => set({ amount: e.target.value })} />
+            <input aria-label="Částka v Kč" className={`${inputClass} text-right w-24 min-w-[6rem]`} inputMode="decimal" value={draft.amount} onChange={(e) => set({ amount: e.target.value })} />
           </td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly)}</td>
           <td className="py-2 px-4 text-right tabular-nums text-slate-600 whitespace-nowrap">{formatRounded(monthly * 12)}</td>
@@ -599,57 +599,60 @@ export const MandatoryExpensesScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      <div
-        className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
-          isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
-        }`}
-      >
-        <p className="text-slate-500">
-          {isSimulating ? (
-            <>
-              <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
-              (ty zůstávají beze změny).
-            </>
-          ) : (
-            <>
-              Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
-              nepravidelné platby rozpočítané do měsíců{' '}
-              <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
-              Úpravy zde jsou jen simulace.
-            </>
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={() => setSimulation(EMPTY_SIMULATION)}
-          disabled={!isSimulating}
-          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+    <div className="space-y-6">
+      {/* Vysvětlivka vymezuje období a režim souhrnných karet, proto drží těsně u nich */}
+      <div className="space-y-3">
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
+            isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
+          }`}
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          Obnovit výchozí stav
-        </button>
-      </div>
-
-      {/* Souhrn měsíčních průměrů z opakovaných plateb */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm"
-            title={card.title}
-          >
-            <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
-            <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
-              {formatRounded(card.value)}
-            </span>
-            {isSimulating && card.value !== card.base && (
-              <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
-                výchozí {formatRounded(card.base)}
-              </span>
+          <p className="text-slate-500">
+            {isSimulating ? (
+              <>
+                <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
+                (ty zůstávají beze změny).
+              </>
+            ) : (
+              <>
+                Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
+                nepravidelné platby rozpočítané do měsíců{' '}
+                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-violet-700`}>(podbarvené)</span>.
+                Úpravy zde jsou jen simulace.
+              </>
             )}
-          </div>
-        ))}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSimulation(EMPTY_SIMULATION)}
+            disabled={!isSimulating}
+            className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Obnovit výchozí stav
+          </button>
+        </div>
+
+        {/* Souhrn měsíčních průměrů z opakovaných plateb */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm"
+              title={card.title}
+            >
+              <span className="text-xs text-slate-500 block font-medium">{card.label}</span>
+              <span className={`text-base font-bold block mt-0.5 truncate tabular-nums ${card.className}`}>
+                {formatRounded(card.value)}
+              </span>
+              {isSimulating && card.value !== card.base && (
+                <span className="text-xs text-slate-500 block mt-0.5 tabular-nums">
+                  výchozí {formatRounded(card.base)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       {overview.upcomingChanges.length > 0 && <UpcomingChangesTable changes={overview.upcomingChanges} />}
