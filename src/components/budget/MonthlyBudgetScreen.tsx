@@ -34,6 +34,8 @@ import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
+import { MoveButtons } from '../shared/MoveButtons';
+import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
@@ -556,32 +558,30 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const dayGroup = dayGroups.find(g => g.date === date);
     if (!dayGroup) return;
 
-    const currentIds = dayGroup.txs.map(t => t.id);
-    const draggedIdx = currentIds.indexOf(draggedTxId);
-    const targetIdx = currentIds.indexOf(targetTxId);
+    const newOrderedIds = moveIdToTarget(dayGroup.txs.map(t => t.id), draggedTxId, targetTxId);
+    if (newOrderedIds) applyDayOrder(date, newOrderedIds, dayGroup.txs.find(t => t.id === draggedTxId));
+    setDraggedTxId(null);
+  };
 
-    if (draggedIdx === -1 || targetIdx === -1) {
-      setDraggedTxId(null);
-      return;
-    }
+  // Posun položky o jedno místo tlačítky (dotyk a klávesnice) v zobrazeném pořadí dne
+  const handleMoveDayTransaction = (date: string, dayOrderedIds: string[], tx: Transaction, direction: MoveDirection) => {
+    const newOrderedIds = moveIdByStep(dayOrderedIds, dayOrderedIds, tx.id, direction);
+    if (newOrderedIds) applyDayOrder(date, newOrderedIds, tx);
+  };
 
-    const newOrderedIds = [...currentIds];
-    const [movedItem] = newOrderedIds.splice(draggedIdx, 1);
-    newOrderedIds.splice(targetIdx, 0, movedItem);
-
-    const draggedTx = dayGroup.txs.find(t => t.id === draggedTxId);
-    if (draggedTx?.recurringRuleId) {
+  // U opakující se položky se rozsah změny pořadí volí v ReorderScopeDialog
+  const applyDayOrder = (date: string, newOrderedIds: string[], movedTx: Transaction | undefined) => {
+    if (movedTx?.recurringRuleId) {
       setPendingRecurringReorder({
-        ruleId: draggedTx.recurringRuleId,
-        ruleTitle: draggedTx.title,
+        ruleId: movedTx.recurringRuleId,
+        ruleTitle: movedTx.title,
         date,
         orderedIds: newOrderedIds,
-        movedTransactionId: draggedTxId,
+        movedTransactionId: movedTx.id,
       });
     } else {
       reorderDayTransactions(date, newOrderedIds);
     }
-    setDraggedTxId(null);
   };
 
   const handleConfirmRecurringReorder = (mode: 'occurrence' | 'future' | 'series') => {
@@ -1095,13 +1095,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                     {hasNegative && (
                       <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
-                        ⚠️ Během tohoto dne klesne zůstatek pod nulu (až na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přetažením příjmu před výdaj tomuto stavu snadno předejdete.
+                        ⚠️ Během tohoto dne klesne zůstatek pod nulu (až na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přesunutím příjmu před výdaj tomuto stavu snadno předejdete.
                       </p>
                     )}
 
                     {/* Seznam položek v rámci dne (Draggable) */}
                     <div className="space-y-1.5">
-                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }) => {
+                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }, stepIndex) => {
                         const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                         const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                         const cat = categories.find(c => c.id === tx.categoryId);
@@ -1129,7 +1129,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             onDragStart={(e) => handleDragStart(e, tx.id)}
                             onDragOver={handleDragOver}
                             onDrop={() => handleDrop(date, tx.id)}
-                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border transition-all select-none cursor-move ${
+                            className={`group flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border transition-all select-none md:cursor-move ${
                               draggedTxId === tx.id
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
@@ -1140,9 +1140,22 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             } ${isCancelled ? 'opacity-50 line-through' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="text-slate-500 hover:text-slate-600 cursor-grab p-0.5">
+                              <div aria-hidden="true" className="max-md:hidden text-slate-500 hover:text-slate-600 cursor-grab p-0.5">
                                 <GripVertical className="w-4 h-4" />
                               </div>
+
+                              <MoveButtons
+                                className="max-md:-ml-2 shrink-0"
+                                itemLabel={tx.title}
+                                canMoveUp={stepIndex > 0}
+                                canMoveDown={stepIndex < intraDay.steps.length - 1}
+                                onMove={(direction) => handleMoveDayTransaction(
+                                  date,
+                                  intraDay.steps.map(s => s.transaction.id),
+                                  tx,
+                                  direction
+                                )}
+                              />
 
                               <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 shrink-0">
                                 #{tx.sequence || 1}

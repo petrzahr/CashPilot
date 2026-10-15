@@ -11,7 +11,9 @@ import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
 import { AccountHistoryModal } from './AccountHistoryModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
-import { 
+import { MoveButtons } from '../shared/MoveButtons';
+import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
+import {
   Plus, 
   Archive, 
   RotateCcw, 
@@ -83,25 +85,17 @@ export const AccountsScreen: React.FC = () => {
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     const sourceId = draggedAccountId || e.dataTransfer.getData('text/plain');
-    if (!sourceId || sourceId === targetId) {
-      resetDragState();
-      return;
-    }
-
     // Pořadí se počítá nad úplným seznamem účtů, aby skryté archivované
     // účty zůstaly na své relativní pozici.
-    const orderedIds = accounts.map(a => a.id);
-    const fromIndex = orderedIds.indexOf(sourceId);
-    const toIndex = orderedIds.indexOf(targetId);
-    if (fromIndex === -1 || toIndex === -1) {
-      resetDragState();
-      return;
-    }
-
-    const [moved] = orderedIds.splice(fromIndex, 1);
-    orderedIds.splice(toIndex, 0, moved);
-    reorderAccounts(orderedIds);
+    const orderedIds = sourceId ? moveIdToTarget(accounts.map(a => a.id), sourceId, targetId) : null;
+    if (orderedIds) reorderAccounts(orderedIds);
     resetDragState();
+  };
+
+  // Posun o jedno místo tlačítky (dotyk a klávesnice), sousedem je předchozí/další zobrazený účet
+  const handleMoveAccount = (accId: string, direction: MoveDirection) => {
+    const orderedIds = moveIdByStep(accounts.map(a => a.id), displayedAccounts.map(a => a.id), accId, direction);
+    if (orderedIds) reorderAccounts(orderedIds);
   };
 
   const handleOpenAdd = () => {
@@ -189,7 +183,7 @@ export const AccountsScreen: React.FC = () => {
 
       {/* Karty jednotlivých účtů */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {displayedAccounts.map((acc) => {
+        {displayedAccounts.map((acc, index) => {
           const accBal = currentSummary?.accountBalances[acc.id];
           const closingBalance = accBal?.closingBalanceInHaler ?? acc.initialBalanceInHaler;
           
@@ -218,7 +212,7 @@ export const AccountsScreen: React.FC = () => {
               onDragOver={(e) => handleDragOver(e, acc.id)}
               onDragLeave={() => setDropTargetAccountId(prev => (prev === acc.id ? null : prev))}
               onDrop={(e) => handleDrop(e, acc.id)}
-              className={`bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
+              className={`group bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
                 acc.status === 'archived'
                   ? 'border-slate-200/50 bg-slate-50/50 opacity-75'
                   : 'border-slate-200/80 hover:border-slate-300'
@@ -229,17 +223,17 @@ export const AccountsScreen: React.FC = () => {
               }`}
             >
               {/* Hlavička karty účtu */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5">
+              <div className="flex items-start justify-between gap-3 max-md:flex-wrap max-md:gap-y-1">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Úchyt pro přetažení myší; z klávesnice a na dotyku slouží tlačítka posunu */}
                   <button
                     type="button"
                     title="Přetažením změníte pořadí účtu"
-                    aria-label={`Změnit pořadí účtu ${acc.name}`}
+                    aria-hidden="true"
+                    tabIndex={-1}
                     onMouseDown={() => setDragHandleAccountId(acc.id)}
                     onMouseUp={() => setDragHandleAccountId(null)}
-                    onTouchStart={() => setDragHandleAccountId(acc.id)}
-                    onTouchEnd={() => setDragHandleAccountId(null)}
-                    className="-ml-1.5 p-0.5 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+                    className="max-md:hidden -ml-1.5 p-0.5 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors shrink-0"
                   >
                     <GripVertical className="w-4 h-4" />
                   </button>
@@ -262,7 +256,13 @@ export const AccountsScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 max-md:ml-auto">
+                  <MoveButtons
+                    itemLabel={`účet ${acc.name}`}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < displayedAccounts.length - 1}
+                    onMove={(direction) => handleMoveAccount(acc.id, direction)}
+                  />
                   <button
                     onClick={() => handleOpenEdit(acc)}
                     title="Upravit účet"
