@@ -66,8 +66,8 @@ export const LoginScreen: React.FC = () => {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <span className="font-semibold text-slate-900 block">Data ve vašem Google Disku</span>
-              <span>Ukládají se do skryté složky aplikace, kterou nikdo jiný nevidí.</span>
+              <span className="font-semibold text-slate-900 block">Soukromé úložiště Google Disk</span>
+              <span>Vaše finanční data jsou bezpečně uložena v neveřejném aplikačním prostoru vašeho účtu Google.</span>
             </div>
           </div>
 
@@ -77,7 +77,7 @@ export const LoginScreen: React.FC = () => {
             </div>
             <div>
               <span className="font-semibold text-slate-900 block">Automatická synchronizace</span>
-              <span>Změny se nejdřív uloží v zařízení a na pozadí se odešlou na Disk.</span>
+              <span>Aplikace pracuje rychle s místní mezipamětí a všechny změny průběžně ukládá na pozadí.</span>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ export const LoginScreen: React.FC = () => {
           </button>
 
           <p className="text-xs text-center text-slate-500">
-            CashPilot funguje jen s přihlášením účtem Google.
+            Pro vstup do aplikace je vyžadováno přihlášení k vašemu Google účtu.
           </p>
         </div>
 
