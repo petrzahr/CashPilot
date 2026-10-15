@@ -10,7 +10,7 @@ export const ToastContainer: React.FC = () => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+      className="fixed bottom-20 inset-x-4 md:bottom-5 md:left-auto md:right-5 md:w-full z-50 flex flex-col gap-2 md:max-w-sm pointer-events-none"
     >
       {toasts.map((toast) => {
         let icon = <CheckCircle2 className="w-5 h-5 text-emerald-600" />;

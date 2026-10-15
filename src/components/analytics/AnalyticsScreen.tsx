@@ -34,6 +34,10 @@ const noFilters: AnalyticsFilters = {
   subcategoryId: null,
 };
 
+/** Čistá bilance nese barvu jen podle znaménka: přebytek zelený, schodek červený. */
+const netTone = (amountInHaler: number | undefined) =>
+  amountInHaler === undefined ? 'text-slate-500' : amountInHaler > 0 ? 'text-emerald-600' : amountInHaler < 0 ? 'text-red-600' : 'text-slate-900';
+
 export const AnalyticsScreen: React.FC = () => {
   const {
     accounts,
@@ -283,31 +287,31 @@ export const AnalyticsScreen: React.FC = () => {
             </div>
 
             {/* Nejlepší čistá bilance */}
-            <div className="p-3 bg-sky-50/70 border border-sky-100 rounded-xl space-y-1">
-              <span className="text-xs font-medium text-sky-800">
+            <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-1">
+              <span className="text-xs font-medium text-slate-500">
                 Nejlepší čistá bilance
               </span>
-              <div className="text-sm font-bold text-sky-900 tabular-nums">
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.bestNetMonth?.amountInHaler)}`}>
                 {extremes.bestNetMonth
                   ? formatCurrency(extremes.bestNetMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-xs text-sky-600 font-medium truncate">
+              <p className="text-xs text-slate-500 font-medium truncate">
                 {extremes.bestNetMonth?.label || 'Žádná data'}
               </p>
             </div>
 
             {/* Nejhorší čistá bilance */}
-            <div className="p-3 bg-amber-50/70 border border-amber-100 rounded-xl space-y-1">
-              <span className="text-xs font-medium text-amber-800">
+            <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-1">
+              <span className="text-xs font-medium text-slate-500">
                 Nejhorší čistá bilance
               </span>
-              <div className="text-sm font-bold text-amber-900 tabular-nums">
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.worstNetMonth?.amountInHaler)}`}>
                 {extremes.worstNetMonth
                   ? formatCurrency(extremes.worstNetMonth.amountInHaler)
                   : '—'}
               </div>
-              <p className="text-xs text-amber-600 font-medium truncate">
+              <p className="text-xs text-slate-500 font-medium truncate">
                 {extremes.worstNetMonth?.label || 'Žádná data'}
               </p>
             </div>

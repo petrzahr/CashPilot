@@ -16,7 +16,7 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { DataLoadErrorScreen } from './components/common/DataLoadErrorScreen';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 
 const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'mandatory', 'transactions', 'accounts', 'categories', 'settings'];
 
@@ -109,7 +109,12 @@ const MainLayout: React.FC = () => {
         />
 
         <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <main className="flex-1 p-4 pb-16 sm:p-6 sm:pb-16 max-w-7xl w-full mx-auto">
+          <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 md:pb-16 max-w-7xl w-full mx-auto">
+            {/* Na telefonu se název sekce do hlavičky nevejde, proto stojí nad obsahem */}
+            <h1 className="sm:hidden text-base font-bold text-slate-900 leading-tight mb-4">
+              {getScreenTitle()}
+            </h1>
+
             {currentScreen === 'budget' && (
               <MonthlyBudgetScreen
                 onOpenTransactionModal={handleOpenNewTx}
@@ -152,6 +157,18 @@ const MainLayout: React.FC = () => {
           </main>
         </div>
       </div>
+
+      {/* Rychlý zápis na telefonu: tlačítko v dosahu palce, na desktopu stačí akce v obsahu a postranním panelu */}
+      {!isTxModalOpen && !mobileMenuOpen && (
+        <button
+          type="button"
+          onClick={() => handleOpenNewTx()}
+          className="md:hidden fixed bottom-4 right-4 z-40 flex items-center gap-2 h-14 pl-4 pr-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
+        >
+          <Plus className="w-5 h-5" aria-hidden="true" />
+          <span>Nová položka</span>
+        </button>
+      )}
 
       {/* Globální modál pro vytvoření a editaci transakcí */}
       <TransactionModal
