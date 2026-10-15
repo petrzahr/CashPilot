@@ -27,7 +27,6 @@ import { czechStringCompare } from '../../services/categoryService';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
-import { RowActionsMenu } from '../shared/RowActionsMenu';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
   { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
@@ -736,16 +735,44 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
-                              <RowActionsMenu
-                                itemLabel={tx.title}
-                                actions={[
-                                  { label: 'Duplikovat', Icon: Copy, onSelect: () => duplicateTransaction(tx) },
-                                  tx.status !== 'cancelled'
-                                    ? { label: 'Zrušit položku', Icon: Ban, onSelect: () => handleStatusChange(tx.id, 'cancelled'), disabled: updatingStatusTxId === tx.id }
-                                    : { label: 'Obnovit do plánovaných', Icon: Clock, onSelect: () => handleStatusChange(tx.id, 'planned'), disabled: updatingStatusTxId === tx.id },
-                                  { label: 'Smazat položku', Icon: Trash2, onSelect: () => setDeletingTx(tx), disabled: isDeletingTx, destructive: true },
-                                ]}
-                              />
+                              <button
+                                onClick={() => duplicateTransaction(tx)}
+                                title="Duplikovat položku"
+                                aria-label={`Duplikovat položku: ${tx.title}`}
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              {!isCancelled ? (
+                                <button
+                                  onClick={() => handleStatusChange(tx.id, 'cancelled')}
+                                  disabled={updatingStatusTxId === tx.id}
+                                  title="Zrušit položku"
+                                  aria-label={`Zrušit položku: ${tx.title}`}
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleStatusChange(tx.id, 'planned')}
+                                  disabled={updatingStatusTxId === tx.id}
+                                  title="Vrátit zrušenou položku do plánovaných"
+                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
+                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                >
+                                  <Clock className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setDeletingTx(tx)}
+                                disabled={isDeletingTx}
+                                title="Smazat položku"
+                                aria-label={`Smazat položku: ${tx.title}`}
+                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </>
                           )}
                         </div>

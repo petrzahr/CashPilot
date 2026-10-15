@@ -20,8 +20,6 @@ import { Loader2, Plus } from 'lucide-react';
 
 const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'mandatory', 'transactions', 'accounts', 'categories', 'settings'];
 
-// Obrazovky, které vybrané rozpočtové období nepoužívají (Analýza má vlastní filtr období)
-const SCREENS_WITHOUT_PERIOD: NavScreen[] = ['analytics', 'categories', 'settings'];
 
 function parseScreenFromUrl(): NavScreen {
   if (typeof window === 'undefined') return 'budget';
@@ -107,9 +105,7 @@ const MainLayout: React.FC = () => {
       {/* Hlavní obsahová oblast */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Header
-          activeScreenTitle={getScreenTitle()}
-          showPeriodNavigator={!SCREENS_WITHOUT_PERIOD.includes(currentScreen)}
-          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
+          activeScreenTitle={getScreenTitle()}          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
         />
 
         <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
