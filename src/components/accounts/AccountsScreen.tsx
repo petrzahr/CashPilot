@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
-import { getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { formatCurrency, subHaler } from '../../services/currencyService';
-import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
+import { formatCzechDate } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
 import { ReconciliationModal } from './ReconciliationModal';
 import { MarketValueModal } from './MarketValueModal';
@@ -32,8 +31,6 @@ export const AccountsScreen: React.FC = () => {
     transactions,
     corrections,
     marketValueSnapshots,
-    investmentFees = [],
-    settings,
     archiveAccount,
     restoreAccount,
     deleteAccount,
@@ -201,20 +198,13 @@ export const AccountsScreen: React.FC = () => {
           const lastCorrection = accCorrections[0];
 
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
-          const isCurrentInvestment = isInvestment && selectedPeriod.key === currentPeriod.key;
-          const today = getTodayInPrague();
-          const marketValue = isCurrentInvestment
-            ? computeAssetAccountBalanceAtDate(acc, today, transactions, marketValueSnapshots)
-            : isInvestment && selectedPeriod.endDate < currentPeriod.startDate
+          // Aktuální i budoucí období: stav ke konci období (stejně jako Očekávaný stav), včetně plánovaných vkladů.
+          const marketValue = isInvestment && selectedPeriod.endDate < currentPeriod.startDate
             ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
-            : acc.currentMarketValueInHaler || closingBalance;
+            : closingBalance;
           // Výnos = tržní hodnota − (vloženo − poplatky); zobrazené „Vloženo“ jsou čisté vklady.
-          const contributedPrincipal = isCurrentInvestment
-            ? getInvestedAmountAtValuation(acc, transactions, today)
-            : accBal?.contributedPrincipalInHaler ?? acc.initialBalanceInHaler;
-          const feesTotal = isCurrentInvestment
-            ? getFeesUpToDate(investmentFees, acc.id, today, settings.budgetStartDay)
-            : accBal?.feesInHaler ?? 0;
+          const contributedPrincipal = accBal?.contributedPrincipalInHaler ?? acc.initialBalanceInHaler;
+          const feesTotal = accBal?.feesInHaler ?? 0;
           const investedPrincipal = subHaler(contributedPrincipal, feesTotal);
           const unrealizedProfitHaler = subHaler(marketValue, investedPrincipal);
           const unrealizedPct = investedPrincipal ? (unrealizedProfitHaler / investedPrincipal) * 100 : 0;
