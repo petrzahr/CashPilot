@@ -16,6 +16,7 @@ import {
   AlertCircle,
   GripVertical,
   List,
+  CalendarCheck,
   Calendar,
   ChevronDown,
   Loader2,
@@ -433,6 +434,22 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
   // Dnešní den v pražském čase odděluje uskutečněnou minulost od plánu
   const todayIso = getTodayInPrague();
+  const isTodayInPeriod = todayIso >= selectedPeriod.startDate && todayIso <= selectedPeriod.endDate;
+
+  // „Dnes“: posun na den nejbližší dnešku (při shodě vzdálenosti vyhraje budoucí), funguje
+  // v obou zobrazeních i při sestupném řazení; čára „Dnes“ nese přímo dnešní datum
+  const scrollToToday = () => {
+    const today = Date.parse(todayIso);
+    let target: HTMLElement | null = null;
+    let bestDistance = Infinity;
+    document.querySelectorAll<HTMLElement>('[data-budget-date]').forEach(el => {
+      const date = el.dataset.budgetDate!;
+      const distance = Math.abs(Date.parse(date) - today) - (date >= todayIso ? 0.5 : 0);
+      if (distance < bestDistance) { bestDistance = distance; target = el; }
+    });
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    (target as HTMLElement | null)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   const dayGroups = useMemo(() => {
     const dateMap = new Map<string, Transaction[]>();
@@ -925,6 +942,17 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </button>
               </div>
 
+              {isTodayInPeriod && periodTransactions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={scrollToToday}
+                  className="h-8 max-md:h-11 flex items-center gap-1.5 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0"
+                >
+                  <CalendarCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Dnes</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => onOpenTransactionModal()}
@@ -1046,13 +1074,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 return (
                   <React.Fragment key={date}>
                   {crossesToday && (
-                    <div role="separator" aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
+                    <div role="separator" data-budget-date={todayIso} aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="scroll-mt-20 flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
                       <span>Dnes · {formatCzechDate(todayIso)}</span>
                       <span className="h-px flex-1 bg-slate-300" aria-hidden="true" />
                     </div>
                   )}
                   {/* Dnešek nese štítek „Dnes“ a čára; šedý podklad patří zrušeným položkám a korekcím */}
-                  <div className="p-4 sm:p-5 space-y-3">
+                  <div data-budget-date={date} className="scroll-mt-20 p-4 sm:p-5 space-y-3">
                     {/* Záhlaví dne */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
@@ -1360,7 +1388,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   return (
                     <tr
                       key={tx.id}
-                      className={`hover:bg-slate-50 transition-colors ${
+                      data-budget-date={tx.date}
+                      className={`scroll-mt-28 hover:bg-slate-50 transition-colors ${
                         isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : ''
                       }`}
                     >
