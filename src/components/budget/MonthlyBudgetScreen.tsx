@@ -1074,15 +1074,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 return (
                   <React.Fragment key={date}>
                   {crossesToday && (
-                    <div role="separator" data-budget-date={todayIso} aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="scroll-mt-20 flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
+                    <div role="separator" data-budget-date={todayIso} aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="scroll-mt-20 flex items-center gap-3 px-4 sm:px-5 py-2 bg-white text-xs font-bold text-slate-900">
                       <span>Dnes · {formatCzechDate(todayIso)}</span>
                       <span className="h-px flex-1 bg-slate-300" aria-hidden="true" />
                     </div>
                   )}
-                  {/* Dnešek nese štítek „Dnes“ a čára; šedý podklad patří zrušeným položkám a korekcím */}
+                  {/* Dnešek nese štítek „Dnes“ a čára; záhlaví dne má šedý pás jako záhlaví tabulek */}
                   <div data-budget-date={date} className="scroll-mt-20 p-4 sm:p-5 space-y-3">
                     {/* Záhlaví dne */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="-mx-4 sm:-mx-5 -mt-4 sm:-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <span className="font-bold text-slate-900 text-sm">
                           {formatCzechDate(date)}
