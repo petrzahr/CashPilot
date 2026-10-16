@@ -12,6 +12,7 @@ import {
   Copy,
   Trash2,
   Ban,
+  RotateCcw,
   Edit3,
   ArrowUp,
   ArrowDown,
@@ -28,6 +29,7 @@ import { czechStringCompare } from '../../services/categoryService';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
+import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
   { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
@@ -310,6 +312,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const activeFilterCount = [
     search.trim(), accountFilter, mainCategoryFilter, subCategoryFilter, typeFilter, statusFilter,
   ].filter(f => f.length > 0).length;
+  // Na mobilu jsou filtry kromě hledání schované; počet zahrnuje i volbu „Všechna období“
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const hiddenFilterCount = activeFilterCount - (search.trim() ? 1 : 0) + (periodFilter === 'all' ? 1 : 0);
   const clearFilters = () => {
     setSearch('');
     setAccountFilter([]);
@@ -344,6 +349,233 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       return addHaler(sum, effectiveAmount);
     }, 0);
   }, [filteredTransactions]);
+
+  // Části řádku sdílí tabulka (od md) i řádky-karty na mobilu, aby se obě podoby nerozešly
+  const getRowParts = (tx: Transaction, rowIndex: number) => {
+    const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
+    const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
+    const cat = categories.find(c => c.id === tx.categoryId);
+    const subCat = categories.find(c => c.id === tx.subcategoryId);
+
+    const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
+      ? tx.actualAmountInHaler
+      : tx.amountInHaler;
+
+    const isExecuted = tx.status === 'executed';
+    const isCancelled = tx.status === 'cancelled';
+    const isCorrection = tx.type === 'balance_adjustment';
+
+    const diff = tx.diffInHaler ?? (
+      tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
+        ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
+        : tx.amountInHaler
+    );
+
+    const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
+
+    const rowTone = isCancelled
+      ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500'
+      : isCorrection ? 'bg-slate-50/60' : conflict ? 'bg-rose-50/30' : '';
+
+    const title = (
+      <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
+        {isCorrection ? (
+          <button
+            type="button"
+            onClick={() => openCorrection(tx)}
+            className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+            <span className="truncate">{tx.title}</span>
+          </button>
+        ) : (
+          <span className="truncate min-w-0">{tx.title}</span>
+        )}
+        {tx.recurringRuleId && (
+          <span title="Pravidelná položka" className="shrink-0 inline-flex">
+            <Repeat className="w-3.5 h-3.5 text-slate-500" />
+          </span>
+        )}
+        {isCorrection && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
+            Korekce
+          </span>
+        )}
+        {conflict && (
+          <span
+            className="text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-semibold flex items-center gap-1 cursor-help shrink-0"
+            title={conflict.reason}
+          >
+            <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+            Před aktivací
+          </span>
+        )}
+      </div>
+    );
+
+    const note = tx.note ? <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span> : null;
+
+    const category = isCorrection ? (
+      <span className="text-slate-600 font-medium text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+        Korekce zůstatku
+      </span>
+    ) : cat ? (
+      <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+          <span className="truncate">{cat.name}</span>
+        </div>
+        {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
+      </div>
+    ) : tx.type === 'transfer' ? (
+      <span className="text-sky-600 font-medium">Převod</span>
+    ) : (
+      <span className="text-slate-500 italic text-xs">Bez kategorie</span>
+    );
+
+    // Na mobilu stačí kategorie na jednom řádku; korekci už ohlašuje štítek u názvu
+    const categoryInline = isCorrection ? null : cat ? (
+      <span className="inline-flex items-center gap-1.5 min-w-0">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+        <span className="truncate">{subCat ? `${cat.name} › ${subCat.name}` : cat.name}</span>
+      </span>
+    ) : tx.type === 'transfer' ? (
+      <span className="text-sky-600 font-medium">Převod</span>
+    ) : (
+      <span className="italic">Bez kategorie</span>
+    );
+
+    const account = sourceAcc ? (
+      <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
+        <span className="block truncate">{sourceAcc.name}</span>
+        {targetAcc && <span className="block text-sky-600 truncate">→ {targetAcc.name}</span>}
+      </span>
+    ) : '—';
+
+    const accountInline = sourceAcc ? (targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name) : null;
+
+    // Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek
+    const status = isCorrection ? (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+        Korekce
+      </span>
+    ) : (
+      <StatusBadgeMenu
+        tx={tx}
+        todayIso={todayIso}
+        isUpdating={updatingStatusTxId === tx.id}
+        onChange={(status) => handleStatusChange(tx.id, status)}
+        openUp={rowIndex >= filteredTransactions.length - 3 && filteredTransactions.length > 3}
+      />
+    );
+
+    const amountClass = isCorrection
+      ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
+      : tx.type === 'income'
+        ? 'text-emerald-600'
+        : tx.type === 'expense'
+          ? 'text-red-600'
+          : 'text-slate-900';
+
+    const amount = isCorrection
+      ? formatCurrency(diff, { showPlus: true })
+      : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`;
+
+    const actions = isCorrection ? (
+      <>
+        <button
+          type="button"
+          onClick={() => openCorrection(tx)}
+          title="Detail a poznámka korekce"
+          aria-label={`Detail a poznámka korekce: ${tx.title}`}
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => openCorrection(tx, true)}
+          title="Smazat korekci"
+          aria-label={`Smazat korekci: ${tx.title}`}
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </>
+    ) : (
+      <>
+        {!isExecuted ? (
+          <button
+            onClick={() => handleStatusChange(tx.id, 'executed')}
+            disabled={updatingStatusTxId === tx.id}
+            title="Označit jako uskutečněnou"
+            aria-label={`Označit jako uskutečněnou: ${tx.title}`}
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-emerald-600 focus-visible:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            onClick={() => handleStatusChange(tx.id, 'planned')}
+            disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
+            title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
+            aria-label={`Vrátit do plánovaných: ${tx.title}`}
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          >
+            <Clock className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          onClick={() => onEditTransaction(tx)}
+          title="Upravit položku"
+          aria-label={`Upravit položku: ${tx.title}`}
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <Edit3 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => duplicateTransaction(tx)}
+          title="Duplikovat položku"
+          aria-label={`Duplikovat položku: ${tx.title}`}
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+        {!isCancelled ? (
+          <button
+            onClick={() => handleStatusChange(tx.id, 'cancelled')}
+            disabled={updatingStatusTxId === tx.id}
+            title="Označit jako zrušenou"
+            aria-label={`Označit jako zrušenou: ${tx.title}`}
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          >
+            <Ban className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            onClick={() => handleStatusChange(tx.id, 'planned')}
+            disabled={updatingStatusTxId === tx.id}
+            title="Vrátit zrušenou položku do plánovaných"
+            aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          onClick={() => setDeletingTx(tx)}
+          disabled={isDeletingTx}
+          title="Smazat položku"
+          aria-label={`Smazat položku: ${tx.title}`}
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </>
+    );
+
+    return { rowTone, title, note, category, categoryInline, account, accountInline, status, amountClass, amount, actions };
+  };
 
   return (
     <div className="space-y-6">
@@ -418,6 +650,14 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           </div>
 
+          <MobileFiltersToggle
+            isOpen={filtersOpen}
+            onToggle={() => setFiltersOpen(prev => !prev)}
+            activeCount={hiddenFilterCount}
+            controlsId="transactions-filters"
+          />
+
+          <div id="transactions-filters" className={`contents ${filtersOpen ? '' : 'max-md:hidden'}`}>
           {/* 2. Období */}
           <div>
             <select
@@ -491,6 +731,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))}
             />
           </div>
+          </div>
         </div>
 
         {activeFilterCount > 0 && (
@@ -507,9 +748,49 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         )}
       </div>
 
-      {/* Tabulka položek */}
+      {/* Seznam položek: na mobilu řádky-karty, od md tabulka */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <ul className="md:hidden divide-y divide-slate-100 text-xs">
+          {filteredTransactions.length === 0 ? (
+            <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>
+          ) : (
+            filteredTransactions.map((tx, rowIndex) => {
+              const p = getRowParts(tx, rowIndex);
+              return (
+                <li key={tx.id} className={`p-3 space-y-1.5 ${p.rowTone}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 font-semibold text-slate-900">
+                      {p.title}
+                      {p.note}
+                    </div>
+                    <div className={`shrink-0 font-bold tabular-nums ${p.amountClass}`}>{p.amount}</div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-slate-500 min-w-0">
+                    <span className="shrink-0">{formatCzechDate(tx.date)}</span>
+                    {p.categoryInline && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        {p.categoryInline}
+                      </>
+                    )}
+                    {p.accountInline && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="truncate">{p.accountInline}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-2">
+                    <div>{p.status}</div>
+                    <div className="ml-auto flex items-center justify-end -mr-2">{p.actions}</div>
+                  </div>
+                </li>
+              );
+            })
+          )}
+        </ul>
+
+        <div className="max-md:hidden overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
@@ -558,34 +839,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 </tr>
               ) : (
                 filteredTransactions.map((tx, rowIndex) => {
-                  const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
-                  const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
-                  const cat = categories.find(c => c.id === tx.categoryId);
-                  const subCat = categories.find(c => c.id === tx.subcategoryId);
-
-                  const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-                    ? tx.actualAmountInHaler
-                    : tx.amountInHaler;
-
-                  const isExecuted = tx.status === 'executed';
-                  const isCancelled = tx.status === 'cancelled';
-                  const isCorrection = tx.type === 'balance_adjustment';
-
-                  const diff = tx.diffInHaler ?? (
-                    tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
-                      ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
-                      : tx.amountInHaler
-                  );
-
-                  const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
-
+                  const p = getRowParts(tx, rowIndex);
                   return (
-                    <tr
-                      key={tx.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
-                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : isCorrection ? 'bg-slate-50/60' : conflict ? 'bg-rose-50/30' : ''
-                      }`}
-                    >
+                    <tr key={tx.id} className={`hover:bg-slate-50/80 transition-colors ${p.rowTone}`}>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>
@@ -595,192 +851,15 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-900 overflow-hidden">
-                        <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
-                          {isCorrection ? (
-                            <button
-                              type="button"
-                              onClick={() => openCorrection(tx)}
-                              className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
-                            >
-                              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{tx.title}</span>
-                            </button>
-                          ) : (
-                            <span className="truncate min-w-0">{tx.title}</span>
-                          )}
-                          {tx.recurringRuleId && (
-                            <span title="Pravidelná položka" className="shrink-0 inline-flex">
-                              <Repeat className="w-3.5 h-3.5 text-slate-500" />
-                            </span>
-                          )}
-                          {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
-                              Korekce
-                            </span>
-                          )}
-                          {conflict && (
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-semibold flex items-center gap-1 cursor-help shrink-0"
-                              title={conflict.reason}
-                            >
-                              <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
-                              Před aktivací
-                            </span>
-                          )}
-                        </div>
-                        {tx.note && <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span>}
+                        {p.title}
+                        {p.note}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 overflow-hidden">
-                        {isCorrection ? (
-                          <span className="text-slate-600 font-medium text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                            Korekce zůstatku
-                          </span>
-                        ) : cat ? (
-                          <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                              <span className="truncate">{cat.name}</span>
-                            </div>
-                            {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
-                          </div>
-                        ) : tx.type === 'transfer' ? (
-                          <span className="text-sky-600 font-medium">Převod</span>
-                        ) : (
-                          <span className="text-slate-500 italic text-xs">Bez kategorie</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 overflow-hidden">
-                        {sourceAcc ? (
-                          <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
-                            <span className="block truncate">{sourceAcc.name}</span>
-                            {targetAcc && <span className="block text-sky-600 truncate">→ {targetAcc.name}</span>}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {/* Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek */}
-                        {isCorrection ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                            Korekce
-                          </span>
-                        ) : (
-                          <StatusBadgeMenu
-                            tx={tx}
-                            todayIso={todayIso}
-                            isUpdating={updatingStatusTxId === tx.id}
-                            onChange={(status) => handleStatusChange(tx.id, status)}
-                            openUp={rowIndex >= filteredTransactions.length - 3 && filteredTransactions.length > 3}
-                          />
-                        )}
-                      </td>
-                      <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
-                        isCorrection
-                          ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
-                          : tx.type === 'income' 
-                            ? 'text-emerald-600' 
-                            : tx.type === 'expense' 
-                              ? 'text-red-600'
-                              : 'text-slate-900'
-                      }`}>
-                        {isCorrection
-                          ? formatCurrency(diff, { showPlus: true })
-                          : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`}
-                      </td>
+                      <td className="py-3 px-4 text-slate-500 overflow-hidden">{p.category}</td>
+                      <td className="py-3 px-4 text-slate-500 overflow-hidden">{p.account}</td>
+                      <td className="py-3 px-4">{p.status}</td>
+                      <td className={`py-3 px-4 text-right font-bold overflow-hidden ${p.amountClass}`}>{p.amount}</td>
                       <td className="py-3 px-4 text-right overflow-hidden">
-                        <div className="flex items-center justify-end gap-1">
-                          {isCorrection ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openCorrection(tx)}
-                                title="Detail a poznámka korekce"
-                                aria-label={`Detail a poznámka korekce: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openCorrection(tx, true)}
-                                title="Smazat korekci"
-                                aria-label={`Smazat korekci: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {!isExecuted ? (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'executed')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Označit jako uskutečněnou"
-                                  aria-label={`Označit jako uskutečněnou: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
-                                  title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
-                                  aria-label={`Vrátit do plánovaných: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
-                                >
-                                  <Clock className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => onEditTransaction(tx)}
-                                title="Upravit položku"
-                                aria-label={`Upravit položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat položku"
-                                aria-label={`Duplikovat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              {!isCancelled ? (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'cancelled')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Zrušit položku"
-                                  aria-label={`Zrušit položku: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
-                                >
-                                  <Ban className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStatusChange(tx.id, 'planned')}
-                                  disabled={updatingStatusTxId === tx.id}
-                                  title="Vrátit zrušenou položku do plánovaných"
-                                  aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-                                  className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                >
-                                  <Clock className="w-4 h-4" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeletingTx(tx)}
-                                disabled={isDeletingTx}
-                                title="Smazat položku"
-                                aria-label={`Smazat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <div className="flex items-center justify-end gap-1">{p.actions}</div>
                       </td>
                     </tr>
                   );

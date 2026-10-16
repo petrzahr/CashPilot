@@ -528,6 +528,11 @@ export const SettingsScreen: React.FC = () => {
                           <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
                           <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
                         </>
+                      ) : driveSyncStatus === 'error' || driveSyncStatus === 'conflict' ? (
+                        <>
+                          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                          <span className="text-red-600">{SYNC_LABELS[driveSyncStatus]}</span>
+                        </>
                       ) : driveSyncStatus !== 'synced' ? (
                         <>
                           <AlertCircle className="w-3.5 h-3.5 text-amber-600" />

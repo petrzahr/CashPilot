@@ -104,8 +104,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-left text-xs whitespace-nowrap">
             <thead>
-              <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                <th className="py-2.5 px-4 w-[360px]">Období</th>
+              <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
+                {/* První sloupec je připnutý, aby při posouvání do strany zůstal vidět název období */}
+                <th className="sticky left-0 z-[1] bg-slate-50 py-2.5 px-4 w-[200px]">Období</th>
                 <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
                 <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600">Příjmy</th>
                 <th className="py-2.5 px-4 w-[120px] text-right text-red-600">Výdaje</th>
@@ -129,10 +130,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     key={p.period.key}
                     onClick={() => handlePeriodClick(p.period)}
                     className={`cursor-pointer transition-colors group ${
-                      isCurrent ? 'bg-sky-50/40 hover:bg-sky-50/70' : 'hover:bg-slate-50/70'
+                      isCurrent ? 'bg-sky-50 hover:bg-sky-100' : 'bg-white hover:bg-slate-50'
                     }`}
                   >
-                    <td className="py-3 px-4 font-semibold text-slate-900">
+                    <td className={`sticky left-0 z-[1] py-3 px-4 font-semibold text-slate-900 transition-colors ${
+                      isCurrent ? 'bg-sky-50 group-hover:bg-sky-100' : 'bg-white group-hover:bg-slate-50'
+                    }`}>
                       {/* Řádek je klikací myší; klávesnice a čtečky dostávají skutečné tlačítko */}
                       <button
                         type="button"
@@ -236,11 +239,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   </button>
 
                   {isExpanded && (
-                    <div className="pb-4 bg-slate-50/50 overflow-x-auto">
+                    <div className="pb-4 bg-slate-50 overflow-x-auto">
                       <table className="w-full table-fixed text-xs text-left">
                         <thead>
-                          <tr className="bg-slate-50/75 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
-                            <th className="py-2.5 px-4 w-[360px]">Účet</th>
+                          <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
+                            <th className="sticky left-0 z-[1] bg-slate-50 py-2.5 px-4 w-[200px]">Účet</th>
                             <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
                             {/* U účtů se do pohybů počítají i korekce a změny tržní hodnoty, proto jiné názvy než Příjmy/Výdaje */}
                             <th className="py-2.5 px-4 w-[120px] text-right text-emerald-600" title="Příjmy, kladné korekce zůstatku a růst tržní hodnoty">Přírůstky</th>
@@ -267,8 +270,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             const netChange = subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler);
 
                             return (
-                              <tr key={acc.id} className="hover:bg-white/80">
-                                <td className="py-2.5 px-4 font-medium text-slate-900">
+                              <tr key={acc.id} className="group hover:bg-white">
+                                <td className="sticky left-0 z-[1] bg-slate-50 group-hover:bg-white py-2.5 px-4 font-medium text-slate-900">
                                   <div className="flex items-center gap-2">
                                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
                                     <span>{acc.name}</span>
