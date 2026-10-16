@@ -943,8 +943,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 type="text"
                 placeholder="Hledat v názvu…"
                 aria-label="Vyhledat v názvu položky"
+                aria-keyshortcuts="/"
+                data-search-input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setSearchQuery(''); e.currentTarget.blur(); }
+                }}
                 className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
