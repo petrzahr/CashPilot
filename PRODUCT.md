@@ -8,7 +8,9 @@ web
 
 ## Users
 
-Primárně autor a jeho domácnost. CashPilot je osobní nástroj na správu a plánování financí domácnosti. Několik dalších lidí ho používá jako schválení testovací uživatelé (přístup na žádost, viz přihlašovací obrazovka). Širší veřejnost zatím cílem není.
+Jediným uživatelem je autor. CashPilot je jeho osobní nástroj na správu a plánování financí domácnosti; autor aplikaci zná do detailu, takže rozhraní nemusí nic vysvětlovat nováčkům. Přihlašovací obrazovka sice nabízí žádost o přístup, ale návrh se neřídí potřebami dalších lidí a širší veřejnost cílem není.
+
+Rozhraní má být hezké, funkční a přehledné: klid a čitelnost pro jednoho zkušeného uživatele mají přednost před popisky a návody pro prvního návštěvníka. Základy přístupnosti (kontrast, fokus, dotykové plochy) platí dál.
 
 Hlavní práce: naplánovat příjmy a výdaje v rozpočtovém období, hlídat, kolik peněz zbývá a jak se zůstatky vyvinou dopředu, a průběžně zapisovat, co se skutečně stalo.
 
@@ -18,7 +20,7 @@ Mít osobní finance pod kontrolou: měsíční rozpočet, předpověď zůstatk
 
 ## Positioning
 
-Aplikace je stavěná na míru: každá funkce vychází z konkrétních individuálních požadavků autora, ne z obecné šablony rozpočtových aplikací. Rozhoduje to, co domácnost skutečně používá.
+Aplikace je stavěná na míru: každá funkce vychází z konkrétních individuálních požadavků autora, ne z obecné šablony rozpočtových aplikací. Rozhoduje to, co autor skutečně používá.
 
 ## Operating Context
 
@@ -50,7 +52,7 @@ Aplikace je stavěná na míru: každá funkce vychází z konkrétních individ
 
 ## Product Principles
 
-1. Jednoduchost před úplností: nová funkce musí vycházet ze skutečné potřeby domácnosti.
+1. Jednoduchost před úplností: nová funkce musí vycházet ze skutečné potřeby autora.
 2. Čísla musí sedět: konzistentní pravidla výpočtu na všech obrazovkách, žádné zaokrouhlovací chyby.
 3. Data patří uživateli: zůstávají v jeho Google Disku a nic se nesmí tiše ztratit.
 4. Přehled na první pohled: hlavní stav financí je čitelný bez klikání.
