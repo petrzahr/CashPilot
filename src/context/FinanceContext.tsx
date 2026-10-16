@@ -58,7 +58,7 @@ import { applyAccountOrder, sortAccountsByOrder } from '../services/accountServi
 import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { getAccountFees } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
-import { addHaler, subHaler } from '../services/currencyService';
+import { addHaler, subHaler, formatCurrency } from '../services/currencyService';
 import { getCategoryUsage, isInUse } from '../services/usageService';
 import { describeSyncError } from '../services/syncErrorText';
 import {
@@ -1836,9 +1836,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [setData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
+    const deleted = data.marketValueSnapshots.find(s => s.id === id);
     setData(prev => mutateMarketValueHistory(prev, id));
-    showToast('Tržní hodnota byla smazána.');
-  }, [setData, showToast]);
+    if (!deleted) {
+      showToast('Tržní hodnota byla smazána.');
+      return;
+    }
+    // „Vrátit“ vloží záznam zpět s původním createdAt, takže se zachová i pořadí záznamů ze stejného dne
+    showToast(`Tržní hodnota z ${formatCzechDate(deleted.date)} byla smazána.`, 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => prev.marketValueSnapshots.some(s => s.id === deleted.id) ? prev : reconcileMarketValueHistory({
+          ...prev,
+          marketValueSnapshots: [...prev.marketValueSnapshots, { ...deleted, updatedAt: new Date().toISOString() }],
+        }));
+        showToast('Tržní hodnota byla obnovena.');
+      },
+    });
+  }, [data.marketValueSnapshots, setData, showToast]);
 
   const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
     if (!/^\d{4}-\d{2}$/.test(periodKey) || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
@@ -1862,13 +1877,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [setData, showToast]);
 
   const deleteInvestmentFee = useCallback((id: string) => {
+    const target = (data.investmentFees || []).find(f => f.id === id);
+    const samePeriod = (f: InvestmentFee) => !!target && f.accountId === target.accountId && f.periodKey === target.periodKey;
+    const deleted = (data.investmentFees || []).filter(samePeriod);
     setData(prev => {
-      const target = (prev.investmentFees || []).find(f => f.id === id);
-      if (!target) return prev;
-      return { ...prev, investmentFees: prev.investmentFees.filter(f => !(f.accountId === target.accountId && f.periodKey === target.periodKey)) };
+      if (!target || !(prev.investmentFees || []).some(f => f.id === id)) return prev;
+      return { ...prev, investmentFees: prev.investmentFees.filter(f => !samePeriod(f)) };
     });
-    showToast('Poplatek byl smazán.');
-  }, [setData, showToast]);
+    if (!target) {
+      showToast('Poplatek byl smazán.');
+      return;
+    }
+    // „Vrátit“ jen pokud mezitím pro stejné období nevznikl nový poplatek (nejvýše jeden za období)
+    showToast(`Poplatek ${formatCurrency(target.amountInHaler)} byl smazán.`, 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        const nowIso = new Date().toISOString();
+        setData(prev => (prev.investmentFees || []).some(samePeriod) ? prev : {
+          ...prev,
+          investmentFees: [...(prev.investmentFees || []), ...deleted.map(f => ({ ...f, updatedAt: nowIso }))],
+        });
+        showToast('Poplatek byl obnoven.');
+      },
+    });
+  }, [data.investmentFees, setData, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
     const nowIso = new Date().toISOString();

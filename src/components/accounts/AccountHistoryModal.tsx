@@ -8,7 +8,6 @@ import { getAccountFees, getFeesUpToDate, getInvestedAmountAtValuation } from '.
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
-import { ConfirmationModal } from '../common/ConfirmationModal';
 import {
   Edit3,
   Trash2,
@@ -40,12 +39,8 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
 }) => {
   const { transactions, marketValueSnapshots, investmentFees = [], settings, corrections, deleteMarketValue, deleteInvestmentFee, accounts } = useFinance();
   const [editingSnapshotId, setEditingSnapshotId] = useState<string | null>(null);
-  const [deletingSnapshotId, setDeletingSnapshotId] = useState<string | null>(null);
   const [editingFeePeriodKey, setEditingFeePeriodKey] = useState<string | null>(null);
-  const [deletingFeeId, setDeletingFeeId] = useState<string | null>(null);
   const editingSnapshot = marketValueSnapshots.find(s => s.id === editingSnapshotId);
-  const deletingSnapshot = marketValueSnapshots.find(s => s.id === deletingSnapshotId);
-  const deletingFee = investmentFees.find(f => f.id === deletingFeeId);
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
 
   const isAssetAccount = account?.type === 'investment' || account?.type === 'pension';
@@ -178,7 +173,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                           <Edit3 className="w-4 h-4" />
                         </button>
-                        <button type="button" onClick={() => setDeletingFeeId(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
+                        <button type="button" onClick={() => deleteInvestmentFee(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
                           className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -221,7 +216,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                             <Edit3 className="w-4 h-4" />
                           </button>
-                          <button type="button" onClick={() => setDeletingSnapshotId(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
+                          <button type="button" onClick={() => deleteMarketValue(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
                             className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -376,18 +371,8 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
       {/* Detail korekce při rozkliknutí */}
       <MarketValueModal isOpen={isOpen && Boolean(editingSnapshot)} onClose={() => setEditingSnapshotId(null)}
         account={accounts.find(a => a.id === account.id) ?? account} snapshot={editingSnapshot} />
-      <ConfirmationModal isOpen={isOpen && Boolean(deletingSnapshot)} onClose={() => setDeletingSnapshotId(null)}
-        onConfirm={() => { if (deletingSnapshot) deleteMarketValue(deletingSnapshot.id); }}
-        title="Smazat tržní hodnotu?"
-        message={`Tržní hodnota${deletingSnapshot ? ` z ${formatCzechDate(deletingSnapshot.date)} (${formatCurrency(deletingSnapshot.marketValueInHaler)})` : ''} se smaže a výnos i zůstatky se přepočítají. Smazání nelze vrátit.`}
-        confirmText="Smazat tržní hodnotu" cancelText="Zrušit" isDestructive />
       <InvestmentFeeModal isOpen={isOpen && editingFeePeriodKey !== null} onClose={() => setEditingFeePeriodKey(null)}
         account={accounts.find(a => a.id === account.id) ?? account} periodKey={editingFeePeriodKey} />
-      <ConfirmationModal isOpen={isOpen && Boolean(deletingFee)} onClose={() => setDeletingFeeId(null)}
-        onConfirm={() => { if (deletingFee) deleteInvestmentFee(deletingFee.id); }}
-        title="Smazat poplatek?"
-        message={`Poplatek${deletingFee ? ` ${formatCurrency(deletingFee.amountInHaler)}` : ''} se smaže a výnos se přepočítá. Smazání nelze vrátit.`}
-        confirmText="Smazat poplatek" cancelText="Zrušit" isDestructive />
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
