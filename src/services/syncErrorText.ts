@@ -5,6 +5,8 @@
 export function describeSyncError(message: string | null | undefined): string {
   const fallback = 'Změny se nepodařilo uložit na Google Disk. Zůstávají v tomto zařízení a uloží se při další synchronizaci.';
   if (!message) return fallback;
+  const http = describeHttpError(message);
+  if (http) return http;
   const lower = message.toLowerCase();
   if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('load failed') || lower.includes('timeout')) {
     return 'Nepodařilo se spojit s Google Diskem. Zkontrolujte připojení k internetu, změny zůstávají v tomto zařízení.';
@@ -17,6 +19,35 @@ export function describeSyncError(message: string | null | undefined): string {
   }
   // Hláška bez české diakritiky je nejspíš technická; ukážeme srozumitelný popis
   return /[áčďéěíňóřšťúůýž]/i.test(message) ? message : fallback;
+}
+
+/**
+ * Hlášky služby Google Disku mají tvar „Česká věta (HTTP 503): {surová odpověď serveru}“.
+ * Uživatel uvidí jen českou větu a další krok podle kódu; surový text zůstává v technických podrobnostech.
+ */
+function describeHttpError(message: string): string | null {
+  const match = message.match(/^([\s\S]*?)\s*\(HTTP (\d{3})\)/);
+  if (!match) return null;
+  const status = Number(match[2]);
+  if (status === 401 || status === 403) {
+    return 'Přihlášení ke Google Disku vypršelo. Přihlaste se znovu, změny zůstávají v tomto zařízení.';
+  }
+  if (status === 429) {
+    return 'Google Disk teď dočasně odmítá požadavky. Zkuste to za chvíli znovu.';
+  }
+  const base = match[1].replace(/[.:\s]+$/, '');
+  // Uklidňující dovětek, který hláška nese za technickou částí (např. u konfliktu), zůstává
+  const reassurance = /Žádný soubor nebyl přepsán\.\s*$/.test(message) ? ' Žádný soubor nebyl přepsán.' : '';
+  const nextStep = status >= 500
+    ? ' Google Disk má teď potíže, zkuste to za chvíli znovu. Změny zůstávají v tomto zařízení.'
+    : ' Zkuste to znovu, změny zůstávají v tomto zařízení.';
+  return `${base}.${reassurance}${nextStep}`;
+}
+
+/** Vrátí původní technický text chyby, pokud se liší od toho, co vidí uživatel. */
+export function getSyncErrorDetails(message: string | null | undefined): string | null {
+  if (!message) return null;
+  return describeSyncError(message) === message ? null : message;
 }
 
 /**
