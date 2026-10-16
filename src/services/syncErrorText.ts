@@ -18,3 +18,26 @@ export function describeSyncError(message: string | null | undefined): string {
   // Hláška bez české diakritiky je nejspíš technická; ukážeme srozumitelný popis
   return /[áčďéěíňóřšťúůýž]/i.test(message) ? message : fallback;
 }
+
+/**
+ * Převede chybu přihlášení přes Google (kódy Google Identity Services jako `popup_closed`)
+ * na českou větu s dalším krokem. Česká hláška aplikace projde beze změny.
+ */
+export function describeLoginError(message: string | null | undefined): string {
+  const fallback = 'Přihlášení přes Google se nezdařilo. Zkuste to prosím znovu.';
+  if (!message) return fallback;
+  const lower = message.toLowerCase();
+  if (lower.includes('popup_failed_to_open') || lower.includes('blocked')) {
+    return 'Prohlížeč zablokoval přihlašovací okno. Povolte pro tuto stránku vyskakovací okna a zkuste to znovu.';
+  }
+  if (lower.includes('popup_closed') || lower.includes('closed')) {
+    return 'Přihlašovací okno bylo zavřeno dřív, než se přihlášení dokončilo. Zkuste to znovu.';
+  }
+  if (lower.includes('access_denied') || lower.includes('denied')) {
+    return 'Přístup ke Google Disku nebyl povolen. Bez něj CashPilot nemůže ukládat vaše data.';
+  }
+  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('timeout')) {
+    return 'Nepodařilo se spojit s Googlem. Zkontrolujte připojení k internetu a zkuste to znovu.';
+  }
+  return /[áčďéěíňóřšťúůýž]/i.test(message) ? message : fallback;
+}

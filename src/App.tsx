@@ -16,7 +16,8 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { DataLoadErrorScreen } from './components/common/DataLoadErrorScreen';
 import { ToastContainer } from './components/common/ToastContainer';
 import { MovementType, Transaction } from './types/finance';
-import { Loader2, Plus } from 'lucide-react';
+import { AlertCircle, Loader2, Plus } from 'lucide-react';
+import { describeSyncError } from './services/syncErrorText';
 
 const VALID_SCREENS: NavScreen[] = ['budget', 'overview', 'analytics', 'mandatory', 'transactions', 'accounts', 'categories', 'settings'];
 
@@ -188,7 +189,7 @@ const MainLayout: React.FC = () => {
 export function AppContent() {
   const {
     isDriveConnected,
-    isCloudReady, driveSyncStatus, driveError, syncWithGoogleDrive,
+    isCloudReady, driveSyncStatus, driveError, syncWithGoogleDrive, disconnectGoogleDrive,
     loadState,
     loadErrorDetails,
     restoreFromBackupFile,
@@ -222,19 +223,30 @@ export function AppContent() {
   }
 
   if (!isCloudReady) {
+    // Při chybě přestane obrazovka předstírat načítání a nabídne cestu ven
+    const hasError = !!driveError || driveSyncStatus === 'error' || driveSyncStatus === 'conflict';
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4 p-6" role="status">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg animate-pulse motion-reduce:animate-none">
+        <div className="text-center space-y-4 p-6 max-w-sm" role="status">
+          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg ${hasError ? '' : 'animate-pulse motion-reduce:animate-none'}`}>
             <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">CashPilot</h1>
-          <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin text-sky-600" />
+          <div className={`flex items-center justify-center gap-2 text-sm ${hasError ? 'text-red-700 font-semibold' : 'text-slate-500'}`}>
+            {hasError
+              ? <AlertCircle className="w-4 h-4 shrink-0 text-red-600" aria-hidden="true" />
+              : <Loader2 className="w-4 h-4 animate-spin text-sky-600" aria-hidden="true" />}
             <p>{SYNC_LABELS[driveSyncStatus]}</p>
           </div>
-          {driveError && <p className="text-red-700">{driveError}</p>}
-          {driveSyncStatus !== 'loading' && <button onClick={() => void syncWithGoogleDrive()} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>}
+          {hasError && <p className="text-sm text-slate-500">{describeSyncError(driveError)}</p>}
+          {driveSyncStatus !== 'loading' && (
+            <div className="flex flex-col items-center gap-2">
+              <button type="button" onClick={() => void syncWithGoogleDrive()} className="max-md:min-h-11 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>
+              {hasError && (
+                <button type="button" onClick={() => void disconnectGoogleDrive()} className="max-md:min-h-11 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 hover:text-sky-700 hover:border-sky-300 text-xs font-semibold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Odhlásit</button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

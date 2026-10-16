@@ -3,6 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { GoogleIcon } from '../common/GoogleIcon';
 import { AlertCircle, Loader2, Mail, Check } from 'lucide-react';
 import { buildGmailComposeUrl, ACCESS_REQUEST_EMAIL } from '../../constants/authConfig';
+import { describeLoginError } from '../../services/syncErrorText';
 
 export const LoginScreen: React.FC = () => {
   const { connectGoogleDrive, driveSyncStatus, driveError } = useFinance();
@@ -63,7 +64,7 @@ export const LoginScreen: React.FC = () => {
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold block">Přihlášení se nezdařilo</span>
-              <span className="text-red-600">{driveError}</span>
+              <span className="text-red-600">{describeLoginError(driveError)}</span>
             </div>
           </div>
         )}
