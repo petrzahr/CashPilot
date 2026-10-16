@@ -124,7 +124,7 @@ export const CategoriesScreen: React.FC = () => {
             className="btn-primary"
           >
             <Plus className="w-4 h-4" />
-            <span>Nová hlavní kategorie</span>
+            <span>Nová kategorie</span>
           </button>
         </div>
       </div>
@@ -135,7 +135,7 @@ export const CategoriesScreen: React.FC = () => {
             {activeTab === 'expense' ? 'Zatím žádné výdajové kategorie' : 'Zatím žádné příjmové kategorie'}
           </p>
           <p className="text-xs text-slate-500">
-            Přidejte je tlačítkem Nová hlavní kategorie. Položky jdou zapisovat i bez kategorie.
+            Přidejte je tlačítkem Nová kategorie. Položky jdou zapisovat i bez kategorie.
           </p>
         </div>
       )}

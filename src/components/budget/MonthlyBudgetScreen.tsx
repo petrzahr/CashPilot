@@ -390,7 +390,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Prázdný seznam: odliší období bez položek od filtrů, které nic nenašly
   const emptyListMessage = allPeriodTransactions.length === 0
-    ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Přidat položku.'
+    ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Nová položka.'
     : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
@@ -957,7 +957,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 className="btn-primary w-full sm:w-auto shrink-0"
               >
                 <Plus className="w-4 h-4" />
-                <span>Přidat položku</span>
+                <span>Nová položka</span>
               </button>
             </div>
           </div>

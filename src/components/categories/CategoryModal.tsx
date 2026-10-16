@@ -116,7 +116,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     onClose();
   };
 
-  let modalTitle = 'Nová hlavní kategorie';
+  let modalTitle = 'Nová kategorie';
   let modalSubtitle: string | undefined = undefined;
 
   if (isEditMode) {

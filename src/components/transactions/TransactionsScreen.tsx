@@ -325,7 +325,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const emptyListMessage = baseTransactions.length === 0
     ? (periodFilter === 'current'
       ? 'V tomto období zatím nejsou žádné položky. Zobrazte všechny položky, nebo přidejte novou.'
-      : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Přidat položku.')
+      : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Nová položka.')
     : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
@@ -593,7 +593,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               className="btn-primary"
             >
               <Plus className="w-4 h-4" />
-              <span>Přidat položku</span>
+              <span>Nová položka</span>
             </button>
           </div>
         </div>

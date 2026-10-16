@@ -207,7 +207,7 @@ export const AccountsScreen: React.FC = () => {
             className="btn-primary"
           >
             <Plus className="w-4 h-4" />
-            <span>Přidat účet</span>
+            <span>Nový účet</span>
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@ export const AccountsScreen: React.FC = () => {
           </p>
           <p className="text-xs text-slate-500">
             {accounts.length === 0
-              ? 'Přidejte první účet tlačítkem Přidat účet. Bez účtu nejde zapisovat položky.'
+              ? 'Přidejte první účet tlačítkem Nový účet. Bez účtu nejde zapisovat položky.'
               : 'Zrušte filtr typů nebo zapněte Zobrazit archivované účty.'}
           </p>
         </div>
