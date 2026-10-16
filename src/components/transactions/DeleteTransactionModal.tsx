@@ -67,7 +67,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
       <div className="space-y-4">
         {/* Chybová zpráva, pokud nastala chyba */}
         {errorMessage && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+          <div className="panel panel-error font-medium">
             {errorMessage}
           </div>
         )}
@@ -101,7 +101,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             />
             {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}
             {(recurringMode === 'future' || recurringMode === 'series') && hasExecutedHistorical && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <div className="panel panel-warning space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   <span>Série obsahuje už uskutečněné položky</span>

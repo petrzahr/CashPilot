@@ -37,7 +37,7 @@ export function focusFirstInvalid<K extends string>(errors: FieldErrors<K>, orde
 /** Chyba uložení celého formuláře (např. selhání při zápisu), ohlášená čtečce. */
 export const FormError: React.FC<{ message?: string | null }> = ({ message }) =>
   message ? (
-    <p role="alert" className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium leading-relaxed">
+    <p role="alert" className="panel panel-error font-medium">
       {message}
     </p>
   ) : null;

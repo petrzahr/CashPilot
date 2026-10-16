@@ -219,7 +219,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Volba při změně rodičovské kategorie v editaci */}
         {isEditMode && categoryToEdit && categoryToEdit.parentId !== parentId && parentId && (
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
+          <div className="panel panel-warning space-y-2">
             <p className="font-semibold">Podkategorie se přesune do jiné hlavní kategorie.</p>
             <label className="flex items-start gap-2 cursor-pointer mt-1">
               <input

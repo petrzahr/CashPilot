@@ -78,7 +78,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
         </div>
 
         {restoreError && (
-          <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
+          <div role="alert" className="panel panel-error">
             {restoreError}
           </div>
         )}

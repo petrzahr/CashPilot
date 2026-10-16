@@ -579,7 +579,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {driveError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 space-y-2">
+                  <div className="panel panel-error space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{describeSyncError(driveError)}</span>

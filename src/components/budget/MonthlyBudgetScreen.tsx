@@ -677,7 +677,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
         {/* Finanční bilance období (Souhrnný panel výchozího účtu) */}
         {!defaultAccount ? (
-          <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
+          <div className="panel panel-warning flex items-start gap-2.5">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h2 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h2>
@@ -1118,7 +1118,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                     </div>
 
                     {hasNegative && (
-                      <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
+                      <p className="panel panel-error">
                         Během dne klesne zůstatek pod nulu (nejníž na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přesuňte příjem před výdaj a zůstatek zůstane kladný.
                       </p>
                     )}

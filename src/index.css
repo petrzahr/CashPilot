@@ -67,6 +67,19 @@
   .btn-icon:disabled {
     @apply opacity-50 cursor-not-allowed bg-transparent text-slate-500;
   }
+  /* Barevný panel: chyba, varování, informace. Rozložení obsahu (flex, space-y) si určuje místo použití. */
+  .panel {
+    @apply p-3 rounded-xl border text-xs leading-relaxed;
+  }
+  .panel-error {
+    @apply bg-red-50 border-red-200 text-red-700;
+  }
+  .panel-warning {
+    @apply bg-amber-50 border-amber-200 text-amber-800;
+  }
+  .panel-info {
+    @apply bg-sky-50 border-sky-200 text-sky-900;
+  }
   /* Malý štítek (pořadí, počty, Dnes, konflikt…): stejný tvar jako štítek stavu, barva jen podle významu */
   .chip {
     @apply inline-flex items-center gap-1 px-1.5 py-px rounded-md text-xs font-medium leading-4 whitespace-nowrap;
