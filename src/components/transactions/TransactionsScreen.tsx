@@ -443,7 +443,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const account = sourceAcc ? (
       <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
         <span className="block truncate">{sourceAcc.name}</span>
-        {targetAcc && <span className="block text-sky-600 truncate">→ {targetAcc.name}</span>}
+        {targetAcc && <span className="block text-slate-500 truncate">→ {targetAcc.name}</span>}
       </span>
     ) : '—';
 
