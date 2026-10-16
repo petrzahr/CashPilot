@@ -46,7 +46,7 @@ describe('MonthlyBudgetScreen respects account activation date for recurring rul
 
     // The "Položky období" list must not show the phantom pre-activation occurrence,
     // so its sum must stay in sync with the forecast's income figure (0 Kč), not 30 000 Kč.
-    const badges = [...html.matchAll(/rounded-md">([^<]+)<\/span>/g)].map(m => m[1]);
+    const badges = [...html.matchAll(/chip bg-slate-100 text-slate-600">([^<]+)<\/span>/g)].map(m => m[1]);
     expect(badges).toContain('0'); // položky období count
     expect(badges).toContain(formatCurrency(0, { showPlus: true })); // suma položek
     expect(html).not.toContain(formatCurrency(3000000));

@@ -81,7 +81,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
                 <Calendar className="w-4 h-4 text-slate-500" />
                 {dateStr ? formatCzechDate(dateStr) : '—'}
                 {sequence !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                  <span className="ml-1 chip bg-slate-100 text-slate-600">
                     {sequence}. v pořadí dne
                   </span>
                 )}

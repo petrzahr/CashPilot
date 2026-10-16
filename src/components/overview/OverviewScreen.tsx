@@ -146,7 +146,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         {p.period.name}
                       </button>
                       {isCurrent && (
-                        <span className="ml-2 max-sm:ml-0 max-sm:mt-1 max-sm:inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200/70">
+                        <span className="ml-2 max-sm:ml-0 max-sm:mt-1 chip bg-sky-50 text-sky-700">
                           Aktuální
                         </span>
                       )}

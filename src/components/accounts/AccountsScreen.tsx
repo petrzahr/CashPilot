@@ -293,7 +293,7 @@ export const AccountsScreen: React.FC = () => {
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
+                        <span className="chip bg-slate-100 text-slate-600">
                           Archivovaný
                         </span>
                       )}
@@ -414,12 +414,12 @@ export const AccountsScreen: React.FC = () => {
               {/* Příznaky zahrnutí do rozpočtu */}
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {acc.isUsableCash && (
-                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 font-semibold">
+                  <span className="chip bg-sky-50 text-sky-700">
                     Použitelné peníze
                   </span>
                 )}
                 {acc.isNetWorth && (
-                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold">
+                  <span className="chip bg-purple-50 text-purple-700">
                     Celkový majetek
                   </span>
                 )}

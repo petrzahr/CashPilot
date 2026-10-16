@@ -392,13 +392,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           </span>
         )}
         {isCorrection && (
-          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
+          <span className="chip bg-slate-100 text-slate-600 shrink-0">
             Korekce
           </span>
         )}
         {conflict && (
           <span
-            className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold flex items-center gap-1 cursor-help shrink-0"
+            className="chip bg-red-100 text-red-700 cursor-help shrink-0"
             title={conflict.reason}
           >
             <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
@@ -411,7 +411,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const note = tx.note ? <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span> : null;
 
     const category = isCorrection ? (
-      <span className="text-slate-600 font-medium text-xs bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+      <span className="chip bg-slate-100 text-slate-600">
         Korekce zůstatku
       </span>
     ) : cat ? (
@@ -451,7 +451,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
     // Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek
     const status = isCorrection ? (
-      <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
+      <span className="chip bg-slate-100 text-slate-600">
         Korekce
       </span>
     ) : (
@@ -561,11 +561,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm font-bold text-slate-900">Položky</h2>
-              <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
+              <span className="chip bg-slate-100 text-slate-600">
                 {filteredTransactions.length}
               </span>
               <span className="text-xs font-semibold text-slate-500">Součet</span>
-              <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
+              <span className="chip bg-slate-100 text-slate-600">
                 {formatCurrency(filteredTransactionsSum, { showPlus: true })}
               </span>
             </div>
@@ -805,7 +805,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                         {formatCzechDate(tx.date)}
                       </td>
                       <td className="py-3 px-3 text-center overflow-hidden">
-                        <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                        <span className="chip bg-slate-100 text-slate-600">
                           #{tx.sequence || 1}
                         </span>
                       </td>

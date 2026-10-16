@@ -176,7 +176,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
+                        <span className="chip bg-slate-100 text-slate-600">
                           Archivovaná
                         </span>
                       )}

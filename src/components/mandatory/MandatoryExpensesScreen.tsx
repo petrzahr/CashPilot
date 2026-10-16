@@ -285,13 +285,13 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
           {(item.simState === 'added' || item.simState === 'edited') && (
-            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-100 text-sky-800 whitespace-nowrap">
+            <span className="ml-1.5 chip bg-sky-50 text-sky-700">
               {item.simState === 'added' ? 'nová' : 'upravená'}
             </span>
           )}
           {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
           {!isDeleted && item.frequency !== 'monthly' && (
-            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">rozpočítaná</span>
+            <span className="ml-1.5 chip bg-slate-100 text-slate-600">rozpočítaná</span>
           )}
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
