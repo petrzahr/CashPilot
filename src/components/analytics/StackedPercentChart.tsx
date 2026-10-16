@@ -47,6 +47,8 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   // Sloupce jdou otevřít i klepnutím a klávesnicí (Tab, ←/→, Esc), nejen myší
   const barRefs = useRef<(SVGGElement | null)[]>([]);
+  // Graf je jedna zastávka Tabu (naposledy aktivní sloupec), mezi sloupci se chodí šipkami
+  const [rovingIdx, setRovingIdx] = useState(0);
   const openedByFocusRef = useRef(false);
   // Skutečná šířka plochy grafu v px - podle ní se na úzkých displejích ředí popisky osy X
   const plotRef = useRef<HTMLDivElement>(null);
@@ -178,13 +180,13 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               <g
                 key={item.periodKey}
                 ref={(el) => { barRefs.current[idx] = el; }}
-                tabIndex={0}
+                tabIndex={idx === Math.min(rovingIdx, data.length - 1) ? 0 : -1}
                 role="button"
                 aria-label={`${item.periodLabel}: zobrazit podrobnosti`}
                 aria-expanded={isHovered}
                 className="cursor-pointer focus:outline-none group/bar"
                 onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredIdx(idx); }}
-                onFocus={() => { openedByFocusRef.current = true; setHoveredIdx(idx); }}
+                onFocus={() => { openedByFocusRef.current = true; setHoveredIdx(idx); setRovingIdx(idx); }}
                 onBlur={(e) => {
                   if (!barRefs.current.includes(e.relatedTarget as SVGGElement)) setHoveredIdx(null);
                 }}
