@@ -1,4 +1,4 @@
-import { SYNC_LABELS } from '../../services/syncController';
+import { SyncStatusLabel, formatLastSync } from '../common/SyncStatusIndicator';
 import React, { useState, useRef, useId, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
@@ -495,12 +495,6 @@ export const SettingsScreen: React.FC = () => {
                 <div>
                   <h2 id="nastaveni-disk-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <span>Synchronizace s Google Diskem</span>
-                    {isDriveConnected && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Připojeno
-                      </span>
-                    )}
                   </h2>
                   <p className="text-xs text-slate-500">
                     Data se průběžně ukládají do skryté složky aplikace ve vašem Google Disku
@@ -527,7 +521,7 @@ export const SettingsScreen: React.FC = () => {
                     className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                    <span>Synchronizovat</span>
+                    <span>Synchronizovat nyní</span>
                   </button>
 
                   <button
@@ -536,7 +530,7 @@ export const SettingsScreen: React.FC = () => {
                     className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Odpojit</span>
+                    <span>Odpojit Google Disk</span>
                   </button>
                 </div>
               )}
@@ -576,31 +570,11 @@ export const SettingsScreen: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <div className="flex items-center gap-1.5 justify-end font-semibold">
-                      {driveSyncStatus === 'syncing' ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
-                          <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
-                        </>
-                      ) : driveSyncStatus === 'error' || driveSyncStatus === 'conflict' ? (
-                        <>
-                          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                          <span className="text-red-600">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : driveSyncStatus !== 'synced' ? (
-                        <>
-                          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                          <span className="text-amber-600">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-emerald-700">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      )}
+                    <div className="flex justify-end">
+                      <SyncStatusLabel status={driveSyncStatus} />
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'zatím neproběhla'}
+                      Poslední synchronizace: {formatLastSync(lastDriveSyncTime)}
                     </p>
                   </div>
                 </div>
