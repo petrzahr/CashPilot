@@ -88,7 +88,7 @@ export const CategoriesScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Hlavička správy kategorií */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
         <div role="group" aria-label="Typ kategorií" className="h-8 max-md:h-[52px] w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
           <button
@@ -139,7 +139,7 @@ export const CategoriesScreen: React.FC = () => {
       </div>
 
       {mainCategories.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center space-y-1">
+        <div className="card p-8 text-center space-y-1">
           <p className="text-sm font-semibold text-slate-900">
             {activeTab === 'expense' ? 'Zatím žádné výdajové kategorie' : 'Zatím žádné příjmové kategorie'}
           </p>
@@ -159,7 +159,7 @@ export const CategoriesScreen: React.FC = () => {
           return (
             <div
               key={mainCat.id}
-              className={`bg-white rounded-2xl border p-5 shadow-sm space-y-3 transition-all ${
+              className={`card p-5 space-y-4 transition-all ${
                 mainCat.status === 'archived'
                   ? 'border-slate-200 !bg-slate-50 border-dashed'
                   : 'border-slate-200 hover:border-slate-300'

@@ -556,7 +556,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       )}
 
       {/* Horní akční lišta */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div className="card p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -710,7 +710,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </div>
 
       {/* Seznam položek: do 1024px řádky-karty, od lg tabulka (bez posouvání od 1280px) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="card overflow-hidden">
         <ul className="lg:hidden divide-y divide-slate-100 text-xs">
           {filteredTransactions.length === 0 ? (
             <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>

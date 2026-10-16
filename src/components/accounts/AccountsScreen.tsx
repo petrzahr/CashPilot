@@ -183,7 +183,7 @@ export const AccountsScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Hlavička správy účtů */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
           <MultiSelectDropdown
             placeholder="Všechny typy účtů"
@@ -218,7 +218,7 @@ export const AccountsScreen: React.FC = () => {
       </div>
 
       {displayedAccounts.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center space-y-1">
+        <div className="card p-8 text-center space-y-1">
           <p className="text-sm font-semibold text-slate-900">
             {accounts.length === 0 ? 'Zatím nemáte žádný účet' : 'Žádný účet neodpovídá výběru'}
           </p>
@@ -260,7 +260,7 @@ export const AccountsScreen: React.FC = () => {
               onDragOver={(e) => handleDragOver(e, acc.id)}
               onDragLeave={() => setDropTargetAccountId(prev => (prev === acc.id ? null : prev))}
               onDrop={(e) => handleDrop(e, acc.id)}
-              className={`group bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
+              className={`group card p-5 transition-all space-y-4 ${
                 acc.status === 'archived'
                   ? 'border-slate-200 !bg-slate-50 border-dashed'
                   : 'border-slate-200 hover:border-slate-300'

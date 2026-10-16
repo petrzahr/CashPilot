@@ -839,7 +839,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <h2 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
@@ -900,7 +900,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Filtry položek tohoto období */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div className="card p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1056,7 +1056,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Seznam všech položek tohoto období */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="card overflow-hidden">
         {/* 1. REŽIM: PO DNECH S DRAG-AND-DROP A PRŮBĚŽNÝM ZŮSTATKEM */}
         {viewMode === 'daily' ? (
           <div className="divide-y divide-slate-100">

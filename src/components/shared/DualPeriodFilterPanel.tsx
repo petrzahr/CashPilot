@@ -34,7 +34,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
   if (!firstPeriod || !lastPeriod) return null;
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4" aria-label={ariaLabel}>
+    <div className="card p-5 space-y-4" aria-label={ariaLabel}>
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">

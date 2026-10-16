@@ -325,8 +325,8 @@ export const SettingsScreen: React.FC = () => {
       <div className="xl:grid xl:grid-cols-[minmax(0,56rem)_13rem] xl:gap-8 xl:items-start">
         <div ref={contentRef} className="space-y-6 max-w-4xl min-w-0">
           {/* 1. Finanční pravidla a rozpočtový měsíc */}
-          <section id="nastaveni-obdobi" tabIndex={-1} aria-labelledby="nastaveni-obdobi-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-obdobi" tabIndex={-1} aria-labelledby="nastaveni-obdobi-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Calendar className="w-5 h-5" />
               </div>
@@ -399,8 +399,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 2. Zahrnutí jednotlivých účtů do rozpočtu */}
-          <section id="nastaveni-ucty" tabIndex={-1} aria-labelledby="nastaveni-ucty-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-ucty" tabIndex={-1} aria-labelledby="nastaveni-ucty-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Layers className="w-5 h-5" />
               </div>
@@ -450,8 +450,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* Vzhled aplikace (nastavení tohoto zařízení) */}
-          <section id="nastaveni-vzhled" tabIndex={-1} aria-labelledby="nastaveni-vzhled-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-vzhled" tabIndex={-1} aria-labelledby="nastaveni-vzhled-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Palette className="w-5 h-5" />
               </div>
@@ -485,8 +485,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 3. Google Disk – Cloudová synchronizace */}
-          <section id="nastaveni-disk" tabIndex={-1} aria-labelledby="nastaveni-disk-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+          <section id="nastaveni-disk" tabIndex={-1} aria-labelledby="nastaveni-disk-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                   <Cloud className="w-5 h-5" />
@@ -624,8 +624,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 4. Zálohování a Export */}
-          <section id="nastaveni-zalohy" tabIndex={-1} aria-labelledby="nastaveni-zalohy-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-zalohy" tabIndex={-1} aria-labelledby="nastaveni-zalohy-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Download className="w-5 h-5" />
               </div>
@@ -670,8 +670,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 4. Správa dat a reset */}
-          <section id="nastaveni-data" tabIndex={-1} aria-labelledby="nastaveni-data-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-6`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-data" tabIndex={-1} aria-labelledby="nastaveni-data-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               {/* Jediná barevná ikona sekcí: mazání dat nese význam, ostatní jsou neutrální */}
               <div className="p-2 rounded-xl bg-red-50 text-red-600">
                 <Trash2 className="w-5 h-5" />

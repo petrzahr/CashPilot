@@ -201,7 +201,7 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 - **Background:** povrch; zapuštěné panely uvnitř karty plátno.
 - **Shadow Strategy:** stín Karta.
 - **Border:** 1px vlasová linka.
-- **Internal Padding:** 20px (24px u sekcí Nastavení).
+- **Internal Padding:** 20px všude (třídy `card` + `p-5`), mezery uvnitř 16px. Karta s tabulkou má záhlaví `card-header` (20px do stran, 16px nahoru a dolů, linka pod ním).
 
 ### Dialogs
 - **Structure:** pevná hlavička, posouvající se obsah a akční lišta `ModalFooter` přilepená ke spodnímu okraji; dialog se vždy vejde do viditelné výšky (okraj 16px, od 640px 24px) a nikdy se neposouvá dvakrát.

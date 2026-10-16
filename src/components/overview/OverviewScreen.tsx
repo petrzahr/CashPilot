@@ -68,8 +68,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         ariaLabel="Období přehledů"
       />
       {/* Hlavní tabulka forecastu */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card overflow-hidden">
+        <div className="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Vývoj zůstatků po obdobích</h2>
           {/* Přepínač: Použitelné peníze vs Všechny účty */}
           <div role="group" aria-label="Zobrazit zůstatky" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
@@ -195,8 +195,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       </div>
 
       {/* Přehled účtů */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card overflow-hidden">
+        <div className="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Účty</h2>
           <div className="flex items-center gap-2">
             <div role="group" aria-label="Zobrazení účtů" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
