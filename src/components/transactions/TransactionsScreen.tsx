@@ -60,6 +60,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
+    deleteCorrection,
     exportCSV,
     dataConflicts,
     showToast,
@@ -68,15 +69,15 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   // Stav mazání položky
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
   const [isDeletingTx, setIsDeletingTx] = useState(false);
+  // Běžná položka se smaže hned (oznámení nabídne „Vrátit“), pravidelná potřebuje volbu rozsahu
+  const requestDelete = (tx: Transaction) => {
+    if (tx.recurringRuleId || tx.id.startsWith('virtual_')) setDeletingTx(tx);
+    else void deleteTransaction(tx.id);
+  };
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
-  // „Smazat korekci“ otevře detail rovnou s potvrzením smazání, oko jen detail
-  const [correctionDeleteFirst, setCorrectionDeleteFirst] = useState(false);
-  const openCorrection = (tx: Transaction, deleteFirst = false) => {
-    setCorrectionDeleteFirst(deleteFirst);
-    setSelectedCorrection(tx);
-  };
+  const openCorrection = (tx: Transaction) => setSelectedCorrection(tx);
 
   // Stav probíhající změny stavu položky (Akce sloupec)
   const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
@@ -488,7 +489,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => openCorrection(tx, true)}
+          onClick={() => void deleteCorrection(tx.id)}
           title="Smazat korekci"
           aria-label={`Smazat korekci: ${tx.title}`}
           className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
@@ -516,7 +517,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <Copy className="w-4 h-4" />
         </button>
         <button
-          onClick={() => setDeletingTx(tx)}
+          onClick={() => requestDelete(tx)}
           disabled={isDeletingTx}
           title="Smazat položku"
           aria-label={`Smazat položku: ${tx.title}`}
@@ -596,8 +597,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               type="text"
               placeholder="Hledat v názvu…"
               aria-label="Vyhledat v názvu položky"
+              aria-keyshortcuts="/"
+              data-search-input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') { setSearch(''); e.currentTarget.blur(); }
+              }}
               className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
@@ -847,9 +853,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
-        correctionItem={selectedCorrection}
-        startWithDeleteConfirm={correctionDeleteFirst}
-      />
+        correctionItem={selectedCorrection}      />
     </div>
   );
 };

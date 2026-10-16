@@ -177,7 +177,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 bg-sky-50/70 p-4 rounded-xl border border-sky-100">
+        <p className="text-xs text-slate-500 bg-sky-50 p-4 rounded-xl border border-sky-100">
           Dosavadní položky ani počáteční zůstatek se nezmění. Rozdíl se uloží jako korekce k tomuto dni a promítne se do zůstatků od tohoto dne dál.
         </p>
 

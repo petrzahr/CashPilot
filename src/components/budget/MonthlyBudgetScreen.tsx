@@ -16,6 +16,7 @@ import {
   AlertCircle,
   GripVertical,
   List,
+  CalendarCheck,
   Calendar,
   ChevronDown,
   Loader2,
@@ -79,6 +80,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
+    deleteCorrection,
     reorderDayTransactions,
     reorderRecurringItem,
     showToast,
@@ -109,15 +111,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Stav mazání položky
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
   const [isDeletingTx, setIsDeletingTx] = useState(false);
+  // Běžná položka se smaže hned (oznámení nabídne „Vrátit“), pravidelná potřebuje volbu rozsahu
+  const requestDelete = (tx: Transaction) => {
+    if (tx.recurringRuleId || tx.id.startsWith('virtual_')) setDeletingTx(tx);
+    else void deleteTransaction(tx.id);
+  };
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
-  // „Smazat korekci“ otevře detail rovnou s potvrzením smazání, oko jen detail
-  const [correctionDeleteFirst, setCorrectionDeleteFirst] = useState(false);
-  const openCorrection = (tx: Transaction, deleteFirst = false) => {
-    setCorrectionDeleteFirst(deleteFirst);
-    setSelectedCorrection(tx);
-  };
+  const openCorrection = (tx: Transaction) => setSelectedCorrection(tx);
 
   const deletingTxHasExecutedHistorical = useMemo(() => {
     if (!deletingTx) return false;
@@ -432,6 +434,22 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Seskupení položek podle jednotlivých dnů s výpočtem denního průběžného zůstatku
   // Dnešní den v pražském čase odděluje uskutečněnou minulost od plánu
   const todayIso = getTodayInPrague();
+  const isTodayInPeriod = todayIso >= selectedPeriod.startDate && todayIso <= selectedPeriod.endDate;
+
+  // „Dnes“: posun na den nejbližší dnešku (při shodě vzdálenosti vyhraje budoucí), funguje
+  // v obou zobrazeních i při sestupném řazení; čára „Dnes“ nese přímo dnešní datum
+  const scrollToToday = () => {
+    const today = Date.parse(todayIso);
+    let target: HTMLElement | null = null;
+    let bestDistance = Infinity;
+    document.querySelectorAll<HTMLElement>('[data-budget-date]').forEach(el => {
+      const date = el.dataset.budgetDate!;
+      const distance = Math.abs(Date.parse(date) - today) - (date >= todayIso ? 0.5 : 0);
+      if (distance < bestDistance) { bestDistance = distance; target = el; }
+    });
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    (target as HTMLElement | null)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   const dayGroups = useMemo(() => {
     const dateMap = new Map<string, Transaction[]>();
@@ -643,14 +661,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
+            <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Použitelný zůstatek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
 
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
+            <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Celkový majetek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
@@ -924,6 +942,17 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </button>
               </div>
 
+              {isTodayInPeriod && periodTransactions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={scrollToToday}
+                  className="h-8 max-md:h-11 flex items-center gap-1.5 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0"
+                >
+                  <CalendarCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Dnes</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => onOpenTransactionModal()}
@@ -942,8 +971,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 type="text"
                 placeholder="Hledat v názvu…"
                 aria-label="Vyhledat v názvu položky"
+                aria-keyshortcuts="/"
+                data-search-input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setSearchQuery(''); e.currentTarget.blur(); }
+                }}
                 className="max-md:min-h-11 w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
@@ -1040,12 +1074,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 return (
                   <React.Fragment key={date}>
                   {crossesToday && (
-                    <div role="separator" aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
+                    <div role="separator" data-budget-date={todayIso} aria-label={`Dnes, ${formatCzechDate(todayIso)}`} className="scroll-mt-20 flex items-center gap-3 px-4 sm:px-5 py-2 bg-slate-50 text-xs font-bold text-slate-900">
                       <span>Dnes · {formatCzechDate(todayIso)}</span>
                       <span className="h-px flex-1 bg-slate-300" aria-hidden="true" />
                     </div>
                   )}
-                  <div className={`p-4 sm:p-5 space-y-3 ${isToday ? 'bg-slate-50' : ''}`}>
+                  {/* Dnešek nese štítek „Dnes“ a čára; šedý podklad patří zrušeným položkám a korekcím */}
+                  <div data-budget-date={date} className="scroll-mt-20 p-4 sm:p-5 space-y-3">
                     {/* Záhlaví dne */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
@@ -1164,9 +1199,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       <span className="truncate">{tx.title}</span>
                                     </button>
                                   ) : (
-                                    <span className="min-w-0 max-w-full text-xs font-bold text-slate-900 truncate">
+                                    <button
+                                      type="button"
+                                      onClick={() => onEditTransaction(tx)}
+                                      className="min-w-0 max-w-full text-xs font-bold text-slate-900 hover:text-sky-700 hover:underline text-left truncate"
+                                    >
                                       {tx.title}
-                                    </span>
+                                    </button>
                                   )}
                                   {tx.recurringRuleId && (
                                     <span title="Pravidelná položka" className="shrink-0 inline-flex">
@@ -1174,7 +1213,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </span>
                                   )}
                                   {isCorrection ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
                                       Korekce
                                     </span>
                                   ) : (
@@ -1237,7 +1276,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => openCorrection(tx, true)}
+                                      onClick={() => void deleteCorrection(tx.id)}
                                       title="Smazat korekci"
                                       aria-label={`Smazat korekci: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
@@ -1265,7 +1304,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       <Copy className="w-4 h-4" />
                                     </button>
                                     <button
-                                      onClick={() => setDeletingTx(tx)}
+                                      onClick={() => requestDelete(tx)}
                                       disabled={isDeletingTx}
                                       title="Smazat položku"
                                       aria-label={`Smazat položku: ${tx.title}`}
@@ -1349,7 +1388,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   return (
                     <tr
                       key={tx.id}
-                      className={`hover:bg-slate-50 transition-colors ${
+                      data-budget-date={tx.date}
+                      className={`scroll-mt-28 hover:bg-slate-50 transition-colors ${
                         isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : ''
                       }`}
                     >
@@ -1373,7 +1413,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
-                            <span className="truncate min-w-0">{tx.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => onEditTransaction(tx)}
+                              className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
+                            >
+                              {tx.title}
+                            </button>
                           )}
                           {tx.recurringRuleId && (
                             <span title="Pravidelná položka" className="shrink-0 inline-flex">
@@ -1381,7 +1427,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
+                            <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600 shrink-0">
                               Korekce
                             </span>
                           )}
@@ -1418,7 +1464,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       <td className="py-3 px-4">
                         {/* Stejný štítek jako v zobrazení po dnech: korekce má vlastní štítek, ostatní stav lze změnit */}
                         {isCorrection ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
                             Korekce
                           </span>
                         ) : (
@@ -1453,7 +1499,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => openCorrection(tx, true)}
+                                onClick={() => void deleteCorrection(tx.id)}
                                 title="Smazat korekci"
                                 aria-label={`Smazat korekci: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
@@ -1480,7 +1526,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 <Copy className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setDeletingTx(tx)}
+                                onClick={() => requestDelete(tx)}
                                 disabled={isDeletingTx}
                                 title="Smazat položku"
                                 aria-label={`Smazat položku: ${tx.title}`}
@@ -1533,9 +1579,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
-        correctionItem={selectedCorrection}
-        startWithDeleteConfirm={correctionDeleteFirst}
-      />
+        correctionItem={selectedCorrection}      />
     </div>
 );
 };

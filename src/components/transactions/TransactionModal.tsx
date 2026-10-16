@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useId, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
@@ -113,9 +114,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     )
     .sort((a, b) => czechStringCompare(a.name, b.name));
 
+  // Rozepsaný formulář: po naplnění se uloží otisk hodnot a zavření omylem (klepnutí mimo,
+  // Escape) se při jakékoli změně nejdřív zeptá. Efekt stojí před naplněním formuláře,
+  // aby otisk vznikl až v dalším vykreslení, kdy už stav obsahuje nové hodnoty.
+  const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
+  const formSnapshotRef = useRef('');
+  const snapshotPendingRef = useRef(false);
+  const formValues = JSON.stringify([
+    title, amountStr, date, sequenceStr, type, sourceAccountId, targetAccountId, categoryId,
+    subcategoryId, status, note, isRecurring, frequency, dayOfMonth, recurringEndDate, recurringEditMode,
+  ]);
+  useEffect(() => {
+    if (!snapshotPendingRef.current) return;
+    snapshotPendingRef.current = false;
+    formSnapshotRef.current = formValues;
+  });
+  const handleDismissAttempt = () => {
+    if (formValues !== formSnapshotRef.current) setIsDiscardConfirmOpen(true);
+    else onClose();
+  };
+
   useEffect(() => {
     setErrors({});
     setSaveError(null);
+    setIsDiscardConfirmOpen(false);
+    snapshotPendingRef.current = true;
     if (transactionToEdit) {
       setTitle(transactionToEdit.title);
       const haler = transactionToEdit.status === 'executed' && transactionToEdit.actualAmountInHaler !== undefined
@@ -415,6 +438,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         setNote('');
         setSequenceStr(String(sequenceNum + 1));
         setErrors({});
+        snapshotPendingRef.current = true;
         focusAmountField();
       } else {
         onClose();
@@ -428,9 +452,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      onDismissAttempt={handleDismissAttempt}
       title={isEditing ? 'Upravit položku' : 'Nová položka'}
       maxWidth="max-w-xl"
     >
@@ -835,5 +861,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         </ModalFooter>
       </form>
     </Modal>
+
+    <ConfirmationModal
+      isOpen={isOpen && isDiscardConfirmOpen}
+      onClose={() => setIsDiscardConfirmOpen(false)}
+      onConfirm={onClose}
+      title={isEditing ? 'Zahodit změny položky?' : 'Zahodit rozepsanou položku?'}
+      message={isEditing ? 'Neuložené změny se ztratí.' : 'Vyplněné údaje se ztratí.'}
+      confirmText="Zahodit"
+      cancelText="Pokračovat v úpravě"
+      isDestructive={true}
+    />
+    </>
   );
 };

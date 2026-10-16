@@ -12,8 +12,7 @@ import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
   Download, 
   Upload, 
-  Trash2, 
-  ShieldAlert, 
+  Trash2,
   Calendar, 
   Layers, 
   CheckCircle2, 
@@ -425,7 +424,7 @@ export const SettingsScreen: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={acc.isUsableCash}
@@ -435,7 +434,7 @@ export const SettingsScreen: React.FC = () => {
                       <span className="font-medium text-slate-500">Použitelné peníze</span>
                     </label>
 
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={acc.isNetWorth}
@@ -609,7 +608,7 @@ export const SettingsScreen: React.FC = () => {
                     >
                       Zálohovat nyní
                     </button>
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={driveBackupEnabled}
@@ -638,41 +637,36 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                onClick={exportJSON}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <Download className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Stáhnout zálohu (JSON)</span>
-                <span className="text-xs text-slate-500">Všechna data a nastavení</span>
-              </button>
-
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <Upload className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-                <span className="text-xs text-slate-500">Sloučí soubor .json s aktuálními daty</span>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <button
-                onClick={exportCSV}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <FileText className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Stáhnout položky (CSV)</span>
-                <span className="text-xs text-slate-500">Pro Excel nebo jiné tabulky</span>
-              </button>
+            {/* Stejný vzor řádků jako v Mazání dat: popis vlevo, akce vpravo */}
+            <div className="divide-y divide-slate-200">
+              {[
+                { title: 'Stáhnout zálohu (JSON)', text: 'Všechna data a nastavení v jednom souboru.', label: 'Stáhnout zálohu', icon: Download, onClick: exportJSON },
+                { title: 'Obnovit ze zálohy', text: 'Sloučí soubor .json s aktuálními daty. Nic se nesmaže ani nepřepíše.', label: 'Vybrat soubor', icon: Upload, onClick: () => fileInputRef.current?.click() },
+                { title: 'Stáhnout položky (CSV)', text: 'Pro Excel nebo jiné tabulky.', label: 'Stáhnout CSV', icon: FileText, onClick: exportCSV },
+              ].map(({ title, text, label, icon: Icon, onClick }) => (
+                <div key={title} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onClick}
+                    className="max-md:min-h-11 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0 self-start sm:self-center"
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    {label}
+                  </button>
+                </div>
+              ))}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </section>
 
           {/* 4. Správa dat a reset */}
@@ -750,31 +744,26 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Nebezpečná zóna */}
-            <div className="pt-2">
-              <div className="p-4 sm:p-5 rounded-2xl border-2 border-red-100 bg-red-50/30 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-red-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-red-700">
-                    Nebezpečná zóna
-                  </h3>
-                </div>
+            {/* Smazání všeho: stejný řádek jako výše, váhu nese plné červené tlačítko */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Smazat vše
+              </h3>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">Smazat všechna data</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Smaže účty, položky, kategorie i nastavení. Aplikace začne od nuly.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmResetAllOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
-                  >
-                    Smazat všechna data
-                  </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Smazat všechna data</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Smaže účty, položky, kategorie i nastavení. Aplikace začne od nuly.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetAllOpen(true)}
+                  className="max-md:min-h-11 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
+                >
+                  Smazat všechna data
+                </button>
               </div>
             </div>
 

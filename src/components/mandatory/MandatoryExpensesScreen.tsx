@@ -459,8 +459,8 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
       <table className="w-full text-left text-xs">
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
-            <th className="py-2.5 px-4">Změna</th>
             <th className={`py-2.5 px-4 ${STICKY_LEFT} ${HEADER_ROW_BG}`}>Položka</th>
+            <th className="py-2.5 px-4">Změna</th>
             <th className="py-2.5 px-4">Typ</th>
             <th className="py-2.5 px-4">Kdy se hradí</th>
             <th className="py-2.5 px-4 text-right">Částka</th>
@@ -470,6 +470,12 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
         <tbody className="divide-y divide-slate-100">
           {changes.map((change) => (
             <tr key={`${change.ruleId}-${change.kind}`}>
+              <td className={`py-2 px-4 font-medium text-slate-900 ${STICKY_LEFT} bg-white`}>
+                {change.previous && change.previous.title !== change.title && (
+                  <span className="text-slate-500 line-through mr-1.5">{change.previous.title}</span>
+                )}
+                {change.title}
+              </td>
               <td className="py-2 px-4 whitespace-nowrap">
                 <span className={`font-semibold ${CHANGE_KIND_COLORS[change.kind]}`}>
                   {CHANGE_KIND_LABELS[change.kind]}
@@ -478,12 +484,6 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
                   {' '}
                   {change.kind === 'end' ? 'naposledy' : 'od'} {formatCzechDate(change.occurrenceDate)} (období {change.periodName})
                 </span>
-              </td>
-              <td className="py-2 px-4 font-medium text-slate-900">
-                {change.previous && change.previous.title !== change.title && (
-                  <span className="text-slate-500 line-through mr-1.5">{change.previous.title}</span>
-                )}
-                {change.title}
               </td>
               <td className="py-2 px-4 text-slate-500">{GROUP_LABELS[change.group]}</td>
               <td className="py-2 px-4 text-slate-600 whitespace-nowrap">
@@ -622,20 +622,10 @@ export const MandatoryExpensesScreen: React.FC = () => {
           }`}
         >
           <p className="text-slate-500">
-            {isSimulating ? (
-              <>
-                <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
-                (ty zůstávají beze změny).
-              </>
-            ) : (
-              <>
-                Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
-                nepravidelné platby rozpočítané do měsíců{' '}
-                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-slate-600`}>(podbarvené, štítek rozpočítaná)</span>.
-                Úpravy zde jsou jen simulace.
-              </>
-            )}
-            {' '}Částky jsou zaokrouhlené na 100 Kč, součty se počítají z přesných hodnot.
+            {isSimulating
+              ? <strong className="text-amber-800">Simulace</strong>
+              : <>Období <strong className="text-slate-700">{overview.periodName}</strong></>}
+            {' '}· zaokrouhleno na 100 Kč
           </p>
           <button
             type="button"

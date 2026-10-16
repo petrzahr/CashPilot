@@ -131,9 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Logo a záhlaví: výška a spodní linka navazují na hlavičku obsahu */}
         <div className="h-16 shrink-0 px-5 border-b border-slate-200 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md">
-              <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
-            </div>
+            <img src="./favicon.svg?v=3" alt="" className="w-9 h-9 shrink-0 rounded-xl" />
             <div className="min-w-0">
               <span className="text-base font-extrabold tracking-tight text-slate-900 block leading-none">
                 CashPilot

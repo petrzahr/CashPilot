@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
-import { ConfirmationModal } from '../common/ConfirmationModal';
 import { Transaction, BalanceCorrection } from '../../types/finance';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
@@ -11,19 +10,15 @@ interface CorrectionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   correctionItem: Transaction | BalanceCorrection | null;
-  /** Otevřít rovnou s potvrzením smazání (akce „Smazat korekci“ v seznamu) */
-  startWithDeleteConfirm?: boolean;
 }
 
 export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   isOpen,
   onClose,
   correctionItem,
-  startWithDeleteConfirm = false,
 }) => {
   const { accounts, transactions, corrections, updateCorrectionNote, deleteCorrection } = useFinance();
   const [note, setNote] = useState('');
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   // Získat nejaktuálnější data položky ze stavu
   const currentItem = React.useMemo(() => {
@@ -38,9 +33,8 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   useEffect(() => {
     if (currentItem && isOpen) {
       setNote(currentItem.note || '');
-      setIsConfirmDeleteOpen(startWithDeleteConfirm);
     }
-  }, [currentItem, isOpen, startWithDeleteConfirm]);
+  }, [currentItem, isOpen]);
 
   if (!currentItem) return null;
 
@@ -63,12 +57,10 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
     onClose();
   };
 
+  // Smaže hned; oznámení po smazání nabídne „Vrátit“
   const handleDelete = async () => {
     const ok = await deleteCorrection(currentItem.id);
-    if (ok) {
-      setIsConfirmDeleteOpen(false);
-      onClose();
-    }
+    if (ok) onClose();
   };
 
   return (
@@ -148,7 +140,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </form>
 
           {/* Upozornění na neměnnost finanční částky */}
-          <div className="flex items-start gap-2 p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+          <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
               Částku korekce nejde upravit, protože z ní vycházejí všechny další zůstatky. Pokud nesedí, korekci smažte a na účtu znovu zvolte Srovnat s bankou.
@@ -159,7 +151,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           <ModalFooter className="justify-between">
             <button
               type="button"
-              onClick={() => setIsConfirmDeleteOpen(true)}
+              onClick={handleDelete}
               className="px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1.5"
             >
               <Trash2 className="w-4 h-4" />
@@ -176,17 +168,6 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </ModalFooter>
         </div>
       </Modal>
-
-      <ConfirmationModal
-        isOpen={isConfirmDeleteOpen}
-        onClose={() => setIsConfirmDeleteOpen(false)}
-        onConfirm={handleDelete}
-        title="Smazat korekci zůstatku?"
-        message="Korekce se smaže a zůstatky od tohoto dne dál se přepočítají. Smazání nelze vrátit."
-        confirmText="Smazat korekci"
-        cancelText="Zrušit"
-        isDestructive={true}
-      />
     </>
   );
 };

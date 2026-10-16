@@ -58,7 +58,7 @@ import { applyAccountOrder, sortAccountsByOrder } from '../services/accountServi
 import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { getAccountFees } from '../services/investmentPerformanceService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
-import { addHaler, subHaler } from '../services/currencyService';
+import { addHaler, subHaler, formatCurrency } from '../services/currencyService';
 import { getCategoryUsage, isInUse } from '../services/usageService';
 import { describeSyncError } from '../services/syncErrorText';
 import {
@@ -293,6 +293,8 @@ interface FinanceContextType {
     recurringMode?: 'occurrence' | 'future' | 'series',
     deleteHistoricalExecuted?: boolean
   ) => Promise<boolean>;
+  /** Vrácení smazané běžné položky (akce „Vrátit“ v oznámení po smazání) */
+  restoreDeletedTransaction: (tx: Transaction, correction?: BalanceCorrection) => void;
   duplicateTransaction: (tx: Transaction) => void;
   setTransactionStatus: (
     id: string,
@@ -801,12 +803,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Pořadí položek bylo uloženo.');
   }, [showToast]);
 
+  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni. Nové updatedAt
+  // je pozdější než záznam o smazání, takže synchronizace položku zase přijme.
+  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
+    const nowIso = new Date().toISOString();
+    setData(prev => {
+      if (prev.transactions.some(t => t.id === tx.id)) return prev;
+      return {
+        ...prev,
+        transactions: insertOrUpdateWithSequence({ ...tx, updatedAt: nowIso }, tx.sequence ?? 1, prev.transactions),
+        corrections: correction && !prev.corrections.some(c => c.id === correction.id)
+          ? [...prev.corrections, { ...correction, updatedAt: nowIso }]
+          : prev.corrections,
+      };
+    });
+    showToast(correction ? 'Korekce zůstatku byla obnovena.' : 'Položka byla obnovena.');
+  }, [showToast]);
+
   const deleteTransaction = useCallback(async (
     id: string,
     recurringMode: 'occurrence' | 'future' | 'series' = 'occurrence',
     deleteHistoricalExecuted: boolean = false
   ): Promise<boolean> => {
     let success = false;
+    let deletedPlainTx: Transaction | undefined;
+    let deletedCorrection: BalanceCorrection | undefined;
     try {
       // Ověření dostupnosti úložiště (pokud selže, vyvolá chybu)
       try {
@@ -851,6 +872,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           }
           const updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
           success = true;
+          deletedPlainTx = prev.transactions.find(t => t.id === id);
+          deletedCorrection = prev.corrections.find(c => c.id === id);
           return {
             ...prev,
             transactions: updatedTxs,
@@ -993,7 +1016,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       });
 
       if (success) {
-        showToast('Položka byla smazána.');
+        const restoredTx = deletedPlainTx;
+        const restoredCorrection = deletedCorrection;
+        if (restoredTx) {
+          const text = restoredCorrection
+            ? 'Korekce zůstatku byla smazána.'
+            : `Položka „${restoredTx.title}“ byla smazána.`;
+          showToast(text, 'success', {
+            label: 'Vrátit',
+            onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
+          });
+        } else {
+          showToast('Položka byla smazána.');
+        }
         return true;
       } else {
         return false;
@@ -1003,7 +1038,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       showToast('Položku se nepodařilo smazat. Zkuste to prosím znovu.', 'error');
       return false;
     }
-  }, [selectedPeriod.key, showToast]);
+  }, [selectedPeriod.key, showToast, restoreDeletedTransaction]);
 
   const duplicateTransaction = useCallback((tx: Transaction) => {
     const nowIso = new Date().toISOString();
@@ -1801,9 +1836,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [setData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
+    const deleted = data.marketValueSnapshots.find(s => s.id === id);
     setData(prev => mutateMarketValueHistory(prev, id));
-    showToast('Tržní hodnota byla smazána.');
-  }, [setData, showToast]);
+    if (!deleted) {
+      showToast('Tržní hodnota byla smazána.');
+      return;
+    }
+    // „Vrátit“ vloží záznam zpět s původním createdAt, takže se zachová i pořadí záznamů ze stejného dne
+    showToast(`Tržní hodnota z ${formatCzechDate(deleted.date)} byla smazána.`, 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => prev.marketValueSnapshots.some(s => s.id === deleted.id) ? prev : reconcileMarketValueHistory({
+          ...prev,
+          marketValueSnapshots: [...prev.marketValueSnapshots, { ...deleted, updatedAt: new Date().toISOString() }],
+        }));
+        showToast('Tržní hodnota byla obnovena.');
+      },
+    });
+  }, [data.marketValueSnapshots, setData, showToast]);
 
   const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
     if (!/^\d{4}-\d{2}$/.test(periodKey) || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
@@ -1827,13 +1877,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [setData, showToast]);
 
   const deleteInvestmentFee = useCallback((id: string) => {
+    const target = (data.investmentFees || []).find(f => f.id === id);
+    const samePeriod = (f: InvestmentFee) => !!target && f.accountId === target.accountId && f.periodKey === target.periodKey;
+    const deleted = (data.investmentFees || []).filter(samePeriod);
     setData(prev => {
-      const target = (prev.investmentFees || []).find(f => f.id === id);
-      if (!target) return prev;
-      return { ...prev, investmentFees: prev.investmentFees.filter(f => !(f.accountId === target.accountId && f.periodKey === target.periodKey)) };
+      if (!target || !(prev.investmentFees || []).some(f => f.id === id)) return prev;
+      return { ...prev, investmentFees: prev.investmentFees.filter(f => !samePeriod(f)) };
     });
-    showToast('Poplatek byl smazán.');
-  }, [setData, showToast]);
+    if (!target) {
+      showToast('Poplatek byl smazán.');
+      return;
+    }
+    // „Vrátit“ jen pokud mezitím pro stejné období nevznikl nový poplatek (nejvýše jeden za období)
+    showToast(`Poplatek ${formatCurrency(target.amountInHaler)} byl smazán.`, 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        const nowIso = new Date().toISOString();
+        setData(prev => (prev.investmentFees || []).some(samePeriod) ? prev : {
+          ...prev,
+          investmentFees: [...(prev.investmentFees || []), ...deleted.map(f => ({ ...f, updatedAt: nowIso }))],
+        });
+        showToast('Poplatek byl obnoven.');
+      },
+    });
+  }, [data.investmentFees, setData, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
     const nowIso = new Date().toISOString();
@@ -1850,13 +1917,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (inTxs) {
       return deleteTransaction(id);
     }
+    const deleted = data.corrections.find(c => c.id === id);
     setData(prev => ({
       ...prev,
       corrections: prev.corrections.filter(c => c.id !== id)
     }));
-    showToast('Korekce zůstatku byla smazána.');
+    // Samostatná korekce (bez položky v seznamu) se vrací jen do korekcí
+    showToast('Korekce zůstatku byla smazána.', 'success', deleted ? {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => prev.corrections.some(c => c.id === deleted.id) ? prev : {
+          ...prev,
+          corrections: [...prev.corrections, { ...deleted, updatedAt: new Date().toISOString() }],
+        });
+        showToast('Korekce zůstatku byla obnovena.');
+      },
+    } : undefined);
     return true;
-  }, [data.transactions, deleteTransaction, showToast]);
+  }, [data.transactions, data.corrections, deleteTransaction, showToast]);
 
   // ------------------- SPRÁVA KATEGORIÍ -------------------
 
@@ -2414,6 +2492,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    restoreDeletedTransaction,
     duplicateTransaction,
     setTransactionStatus,
     markTransactionExecuted,

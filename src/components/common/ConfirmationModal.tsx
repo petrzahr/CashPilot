@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Modal, ModalFooter } from './Modal';
 import { AlertTriangle, Info } from 'lucide-react';
 
@@ -26,6 +26,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isDestructive = false,
   showCancel = true,
 }) => {
+  // Nevratné potvrzení začíná na Zrušit, aby omylem stisknutý Enter nic nesmazal
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!isOpen || !isDestructive || !showCancel) return;
+    const frame = requestAnimationFrame(() => cancelButtonRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, isDestructive, showCancel]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
       <div className="flex items-start gap-3">
@@ -44,6 +52,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       <ModalFooter>
         {showCancel && (
           <button
+            ref={cancelButtonRef}
             type="button"
             onClick={onClose}
             className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"

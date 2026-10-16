@@ -45,6 +45,9 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   segmentOrder = 'bottomUp',
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  // Sloupce jdou otevřít i klepnutím a klávesnicí (Tab, ←/→, Esc), nejen myší
+  const barRefs = useRef<(SVGGElement | null)[]>([]);
+  const openedByFocusRef = useRef(false);
   // Skutečná šířka plochy grafu v px - podle ní se na úzkých displejích ředí popisky osy X
   const plotRef = useRef<HTMLDivElement>(null);
   const [plotWidth, setPlotWidth] = useState(0);
@@ -144,7 +147,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-auto overflow-visible select-none"
-          onMouseLeave={() => setHoveredIdx(null)}
+          onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredIdx(null); }}
         >
           {/* Vodorovné mřížkové linky (popisky % jsou vykreslené jako HTML overlay níže,
               aby jejich velikost písma odpovídala tabulce bez ohledu na škálování SVG) */}
@@ -174,17 +177,46 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
             return (
               <g
                 key={item.periodKey}
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredIdx(idx)}
+                ref={(el) => { barRefs.current[idx] = el; }}
+                tabIndex={0}
+                role="button"
+                aria-label={`${item.periodLabel}: zobrazit podrobnosti`}
+                aria-expanded={isHovered}
+                className="cursor-pointer focus:outline-none group/bar"
+                onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredIdx(idx); }}
+                onFocus={() => { openedByFocusRef.current = true; setHoveredIdx(idx); }}
+                onBlur={(e) => {
+                  if (!barRefs.current.includes(e.relatedTarget as SVGGElement)) setHoveredIdx(null);
+                }}
+                onClick={() => {
+                  // Klepnutí, které sloupec teprve zaměřilo, bublinu nechá otevřenou; další ji zavře
+                  if (openedByFocusRef.current) openedByFocusRef.current = false;
+                  else setHoveredIdx(prev => (prev === idx ? null : idx));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const next = idx + (e.key === 'ArrowRight' ? 1 : -1);
+                    barRefs.current[next]?.focus();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setHoveredIdx(null);
+                  } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openedByFocusRef.current = false;
+                    setHoveredIdx(prev => (prev === idx ? null : idx));
+                  }
+                }}
               >
-                {/* Podbarvení aktivního slotu */}
+                {/* Podbarvení aktivního slotu; při fokusu klávesnicí s modrým okrajem */}
                 {isHovered && (
                   <rect
                     x={margin.left + idx * slotWidth}
                     y={margin.top}
                     width={slotWidth}
                     height={chartHeight}
-                    className="fill-slate-100"
+                    className="fill-slate-100 group-focus-visible/bar:stroke-sky-500"
+                    strokeWidth="2"
                     opacity="0.7"
                     rx="8"
                   />

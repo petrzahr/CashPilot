@@ -79,14 +79,16 @@ const MainLayout: React.FC = () => {
     setIsTxModalOpen(true);
   };
 
-  // Klávesové zkratky: N = nová položka, ←/→ = předchozí/následující období.
+  // Klávesové zkratky: N = nová položka, ←/→ = předchozí/následující období, / = hledání.
   // Neplatí při psaní do pole, v otevřeném dialogu ani v ovladači, který šipky používá sám.
   const { goToPreviousPeriod, goToNextPeriod } = useFinance();
   const openNewTxRef = useRef(handleOpenNewTx);
   openNewTxRef.current = handleOpenNewTx;
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      // „/“ se na české klávesnici píše se Shiftem, proto Shift u této zkratky nevadí
+      const isSearchKey = e.key === '/';
+      if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || (e.shiftKey && !isSearchKey)) return;
       if (isTxModalOpen || mobileMenuOpen || document.querySelector('[role="dialog"]')) return;
       const target = e.target as HTMLElement | null;
       if (target && target !== document.body) {
@@ -94,7 +96,14 @@ const MainLayout: React.FC = () => {
         // Vodorovně posouvatelný kontejner (široká tabulka) šipky potřebuje k posunu
         if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && target.scrollWidth > target.clientWidth) return;
       }
-      if (e.key === 'n' || e.key === 'N') {
+      if (isSearchKey) {
+        const search = document.querySelector<HTMLInputElement>('[data-search-input]');
+        if (search && search.offsetParent !== null) {
+          e.preventDefault();
+          search.focus();
+          search.select();
+        }
+      } else if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
         openNewTxRef.current();
       } else if (e.key === 'ArrowLeft') {
