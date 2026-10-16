@@ -39,20 +39,21 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-slate-900 w-20 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
-            {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
-              const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
-              return <button
-                key={preset}
-                type="button"
-                aria-pressed={active}
-                onClick={() => { onRangeChange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
-                className={`max-md:min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
-                  ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'}`}
-              >
-                {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
-              </button>;
-            })}
+            {/* Předvolby jsou segmentový přepínač; použitý vlastní rozsah nemá žádnou předvolbu vybranou */}
+            <div className="segmented flex flex-wrap">
+              {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
+                const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
+                return <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => { onRangeChange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
+                  className="segment"
+                >
+                  {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
+                </button>;
+              })}
+            </div>
           </div>
           <div className="ml-auto max-w-full max-sm:w-full">
             <PeriodRangeSelector
