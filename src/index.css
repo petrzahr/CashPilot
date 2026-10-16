@@ -27,6 +27,24 @@
 }
 
 @layer components {
+  /* Hlavní a nevratná akce: jeden recept všude (12px tučně), v liště dialogu 40/44px z ModalFooter.
+     Zakázané tlačítko je šedé, ne průhledné, aby se nepletlo s aktivním. */
+  .btn-primary,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 min-h-8 max-md:min-h-11 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-colors cursor-pointer;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2;
+  }
+  .btn-primary {
+    @apply bg-sky-600 hover:bg-sky-700;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700;
+  }
+  .btn-primary:disabled,
+  .btn-danger:disabled {
+    @apply bg-slate-200 text-slate-500 shadow-none cursor-not-allowed;
+  }
+
   /* Pole ve formulářových dialozích: jednotná výška bez ohledu na typ (datum, výběr, číslo mají jiné výchozí výšky prohlížeče) */
   .modal-body :is(input:not([type='checkbox'], [type='radio'], [type='color'], [type='file'], [type='range']), select) {
     height: 2.5rem;

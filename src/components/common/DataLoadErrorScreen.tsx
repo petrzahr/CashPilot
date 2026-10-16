@@ -104,7 +104,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="min-h-10 max-md:min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
+              className="btn-primary min-h-10 py-2.5"
             >
               <Upload className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Obnovit ze zálohy (JSON)</span>

@@ -760,7 +760,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmResetAllOpen(true)}
-                  className="max-md:min-h-11 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
+                  className="btn-danger shrink-0 self-start sm:self-center"
                 >
                   Smazat všechna data
                 </button>

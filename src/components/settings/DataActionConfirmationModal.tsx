@@ -173,11 +173,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
               onConfirm();
               onClose();
             }}
-            className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-              isConfirmed
-                ? 'text-white bg-red-600 hover:bg-red-700 shadow-sm cursor-pointer'
-                : 'text-slate-500 bg-slate-200 cursor-not-allowed'
-            }`}
+            className="btn-danger"
           >
             {confirmButtonText}
           </button>

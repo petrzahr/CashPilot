@@ -280,7 +280,7 @@ export function AppContent() {
           {hasError && <p className="text-sm text-slate-500">{describeSyncError(driveError)}</p>}
           {driveSyncStatus !== 'loading' && (
             <div className="flex flex-col items-center gap-2">
-              <button type="button" onClick={() => void syncWithGoogleDrive()} className="max-md:min-h-11 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>
+              <button type="button" onClick={() => void syncWithGoogleDrive()} className="btn-primary py-2.5">Zkusit znovu</button>
               {hasError && (
                 <button type="button" onClick={() => void disconnectGoogleDrive()} className="max-md:min-h-11 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 hover:text-sky-700 hover:border-sky-300 text-xs font-semibold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Odpojit Google Disk</button>
               )}

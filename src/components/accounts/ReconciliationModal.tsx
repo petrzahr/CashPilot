@@ -193,7 +193,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm disabled:opacity-50"
+            className="btn-primary"
           >
             {isSubmitting ? 'Ukládám…' : diffInHaler === 0 ? 'Potvrdit shodu' : 'Uložit korekci'}
           </button>

@@ -287,7 +287,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </button>
           <button
             type="submit"
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm"
+            className="btn-primary"
           >
             {isEditing ? 'Uložit změny' : 'Vytvořit účet'}
           </button>

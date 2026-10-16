@@ -209,7 +209,7 @@ export const AccountsScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAdd}
-            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span>Přidat účet</span>
