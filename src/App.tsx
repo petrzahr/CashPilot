@@ -267,9 +267,7 @@ export function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center space-y-4 p-6 max-w-sm" role="status">
-          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white shadow-lg ${hasError ? '' : 'animate-pulse motion-reduce:animate-none'}`}>
-            <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-2xl" />
-          </div>
+          <img src="./favicon.svg?v=3" alt="" className={`inline-block w-16 h-16 rounded-2xl ${hasError ? '' : 'animate-pulse motion-reduce:animate-none'}`} />
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">CashPilot</h1>
           <div className={`flex items-center justify-center gap-2 text-sm ${hasError ? 'text-red-700 font-semibold' : 'text-slate-500'}`}>
             {hasError
