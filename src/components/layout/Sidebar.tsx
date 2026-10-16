@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Nadpis a souhrn rámují kartu stejným popiskem jako KPI v rozpočtu; výraznost nese jen částka majetku. */}
           <p className="flex items-baseline justify-between gap-2 pb-1">
             <span className="font-semibold text-slate-500 uppercase tracking-wide">K dnešku</span>
-            <span className="font-medium text-slate-500 tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
+            <span className="font-semibold text-slate-500 uppercase tracking-wide tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
           </p>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
