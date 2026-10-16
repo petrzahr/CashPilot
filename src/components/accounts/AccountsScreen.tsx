@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
-import { computeAssetAccountBalanceAtDate } from '../../services/analyticsEngine';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { formatCurrency, formatPercent, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
@@ -32,10 +31,8 @@ export const AccountsScreen: React.FC = () => {
     accounts,
     forecast,
     selectedPeriod,
-    currentPeriod,
     transactions,
     corrections,
-    marketValueSnapshots,
     recurringRules,
     archiveAccount,
     restoreAccount,
@@ -244,10 +241,9 @@ export const AccountsScreen: React.FC = () => {
           const lastCorrection = accCorrections[0];
 
           const isInvestment = acc.type === 'investment' || acc.type === 'pension';
-          // Aktuální i budoucí období: stav ke konci období (stejně jako Očekávaný stav), včetně plánovaných vkladů.
-          const marketValue = isInvestment && selectedPeriod.endDate < currentPeriod.startDate
-            ? computeAssetAccountBalanceAtDate(acc, selectedPeriod.endDate, transactions, marketValueSnapshots)
-            : closingBalance;
+          // Tržní hodnota ke konci období je tentýž údaj jako Očekávaný zůstatek (výpočet rozpočtu
+          // bere poslední tržní hodnotu v období a pozdější vklady), takže výnos sedí s kartou.
+          const marketValue = closingBalance;
           // Výnos = tržní hodnota − (vloženo − poplatky); zobrazené „Vloženo“ jsou čisté vklady.
           const contributedPrincipal = accBal?.contributedPrincipalInHaler ?? acc.initialBalanceInHaler;
           const feesTotal = accBal?.feesInHaler ?? 0;
