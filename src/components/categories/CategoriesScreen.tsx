@@ -206,7 +206,7 @@ export const CategoriesScreen: React.FC = () => {
                       onClick={() => archiveCategory(mainCat.id)}
                       title="Archivovat"
                       aria-label={`Archivovat kategorii: ${mainCat.name}`}
-                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -215,7 +215,7 @@ export const CategoriesScreen: React.FC = () => {
                       onClick={() => restoreCategory(mainCat.id)}
                       title="Obnovit"
                       aria-label={`Obnovit kategorii: ${mainCat.name}`}
-                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 focus-visible:text-sky-600 hover:bg-sky-50 transition-colors"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -224,7 +224,7 @@ export const CategoriesScreen: React.FC = () => {
                     onClick={() => handleDelete(mainCat)}
                     title="Smazat"
                     aria-label={`Smazat kategorii: ${mainCat.name}`}
-                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -263,7 +263,7 @@ export const CategoriesScreen: React.FC = () => {
                             onClick={() => archiveCategory(sub.id)}
                             title="Archivovat"
                             aria-label={`Archivovat kategorii: ${sub.name}`}
-                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
                             <Archive className="w-3.5 h-3.5" />
                           </button>
@@ -272,7 +272,7 @@ export const CategoriesScreen: React.FC = () => {
                             onClick={() => restoreCategory(sub.id)}
                             title="Obnovit"
                             aria-label={`Obnovit kategorii: ${sub.name}`}
-                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 focus-visible:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
@@ -281,7 +281,7 @@ export const CategoriesScreen: React.FC = () => {
                           onClick={() => handleDelete(sub)}
                           title="Smazat"
                           aria-label={`Smazat kategorii: ${sub.name}`}
-                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

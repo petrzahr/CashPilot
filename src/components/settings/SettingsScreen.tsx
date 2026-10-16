@@ -6,7 +6,7 @@ import { isDemoModeEnabled } from '../../services/storageService';
 import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
-import { describeSyncError } from '../../services/syncErrorText';
+import { describeSyncError, getSyncErrorDetails } from '../../services/syncErrorText';
 import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
   Download, 
@@ -24,7 +24,9 @@ import {
   Palette,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  Check,
+  Copy
 } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
@@ -35,6 +37,42 @@ const THEME_OPTIONS: { value: ThemePreference; label: string; icon: React.ReactN
   { value: 'light', label: 'Světlý', icon: <Sun className="w-4 h-4" /> },
   { value: 'dark', label: 'Tmavý', icon: <Moon className="w-4 h-4" /> },
 ];
+
+// Původní technický text chyby synchronizace, aby ho uživatel mohl poslat autorovi
+const SyncErrorDetails: React.FC<{ message: string }> = ({ message }) => {
+  const [copied, setCopied] = useState(false);
+  const details = getSyncErrorDetails(message);
+  if (!details) return null;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(details);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <details className="group pl-6 text-xs">
+      <summary className="max-md:min-h-11 flex items-center cursor-pointer font-semibold text-red-700 hover:text-red-800 select-none rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30">
+        Technické podrobnosti
+      </summary>
+      <div className="mt-2 space-y-2">
+        <pre className="p-2 max-h-40 overflow-auto bg-white border border-red-200 rounded-lg text-slate-600 whitespace-pre-wrap break-all font-mono">{details}</pre>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 rounded-lg font-semibold text-red-700 hover:bg-red-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+          <span aria-live="polite">{copied ? 'Zkopírováno' : 'Zkopírovat'}</span>
+        </button>
+      </div>
+    </details>
+  );
+};
 
 // Obsah stránky pro široké obrazovky; názvy odpovídají nadpisům sekcí.
 const SETTINGS_SECTIONS = [
@@ -552,9 +590,12 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {driveError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{describeSyncError(driveError)}</span>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{describeSyncError(driveError)}</span>
+                    </div>
+                    <SyncErrorDetails message={driveError} />
                   </div>
                 )}
 
