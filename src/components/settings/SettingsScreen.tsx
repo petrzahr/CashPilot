@@ -64,7 +64,7 @@ const SyncErrorDetails: React.FC<{ message: string }> = ({ message }) => {
         <button
           type="button"
           onClick={() => void handleCopy()}
-          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 rounded-lg font-semibold text-red-700 hover:bg-red-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+          className="btn-secondary"
         >
           {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
           <span aria-live="polite">{copied ? 'Zkopírováno' : 'Zkopírovat'}</span>
@@ -602,7 +602,7 @@ export const SettingsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => void runDriveBackupNow()}
-                      className="max-md:min-h-11 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                      className="btn-secondary"
                     >
                       Zálohovat nyní
                     </button>
