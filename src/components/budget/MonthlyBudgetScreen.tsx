@@ -36,6 +36,7 @@ import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
+import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
 import { MoveButtons } from '../shared/MoveButtons';
 import { StatusBadgeMenu, PAST_PLANNED_HINT } from '../shared/StatusBadgeMenu';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
@@ -375,6 +376,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   const activeFilterCount = [
     searchQuery.trim(), filterAccounts, filterMainCategories, filterSubCategories, filterTypes, filterStatuses,
   ].filter(f => f.length > 0).length;
+  // Na mobilu jsou filtry kromě hledání schované; počet ukazuje, kolik jich je za tlačítkem aktivních
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const hiddenFilterCount = activeFilterCount - (searchQuery.trim() ? 1 : 0);
   const clearFilters = () => {
     setSearchQuery('');
     setFilterAccounts([]);
@@ -947,6 +951,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <Search className="w-4 h-4 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             </div>
 
+            <MobileFiltersToggle
+              isOpen={filtersOpen}
+              onToggle={() => setFiltersOpen(prev => !prev)}
+              activeCount={hiddenFilterCount}
+              controlsId="budget-filters"
+            />
+
+            <div id="budget-filters" className={`contents ${filtersOpen ? '' : 'max-md:hidden'}`}>
             <MultiSelectDropdown
               label="Účet" placeholder="Všechny účty"
               selected={filterAccounts}
@@ -992,6 +1004,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               onChange={setFilterStatuses}
               options={STATUS_OPTIONS.map(s => ({ value: s.value, label: s.label }))}
             />
+            </div>
           </div>
 
           {activeFilterCount > 0 && (
