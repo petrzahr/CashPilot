@@ -152,9 +152,9 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
             <button
               type="button"
               onClick={handleDelete}
-              className="px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1.5"
+              className="btn-secondary btn-secondary-danger"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               Smazat korekci
             </button>
 
