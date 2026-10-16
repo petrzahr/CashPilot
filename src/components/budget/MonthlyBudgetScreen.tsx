@@ -1166,9 +1166,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       <span className="truncate">{tx.title}</span>
                                     </button>
                                   ) : (
-                                    <span className="min-w-0 max-w-full text-xs font-bold text-slate-900 truncate">
+                                    <button
+                                      type="button"
+                                      onClick={() => onEditTransaction(tx)}
+                                      className="min-w-0 max-w-full text-xs font-bold text-slate-900 hover:text-sky-700 hover:underline text-left truncate"
+                                    >
                                       {tx.title}
-                                    </span>
+                                    </button>
                                   )}
                                   {tx.recurringRuleId && (
                                     <span title="Pravidelná položka" className="shrink-0 inline-flex">
@@ -1375,7 +1379,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               <span className="truncate">{tx.title}</span>
                             </button>
                           ) : (
-                            <span className="truncate min-w-0">{tx.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => onEditTransaction(tx)}
+                              className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
+                            >
+                              {tx.title}
+                            </button>
                           )}
                           {tx.recurringRuleId && (
                             <span title="Pravidelná položka" className="shrink-0 inline-flex">
