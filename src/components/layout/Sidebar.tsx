@@ -195,9 +195,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
-          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví; nadpis skupiny ve stylu popisků KPI */}
+          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví.
+              Nadpis a souhrn rámují kartu stejným popiskem jako KPI v rozpočtu; výraznost nese jen částka majetku. */}
           <p className="flex items-baseline justify-between gap-2 pb-1">
-            <span className="font-bold text-slate-900 uppercase tracking-wide">K dnešku</span>
+            <span className="font-semibold text-slate-500 uppercase tracking-wide">K dnešku</span>
             <span className="font-medium text-slate-500 tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
           </p>
           <div className="space-y-1.5">
@@ -233,9 +234,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <div className="border-t border-slate-200 pt-2 flex items-center justify-between">
-            <span className="font-bold text-slate-500 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
-            <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+          {/* Souhrn jako dlaždice KPI: popisek nad částkou, protože vedle sebe se do šířky menu nevejdou */}
+          <div className="border-t border-slate-200 pt-2">
+            <span className="block font-semibold text-slate-500 uppercase tracking-wide truncate" title="Celkový majetek">Celkový majetek</span>
+            <span className={`block mt-0.5 font-extrabold text-base tabular-nums truncate ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}
             </span>
           </div>
