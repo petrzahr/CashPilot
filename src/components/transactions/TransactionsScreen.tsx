@@ -707,7 +707,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <button
               type="button"
               onClick={clearFilters}
-              className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+              className="btn-text"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
               Zrušit filtry ({activeFilterCount})
