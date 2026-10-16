@@ -1210,7 +1210,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </button>
                                   )}
                                   {tx.recurringRuleId && (
-                                    <span title="Pravidelná položka" className="shrink-0 inline-flex">
+                                    <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
                                       <Repeat className="w-3.5 h-3.5 text-slate-500" />
                                     </span>
                                   )}
@@ -1424,7 +1424,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             </button>
                           )}
                           {tx.recurringRuleId && (
-                            <span title="Pravidelná položka" className="shrink-0 inline-flex">
+                            <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
                               <Repeat className="w-3.5 h-3.5 text-slate-500" />
                             </span>
                           )}

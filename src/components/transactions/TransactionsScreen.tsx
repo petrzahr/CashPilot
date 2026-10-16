@@ -387,7 +387,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <span className="truncate min-w-0">{tx.title}</span>
         )}
         {tx.recurringRuleId && (
-          <span title="Pravidelná položka" className="shrink-0 inline-flex">
+          <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
             <Repeat className="w-3.5 h-3.5 text-slate-500" />
           </span>
         )}
