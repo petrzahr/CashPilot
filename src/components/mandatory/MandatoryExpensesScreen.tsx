@@ -349,7 +349,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             setAddDraft(emptyDraft());
           }}
           disabled={!!addDraft || accountOptions.length === 0}
-          className="max-md:min-h-11 -my-1 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="btn-secondary -my-1"
         >
           <Plus className="w-3.5 h-3.5" />
           Přidat
@@ -631,7 +631,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
             type="button"
             onClick={() => setConfirmResetOpen(true)}
             disabled={!isSimulating}
-            className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="btn-secondary"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Obnovit výchozí stav

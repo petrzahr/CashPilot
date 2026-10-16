@@ -432,7 +432,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setMarketValueAccount(acc)}
-                      className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                      className="btn-secondary flex-1"
                     >
                       Tržní hodnota
                     </button>
@@ -440,7 +440,7 @@ export const AccountsScreen: React.FC = () => {
                       type="button"
                       onClick={() => setFeeAccount(acc)}
                       title="Zadat měsíční poplatek obchodníka"
-                      className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shrink-0"
+                      className="btn-secondary shrink-0"
                     >
                       Poplatek
                     </button>
@@ -449,7 +449,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setReconcileAccount(acc)}
-                    className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                    className="btn-secondary flex-1"
                   >
                     Srovnat s bankou
                   </button>
@@ -458,7 +458,7 @@ export const AccountsScreen: React.FC = () => {
                   type="button"
                   onClick={() => setHistoryAccount(acc)}
                   title="Historie účtu"
-                  className="max-md:min-h-11 py-2 px-3 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
+                  className="btn-secondary shrink-0"
                 >
                   <History className="w-3.5 h-3.5 text-slate-500" />
                   <span>Historie</span>

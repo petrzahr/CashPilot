@@ -94,7 +94,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
               type="button"
               onClick={handleDownloadCorrupted}
               disabled={!corruptedRaw}
-              className="min-h-10 max-md:min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 hover:text-sky-700 hover:border-sky-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:border-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+              className="btn-secondary min-h-10 py-2.5"
             >
               <Download className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Stáhnout poškozená data (JSON)</span>

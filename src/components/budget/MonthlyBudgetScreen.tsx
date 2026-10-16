@@ -946,7 +946,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <button
                   type="button"
                   onClick={scrollToToday}
-                  className="h-8 max-md:h-11 flex items-center gap-1.5 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0"
+                  className="btn-secondary shrink-0"
                 >
                   <CalendarCheck className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Dnes</span>

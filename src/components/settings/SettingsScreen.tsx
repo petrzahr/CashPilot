@@ -506,7 +506,7 @@ export const SettingsScreen: React.FC = () => {
                   type="button"
                   onClick={connectGoogleDrive}
                   disabled={driveSyncStatus === 'syncing'}
-                  className="max-md:min-h-11 flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+                  className="btn-secondary"
                 >
                   <GoogleIcon className="w-4 h-4 shrink-0" />
                   <span>{driveSyncStatus === 'syncing' ? 'Připojuji…' : 'Připojit Google Disk'}</span>
@@ -652,7 +652,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={onClick}
-                    className="max-md:min-h-11 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary shrink-0 self-start sm:self-center"
                   >
                     <Icon className="w-4 h-4" aria-hidden="true" />
                     {label}

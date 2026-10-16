@@ -142,7 +142,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
           type="button"
           onClick={toggleAll}
           disabled={expandableKeys.length === 0}
-          className="max-md:min-h-11 -my-1 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="btn-secondary -my-1"
         >
           {allExpanded ? 'Sbalit vše' : 'Rozbalit vše'}
         </button>

@@ -140,7 +140,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="btn-secondary"
           >
             Zrušit
           </button>

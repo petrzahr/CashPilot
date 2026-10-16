@@ -836,7 +836,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="btn-secondary"
           >
             Zrušit
           </button>
@@ -845,7 +845,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               type="submit"
               disabled={isSaving}
               onClick={() => { addAnotherRef.current = true; }}
-              className="px-4 py-2 text-sm font-semibold text-sky-700 bg-white border border-slate-200 rounded-xl hover:bg-sky-50 transition-colors disabled:opacity-50"
+              className="btn-secondary"
             >
               Uložit a další
             </button>
