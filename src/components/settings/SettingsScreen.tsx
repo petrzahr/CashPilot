@@ -2,7 +2,8 @@ import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef, useId, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
-import { isDemoModeEnabled } from '../../services/storageService';
+import { isDemoModeEnabled, validateAndParseBackup } from '../../services/storageService';
+import { RestoreConfirmationModal, buildRestorePreview, type RestorePreview } from './RestoreConfirmationModal';
 import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
@@ -178,6 +179,7 @@ export const SettingsScreen: React.FC = () => {
     recurringExceptions,
     corrections,
     marketValueSnapshots,
+    investmentFees,
     exportJSON,
     importJSON,
     exportCSV,
@@ -201,6 +203,7 @@ export const SettingsScreen: React.FC = () => {
   } = useFinance();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [budgetStartDay, setBudgetStartDay] = useState(settings.budgetStartDay);
@@ -297,7 +300,20 @@ export const SettingsScreen: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
-      if (content) {
+      if (!content) return;
+      // Nejdřív jen náhled: sloučení proběhne až po potvrzení v dialogu.
+      try {
+        const parsed = validateAndParseBackup(content);
+        setRestorePreview({
+          fileName: file.name,
+          content,
+          ...buildRestorePreview(parsed, {
+            transactions, accounts, categories, recurringRules,
+            recurringExceptions, corrections, marketValueSnapshots, investmentFees,
+          }),
+        });
+      } catch {
+        // Neplatný soubor nahlásí importJSON stejnou chybou jako dřív.
         importJSON(content);
       }
     };
@@ -826,6 +842,12 @@ export const SettingsScreen: React.FC = () => {
         title="Nahradit data ukázkovými?"
         message="Všechna současná data nahradí ukázkové účty, mzda, hypotéka a výdaje. Pokud chcete svá data zachovat, nejdřív si stáhněte zálohu."
         confirmText="Nahradit ukázkovými daty"
+      />
+
+      <RestoreConfirmationModal
+        preview={restorePreview}
+        onClose={() => setRestorePreview(null)}
+        onConfirm={importJSON}
       />
 
       {/* Dialog 1: Vymazat všechny transakce */}
