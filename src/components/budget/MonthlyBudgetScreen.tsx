@@ -938,7 +938,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   }`}
                 >
                   <List className="w-3.5 h-3.5" />
-                  <span>Klasický seznam</span>
+                  <span>Seznam</span>
                 </button>
               </div>
 
