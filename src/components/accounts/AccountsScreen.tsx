@@ -384,7 +384,7 @@ export const AccountsScreen: React.FC = () => {
                 {isInvestment ? (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-purple-400" />
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
                       Tržní hodnota zadána:
                     </span>
                     <span className="font-medium text-slate-500">
@@ -435,7 +435,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setMarketValueAccount(acc)}
-                      className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors text-center"
+                      className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
                     >
                       Tržní hodnota
                     </button>
@@ -443,7 +443,7 @@ export const AccountsScreen: React.FC = () => {
                       type="button"
                       onClick={() => setFeeAccount(acc)}
                       title="Zadat měsíční poplatek obchodníka"
-                      className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-purple-700 bg-white hover:bg-purple-50 border border-purple-200 rounded-xl transition-colors shrink-0"
+                      className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shrink-0"
                     >
                       Poplatek
                     </button>

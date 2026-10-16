@@ -116,7 +116,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
           />
         </div>
 
-        <div className="flex items-start gap-2 p-4 bg-purple-50/70 border border-purple-100 rounded-xl text-xs text-purple-900">
+        <div className="flex items-start gap-2 p-4 bg-purple-50 border border-purple-100 rounded-xl text-xs text-purple-900">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {existing
