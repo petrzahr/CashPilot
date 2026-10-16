@@ -146,9 +146,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={onCloseMobile}
             aria-label="Zavřít menu"
-            className="p-3 -m-2 shrink-0 rounded-lg text-slate-500 hover:text-slate-600 md:hidden"
+            className="btn-icon -m-2 md:hidden"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
