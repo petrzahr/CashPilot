@@ -40,19 +40,12 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
 
   if (!transaction) return null;
 
-  const isRecurring = Boolean(
-    transaction.recurringRuleId || transaction.id.startsWith('virtual_')
-  );
-
+  // Běžné položky se mažou hned s „Vrátit“; tento dialog slouží jen pravidelným položkám (volba rozsahu)
   const handleConfirm = async () => {
     if (isDeleting) return;
     setErrorMessage(null);
     try {
-      const result = await onConfirm(
-        transaction,
-        isRecurring ? recurringMode : undefined,
-        deleteHistoricalExecuted
-      );
+      const result = await onConfirm(transaction, recurringMode, deleteHistoricalExecuted);
       if (result === false) {
         setErrorMessage('Položku se nepodařilo smazat. Zkuste to prosím znovu.');
       } else {
@@ -68,7 +61,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={isDeleting ? () => {} : onClose}
-      title="Smazat položku?"
+      title="Smazat pravidelnou položku?"
       maxWidth="max-w-lg"
     >
       <div className="space-y-4">
@@ -86,16 +79,15 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
           </div>
           <div className="text-sm text-slate-500 leading-relaxed">
             <p>
-              Položka „<strong className="text-slate-900">{transaction.title}</strong>“ se smaže a zůstatky v tomto i všech dalších obdobích se přepočítají. Smazání nelze vrátit.
+              „<strong className="text-slate-900">{transaction.title}</strong>“ – vyberte, co smazat. Nelze vrátit.
             </p>
           </div>
         </div>
 
-        {/* Volby pro pravidelné položky */}
-        {isRecurring && (
-          <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+        {/* Rozsah mazání pravidelné položky */}
+        <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
             <RecurrenceScopePicker
-              legend="Pravidelná položka – co chcete smazat?"
+              legend="Co smazat"
               name="recurringDeleteMode"
               value={recurringMode}
               onChange={setRecurringMode}
@@ -131,8 +123,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                 )}
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         {/* Tlačítka akce */}
         <ModalFooter>
@@ -157,7 +148,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               </>
             ) : (
               <span>
-                {!isRecurring || recurringMode === 'occurrence'
+                {recurringMode === 'occurrence'
                   ? 'Smazat položku'
                   : recurringMode === 'future'
                     ? 'Smazat budoucí výskyty'
