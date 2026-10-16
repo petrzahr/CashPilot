@@ -230,10 +230,10 @@ const SectionTable: React.FC<SectionTableProps> = ({
   const renderItemRow = (item: MandatoryItem) => {
     const isEditing = editingKey === item.ruleId && draft;
     const isDeleted = item.simState === 'deleted';
-    // Stav simulace má přednost před zvýrazněním nepravidelných (ne měsíčních) plateb
+    // Stav simulace má přednost před zvýrazněním nepravidelných (ne měsíčních) plateb.
+    // Simulační změna je modrá (akce), ne zelená/jantarová, které patří příjmu a plánu.
     const rowBg =
-      item.simState === 'edited' ? 'bg-amber-50'
-        : item.simState === 'added' ? 'bg-emerald-50'
+      item.simState === 'edited' || item.simState === 'added' ? 'bg-sky-50'
         : !isDeleted && item.frequency !== 'monthly' ? NON_MONTHLY_ROW_BG
         : 'bg-white';
     const rowClass = `${rowBg} ${isDeleted ? 'text-slate-500' : ''}`;
@@ -284,7 +284,11 @@ const SectionTable: React.FC<SectionTableProps> = ({
       <tr key={item.ruleId} className={rowClass}>
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
-          {item.simState === 'added' && <span className="ml-1.5 text-xs font-semibold text-emerald-700">nová</span>}
+          {(item.simState === 'added' || item.simState === 'edited') && (
+            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-100 text-sky-800 whitespace-nowrap">
+              {item.simState === 'added' ? 'nová' : 'upravená'}
+            </span>
+          )}
           {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
           {!isDeleted && item.frequency !== 'monthly' && (
             <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">rozpočítaná</span>

@@ -696,9 +696,9 @@ export const SettingsScreen: React.FC = () => {
                 Smazat část dat
               </h3>
 
-              <div className="space-y-2.5">
+              <div className="divide-y divide-slate-200">
                 {/* 1. Vymazat všechny transakce */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny položky</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -715,7 +715,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 2. Vymazat všechny účty */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny účty</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -732,7 +732,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 3. Vymazat všechny kategorie */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny kategorie</h4>
                     <p className="text-xs text-slate-500 mt-0.5">

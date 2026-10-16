@@ -826,7 +826,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
             <div
               key={category.id}
-              className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors space-y-2"
+              className="p-3 rounded-xl bg-slate-50 space-y-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -854,7 +854,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           ))}
 
           {/* Sekce Spoření a převody */}
-          <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+          <div className="p-3 rounded-xl bg-slate-50 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
@@ -1119,10 +1119,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               draggedTxId === tx.id
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
-                                  ? 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                                  ? 'bg-slate-50 border-transparent'
                                   : balanceAfterInHaler < 0 && !isCancelled
-                                    ? 'bg-red-50/60 border-red-200 hover:border-red-300'
-                                    : `${isCancelled ? 'bg-slate-50' : 'bg-white hover:shadow-xs'} border-slate-200 hover:border-slate-300`
+                                    ? 'bg-red-50/60 border-transparent hover:bg-red-50'
+                                    : `${isCancelled ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'} border-transparent`
                             } ${isCancelled ? 'line-through decoration-slate-400 text-slate-500' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">

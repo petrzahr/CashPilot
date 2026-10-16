@@ -354,7 +354,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Finanční zůstatek */}
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+              <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
                   Očekávaný zůstatek
                 </span>
