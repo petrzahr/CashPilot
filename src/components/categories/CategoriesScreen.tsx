@@ -265,7 +265,7 @@ export const CategoriesScreen: React.FC = () => {
                             aria-label={`Archivovat kategorii: ${sub.name}`}
                             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
-                            <Archive className="w-3.5 h-3.5" />
+                            <Archive className="w-4 h-4" />
                           </button>
                         ) : (
                           <button
@@ -274,7 +274,7 @@ export const CategoriesScreen: React.FC = () => {
                             aria-label={`Obnovit kategorii: ${sub.name}`}
                             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 focus-visible:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <RotateCcw className="w-4 h-4" />
                           </button>
                         )}
                         <button

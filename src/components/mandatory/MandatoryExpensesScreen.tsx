@@ -315,13 +315,13 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} ${rowBg}`}>
           {isDeleted ? (
             <button type="button" title="Vrátit zpět" aria-label={`Vrátit zpět: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
             </button>
           ) : (
             <>
               {item.simState === 'edited' && (
                 <button type="button" title="Vrátit původní hodnoty" aria-label={`Vrátit původní hodnoty: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4" />
                 </button>
               )}
               <button type="button" title="Upravit v simulaci" aria-label={`Upravit v simulaci: ${item.title}`} className={iconButtonClass} onClick={() => startEdit(item)}>
