@@ -644,14 +644,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
+            <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Použitelný zůstatek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
 
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
+            <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Celkový majetek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
