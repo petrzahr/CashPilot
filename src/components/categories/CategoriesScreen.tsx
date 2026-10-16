@@ -249,7 +249,7 @@ export const CategoriesScreen: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-80 hover:opacity-100">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
