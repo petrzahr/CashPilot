@@ -1,8 +1,9 @@
-import { SYNC_LABELS } from '../../services/syncController';
+import { SyncStatusLabel, formatLastSync } from '../common/SyncStatusIndicator';
 import React, { useState, useRef, useId, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
-import { isDemoModeEnabled } from '../../services/storageService';
+import { isDemoModeEnabled, validateAndParseBackup } from '../../services/storageService';
+import { RestoreConfirmationModal, buildRestorePreview, type RestorePreview } from './RestoreConfirmationModal';
 import { DRIVE_BACKUP_MAX_COUNT } from '../../services/driveBackupService';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
@@ -178,6 +179,7 @@ export const SettingsScreen: React.FC = () => {
     recurringExceptions,
     corrections,
     marketValueSnapshots,
+    investmentFees,
     exportJSON,
     importJSON,
     exportCSV,
@@ -201,6 +203,7 @@ export const SettingsScreen: React.FC = () => {
   } = useFinance();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [budgetStartDay, setBudgetStartDay] = useState(settings.budgetStartDay);
@@ -297,7 +300,20 @@ export const SettingsScreen: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
-      if (content) {
+      if (!content) return;
+      // Nejdřív jen náhled: sloučení proběhne až po potvrzení v dialogu.
+      try {
+        const parsed = validateAndParseBackup(content);
+        setRestorePreview({
+          fileName: file.name,
+          content,
+          ...buildRestorePreview(parsed, {
+            transactions, accounts, categories, recurringRules,
+            recurringExceptions, corrections, marketValueSnapshots, investmentFees,
+          }),
+        });
+      } catch {
+        // Neplatný soubor nahlásí importJSON stejnou chybou jako dřív.
         importJSON(content);
       }
     };
@@ -479,12 +495,6 @@ export const SettingsScreen: React.FC = () => {
                 <div>
                   <h2 id="nastaveni-disk-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <span>Synchronizace s Google Diskem</span>
-                    {isDriveConnected && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Připojeno
-                      </span>
-                    )}
                   </h2>
                   <p className="text-xs text-slate-500">
                     Data se průběžně ukládají do skryté složky aplikace ve vašem Google Disku
@@ -511,7 +521,7 @@ export const SettingsScreen: React.FC = () => {
                     className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                    <span>Synchronizovat</span>
+                    <span>Synchronizovat nyní</span>
                   </button>
 
                   <button
@@ -520,7 +530,7 @@ export const SettingsScreen: React.FC = () => {
                     className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Odpojit</span>
+                    <span>Odpojit Google Disk</span>
                   </button>
                 </div>
               )}
@@ -560,31 +570,11 @@ export const SettingsScreen: React.FC = () => {
                   </div>
 
                   <div className="text-right">
-                    <div className="flex items-center gap-1.5 justify-end font-semibold">
-                      {driveSyncStatus === 'syncing' ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
-                          <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
-                        </>
-                      ) : driveSyncStatus === 'error' || driveSyncStatus === 'conflict' ? (
-                        <>
-                          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                          <span className="text-red-600">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : driveSyncStatus !== 'synced' ? (
-                        <>
-                          <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                          <span className="text-amber-600">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-emerald-700">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      )}
+                    <div className="flex justify-end">
+                      <SyncStatusLabel status={driveSyncStatus} />
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Poslední synchronizace: {lastDriveSyncTime ? lastDriveSyncTime.toLocaleString('cs-CZ') : 'zatím neproběhla'}
+                      Poslední synchronizace: {formatLastSync(lastDriveSyncTime)}
                     </p>
                   </div>
                 </div>
@@ -602,7 +592,7 @@ export const SettingsScreen: React.FC = () => {
                 {/* Synchronizace má jediné tlačítko „Synchronizovat“ v záhlaví sekce: nahrání i stažení dělají totéž */}
                 <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h4>
+                    <h3 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h3>
                     <p className="text-xs text-slate-500 mt-0.5 max-w-md">
                       Při spuštění aplikace (nejvýše jednou za 24 hodin) se uloží kopie dat do složky
                       <strong> „CashPilot zalohy“</strong> na vašem Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.
@@ -706,9 +696,9 @@ export const SettingsScreen: React.FC = () => {
                 Smazat část dat
               </h3>
 
-              <div className="space-y-2.5">
+              <div className="divide-y divide-slate-200">
                 {/* 1. Vymazat všechny transakce */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny položky</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -725,7 +715,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 2. Vymazat všechny účty */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny účty</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -742,7 +732,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 3. Vymazat všechny kategorie */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny kategorie</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -826,6 +816,12 @@ export const SettingsScreen: React.FC = () => {
         title="Nahradit data ukázkovými?"
         message="Všechna současná data nahradí ukázkové účty, mzda, hypotéka a výdaje. Pokud chcete svá data zachovat, nejdřív si stáhněte zálohu."
         confirmText="Nahradit ukázkovými daty"
+      />
+
+      <RestoreConfirmationModal
+        preview={restorePreview}
+        onClose={() => setRestorePreview(null)}
+        onConfirm={importJSON}
       />
 
       {/* Dialog 1: Vymazat všechny transakce */}

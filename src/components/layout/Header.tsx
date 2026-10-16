@@ -2,9 +2,10 @@ import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatPeriodRange } from '../../services/periodService';
-import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
+import { SyncStatusIcon, SyncStatusLabel, formatLastSync } from '../common/SyncStatusIndicator';
 import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
 import { describeSyncError } from '../../services/syncErrorText';
 
@@ -118,29 +119,12 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
-              {/* Chyba a konflikt mají vlastní ikonu a text na každé šířce; běžné stavy stačí tečkou */}
-              {isSyncProblem ? (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" aria-hidden="true" />
-                  <span className="xl:hidden">{driveSyncStatus === 'conflict' ? 'Konflikt' : 'Chyba'}</span>
-                </>
-              ) : (
-              <span className="relative flex h-2 w-2">
-                {driveSyncStatus === 'syncing' && (
-                  <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    driveSyncStatus === 'syncing'
-                      ? 'bg-sky-500'
-                      : driveSyncStatus !== 'synced'
-                      ? 'bg-amber-500'
-                      : 'bg-emerald-500'
-                  }`}
-                ></span>
-              </span>
+              {/* Každý stav má vlastní ikonu, takže se nečte jen z barvy; chyba a konflikt mají i text na každé šířce */}
+              <SyncStatusIcon status={driveSyncStatus} />
+              {isSyncProblem && (
+                <span className="xl:hidden">{driveSyncStatus === 'conflict' ? 'Konflikt' : 'Chyba'}</span>
               )}
-              {/* Text stavu ustupuje názvu obrazovky; do 1280px stačí barevná tečka a popisek tlačítka */}
+              {/* Text stavu ustupuje názvu obrazovky; do 1280px stačí ikona stavu */}
               <span className="hidden xl:inline">
                 {SYNC_LABELS[driveSyncStatus]}
               </span>
@@ -175,37 +159,13 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="p-2.5 bg-slate-50 rounded-xl space-y-1 text-xs">
                   <div className="flex items-center justify-between text-slate-500">
                     <span>Stav:</span>
-                    <span className="font-semibold flex items-center gap-1">
-                      {driveSyncStatus === 'syncing' ? (
-                        <>
-                          <RefreshCw className="w-3 h-3 animate-spin text-sky-600" />
-                          <span className="text-sky-600">{SYNC_LABELS.syncing}</span>
-                        </>
-                      ) : isSyncProblem ? (
-                        <>
-                          <AlertCircle className="w-3 h-3 text-red-600" />
-                          <span className="text-red-700">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : driveSyncStatus !== 'synced' ? (
-                        <>
-                          <AlertCircle className="w-3 h-3 text-amber-600" />
-                          <span className="text-amber-700">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span className="text-emerald-700">{SYNC_LABELS[driveSyncStatus]}</span>
-                        </>
-                      )}
-                    </span>
+                    <SyncStatusLabel status={driveSyncStatus} iconClassName="w-3 h-3" />
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span>Poslední uložení:</span>
-                    <span className="font-medium text-slate-500">
-                      {lastDriveSyncTime
-                        ? lastDriveSyncTime.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                        : 'zatím neproběhlo'}
+                  <div className="flex items-center justify-between gap-2 text-slate-500">
+                    <span>Poslední synchronizace:</span>
+                    <span className="font-medium text-slate-500 text-right">
+                      {formatLastSync(lastDriveSyncTime)}
                     </span>
                   </div>
 
@@ -268,8 +228,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center bg-slate-100 rounded-xl p-1 max-[359px]:p-0 text-xs shrink-0">
           <button
             onClick={goToPreviousPeriod}
-            title="Předchozí období"
+            title="Předchozí období (←)"
             aria-label="Předchozí období"
+            aria-keyshortcuts="ArrowLeft"
             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -286,8 +247,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={goToNextPeriod}
-            title="Následující období"
+            title="Následující období (→)"
             aria-label="Následující období"
+            aria-keyshortcuts="ArrowRight"
             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronRight className="w-4 h-4" />

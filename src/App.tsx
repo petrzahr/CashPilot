@@ -79,6 +79,36 @@ const MainLayout: React.FC = () => {
     setIsTxModalOpen(true);
   };
 
+  // Klávesové zkratky: N = nová položka, ←/→ = předchozí/následující období.
+  // Neplatí při psaní do pole, v otevřeném dialogu ani v ovladači, který šipky používá sám.
+  const { goToPreviousPeriod, goToNextPeriod } = useFinance();
+  const openNewTxRef = useRef(handleOpenNewTx);
+  openNewTxRef.current = handleOpenNewTx;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (isTxModalOpen || mobileMenuOpen || document.querySelector('[role="dialog"]')) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target !== document.body) {
+        if (target.isContentEditable || target.closest('input, textarea, select, [role="tablist"], [role="radiogroup"], [role="listbox"], [role="menu"], [role="slider"]')) return;
+        // Vodorovně posouvatelný kontejner (široká tabulka) šipky potřebuje k posunu
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && target.scrollWidth > target.clientWidth) return;
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        openNewTxRef.current();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToPreviousPeriod();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToNextPeriod();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isTxModalOpen, mobileMenuOpen, goToPreviousPeriod, goToNextPeriod]);
+
   const getScreenTitle = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
@@ -243,7 +273,7 @@ export function AppContent() {
             <div className="flex flex-col items-center gap-2">
               <button type="button" onClick={() => void syncWithGoogleDrive()} className="max-md:min-h-11 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Zkusit znovu</button>
               {hasError && (
-                <button type="button" onClick={() => void disconnectGoogleDrive()} className="max-md:min-h-11 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 hover:text-sky-700 hover:border-sky-300 text-xs font-semibold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Odhlásit</button>
+                <button type="button" onClick={() => void disconnectGoogleDrive()} className="max-md:min-h-11 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 hover:text-sky-700 hover:border-sky-300 text-xs font-semibold rounded-xl shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2">Odpojit Google Disk</button>
               )}
             </div>
           )}

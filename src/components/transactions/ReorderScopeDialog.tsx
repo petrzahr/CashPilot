@@ -56,7 +56,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           descriptions={{
             occurrence: 'Nové pořadí se uplatní pouze v aktuálně zobrazeném období.',
             future: 'Nové pořadí platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.',
-            series: 'Nové pořadí platí pro všechny výskyty. Minulé položky, které už jsou uložené, zůstanou beze změny.',
+            series: 'Nové pořadí platí pro všechny výskyty, minulé i budoucí.',
           }}
         />
 
@@ -64,7 +64,7 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
           >
             Zrušit
           </button>

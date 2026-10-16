@@ -137,7 +137,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-bold text-slate-900">Přehled podle kategorií</h3>
+        <h2 className="text-sm font-bold text-slate-900">Přehled podle kategorií</h2>
         <button
           type="button"
           onClick={toggleAll}

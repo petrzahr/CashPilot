@@ -162,6 +162,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenTransactionModal();
               onCloseMobile();
             }}
+            title="Nová položka (N)"
+            aria-keyshortcuts="N"
             className="max-md:min-h-11 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />

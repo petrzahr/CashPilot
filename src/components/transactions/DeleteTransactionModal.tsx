@@ -103,8 +103,8 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               destructiveScope="series"
               descriptions={{
                 occurrence: 'Ostatní výskyty série zůstanou beze změny.',
-                future: 'Opakování skončí před tímto výskytem. Minulé výskyty zůstanou.',
-                series: 'Smaže opakování i všechny jeho výskyty.',
+                future: 'Opakování skončí před tímto výskytem. Tento a budoucí výskyty se smažou, minulé zůstanou beze změny.',
+                series: 'Smaže opakování a všechny jeho výskyty, minulé i budoucí. Uskutečněné položky smaže jen na výslovné potvrzení.',
               }}
             />
             {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}
@@ -140,7 +140,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
             Zrušit
           </button>

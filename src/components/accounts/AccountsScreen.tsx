@@ -21,7 +21,8 @@ import {
   RotateCcw, 
   Trash2, 
   Edit3, 
-  Clock, 
+  CalendarCheck,
+  CalendarClock,
   History,
   GripVertical
 } from 'lucide-react';
@@ -293,14 +294,14 @@ export const AccountsScreen: React.FC = () => {
                     style={{ backgroundColor: acc.color }}
                   />
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
                         <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
                           Archivovaný
                         </span>
                       )}
-                    </h3>
+                    </h2>
                     <p className="text-xs text-slate-500">
                       {getTypeLabel(acc.type)} {acc.institution && `• ${acc.institution}`}
                     </p>
@@ -353,7 +354,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Finanční zůstatek */}
-              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
+              <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
                   Očekávaný zůstatek
                 </span>
@@ -384,7 +385,7 @@ export const AccountsScreen: React.FC = () => {
                 {isInvestment ? (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <CalendarClock className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                       Tržní hodnota zadána:
                     </span>
                     <span className="font-medium text-slate-500">
@@ -395,7 +396,7 @@ export const AccountsScreen: React.FC = () => {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <CalendarCheck className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                         Naposledy srovnáno s bankou:
                       </span>
                       <span className="font-medium text-slate-500">

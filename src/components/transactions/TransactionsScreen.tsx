@@ -3,16 +3,12 @@ import { useFinance } from '../../context/FinanceContext';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { StatusBadgeMenu, PAST_PLANNED_HINT } from '../shared/StatusBadgeMenu';
+import { StatusBadgeMenu } from '../shared/StatusBadgeMenu';
 import {
   Plus,
   Search,
-  Check,
-  Clock,
   Copy,
   Trash2,
-  Ban,
-  RotateCcw,
   Edit3,
   ArrowUp,
   ArrowDown,
@@ -360,8 +356,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
       ? tx.actualAmountInHaler
       : tx.amountInHaler;
-
-    const isExecuted = tx.status === 'executed';
     const isCancelled = tx.status === 'cancelled';
     const isCorrection = tx.type === 'balance_adjustment';
 
@@ -504,27 +498,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </>
     ) : (
       <>
-        {!isExecuted ? (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'executed')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Označit jako uskutečněnou"
-            aria-label={`Označit jako uskutečněnou: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-emerald-600 focus-visible:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'planned')}
-            disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
-            title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
-            aria-label={`Vrátit do plánovaných: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-          >
-            <Clock className="w-4 h-4" />
-          </button>
-        )}
+        {/* Stav se mění jen štítkem stavu, řádek nese úpravu, duplikaci a smazání */}
         <button
           onClick={() => onEditTransaction(tx)}
           title="Upravit položku"
@@ -541,27 +515,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         >
           <Copy className="w-4 h-4" />
         </button>
-        {!isCancelled ? (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'cancelled')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Označit jako zrušenou"
-            aria-label={`Označit jako zrušenou: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-          >
-            <Ban className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'planned')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Vrátit zrušenou položku do plánovaných"
-            aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        )}
         <button
           onClick={() => setDeletingTx(tx)}
           disabled={isDeletingTx}
@@ -606,7 +559,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-bold text-slate-900">Položky</h3>
+              <h2 className="text-sm font-bold text-slate-900">Položky</h2>
               <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                 {filteredTransactions.length}
               </span>
@@ -748,9 +701,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         )}
       </div>
 
-      {/* Seznam položek: na mobilu řádky-karty, od md tabulka */}
+      {/* Seznam položek: do 1024px řádky-karty, od lg tabulka (bez posouvání od 1280px) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <ul className="md:hidden divide-y divide-slate-100 text-xs">
+        <ul className="lg:hidden divide-y divide-slate-100 text-xs">
           {filteredTransactions.length === 0 ? (
             <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>
           ) : (
@@ -790,13 +743,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           )}
         </ul>
 
-        <div className="max-md:hidden overflow-x-auto">
-          <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
+        <div className="max-lg:hidden overflow-x-auto">
+          <table className="w-full min-w-[960px] text-left text-xs whitespace-nowrap table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold select-none">
                 <th
                   aria-sort={dateSortOrder === 'asc' ? 'ascending' : 'descending'}
-                  className="w-[110px] p-0"
+                  className="w-[100px] p-0"
                 >
                   <button
                     type="button"
@@ -813,7 +766,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                   </button>
                 </th>
                 <th
-                  className="w-[70px] py-2.5 px-3 text-center"
+                  className="w-[64px] py-2.5 px-3 text-center"
                   title="Pořadí v rámci dne"
                 >
                   <span>Pořadí</span>
@@ -821,13 +774,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 <th className="min-w-[160px] py-2.5 px-4">
                   <span>Název položky</span>
                 </th>
-                <th className="w-[160px] py-2.5 px-4">Kategorie</th>
-                <th className="w-[150px] py-2.5 px-4">Účet</th>
-                <th className="w-[140px] py-2.5 px-4">Stav</th>
-                <th className="w-[120px] py-2.5 px-4 text-right">
+                <th className="w-[140px] py-2.5 px-4">Kategorie</th>
+                <th className="w-[130px] py-2.5 px-4">Účet</th>
+                <th className="w-[124px] py-2.5 px-4">Stav</th>
+                <th className="w-[116px] py-2.5 px-4 text-right">
                   <span>Částka</span>
                 </th>
-                <th className="w-[170px] py-2.5 px-4 text-right">Akce</th>
+                <th className="w-[120px] py-2.5 px-4 text-right">Akce</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
