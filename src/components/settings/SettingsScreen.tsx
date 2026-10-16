@@ -524,7 +524,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmDisconnectOpen(true)}
-                    className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    className="btn-secondary btn-secondary-danger"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Odpojit Google Disk</span>
@@ -700,7 +700,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearTransactionsOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny položky
                   </button>
@@ -717,7 +717,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearAccountsOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny účty
                   </button>
@@ -734,7 +734,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearCategoriesOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny kategorie
                   </button>
