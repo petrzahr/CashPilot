@@ -627,15 +627,16 @@ export const MandatoryExpensesScreen: React.FC = () => {
               : <>Období <strong className="text-slate-700">{overview.periodName}</strong></>}
             {' '}· zaokrouhleno na 100 Kč
           </p>
-          <button
-            type="button"
-            onClick={() => setConfirmResetOpen(true)}
-            disabled={!isSimulating}
-            className="btn-secondary"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Obnovit výchozí stav
-          </button>
+          {isSimulating && (
+            <button
+              type="button"
+              onClick={() => setConfirmResetOpen(true)}
+              className="btn-secondary"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Obnovit výchozí stav
+            </button>
+          )}
         </div>
 
         {/* Souhrn měsíčních průměrů z opakovaných plateb */}
