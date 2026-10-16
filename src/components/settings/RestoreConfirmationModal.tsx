@@ -60,6 +60,7 @@ export const RestoreConfirmationModal: React.FC<RestoreConfirmationModalProps> =
   onConfirm,
 }) => {
   const nothingToAdd = !!preview && preview.totalAdded === 0;
+  const canRestore = !!preview && preview.totalAdded > 0;
 
   return (
     <Modal isOpen={!!preview} onClose={onClose} title="Obnovit data ze zálohy?" maxWidth="max-w-lg">
@@ -120,12 +121,16 @@ export const RestoreConfirmationModal: React.FC<RestoreConfirmationModalProps> =
             </button>
             <button
               type="button"
-              disabled={nothingToAdd || preview.groups.length === 0}
+              disabled={!canRestore}
               onClick={() => {
                 onConfirm(preview.content);
                 onClose();
               }}
-              className="px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed"
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
+                canRestore
+                  ? 'text-white bg-sky-600 hover:bg-sky-700 shadow-sm'
+                  : 'text-slate-500 bg-slate-200 cursor-not-allowed'
+              }`}
             >
               Obnovit data
             </button>
