@@ -91,7 +91,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               aria-pressed={forecastScope === 'all'}
               className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
                 forecastScope === 'all'
-                  ? 'bg-white text-slate-900 shadow-sm'
+                  ? 'bg-white text-purple-600 shadow-sm'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
