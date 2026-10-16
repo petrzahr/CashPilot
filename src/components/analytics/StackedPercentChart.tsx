@@ -60,7 +60,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
 
   if (!hasData) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-center text-slate-500 text-xs">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center text-slate-500 text-xs">
         {emptyText}
       </div>
     );
@@ -131,7 +131,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   const hoveredItem = hoveredIdx !== null ? data[hoveredIdx] : null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-5 space-y-4">
       {/* Hlavička karty */}
       <div>
@@ -274,7 +274,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
         {/* Hover Tooltip */}
         {hoveredItem && hoveredIdx !== null && (
           <div
-            className="absolute z-20 pointer-events-none bg-slate-900/95 backdrop-blur-sm text-white text-xs rounded-xl p-3 shadow-xl space-y-1.5 transition-all motion-reduce:transition-none"
+            className="absolute z-20 pointer-events-none bg-white border border-slate-200 text-slate-900 text-xs rounded-xl p-3 shadow-lg space-y-1.5 transition-all motion-reduce:transition-none"
             style={{
               left: `${Math.min(
                 Math.max(
@@ -287,7 +287,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="font-bold text-slate-200 border-b border-slate-700/80 pb-1.5 space-y-0.5">
+            <div className="font-bold text-slate-900 border-b border-slate-200 pb-1.5 space-y-0.5">
               <div className="flex items-center justify-between gap-4">
                 <span>{hoveredItem.periodLabel}</span>
               </div>
@@ -297,7 +297,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               {hoveredItem.segments.map((seg) => (
                 <div
                   key={seg.key}
-                  className="flex items-center justify-between gap-4 text-slate-300"
+                  className="flex items-center justify-between gap-4 text-slate-600"
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span
@@ -306,10 +306,10 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                     />
                     <span className="truncate">{seg.label}:</span>
                   </span>
-                  <span className="font-semibold tabular-nums text-white whitespace-nowrap">
+                  <span className="font-semibold tabular-nums text-slate-900 whitespace-nowrap">
                     {formatCurrency(seg.amountInHaler)}
                     {seg.pct !== null && (
-                      <span className="text-slate-400 font-normal">
+                      <span className="text-slate-500 font-normal">
                         {' '}
                         ({formatPercent(isEffectivelyNegative(seg) ? seg.pct : Math.abs(seg.pct))})
                       </span>
@@ -319,9 +319,9 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
               ))}
 
               {totalLabel && hoveredItem.totalInHaler !== undefined && (
-                <div className="border-t border-slate-700/80 pt-1.5 flex items-center justify-between gap-4 font-bold">
-                  <span className="text-slate-100">{totalLabel}:</span>
-                  <span className="text-sm font-extrabold text-white tabular-nums">
+                <div className="border-t border-slate-200 pt-1.5 flex items-center justify-between gap-4 font-bold">
+                  <span className="text-slate-900">{totalLabel}:</span>
+                  <span className="text-sm font-extrabold text-slate-900 tabular-nums">
                     {formatCurrency(hoveredItem.totalInHaler)}
                   </span>
                 </div>
@@ -337,7 +337,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
       <div className="overflow-x-auto border-t border-slate-100">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
               <th className="py-2.5 px-4">{rowHeaderLabel}</th>
               {data.map((d) => (
                 <th key={d.periodKey} className="py-2.5 px-4 text-right whitespace-nowrap">

@@ -671,7 +671,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         </div>
 
         {/* Pořadí v rámci dne: doplní se samo (na konec dne), ruční změna je jen pro výjimky */}
-        <details className="group rounded-xl border border-slate-200/80">
+        <details className="group rounded-xl border border-slate-200">
           <summary className="flex items-center justify-between gap-3 px-3.5 min-h-10 max-md:min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-xl hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40">
             <span className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
               <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />

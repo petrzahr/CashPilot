@@ -34,7 +34,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
   if (!firstPeriod || !lastPeriod) return null;
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-4" aria-label={ariaLabel}>
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4" aria-label={ariaLabel}>
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
@@ -48,7 +48,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
                 onClick={() => { onRangeChange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
                 className={`max-md:min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
                   ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200/80'}`}
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'}`}
               >
                 {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
               </button>;

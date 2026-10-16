@@ -88,7 +88,7 @@ export const CategoriesScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Hlavička správy kategorií */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
         <div role="group" aria-label="Typ kategorií" className="h-8 max-md:h-[52px] w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
           <button
@@ -139,7 +139,7 @@ export const CategoriesScreen: React.FC = () => {
       </div>
 
       {mainCategories.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-sm text-center space-y-1">
+        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center space-y-1">
           <p className="text-sm font-semibold text-slate-900">
             {activeTab === 'expense' ? 'Zatím žádné výdajové kategorie' : 'Zatím žádné příjmové kategorie'}
           </p>
@@ -162,7 +162,7 @@ export const CategoriesScreen: React.FC = () => {
               className={`bg-white rounded-2xl border p-5 shadow-sm space-y-3 transition-all ${
                 mainCat.status === 'archived'
                   ? 'border-slate-200 !bg-slate-50 border-dashed'
-                  : 'border-slate-200/80 hover:border-slate-300'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
               {/* Hlavní kategorie hlavička */}
@@ -239,7 +239,7 @@ export const CategoriesScreen: React.FC = () => {
                   subcategories.map((sub) => (
                     <div
                       key={sub.id}
-                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50/60 hover:bg-slate-100/60 transition-colors text-xs text-slate-500"
+                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-xs text-slate-500"
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: sub.color || mainCat.color }} />

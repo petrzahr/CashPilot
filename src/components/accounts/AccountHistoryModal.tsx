@@ -279,7 +279,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                     key={tx.id}
                     className={`p-3 border rounded-xl flex items-center justify-between gap-3 text-sm transition-colors ${
                       isCorrection
-                        ? 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
+                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-50'
                         : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >

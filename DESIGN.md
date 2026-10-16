@@ -143,9 +143,9 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 ### Named Rules
 **The Meaning-Only Rule.** Barva v rozhraní vždy znamená peníze nebo stav: zelená přichází, červená odchází, jantar čeká, fialová roste, modrá jedná. Kategorie mají vlastní uživatelské barvy jen jako tečky a pruhy grafů.
 
-**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple…, white) nebo tokeny `scrim` a `table-*`. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
+**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple, white) nebo tokeny `scrim` a `table-*`. Paleta v `tailwind.config.js` je uzavřená, jiné rodiny (rose, blue, gray…) neexistují. Linky a podklady jsou plné (`border-slate-200`, `bg-slate-50`); průhlednost jen tam, kde leží nad barvou. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
 
-**The AA Rule.** Každá dvojice text/pozadí má v obou vzhledech kontrast alespoň 4,5:1 (ikony a ovládací prvky 3:1). Proto jsou světlé odstíny slate-500, sky/emerald/amber/red-600 oproti výchozímu Tailwindu mírně ztmavené.
+**The AA Rule.** Každá dvojice text/pozadí má v obou vzhledech kontrast alespoň 4,5:1 (ikony a ovládací prvky 3:1). Proto jsou světlé odstíny slate-500, sky-500 (fokus) a sky/emerald/amber/red-600 oproti výchozímu Tailwindu mírně ztmavené. V tmavém vzhledu jsou jantarové podklady teplé hnědé, aby se plánované a upozornění nepletly s chybami.
 
 ## Typography
 
@@ -173,7 +173,7 @@ Hloubka je tonální, stín jen podporuje. Ve světlém vzhledu leží bílé ka
 
 ### Shadow Vocabulary
 - **Karta** (`box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05)`): karty, segmentové volby, sekundární tlačítka.
-- **Plovoucí nabídka** (`box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`): rozbalovací menu, toasty.
+- **Plovoucí nabídka** (`box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`): rozbalovací menu, toasty, bubliny grafů (povrch s linkou v obou vzhledech).
 - **Dialog** (`box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)`): modální okna nad ztmavujícím `scrim`.
 
 ### Named Rules

@@ -68,7 +68,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         ariaLabel="Období přehledů"
       />
       {/* Hlavní tabulka forecastu */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Vývoj zůstatků po obdobích</h2>
           {/* Přepínač: Použitelné peníze vs Všechny účty */}
@@ -104,7 +104,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-left text-xs whitespace-nowrap">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
+              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
                 {/* První sloupec je připnutý, aby při posouvání do strany zůstal vidět název období */}
                 <th className="sticky left-0 z-[1] bg-slate-50 py-2.5 px-4 w-[200px]">Období</th>
                 <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
@@ -182,7 +182,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       </div>
 
       {/* Přehled účtů */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Účty</h2>
           <div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     <div className="pb-4 bg-slate-50 overflow-x-auto">
                       <table className="w-full table-fixed text-xs text-left">
                         <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200/80 text-xs font-semibold text-slate-500">
+                          <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500">
                             <th className="sticky left-0 z-[1] bg-slate-50 py-2.5 px-4 w-[200px]">Účet</th>
                             <th className="py-2.5 px-4 w-[140px] text-right">Počáteční stav</th>
                             {/* U účtů se do pohybů počítají i korekce a změny tržní hodnoty, proto jiné názvy než Příjmy/Výdaje */}
@@ -328,7 +328,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   {accountPeriods.map((p) => (
                     <th
                       key={p.period.key}
-                      className="p-0 text-right min-w-[125px] hover:bg-slate-100/80 transition-colors"
+                      className="p-0 text-right min-w-[125px] hover:bg-slate-100 transition-colors"
                     >
                       <button
                         type="button"
@@ -345,7 +345,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {activeAccounts.map((acc) => (
-                  <tr key={acc.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={acc.id} className="hover:bg-slate-50 transition-colors">
                     <td className="py-2.5 px-4 font-semibold text-slate-900 sticky left-0 bg-white shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: acc.color }} />
@@ -415,7 +415,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-t-2 border-slate-200 bg-slate-50/90 font-semibold">
+              <tfoot className="border-t-2 border-slate-200 bg-slate-50 font-semibold">
                 <tr>
                   <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-10">
                     <div className="flex flex-col">

@@ -645,14 +645,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <div className="space-y-4">
         {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
             <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Použitelný zůstatek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
             <span className="text-xs text-slate-500 block font-semibold uppercase tracking-wide">Celkový majetek</span>
             <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
@@ -681,28 +681,28 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
                 <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">+ Příjmy</span>
                 <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
                   {formatCurrency(defaultIncomeBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">− Výdaje</span>
                 <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
                   {formatCurrency(defaultExpenseBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Převody</span>
                 <span
                   className={`text-base font-bold block mt-0.5 truncate ${
@@ -714,7 +714,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
                 <span className={`text-base font-bold block mt-0.5 truncate ${
                   signTone(defaultNetChange)
@@ -723,7 +723,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
                 <span className={`text-base font-bold block mt-0.5 truncate ${
                   defaultClosingBalance < 0 ? 'text-red-600' : 'text-slate-900'
@@ -735,7 +735,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <div className={`p-3 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
                 isOverdraftExceeded
                   ? 'bg-red-50/90 border-red-300'
-                  : 'bg-white border-slate-200/80'
+                  : 'bg-white border-slate-200'
               }`}>
                 <div className="flex items-center justify-between">
                   <span className={`text-xs block font-medium ${isOverdraftExceeded ? 'text-red-700 font-bold' : 'text-slate-500'}`}>
@@ -761,7 +761,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm" title="Příjmy − výdaje + korekce na běžných účtech a hotovosti, bez převodů">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.actuallySavedInHaler)
@@ -770,14 +770,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.actuallySavedPct)}`}>
                 {formatPercent(aggregateSummary.actuallySavedPct)}
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.savedInHaler)
@@ -786,14 +786,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.savedPct)}`}>
                 {formatPercent(aggregateSummary.savedPct)}
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
@@ -802,7 +802,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 aggregateSummary.investedPct === null ? 'text-slate-500' : aggregateSummary.investedPct < 0 ? 'text-red-600' : 'text-purple-600'
@@ -811,7 +811,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm col-span-2 sm:col-span-1">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
               <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.investmentChange)
@@ -824,13 +824,13 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
         <h3 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
             <div
               key={category.id}
-              className="p-3 rounded-xl border border-slate-200/70 bg-slate-50/40 hover:bg-slate-50 transition-colors space-y-2"
+              className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors space-y-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -843,7 +843,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </div>
 
               {subcategories.length > 0 ? (
-                <div className="space-y-1 pt-1 border-t border-slate-200/50">
+                <div className="space-y-1 pt-1 border-t border-slate-200">
                   {subcategories.map(({ sub, totalInHaler: subTotal }) => (
                     <div key={sub.id} className="flex justify-between text-xs text-slate-500">
                       <span>{sub.name}</span>
@@ -858,7 +858,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           ))}
 
           {/* Sekce Spoření a převody */}
-          <div className="p-3 rounded-xl border border-slate-200/70 bg-slate-50/40 space-y-2">
+          <div className="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
@@ -869,7 +869,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </span>
             </div>
             {transferTxs.length > 0 ? (
-              <div className="space-y-1 pt-1 border-t border-slate-200/80">
+              <div className="space-y-1 pt-1 border-t border-slate-200">
                 {transferTxs.map(tx => (
                   <div key={tx.id} className="flex justify-between gap-3 text-xs text-slate-500">
                     <span className="truncate min-w-0">{tx.title}</span>
@@ -885,7 +885,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Filtry položek tohoto období */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1023,7 +1023,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Seznam všech položek tohoto období */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {/* 1. REŽIM: PO DNECH S DRAG-AND-DROP A PRŮBĚŽNÝM ZŮSTATKEM */}
         {viewMode === 'daily' ? (
           <div className="divide-y divide-slate-100">
@@ -1048,7 +1048,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       <span className="h-px flex-1 bg-slate-300" aria-hidden="true" />
                     </div>
                   )}
-                  <div className={`p-4 sm:p-5 space-y-3 ${isToday ? 'bg-slate-50/70' : ''}`}>
+                  <div className={`p-4 sm:p-5 space-y-3 ${isToday ? 'bg-slate-50' : ''}`}>
                     {/* Záhlaví dne */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
@@ -1056,7 +1056,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                           {formatCzechDate(date)}
                         </span>
                         {isToday && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-900 text-white">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
                             Dnes
                           </span>
                         )}
@@ -1123,11 +1123,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               draggedTxId === tx.id
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
-                                  ? 'bg-slate-50/60 border-slate-200/80 hover:border-slate-300'
+                                  ? 'bg-slate-50 border-slate-200 hover:border-slate-300'
                                   : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-red-200 hover:border-red-300'
-                                    : 'bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-xs'
-                            } ${isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : ''}`}
+                                    : `${isCancelled ? 'bg-slate-50' : 'bg-white hover:shadow-xs'} border-slate-200 hover:border-slate-300`
+                            } ${isCancelled ? 'line-through decoration-slate-400 text-slate-500' : ''}`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               {/* Úchyt pro přetažení a šipky pro posun tvoří jeden úzký ovladač pořadí */}
@@ -1336,7 +1336,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold select-none">
                   <th
                     aria-sort={dateSortOrder === 'asc' ? 'ascending' : 'descending'}
                     className="w-[110px] p-0"
@@ -1395,8 +1395,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   return (
                     <tr
                       key={tx.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
-                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500' : isCorrection ? 'bg-slate-50/60' : ''
+                      className={`hover:bg-slate-50 transition-colors ${
+                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : ''
                       }`}
                     >
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">

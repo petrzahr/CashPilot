@@ -104,7 +104,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
         onKeyDown={handleTrapKeyDown}
-        className={`relative flex flex-col w-full ${maxWidth} max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-2xl bg-white text-left shadow-xl border border-slate-200/80 focus:outline-none`}
+        className={`relative flex flex-col w-full ${maxWidth} max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-2xl bg-white text-left shadow-xl border border-slate-200 focus:outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-slate-100 px-5 sm:px-6 py-4">
