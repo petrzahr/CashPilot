@@ -60,14 +60,12 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
     setBackupDownloaded(true);
   };
 
-  // Zamezení odeslání / potvrzení klávesou Enter
+  // Enter v poli potvrzovací fráze nesmí nic potvrdit. Tlačítka se Enterem
+  // aktivují normálně, uživatel na ně musí nejdřív záměrně přejít.
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      // Pokud uživatel stiskne Enter a není přímo zaostřené tlačítko potvrzení, zrušit akci
-      if (document.activeElement !== cancelButtonRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+    if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
