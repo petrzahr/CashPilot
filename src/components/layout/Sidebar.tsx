@@ -195,8 +195,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
-          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví */}
-          <p className="font-semibold text-slate-500">K dnešku {formatCzechDate(getTodayInPrague())}</p>
+          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví; nadpis skupiny ve stylu popisků KPI */}
+          <p className="flex items-baseline justify-between gap-2 pb-1">
+            <span className="font-bold text-slate-900 uppercase tracking-wide">K dnešku</span>
+            <span className="font-medium text-slate-500 tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
+          </p>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
