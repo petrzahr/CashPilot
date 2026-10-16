@@ -12,6 +12,7 @@ import {
   Copy,
   Trash2,
   Ban,
+  RotateCcw,
   Edit3,
   ArrowUp,
   ArrowDown,
@@ -496,7 +497,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => openCorrection(tx, true)}
           title="Smazat korekci"
           aria-label={`Smazat korekci: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50"
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -509,7 +510,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             disabled={updatingStatusTxId === tx.id}
             title="Označit jako uskutečněnou"
             aria-label={`Označit jako uskutečněnou: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-emerald-600 focus-visible:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
           >
             <Check className="w-4 h-4" />
           </button>
@@ -519,7 +520,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
             title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
             aria-label={`Vrátit do plánovaných: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
           >
             <Clock className="w-4 h-4" />
           </button>
@@ -544,9 +545,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <button
             onClick={() => handleStatusChange(tx.id, 'cancelled')}
             disabled={updatingStatusTxId === tx.id}
-            title="Zrušit položku"
-            aria-label={`Zrušit položku: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+            title="Označit jako zrušenou"
+            aria-label={`Označit jako zrušenou: ${tx.title}`}
+            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
           >
             <Ban className="w-4 h-4" />
           </button>
@@ -558,7 +559,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
           >
-            <Clock className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4" />
           </button>
         )}
         <button
@@ -566,7 +567,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           disabled={isDeletingTx}
           title="Smazat položku"
           aria-label={`Smazat položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
+          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
         >
           <Trash2 className="w-4 h-4" />
         </button>
