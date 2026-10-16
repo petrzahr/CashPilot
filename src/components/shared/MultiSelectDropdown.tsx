@@ -169,7 +169,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     }`}
                   >
                     <span aria-hidden="true" className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                      checked ? 'bg-sky-600 border-sky-600' : 'border-slate-300'
+                      checked ? 'bg-sky-600 border-sky-600' : 'border-slate-500'
                     }`}>
                       {checked && <Check className="w-2.5 h-2.5 text-white" />}
                     </span>
