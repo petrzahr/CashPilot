@@ -384,7 +384,14 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <span className="truncate">{tx.title}</span>
           </button>
         ) : (
-          <span className="truncate min-w-0">{tx.title}</span>
+          // Název položky je vždy odkaz na její úpravu, stejně jako v Rozpočtu
+          <button
+            type="button"
+            onClick={() => onEditTransaction(tx)}
+            className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
+          >
+            {tx.title}
+          </button>
         )}
         {tx.recurringRuleId && (
           <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
