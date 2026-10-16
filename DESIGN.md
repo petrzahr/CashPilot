@@ -191,7 +191,8 @@ Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@laye
 - **Shape:** zaoblení 12px.
 - **Primary (`btn-primary`):** pilotní modř s bílým textem, 12px bold, výška 32px (v liště dialogu 40px), na dotyku 44px; v tmavém vzhledu noční modř s tmavým textem. Zakázané tlačítko je šedé (výplň s vedlejším inkoustem), ne průhledné.
 - **Danger (`btn-danger`):** stejný recept v červené pro nevratnou nebo mazací akci v dialogu.
-- **Secondary (`btn-secondary`):** povrch s vlasovou linkou, vedlejší inkoust, 12px semibold, jemný stín, hover modrý text i okraj. Zrušit v dialozích, Stáhnout, Dnes, akce na kartách.
+- **Secondary (`btn-secondary`):** povrch s vlasovou linkou, vedlejší inkoust, 12px semibold, jemný stín, hover modrý text i okraj. Zrušit v dialozích, Stáhnout, Dnes, Synchronizovat nyní, akce na kartách. Světle barevné podklady tlačítek se nepoužívají.
+- **Secondary danger (`btn-secondary btn-secondary-danger`):** vstup do mazání nebo odpojení (Smazat všechny položky / účty / kategorie, Odpojit Google Disk); červené až při najetí, nevratná červená akce je až v dialogu. Jen „Smazat všechna data“ má plné `btn-danger`.
 - **Hover / Focus:** hover o stupeň tmavší (ve tmavém světlejší); fokus klávesnicí modrý prstenec.
 - **Icon actions (`btn-icon`):** 16px ikona bez rámečku, zaoblení 8px, v klidu vedlejší inkoust, na mobilu plocha 44×44px, vždy `aria-label` s názvem položky. Barva při najetí jen podle významu: `btn-icon-danger` smazat (červená), `btn-icon-archive` archivovat (jantar), `btn-icon-restore` obnovit nebo přidat (modrá), ostatní tmavě šedá.
 - **Popisky:** tlačítko pro přidání se jmenuje stejně jako dialog, který otevře („Nová položka“, „Nový účet“, „Nová kategorie“).

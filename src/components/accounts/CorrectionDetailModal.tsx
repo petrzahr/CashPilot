@@ -131,7 +131,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
               />
               <button
                 type="submit"
-                className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-xl hover:bg-sky-100 transition-colors flex items-center gap-1"
+                className="btn-secondary"
               >
                 <Check className="w-3.5 h-3.5" />
                 Uložit poznámku

@@ -515,7 +515,7 @@ export const SettingsScreen: React.FC = () => {
                     type="button"
                     onClick={() => syncWithGoogleDrive('upload')}
                     disabled={driveSyncStatus === 'syncing'}
-                    className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
+                    className="btn-secondary"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                     <span>Synchronizovat nyní</span>
@@ -771,7 +771,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmLoadDemoOpen(true)}
-                  className="max-md:min-h-11 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
+                  className="btn-secondary"
                 >
                   Načíst ukázková data (demo režim)
                 </button>
