@@ -1624,13 +1624,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     const nowIso = new Date().toISOString();
+    const before = data.accounts.find(a => a.id === id);
     setData(prev => ({
       ...prev,
       accounts: prev.accounts.map(a => a.id === id ? { ...a, status: 'archived', isDefault: false, updatedAt: nowIso } : a)
     }));
-    showToast('Účet byl archivován.');
+    // „Vrátit“ vrátí účet do původního stavu včetně příznaku výchozího účtu
+    showToast(before ? `Účet „${before.name}“ byl archivován.` : 'Účet byl archivován.', 'success', before ? {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => ({
+          ...prev,
+          accounts: prev.accounts.map(a => {
+            if (a.id === id) return { ...a, status: before.status, isDefault: before.isDefault, updatedAt: new Date().toISOString() };
+            return before.isDefault && a.isDefault ? { ...a, isDefault: false, updatedAt: new Date().toISOString() } : a;
+          }),
+        }));
+        showToast(`Archivace účtu „${before.name}“ byla vrácena.`);
+      },
+    } : undefined);
     return { success: true };
-  }, [data.recurringRules, showToast]);
+  }, [data.accounts, data.recurringRules, showToast]);
 
   const restoreAccount = useCallback((id: string) => {
     const nowIso = new Date().toISOString();
@@ -1660,7 +1674,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     }
 
+    // Odložené části pro „Vrátit“: účet i vše, co se smazalo s ním
+    type RemovedAccount = {
+      account: Account;
+      corrections: BalanceCorrection[];
+      snapshots: MarketValueSnapshot[];
+      fees: InvestmentFee[];
+      exceptions: RecurringException[];
+      usableOverride: boolean | undefined;
+    };
+    const removedRef: { current: RemovedAccount | null } = { current: null };
+
     setData(prev => {
+      const account = prev.accounts.find(a => a.id === id);
+      if (!account) return prev;
+      const isRemovedException = (e: RecurringException) => e.overrideSourceAccountId === id || e.overrideTargetAccountId === id;
+      removedRef.current = {
+        account,
+        corrections: prev.corrections.filter(c => c.accountId === id),
+        snapshots: (prev.marketValueSnapshots || []).filter(s => s.accountId === id),
+        fees: (prev.investmentFees || []).filter(f => f.accountId === id),
+        exceptions: (prev.recurringExceptions || []).filter(isRemovedException),
+        usableOverride: prev.settings?.accountUsableOverrides?.[id],
+      };
       const newOverrides = { ...(prev.settings?.accountUsableOverrides || {}) };
       delete newOverrides[id];
 
@@ -1670,16 +1706,39 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         corrections: prev.corrections.filter(c => c.accountId !== id),
         marketValueSnapshots: (prev.marketValueSnapshots || []).filter(s => s.accountId !== id),
         investmentFees: (prev.investmentFees || []).filter(f => f.accountId !== id),
-        recurringExceptions: (prev.recurringExceptions || []).filter(
-          e => e.overrideSourceAccountId !== id && e.overrideTargetAccountId !== id
-        ),
+        recurringExceptions: (prev.recurringExceptions || []).filter(e => !isRemovedException(e)),
         settings: {
           ...prev.settings,
           accountUsableOverrides: newOverrides
         }
       };
     });
-    showToast('Účet byl smazán.');
+
+    const saved = removedRef.current;
+    if (!saved) return { success: true };
+    showToast(`Účet „${saved.account.name}“ byl smazán.`, 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        // Nové updatedAt je pozdější než záznam o smazání, takže synchronizace obnovu přijme
+        const nowIso = new Date().toISOString();
+        const touch = <T,>(items: T[]): T[] => items.map(item => ({ ...item, updatedAt: nowIso }));
+        setData(prev => {
+          if (prev.accounts.some(a => a.id === id)) return prev;
+          const overrides = { ...(prev.settings?.accountUsableOverrides || {}) };
+          if (saved.usableOverride !== undefined) overrides[id] = saved.usableOverride;
+          return reconcileMarketValueHistory({
+            ...prev,
+            accounts: [...prev.accounts, { ...saved.account, updatedAt: nowIso }],
+            corrections: [...prev.corrections, ...touch(saved.corrections)],
+            marketValueSnapshots: [...(prev.marketValueSnapshots || []), ...touch(saved.snapshots)],
+            investmentFees: [...(prev.investmentFees || []), ...touch(saved.fees)],
+            recurringExceptions: [...(prev.recurringExceptions || []), ...touch(saved.exceptions)],
+            settings: { ...prev.settings, accountUsableOverrides: overrides },
+          });
+        });
+        showToast(`Účet „${saved.account.name}“ byl obnoven.`);
+      },
+    });
     return { success: true };
   }, [data.transactions, data.corrections, data.recurringRules, showToast]);
 
@@ -2040,11 +2099,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     }
 
+    const removed = data.categories.filter(c => c.id === id || c.parentId === id);
+    const name = removed.find(c => c.id === id)?.name;
     setData(prev => ({
       ...prev,
       categories: prev.categories.filter(c => c.id !== id && c.parentId !== id)
     }));
-    showToast('Kategorie byla smazána.');
+    // „Vrátit“ obnoví kategorii i její podkategorie
+    showToast(name ? `Kategorie „${name}“ byla smazána.` : 'Kategorie byla smazána.', 'success', removed.length ? {
+      label: 'Vrátit',
+      onClick: () => {
+        const nowIso = new Date().toISOString();
+        setData(prev => prev.categories.some(c => c.id === id) ? prev : {
+          ...prev,
+          categories: [...prev.categories, ...removed.map(c => ({ ...c, updatedAt: nowIso }))],
+        });
+        showToast(name ? `Kategorie „${name}“ byla obnovena.` : 'Kategorie byla obnovena.');
+      },
+    } : undefined);
     return { success: true };
   }, [data.categories, data.transactions, data.recurringRules, showToast]);
 

@@ -43,7 +43,7 @@ export const AccountsScreen: React.FC = () => {
 
   // Čekající potvrzení archivace nebo smazání účtu (vlastní dialog místo window.confirm)
   const [pendingAction, setPendingAction] = useState<
-    | { kind: 'archive' | 'delete'; account: Account }
+    | { kind: 'archive'; account: Account }
     | { kind: 'blocked'; account: Account; usage: UsageCount }
     | null
   >(null);
@@ -134,11 +134,15 @@ export const AccountsScreen: React.FC = () => {
   };
 
   // Použitý účet smazat nejde – místo varování „nelze vrátit“ rovnou nabídneme archivaci
+  // Nepoužitý účet se smaže hned a oznámení nabídne „Vrátit“
   const handleDelete = (acc: Account) => {
     const usage = getAccountUsage(acc.id, transactions, recurringRules);
-    setPendingAction(isInUse(usage)
-      ? { kind: 'blocked', account: acc, usage }
-      : { kind: 'delete', account: acc });
+    if (isInUse(usage)) {
+      setPendingAction({ kind: 'blocked', account: acc, usage });
+      return;
+    }
+    const res = deleteAccount(acc.id);
+    if (!res.success && res.message) showToast(res.message, 'error');
   };
 
   const confirmPendingAction = () => {
@@ -147,14 +151,7 @@ export const AccountsScreen: React.FC = () => {
       runArchive(pendingAction.account);
       return;
     }
-    if (pendingAction.kind === 'blocked') {
-      if (pendingAction.account.status === 'active') runArchive(pendingAction.account);
-      return;
-    }
-    const res = deleteAccount(pendingAction.account.id);
-    if (!res.success && res.message) {
-      showToast(res.message, 'error');
-    }
+    if (pendingAction.account.status === 'active') runArchive(pendingAction.account);
   };
 
   const pendingMessage = !pendingAction
@@ -165,9 +162,7 @@ export const AccountsScreen: React.FC = () => {
             ? `Můžete ho archivovat: zmizí z nabídek, ale historie zůstane.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`
             : 'Účet už je archivovaný, v nabídkách se nezobrazuje.'
         }`
-    : pendingAction.kind === 'archive'
-      ? `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`
-      : `Účet „${pendingAction.account.name}“ se smaže. Smazání nelze vrátit.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`;
+    : `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`;
 
   const getTypeLabel = (type: AccountType) => {
     switch (type) {
@@ -504,19 +499,10 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!pendingAction}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmPendingAction}
-        title={
-          pendingAction?.kind === 'blocked' ? 'Účet nejde smazat'
-            : pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet?'
-            : 'Smazat účet?'
-        }
+        title={pendingAction?.kind === 'blocked' ? 'Účet nejde smazat' : 'Archivovat výchozí účet?'}
         message={pendingMessage}
-        confirmText={
-          pendingAction?.kind === 'blocked'
-            ? (pendingAction.account.status === 'active' ? 'Archivovat účet' : 'Rozumím')
-            : pendingAction?.kind === 'archive' ? 'Archivovat účet' : 'Smazat účet'
-        }
-        showCancel={!(pendingAction?.kind === 'blocked' && pendingAction.account.status !== 'active')}
-        isDestructive={pendingAction?.kind === 'delete'}
+        confirmText={pendingAction?.account.status === 'active' ? 'Archivovat účet' : 'Rozumím'}
+        showCancel={pendingAction?.account.status === 'active'}
       />
     </div>
   );

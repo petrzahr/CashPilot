@@ -62,27 +62,24 @@ export const CategoriesScreen: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  // Nepoužitá kategorie se smaže hned (oznámení nabídne „Vrátit“), použitá otevře dialog s nabídkou archivace
   const handleDelete = (cat: Category) => {
-    setDeletingCategory(cat);
+    if (isInUse(getCategoryUsage(cat.id, categories, transactions, recurringRules))) {
+      setDeletingCategory(cat);
+      return;
+    }
+    const res = deleteCategory(cat.id);
+    if (!res.success && res.message) showToast(res.message, 'error');
   };
 
   // Použitou kategorii (i přes podkategorie) smazat nejde – dialog rovnou nabídne archivaci
   const deletingUsage = deletingCategory
     ? getCategoryUsage(deletingCategory.id, categories, transactions, recurringRules)
     : null;
-  const isDeletingBlocked = !!deletingUsage && isInUse(deletingUsage);
   const isDeletingArchived = deletingCategory?.status === 'archived';
 
   const confirmDelete = () => {
-    if (!deletingCategory) return;
-    if (isDeletingBlocked) {
-      if (!isDeletingArchived) archiveCategory(deletingCategory.id);
-      return;
-    }
-    const res = deleteCategory(deletingCategory.id);
-    if (!res.success && res.message) {
-      showToast(res.message, 'error');
-    }
+    if (deletingCategory && !isDeletingArchived) archiveCategory(deletingCategory.id);
   };
 
   return (
@@ -298,23 +295,19 @@ export const CategoriesScreen: React.FC = () => {
         mode={modalMode}
       />
 
+      {/* Dialog jen pro použitou kategorii: smazat ji nejde, nabídne archivaci */}
       <ConfirmationModal
         isOpen={!!deletingCategory}
         onClose={() => setDeletingCategory(null)}
         onConfirm={confirmDelete}
-        title={isDeletingBlocked ? 'Kategorii nejde smazat' : 'Smazat kategorii?'}
-        message={
-          isDeletingBlocked && deletingUsage
-            ? `Kategorii „${deletingCategory?.name ?? ''}“ (včetně podkategorií) používá ${describeUsage(deletingUsage)}, proto ji nejde smazat. ${
-                isDeletingArchived
-                  ? 'Kategorie už je archivovaná, v nabídkách se nezobrazuje.'
-                  : 'Můžete ji archivovat: zmizí z nabídek, ale historie zůstane.'
-              }`
-            : `Kategorie „${deletingCategory?.name ?? ''}“ se smaže. Smazání nelze vrátit. Pokud ji chcete jen skrýt z nabídek, zvolte raději archivaci.`
-        }
-        confirmText={isDeletingBlocked ? (isDeletingArchived ? 'Rozumím' : 'Archivovat kategorii') : 'Smazat kategorii'}
-        showCancel={!(isDeletingBlocked && isDeletingArchived)}
-        isDestructive={!isDeletingBlocked}
+        title="Kategorii nejde smazat"
+        message={`Kategorii „${deletingCategory?.name ?? ''}“ (včetně podkategorií) používá ${deletingUsage ? describeUsage(deletingUsage) : ''}, proto ji nejde smazat. ${
+          isDeletingArchived
+            ? 'Kategorie už je archivovaná, v nabídkách se nezobrazuje.'
+            : 'Můžete ji archivovat: zmizí z nabídek, ale historie zůstane.'
+        }`}
+        confirmText={isDeletingArchived ? 'Rozumím' : 'Archivovat kategorii'}
+        showCancel={!isDeletingArchived}
       />
     </div>
   );
