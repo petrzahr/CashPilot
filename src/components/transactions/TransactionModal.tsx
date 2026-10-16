@@ -655,7 +655,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <FieldError inputId={`${fieldId}-7`} message={errors.target || targetAccError} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
               <div>
                 <label htmlFor={`${fieldId}-8`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Kategorie
