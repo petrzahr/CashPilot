@@ -565,7 +565,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 {filteredTransactions.length}
               </span>
               <span className="text-xs font-semibold text-slate-500">Součet</span>
-              <span className="chip bg-slate-100 text-slate-600">
+              <span className={`text-xs font-bold tabular-nums ${
+                filteredTransactionsSum > 0 ? 'text-emerald-600' : filteredTransactionsSum < 0 ? 'text-red-600' : 'text-slate-900'
+              }`}>
                 {formatCurrency(filteredTransactionsSum, { showPlus: true })}
               </span>
             </div>
