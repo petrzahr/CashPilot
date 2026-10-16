@@ -136,15 +136,13 @@ export const Modal: React.FC<ModalProps> = ({
 /**
  * Akční lišta dialogu. Při dlouhém obsahu zůstává přilepená ke spodnímu okraji,
  * ale patří do formuláře, takže odesílací tlačítko dál funguje přes onSubmit.
- * Na úzkém mobilu se při třech a více tlačítkách poslední (hlavní) akce
- * přesune na celou šířku do prvního řádku, ostatní se vejdou pod ni.
  */
 export const ModalFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
   className = 'justify-end',
 }) => (
   <div
-    className={`modal-footer sticky bottom-0 z-10 -mx-5 sm:-mx-6 !mt-6 px-5 sm:px-6 py-4 bg-white border-t border-slate-100 flex items-center gap-3 [&>button]:whitespace-nowrap [&>button]:min-h-10 max-md:[&>button]:min-h-11 max-sm:flex-wrap max-sm:[&>button]:flex-auto max-sm:[&>button]:justify-center max-sm:[&>button:last-child:nth-child(n+3)]:basis-full max-sm:[&>button:last-child:nth-child(n+3)]:order-first ${className}`}
+    className={`modal-footer sticky bottom-0 z-10 -mx-5 sm:-mx-6 !mt-6 px-5 sm:px-6 py-4 bg-white border-t border-slate-100 flex items-center gap-3 [&>button]:whitespace-nowrap [&>button]:min-h-10 max-md:[&>button]:min-h-11 max-sm:[&>button]:flex-auto max-sm:[&>button]:justify-center ${className}`}
   >
     {children}
   </div>
