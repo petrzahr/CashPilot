@@ -1175,7 +1175,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </span>
                                   )}
                                   {isCorrection ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
                                       Korekce
                                     </span>
                                   ) : (
@@ -1382,7 +1382,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                             </span>
                           )}
                           {isCorrection && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold shrink-0">
+                            <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600 shrink-0">
                               Korekce
                             </span>
                           )}
@@ -1419,7 +1419,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       <td className="py-3 px-4">
                         {/* Stejný štítek jako v zobrazení po dnech: korekce má vlastní štítek, ostatní stav lze změnit */}
                         {isCorrection ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                          <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
                             Korekce
                           </span>
                         ) : (
