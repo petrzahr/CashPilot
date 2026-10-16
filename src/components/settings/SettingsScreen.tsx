@@ -424,7 +424,7 @@ export const SettingsScreen: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={acc.isUsableCash}
@@ -434,7 +434,7 @@ export const SettingsScreen: React.FC = () => {
                       <span className="font-medium text-slate-500">Použitelné peníze</span>
                     </label>
 
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={acc.isNetWorth}
@@ -608,7 +608,7 @@ export const SettingsScreen: React.FC = () => {
                     >
                       Zálohovat nyní
                     </button>
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <label className="flex items-center gap-2 max-md:min-h-11 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={driveBackupEnabled}

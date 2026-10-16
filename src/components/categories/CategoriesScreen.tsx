@@ -118,7 +118,7 @@ export const CategoriesScreen: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-medium text-slate-500 cursor-pointer select-none">
+          <label className="flex items-center gap-2 max-md:min-h-11 text-xs font-medium text-slate-500 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
