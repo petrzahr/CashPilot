@@ -4,9 +4,9 @@ import { Transaction, TransactionStatus } from '../../types/finance';
 
 // Volby stavu položky: jantar čeká, zelená proběhla, šedá je zrušená
 const STATUS_ITEMS: { value: TransactionStatus; label: string; Icon: LucideIcon; badgeClass: string; activeClass: string; iconClass: string }[] = [
-  { value: 'planned', label: 'Plánovaná', Icon: Clock, badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100', activeClass: 'text-amber-700 bg-amber-50/60', iconClass: 'text-amber-600' },
-  { value: 'executed', label: 'Uskutečněná', Icon: Check, badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100', activeClass: 'text-emerald-700 bg-emerald-50/60', iconClass: 'text-emerald-600' },
-  { value: 'cancelled', label: 'Zrušená', Icon: Ban, badgeClass: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200', activeClass: 'text-slate-500 bg-slate-100', iconClass: 'text-slate-500' },
+  { value: 'planned', label: 'Plánovaná', Icon: Clock, badgeClass: 'bg-amber-50 text-amber-700 hover:bg-amber-100', activeClass: 'text-amber-700 bg-amber-50/60', iconClass: 'text-amber-600' },
+  { value: 'executed', label: 'Uskutečněná', Icon: Check, badgeClass: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100', activeClass: 'text-emerald-700 bg-emerald-50/60', iconClass: 'text-emerald-600' },
+  { value: 'cancelled', label: 'Zrušená', Icon: Ban, badgeClass: 'bg-slate-100 text-slate-500 hover:bg-slate-200', activeClass: 'text-slate-500 bg-slate-100', iconClass: 'text-slate-500' },
 ];
 
 /** Text, proč nejde vrátit minulou položku do plánu (plánované položky s dnešním či starším datem se samy uskuteční). */
@@ -75,6 +75,8 @@ export const StatusBadgeMenu: React.FC<StatusBadgeMenuProps> = ({ tx, todayIso, 
       onBlur={handleBlur}
     >
       {isOpen && <div className="fixed inset-0 z-20 cursor-default" onClick={() => close(false)} />}
+      {/* Tichý štítek: bez rámečku a s menším okrajem, aby nepřebíjel název a částku; text zůstává 12px.
+          Dotyková plocha na mobilu se zvětšuje neviditelným ::after. */}
       <button
         ref={triggerRef}
         type="button"
@@ -85,15 +87,15 @@ export const StatusBadgeMenu: React.FC<StatusBadgeMenuProps> = ({ tx, todayIso, 
         aria-label={`Stav položky ${tx.title}: ${current.label}. Změnit stav`}
         title="Změnit stav položky (Plánovaná, Uskutečněná, Zrušená)"
         onClick={() => setIsOpen(prev => !prev)}
-        className={`max-md:min-h-6 relative max-md:after:absolute max-md:after:-inset-2.5 max-md:after:content-[''] inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-all cursor-pointer select-none ${current.badgeClass} ${
+        className={`relative max-md:after:absolute max-md:after:-inset-3 max-md:after:content-[''] inline-flex items-center gap-0.5 pl-1 pr-1.5 py-px rounded-md text-xs font-medium leading-4 transition-colors cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${current.badgeClass} ${
           isUpdating ? 'opacity-70 cursor-wait' : ''
         }`}
       >
         {isUpdating
-          ? <Loader2 className="w-3 h-3 animate-spin text-sky-600" aria-hidden="true" />
-          : <current.Icon className="w-3 h-3 shrink-0" aria-hidden="true" />}
+          ? <Loader2 className="w-2.5 h-2.5 animate-spin text-sky-600" aria-hidden="true" />
+          : <current.Icon className="w-2.5 h-2.5 shrink-0" strokeWidth={2.5} aria-hidden="true" />}
         <span>{current.label}</span>
-        <ChevronDown aria-hidden="true" className={`w-2.5 h-2.5 opacity-60 transition-transform motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown aria-hidden="true" className={`w-2.5 h-2.5 opacity-50 transition-transform motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

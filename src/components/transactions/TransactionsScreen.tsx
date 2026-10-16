@@ -450,7 +450,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
     // Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek
     const status = isCorrection ? (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+      <span className="inline-flex items-center px-1.5 py-px rounded-md text-xs font-medium leading-4 bg-slate-100 text-slate-600">
         Korekce
       </span>
     ) : (
