@@ -158,7 +158,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 - **Headline** (700, 16px): název obrazovky v hlavičce a nadpisy sekcí v Nastavení.
 - **Title** (700, 14px): nadpisy karet, názvy kategorií a účtů.
 - **Body** (500, 12px, tabulkové číslice): data, řádky tabulek, popisy, formulářové popisky.
-- **Label** (700, 12px, velká písmena, prostrkání 0,05em): krátké nadpisy skupin a KPI popisky.
+- **Label** (700, 12px, velká písmena, prostrkání 0,05em): krátké nadpisy skupin a popisky hlavních KPI. Popisky běžných číselných dlaždic (např. 14 dlaždic Rozpočtu) jsou v řezu Body, aby se hlavní čísla odlišila od vedlejších.
 
 ### Named Rules
 **The 12px Floor Rule.** Žádný text není menší než 12px, ani štítky, osy grafů a metadata. Méně důležité se odlišuje barvou a řezem, ne zmenšením.
@@ -217,7 +217,7 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 - **Style:** svislý seznam v postranním panelu, 12px semibold s ikonou 16px; aktivní položka modrý nádech a hluboká modř, `aria-current="page"`. Na mobilu zásuvka nad ztmavením, zavíraná křížkem nebo klepnutím mimo.
 
 ### Rozpočtová karta (signature)
-KPI karta: popisek velkými písmeny 12px, pod ním částka 24px extrabold v tabulkových číslicích, barevná jen když nese význam (příjem, výdaj, investice).
+Hlavní KPI karta: popisek velkými písmeny 12px, pod ním částka 24px extrabold v tabulkových číslicích, barevná jen když nese význam (příjem, výdaj, investice).
 
 ## Do's and Don'ts
 
