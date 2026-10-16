@@ -483,7 +483,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => openCorrection(tx)}
           title="Detail a poznámka korekce"
           aria-label={`Detail a poznámka korekce: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Eye className="w-4 h-4" />
         </button>
@@ -492,7 +492,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => void deleteCorrection(tx.id)}
           title="Smazat korekci"
           aria-label={`Smazat korekci: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+          className="btn-icon btn-icon-danger"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -504,7 +504,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => onEditTransaction(tx)}
           title="Upravit položku"
           aria-label={`Upravit položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -512,7 +512,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => duplicateTransaction(tx)}
           title="Duplikovat položku"
           aria-label={`Duplikovat položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Copy className="w-4 h-4" />
         </button>
@@ -521,7 +521,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           disabled={isDeletingTx}
           title="Smazat položku"
           aria-label={`Smazat položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+          className="btn-icon btn-icon-danger"
         >
           <Trash2 className="w-4 h-4" />
         </button>

@@ -75,10 +75,8 @@ const CATEGORY_ROW_BG = 'bg-table-category';
 // Lehce fialové podbarvení plateb, které se neopakují měsíčně (neprůhledné kvůli ukotveným buňkám)
 const NON_MONTHLY_ROW_BG = 'bg-table-nonmonthly';
 
-const iconButtonClass =
-  'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
-const deleteButtonClass =
-  'max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-md text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:hover:bg-transparent';
+const iconButtonClass = 'btn-icon';
+const deleteButtonClass = 'btn-icon btn-icon-danger';
 
 interface Draft {
   title: string;
@@ -314,13 +312,13 @@ const SectionTable: React.FC<SectionTableProps> = ({
         </td>
         <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} ${rowBg}`}>
           {isDeleted ? (
-            <button type="button" title="Vrátit zpět" aria-label={`Vrátit zpět: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
+            <button type="button" title="Vrátit zpět" aria-label={`Vrátit zpět: ${item.title}`} className="btn-icon btn-icon-restore" onClick={() => onRestore(item)}>
               <RotateCcw className="w-4 h-4" />
             </button>
           ) : (
             <>
               {item.simState === 'edited' && (
-                <button type="button" title="Vrátit původní hodnoty" aria-label={`Vrátit původní hodnoty: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
+                <button type="button" title="Vrátit původní hodnoty" aria-label={`Vrátit původní hodnoty: ${item.title}`} className="btn-icon btn-icon-restore" onClick={() => onRestore(item)}>
                   <RotateCcw className="w-4 h-4" />
                 </button>
               )}
