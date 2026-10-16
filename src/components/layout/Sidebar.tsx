@@ -199,15 +199,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="shrink-0 px-3 py-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
           {/* Přehled platí k dnešku, ne k období vybranému v záhlaví.
               Nejdřív hlavní číslo (majetek jako KPI), pod linkou jeho rozpis po druzích účtů. */}
-          <div className="pb-2.5 border-b border-slate-200">
-            <p className="flex items-baseline justify-between gap-2">
-              <span className="min-w-0 font-semibold text-slate-500 uppercase tracking-wide truncate">Celkový majetek</span>
-              <span className="shrink-0 text-slate-500 tabular-nums" title="Stav k dnešku">{formatCzechDate(getTodayInPrague())}</span>
-            </p>
-            <p className={`mt-0.5 text-lg font-extrabold leading-tight tabular-nums truncate ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+          {/* Jeden řádek: vlevo den, ke kterému stav platí, vpravo celkový majetek (fialová ho označuje všude v aplikaci) */}
+          <p className="pb-2.5 border-b border-slate-200 flex items-baseline justify-between gap-2" title="Celkový majetek k dnešku">
+            <span className="shrink-0 font-semibold text-slate-500 tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
+            <span className="sr-only">Celkový majetek</span>
+            <span className={`min-w-0 text-lg font-extrabold leading-tight tabular-nums truncate ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}
-            </p>
-          </div>
+            </span>
+          </p>
           <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
