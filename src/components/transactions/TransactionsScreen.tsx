@@ -748,9 +748,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         )}
       </div>
 
-      {/* Seznam položek: na mobilu řádky-karty, od md tabulka */}
+      {/* Seznam položek: do 1024px řádky-karty, od lg tabulka (bez posouvání od 1280px) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <ul className="md:hidden divide-y divide-slate-100 text-xs">
+        <ul className="lg:hidden divide-y divide-slate-100 text-xs">
           {filteredTransactions.length === 0 ? (
             <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>
           ) : (
@@ -790,13 +790,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           )}
         </ul>
 
-        <div className="max-md:hidden overflow-x-auto">
-          <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
+        <div className="max-lg:hidden overflow-x-auto">
+          <table className="w-full min-w-[960px] text-left text-xs whitespace-nowrap table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold select-none">
                 <th
                   aria-sort={dateSortOrder === 'asc' ? 'ascending' : 'descending'}
-                  className="w-[110px] p-0"
+                  className="w-[100px] p-0"
                 >
                   <button
                     type="button"
@@ -813,7 +813,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                   </button>
                 </th>
                 <th
-                  className="w-[70px] py-2.5 px-3 text-center"
+                  className="w-[64px] py-2.5 px-3 text-center"
                   title="Pořadí v rámci dne"
                 >
                   <span>Pořadí</span>
@@ -821,10 +821,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 <th className="min-w-[160px] py-2.5 px-4">
                   <span>Název položky</span>
                 </th>
-                <th className="w-[160px] py-2.5 px-4">Kategorie</th>
-                <th className="w-[150px] py-2.5 px-4">Účet</th>
-                <th className="w-[140px] py-2.5 px-4">Stav</th>
-                <th className="w-[120px] py-2.5 px-4 text-right">
+                <th className="w-[140px] py-2.5 px-4">Kategorie</th>
+                <th className="w-[130px] py-2.5 px-4">Účet</th>
+                <th className="w-[124px] py-2.5 px-4">Stav</th>
+                <th className="w-[116px] py-2.5 px-4 text-right">
                   <span>Částka</span>
                 </th>
                 <th className="w-[170px] py-2.5 px-4 text-right">Akce</th>
