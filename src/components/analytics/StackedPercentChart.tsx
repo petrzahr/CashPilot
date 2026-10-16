@@ -65,7 +65,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
 
   if (!hasData) {
     return (
-      <div className="card p-8 text-center text-slate-500 text-xs">
+      <div className="card empty-state">
         {emptyText}
       </div>
     );

@@ -206,6 +206,9 @@ Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@laye
 ### Segmented controls
 - **Recept (`segmented` + `segment`):** podklad výplň, 4px vnitřní okraj a mezera, volba 12px semibold, celková výška 32px (na dotyku 52px). Vybraná volba (`aria-pressed="true"`) je povrch se stínem; barvu má jen podle významu (výdaj červeně, příjem zeleně, celkový majetek fialově), jinak inkoust.
 
+### Empty states
+- **Recept (`empty-state`):** na střed, 32px nahoře a dole, 12px vedlejší inkoust. Volitelný nadpis nad textem je 14px tučně. Stejný v kartě, v tabulce i jako samostatná karta (`card empty-state`).
+
 ### Panels
 - **Recept (`panel` + `panel-error` / `panel-warning` / `panel-info`):** odsazení 12px, zaoblení 12px, 1px linka, 12px text. Chyba červená, varování jantarová, informace modrá. Ikona vlevo (`flex items-start gap-2.5`) nebo skládaný obsah (`space-y-2`) doplní místo použití.
 

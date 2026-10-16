@@ -801,7 +801,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="empty-state">
                     {emptyListMessage}
                   </td>
                 </tr>

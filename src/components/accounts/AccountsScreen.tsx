@@ -213,7 +213,7 @@ export const AccountsScreen: React.FC = () => {
       </div>
 
       {displayedAccounts.length === 0 && (
-        <div className="card p-8 text-center space-y-1">
+        <div className="card empty-state">
           <p className="text-sm font-semibold text-slate-900">
             {accounts.length === 0 ? 'Zatím nemáte žádný účet' : 'Žádný účet neodpovídá výběru'}
           </p>

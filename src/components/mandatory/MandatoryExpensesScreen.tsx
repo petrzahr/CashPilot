@@ -412,7 +412,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
           </table>
         </div>
       ) : (
-        <div className="py-8 text-center text-xs text-slate-500">
+        <div className="empty-state">
           Žádné aktivní opakované platby tohoto typu. Do simulace je můžete přidat tlačítkem Přidat.
         </div>
       )}

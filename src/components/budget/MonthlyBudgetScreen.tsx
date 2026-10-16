@@ -1057,7 +1057,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {viewMode === 'daily' ? (
           <div className="divide-y divide-slate-100">
             {dayGroups.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 text-sm">
+              <div className="empty-state">
                 {emptyListMessage}
               </div>
             ) : (
@@ -1360,7 +1360,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {sortedListTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="empty-state">
                     {emptyListMessage}
                   </td>
                 </tr>

@@ -130,7 +130,7 @@ export const CategoriesScreen: React.FC = () => {
       </div>
 
       {mainCategories.length === 0 && (
-        <div className="card p-8 text-center space-y-1">
+        <div className="card empty-state">
           <p className="text-sm font-semibold text-slate-900">
             {activeTab === 'expense' ? 'Zatím žádné výdajové kategorie' : 'Zatím žádné příjmové kategorie'}
           </p>

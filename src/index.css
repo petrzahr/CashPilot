@@ -88,6 +88,10 @@
   .segment[aria-pressed='true'] {
     @apply bg-white text-slate-900 shadow-sm;
   }
+  /* Prázdný stav: na střed, 32 px nahoře a dole, 12px vedlejší inkoust; případný nadpis nad textem je 14px tučně */
+  .empty-state {
+    @apply py-8 px-5 text-center text-xs text-slate-500 space-y-1;
+  }
   /* Barevný panel: chyba, varování, informace. Rozložení obsahu (flex, space-y) si určuje místo použití. */
   .panel {
     @apply p-3 rounded-xl border text-xs leading-relaxed;
