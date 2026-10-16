@@ -49,61 +49,64 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
   };
 
   return (
-    <div className="theme-light min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="max-w-xl w-full bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <AlertTriangle className="w-8 h-8" />
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6">
+      {/* Stejná plocha a karta jako přihlášení: chyba je hlášená obsahem, ne jiným vzhledem aplikace */}
+      <div className="max-w-xl w-full bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="flex items-start gap-3">
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+            <AlertTriangle className="w-6 h-6" aria-hidden="true" />
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
               Data aplikace se nepodařilo bezpečně načíst
             </h1>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 mt-1">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 mt-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
               <span>Uložená data zůstala beze změny</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-700/50 space-y-2 text-xs sm:text-sm text-slate-300">
-          <p className="font-semibold text-slate-200">
+        <div className="bg-amber-50 rounded-xl p-4 space-y-2 text-xs sm:text-sm text-amber-900">
+          <p className="font-semibold">
             {errorMessage || 'Data uložená v tomto prohlížeči jsou poškozená nebo mají neplatný formát.'}
           </p>
-          <p className="text-slate-400 text-xs">
+          <p className="text-xs text-amber-800">
             Automatické ukládání je pozastavené, aby se nic nepřepsalo.
             {recoveryKey && ` Kopie poškozených dat je v prohlížeči uložená pod klíčem „${recoveryKey}“.`}
           </p>
         </div>
 
         {restoreError && (
-          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl text-xs">
+          <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
             {restoreError}
           </div>
         )}
 
-        <div className="space-y-3 pt-2">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="space-y-3">
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             Jak pokračovat
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Tlačítko Stáhnout poškozená data */}
             <button
+              type="button"
               onClick={handleDownloadCorrupted}
               disabled={!corruptedRaw}
-              className="flex items-center justify-center gap-2.5 px-4 py-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-semibold text-white transition-all disabled:opacity-50"
+              className="min-h-10 max-md:min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 hover:text-sky-700 hover:border-sky-300 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:border-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
             >
-              <Download className="w-4 h-4 text-sky-400" />
+              <Download className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Stáhnout poškozená data (JSON)</span>
             </button>
 
             {/* Tlačítko Obnovit ze zálohy */}
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center justify-center gap-2.5 px-4 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg transition-all"
+              className="min-h-10 max-md:min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Obnovit ze zálohy (JSON)</span>
             </button>
             <input
@@ -115,20 +118,22 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-700/60 text-xs">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200 text-xs font-semibold">
             <button
+              type="button"
               onClick={onRetry}
-              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
+              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-slate-500 hover:text-sky-700 hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Načíst znovu</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setConfirmResetOpen(true)}
-              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors"
+              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Začít s prázdnými daty</span>
             </button>
           </div>

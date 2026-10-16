@@ -7,7 +7,7 @@
  * světlé odstíny slate-500 a sky/emerald/amber/red-600 jsou mírně ztmavené pro kontrast AA,
  * světlý sky-500 (fokus prstenec a okraj pole) drží aspoň 3:1 vůči povrchu i plátnu.
  * Tmavé jantarové podklady (amber-50 až 200) jsou teplé hnědé, aby nesplývaly s červenými.
- * .theme-light uzamkne podstrom ve světlých hodnotách (např. záměrně tmavá chybová obrazovka).
+ * .theme-light uzamkne podstrom ve světlých hodnotách (pro výjimečné prvky, které se nesmí přepnout).
  */
 :root, .theme-light {
   --c-white: 255 255 255;
