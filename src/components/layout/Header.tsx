@@ -228,8 +228,9 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center bg-slate-100 rounded-xl p-1 max-[359px]:p-0 text-xs shrink-0">
           <button
             onClick={goToPreviousPeriod}
-            title="Předchozí období"
+            title="Předchozí období (←)"
             aria-label="Předchozí období"
+            aria-keyshortcuts="ArrowLeft"
             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -246,8 +247,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={goToNextPeriod}
-            title="Následující období"
+            title="Následující období (→)"
             aria-label="Následující období"
+            aria-keyshortcuts="ArrowRight"
             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white transition-all shrink-0"
           >
             <ChevronRight className="w-4 h-4" />

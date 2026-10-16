@@ -79,6 +79,36 @@ const MainLayout: React.FC = () => {
     setIsTxModalOpen(true);
   };
 
+  // Klávesové zkratky: N = nová položka, ←/→ = předchozí/následující období.
+  // Neplatí při psaní do pole, v otevřeném dialogu ani v ovladači, který šipky používá sám.
+  const { goToPreviousPeriod, goToNextPeriod } = useFinance();
+  const openNewTxRef = useRef(handleOpenNewTx);
+  openNewTxRef.current = handleOpenNewTx;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (isTxModalOpen || mobileMenuOpen || document.querySelector('[role="dialog"]')) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target !== document.body) {
+        if (target.isContentEditable || target.closest('input, textarea, select, [role="tablist"], [role="radiogroup"], [role="listbox"], [role="menu"], [role="slider"]')) return;
+        // Vodorovně posouvatelný kontejner (široká tabulka) šipky potřebuje k posunu
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && target.scrollWidth > target.clientWidth) return;
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        openNewTxRef.current();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToPreviousPeriod();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToNextPeriod();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isTxModalOpen, mobileMenuOpen, goToPreviousPeriod, goToNextPeriod]);
+
   const getScreenTitle = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
