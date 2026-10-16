@@ -670,7 +670,7 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
     );
 
     // Přítomnost oddělovací linky před Celkovým jměním
-    expect(html).toContain('border-t border-slate-200/80');
+    expect(html).toContain('border-t border-slate-200');
     // Přítomnost formátování v Kč
     expect(html).toContain('Kč');
     // Třída tabular-nums pro zarovnání čísel

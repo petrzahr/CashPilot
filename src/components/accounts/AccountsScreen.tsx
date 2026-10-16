@@ -185,7 +185,7 @@ export const AccountsScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Hlavička správy účtů */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
           <MultiSelectDropdown
             placeholder="Všechny typy účtů"
@@ -220,7 +220,7 @@ export const AccountsScreen: React.FC = () => {
       </div>
 
       {displayedAccounts.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-sm text-center space-y-1">
+        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center space-y-1">
           <p className="text-sm font-semibold text-slate-900">
             {accounts.length === 0 ? 'Zatím nemáte žádný účet' : 'Žádný účet neodpovídá výběru'}
           </p>
@@ -266,7 +266,7 @@ export const AccountsScreen: React.FC = () => {
               className={`group bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
                 acc.status === 'archived'
                   ? 'border-slate-200 !bg-slate-50 border-dashed'
-                  : 'border-slate-200/80 hover:border-slate-300'
+                  : 'border-slate-200 hover:border-slate-300'
               } ${draggedAccountId === acc.id ? 'opacity-50' : ''} ${
                 dropTargetAccountId === acc.id && draggedAccountId !== acc.id
                   ? 'ring-2 ring-sky-400 border-sky-300'
@@ -353,7 +353,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Finanční zůstatek */}
-              <div className="p-4 bg-slate-50/70 border border-slate-100 rounded-xl space-y-1">
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
                 <span className="text-xs text-slate-500 font-medium block">
                   Očekávaný zůstatek
                 </span>
@@ -364,7 +364,7 @@ export const AccountsScreen: React.FC = () => {
                 </div>
 
                 {isInvestment && (
-                  <div className="pt-2 mt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                  <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between text-xs">
                     <span className="text-slate-500">
                       {`Vklady: ${formatCurrency(contributedPrincipal)}`}
                       {feesTotal !== 0 && <>

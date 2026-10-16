@@ -374,8 +374,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
 
     const rowTone = isCancelled
-      ? 'line-through decoration-slate-400 bg-slate-50/70 text-slate-500'
-      : isCorrection ? 'bg-slate-50/60' : conflict ? 'bg-rose-50/30' : '';
+      ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500'
+      : isCorrection ? 'bg-slate-50' : conflict ? 'bg-red-50/30' : '';
 
     const title = (
       <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
@@ -403,10 +403,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         )}
         {conflict && (
           <span
-            className="text-xs px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-semibold flex items-center gap-1 cursor-help shrink-0"
+            className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold flex items-center gap-1 cursor-help shrink-0"
             title={conflict.reason}
           >
-            <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+            <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
             Před aktivací
           </span>
         )}
@@ -602,7 +602,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       )}
 
       {/* Horní akční lišta */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -749,7 +749,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </div>
 
       {/* Seznam položek: na mobilu řádky-karty, od md tabulka */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <ul className="md:hidden divide-y divide-slate-100 text-xs">
           {filteredTransactions.length === 0 ? (
             <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>
@@ -793,7 +793,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <div className="max-md:hidden overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
             <thead>
-              <tr className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold select-none">
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold select-none">
                 <th
                   aria-sort={dateSortOrder === 'asc' ? 'ascending' : 'descending'}
                   className="w-[110px] p-0"
@@ -841,7 +841,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 filteredTransactions.map((tx, rowIndex) => {
                   const p = getRowParts(tx, rowIndex);
                   return (
-                    <tr key={tx.id} className={`hover:bg-slate-50/80 transition-colors ${p.rowTone}`}>
+                    <tr key={tx.id} className={`hover:bg-slate-50 transition-colors ${p.rowTone}`}>
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
                       </td>

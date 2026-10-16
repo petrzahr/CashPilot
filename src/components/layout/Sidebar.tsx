@@ -124,12 +124,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         ref={asideRef}
         {...drawerAttributes}
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-slate-200/80 flex flex-col transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Logo a záhlaví: výška a spodní linka navazují na hlavičku obsahu */}
-        <div className="h-16 shrink-0 px-5 border-b border-slate-200/80 flex items-center justify-between gap-2">
+        <div className="h-16 shrink-0 px-5 border-b border-slate-200 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 text-white flex items-center justify-center shadow-md">
               <img src="./favicon.svg?v=3" alt="" className="w-full h-full rounded-xl" />
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
-        <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200/70 rounded-2xl space-y-2 text-xs">
+        <div className="shrink-0 p-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
           {/* Přehled platí k dnešku, ne k období vybranému v záhlaví */}
           <p className="font-semibold text-slate-500">K dnešku {formatCzechDate(getTodayInPrague())}</p>
           <div className="space-y-1.5">
@@ -230,7 +230,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <div className="border-t border-slate-200/80 pt-2 flex items-center justify-between">
+          <div className="border-t border-slate-200 pt-2 flex items-center justify-between">
             <span className="font-bold text-slate-500 truncate pr-2" title="Celkový majetek">Celkový majetek</span>
             <span className={`shrink-0 font-extrabold text-sm tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(quickOverview.totalNetWorthInHaler)}

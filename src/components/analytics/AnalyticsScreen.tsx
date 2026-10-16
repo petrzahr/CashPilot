@@ -195,7 +195,7 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 5. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
               Trend výdajů mezi obdobími
@@ -210,7 +210,7 @@ export const AnalyticsScreen: React.FC = () => {
               return (
                 <div
                   key={t.monthKey}
-                  className="p-3 rounded-xl bg-white border border-slate-200/80 flex items-center justify-between text-xs"
+                  className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">{t.label}</span>
@@ -249,7 +249,7 @@ export const AnalyticsScreen: React.FC = () => {
         </div>
 
         {/* Finanční extrémy a průměry */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
               Průměry a finanční extrémy
@@ -288,7 +288,7 @@ export const AnalyticsScreen: React.FC = () => {
             </div>
 
             {/* Nejlepší čistá bilance */}
-            <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-1">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
                 Nejlepší čistá bilance
               </span>
@@ -303,7 +303,7 @@ export const AnalyticsScreen: React.FC = () => {
             </div>
 
             {/* Nejhorší čistá bilance */}
-            <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-1">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
                 Nejhorší čistá bilance
               </span>
@@ -318,7 +318,7 @@ export const AnalyticsScreen: React.FC = () => {
             </div>
 
             {/* Průměrný příjem */}
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
                 Průměrný příjem za období
               </span>
@@ -329,7 +329,7 @@ export const AnalyticsScreen: React.FC = () => {
             </div>
 
             {/* Průměrná čistá změna */}
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
                 Průměrná čistá bilance
               </span>
@@ -349,7 +349,7 @@ export const AnalyticsScreen: React.FC = () => {
       </div>
 
       {/* 6. Tabulka Nejvyšší výdaje */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100">
           <h3 className="text-sm font-bold text-slate-900">
             Nejvyšší výdaje ve vybraném období
@@ -360,7 +360,7 @@ export const AnalyticsScreen: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
                   <th className="py-2.5 px-4">Datum</th>
                   <th className="py-2.5 px-4">Položka</th>
                   <th className="py-2.5 px-4">Kategorie</th>

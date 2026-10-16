@@ -659,9 +659,9 @@ function toSharePct(amountInHaler: number, baseInHaler: number): number | null {
 }
 
 export const CASH_FLOW_COMPOSITION_COLORS = {
-  income: '#0284c7',
+  income: '#10b981',
   expense: '#ef4444',
-  actuallySaved: '#10b981',
+  actuallySaved: '#0284c7',
 } as const;
 
 /**

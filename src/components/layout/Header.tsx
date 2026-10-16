@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-    <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 max-[359px]:px-2 sm:px-6 flex items-center justify-between gap-2 max-[359px]:gap-1 select-none">
+    <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 max-[359px]:px-2 sm:px-6 flex items-center justify-between gap-2 max-[359px]:gap-1 select-none">
       {/* Levá strana: mobilní menu + název sekce */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
@@ -147,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-4 z-50 space-y-3 text-xs">
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-white border border-slate-200 shadow-xl p-4 z-50 space-y-3 text-xs">
                 {/* Uživatelský profil / Stav */}
                 <div className="flex items-center gap-2.5 pb-2.5 border-b border-slate-100">
                   {driveUser?.photoLink ? (
@@ -265,7 +265,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden lg:inline whitespace-nowrap">Aktuální období</span>
         </button>
 
-        <div className="flex items-center bg-slate-100/80 rounded-xl p-1 max-[359px]:p-0 text-xs shrink-0">
+        <div className="flex items-center bg-slate-100 rounded-xl p-1 max-[359px]:p-0 text-xs shrink-0">
           <button
             onClick={goToPreviousPeriod}
             title="Předchozí období"

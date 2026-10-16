@@ -64,12 +64,12 @@ const SECTION_TOTAL_COLORS: Record<MandatoryGroup, string> = {
 const STANDARD_FREQUENCIES: RecurrenceFrequency[] = ['monthly', 'bi_monthly', 'quarterly', 'semi_annually', 'annually'];
 
 const inputClass =
-  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
+  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
 
 // Název platby a akce zůstávají viditelné i při vodorovném posunu široké tabulky
 const STICKY_LEFT = 'sticky left-0 z-10';
 const STICKY_RIGHT = 'sticky right-0 z-10';
-// Neprůhledné ekvivalenty bg-slate-50/75 a bg-slate-50/40 na bílé - ukotvené buňky nesmí prosvítat
+// Neprůhledné ekvivalenty bg-slate-50 a bg-slate-50 na bílé - ukotvené buňky nesmí prosvítat
 const HEADER_ROW_BG = 'bg-table-header';
 const CATEGORY_ROW_BG = 'bg-table-category';
 // Lehce fialové podbarvení plateb, které se neopakují měsíčně (neprůhledné kvůli ukotveným buňkám)
@@ -335,7 +335,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-slate-900">{title}</h3>
         <button
@@ -356,7 +356,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
                 <th className={`py-2.5 px-4 ${STICKY_LEFT} ${HEADER_ROW_BG}`}>Položka</th>
                 {!isTransfer && <th className="py-2.5 px-4">Kategorie</th>}
                 <th className="py-2.5 px-4">Účet</th>
@@ -447,14 +447,14 @@ const BeforeAfter: React.FC<{ before?: string; after: string }> = ({ before, aft
 );
 
 const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = ({ changes }) => (
-  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
     <div className="p-4 sm:p-5 border-b border-slate-100">
       <h3 className="text-sm font-bold text-slate-900">Nadcházející změny</h3>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
         <thead>
-          <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
             <th className="py-2.5 px-4">Změna</th>
             <th className={`py-2.5 px-4 ${STICKY_LEFT} ${HEADER_ROW_BG}`}>Položka</th>
             <th className="py-2.5 px-4">Typ</th>
@@ -614,7 +614,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
       <div className="space-y-3">
         <div
           className={`flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border text-xs ${
-            isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200/80'
+            isSimulating ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
           }`}
         >
           <p className="text-slate-500">
@@ -649,7 +649,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
           {cards.map((card) => (
             <div
               key={card.label}
-              className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm"
+              className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm"
               title={card.title}
             >
               <span className="text-xs text-slate-500 block font-medium">{card.label}</span>

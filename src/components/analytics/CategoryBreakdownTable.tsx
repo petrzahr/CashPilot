@@ -17,7 +17,7 @@ const formatShare = (part: number, whole: number) =>
 /** Podbarvení buňky podle výše částky vůči maximu řádku (zvýrazní výkyvy mezi obdobími). */
 const heatStyle = (amount: number, rowMax: number): React.CSSProperties | undefined =>
   rowMax > 0 && amount > 0
-    ? { backgroundColor: `rgba(14, 165, 233, ${(0.03 + 0.17 * (amount / rowMax)).toFixed(3)})` }
+    ? { backgroundColor: `rgb(var(--c-sky-500) / ${(0.03 + 0.17 * (amount / rowMax)).toFixed(3)})` }
     : undefined;
 
 export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ periods, data }) => {
@@ -88,7 +88,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
 
         {isExpanded &&
           row.children.map((child) => (
-            <tr key={child.key} className="bg-slate-50/50">
+            <tr key={child.key} className="bg-slate-50">
               <td className={`${stickyCell} bg-slate-50 py-1.5 pl-12 pr-4 text-slate-600 whitespace-nowrap`}>
                 {child.label}
               </td>
@@ -113,7 +113,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
   };
 
   const renderTotalRow = (label: string, amounts: number[], total: number, colorClass: string) => (
-    <tr className="bg-slate-50/75 border-t border-slate-200">
+    <tr className="bg-slate-50 border-t border-slate-200">
       <td className={`${stickyCell} bg-slate-50 py-2.5 px-4 font-bold whitespace-nowrap ${colorClass}`}>{label}</td>
       {amounts.map((amount, i) => (
         <td key={periods[i].key} className={`py-2.5 px-4 text-right tabular-nums font-bold whitespace-nowrap ${colorClass}`}>
@@ -135,7 +135,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
   const transferRows = data.rows.filter((r) => r.group === 'transfer');
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-slate-900">Přehled podle kategorií</h3>
         <button
@@ -151,7 +151,7 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-slate-50/75 border-b border-slate-200/80 text-slate-500 font-semibold text-xs">
+            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
               <th className={`${stickyCell} bg-slate-50 py-2.5 px-4`}>Kategorie</th>
               {periods.map((p) => (
                 <th key={p.key} className="py-2.5 px-4 text-right whitespace-nowrap">
