@@ -174,7 +174,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button type="button" onClick={() => deleteInvestmentFee(fee.id)} title="Smazat poplatek" aria-label={`Smazat poplatek: ${item.periodName}`}
-                          className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                          className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -217,7 +217,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => deleteMarketValue(snap.id)} title="Smazat tržní hodnotu" aria-label={`Smazat tržní hodnotu z ${formatCzechDate(snap.date)}`}
-                            className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors">
+                            className="max-md:inline-flex items-center justify-center max-md:min-w-11 max-md:min-h-11 p-1.5 text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
