@@ -669,8 +669,9 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
       </FinanceProvider>
     );
 
-    // Přítomnost oddělovací linky před Celkovým jměním
-    expect(html).toContain('border-t border-slate-200');
+    // Celkový majetek stojí nahoře a od rozpisu účtů ho dělí linka
+    expect(html).toContain('border-b border-slate-200');
+    expect(html.indexOf('Celkový majetek')).toBeLessThan(html.indexOf('Běžné účty'));
     // Přítomnost formátování v Kč
     expect(html).toContain('Kč');
     // Třída tabular-nums pro zarovnání čísel
