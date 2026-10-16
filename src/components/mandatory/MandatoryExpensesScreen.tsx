@@ -622,20 +622,10 @@ export const MandatoryExpensesScreen: React.FC = () => {
           }`}
         >
           <p className="text-slate-500">
-            {isSimulating ? (
-              <>
-                <strong className="text-amber-800">Simulace</strong> – hodnoty se liší od skutečných opakovaných plateb
-                (ty zůstávají beze změny).
-              </>
-            ) : (
-              <>
-                Opakované platby platné v rozpočtovém období <strong className="text-slate-700">{overview.periodName}</strong>,
-                nepravidelné platby rozpočítané do měsíců{' '}
-                <span className={`inline-block px-1.5 rounded ${NON_MONTHLY_ROW_BG} text-slate-600`}>(podbarvené, štítek rozpočítaná)</span>.
-                Úpravy zde jsou jen simulace.
-              </>
-            )}
-            {' '}Částky jsou zaokrouhlené na 100 Kč, součty se počítají z přesných hodnot.
+            {isSimulating
+              ? <strong className="text-amber-800">Simulace</strong>
+              : <>Období <strong className="text-slate-700">{overview.periodName}</strong></>}
+            {' '}· zaokrouhleno na 100 Kč
           </p>
           <button
             type="button"
