@@ -12,8 +12,7 @@ import { DataActionConfirmationModal } from './DataActionConfirmationModal';
 import { 
   Download, 
   Upload, 
-  Trash2, 
-  ShieldAlert, 
+  Trash2,
   Calendar, 
   Layers, 
   CheckCircle2, 
@@ -745,31 +744,26 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Nebezpečná zóna */}
-            <div className="pt-2">
-              <div className="p-4 sm:p-5 rounded-2xl border-2 border-red-100 bg-red-50/30 space-y-3">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-red-600" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-red-700">
-                    Nebezpečná zóna
-                  </h3>
-                </div>
+            {/* Smazání všeho: stejný řádek jako výše, váhu nese plné červené tlačítko */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Smazat vše
+              </h3>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">Smazat všechna data</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Smaže účty, položky, kategorie i nastavení. Aplikace začne od nuly.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmResetAllOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
-                  >
-                    Smazat všechna data
-                  </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Smazat všechna data</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Smaže účty, položky, kategorie i nastavení. Aplikace začne od nuly.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmResetAllOpen(true)}
+                  className="max-md:min-h-11 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
+                >
+                  Smazat všechna data
+                </button>
               </div>
             </div>
 

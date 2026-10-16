@@ -332,7 +332,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(html).not.toContain('Zkontrolovat a vyčistit ukázková data');
     expect(html).not.toContain('ukázkových účtů');
     expect(html).toContain('Smazat část dat');
-    expect(html).toContain('Nebezpečná zóna');
+    expect(html).toContain('Smazat vše');
   });
 
   // 2. Vymazání transakcí odstraní všechny finanční položky
