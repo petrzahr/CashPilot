@@ -90,29 +90,23 @@ export const CategoriesScreen: React.FC = () => {
       {/* Hlavička správy kategorií */}
       <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Přepínač záložek: Příjmy vs Výdaje */}
-        <div role="group" aria-label="Typ kategorií" className="h-8 max-md:h-[52px] w-full sm:w-56 flex gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
+        <div role="group" aria-label="Typ kategorií" className="segmented w-full sm:w-56 flex shrink-0">
           <button
+            type="button"
             onClick={() => setActiveTab('expense')}
             aria-pressed={activeTab === 'expense'}
-            className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'expense'
-                ? 'bg-white text-red-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+            className={`segment flex-1 ${activeTab === 'expense' ? 'text-red-600' : ''}`}
           >
-            <TrendingDown className="w-4 h-4" />
+            <TrendingDown className="w-3.5 h-3.5" />
             <span>Výdaje</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('income')}
             aria-pressed={activeTab === 'income'}
-            className={`flex-1 flex items-center justify-center gap-2 h-full text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'income'
-                ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+            className={`segment flex-1 ${activeTab === 'income' ? 'text-emerald-600' : ''}`}
           >
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-3.5 h-3.5" />
             <span>Příjmy</span>
           </button>
         </div>

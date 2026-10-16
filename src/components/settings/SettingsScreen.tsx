@@ -463,7 +463,7 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            <div role="group" aria-label="Vzhled aplikace" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl max-w-md">
+            <div role="group" aria-label="Vzhled aplikace" className="segmented grid grid-cols-3 max-w-md">
               {THEME_OPTIONS.map((option) => {
                 const active = themePreference === option.value;
                 return (
@@ -472,11 +472,9 @@ export const SettingsScreen: React.FC = () => {
                     type="button"
                     aria-pressed={active}
                     onClick={() => handleThemeChange(option.value)}
-                    className={`min-h-11 flex flex-col sm:flex-row items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                      active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                    }`}
+                    className="segment px-2"
                   >
-                    <span className={active ? 'text-sky-600' : ''}>{option.icon}</span>
+                    <span>{option.icon}</span>
                     <span>{option.label}</span>
                   </button>
                 );

@@ -75,6 +75,19 @@
   .card-header {
     @apply px-5 py-4 border-b border-slate-100;
   }
+  /* Segmentový přepínač: šedý podklad, vybraná volba bílá se stínem (aria-pressed).
+     Barvu podle významu (výdaj, příjem, majetek) přidává místo použití jen vybrané volbě.
+     Celková výška 32 px jako tlačítka v liště, na dotyku 52 px. Rozložení (flex/grid, šířka) určuje místo. */
+  .segmented {
+    @apply gap-1 p-1 bg-slate-100 rounded-xl;
+  }
+  .segment {
+    @apply flex items-center justify-center gap-1.5 min-h-6 max-md:min-h-11 px-3 py-1 rounded-lg text-xs font-semibold text-slate-500 transition-colors cursor-pointer;
+    @apply hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40;
+  }
+  .segment[aria-pressed='true'] {
+    @apply bg-white text-slate-900 shadow-sm;
+  }
   /* Barevný panel: chyba, varování, informace. Rozložení obsahu (flex, space-y) si určuje místo použití. */
   .panel {
     @apply p-3 rounded-xl border text-xs leading-relaxed;

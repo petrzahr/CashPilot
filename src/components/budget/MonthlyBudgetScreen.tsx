@@ -918,14 +918,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-              <div className="h-8 max-md:h-[52px] flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
+              <div className="segmented flex items-center">
                 <button
                   type="button"
                   onClick={() => setViewMode('daily')}
                   aria-pressed={viewMode === 'daily'}
-                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
-                    viewMode === 'daily' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                  className="segment"
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Po dnech</span>
@@ -935,9 +933,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   type="button"
                   onClick={() => setViewMode('list')}
                   aria-pressed={viewMode === 'list'}
-                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
-                    viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                  className="segment"
                 >
                   <List className="w-3.5 h-3.5" />
                   <span>Seznam</span>
