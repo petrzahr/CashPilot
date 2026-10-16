@@ -140,7 +140,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </form>
 
           {/* Upozornění na neměnnost finanční částky */}
-          <div className="flex items-start gap-2 p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900">
+          <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
               Částku korekce nejde upravit, protože z ní vycházejí všechny další zůstatky. Pokud nesedí, korekci smažte a na účtu znovu zvolte Srovnat s bankou.
