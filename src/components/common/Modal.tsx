@@ -8,6 +8,8 @@ interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   maxWidth?: string;
+  /** Zavření, které mohlo přijít omylem (klepnutí mimo dialog, Escape); výchozí je onClose */
+  onDismissAttempt?: () => void;
 }
 
 /** Identifikátory otevřených dialogů v pořadí otevření; poslední je nahoře. */
@@ -22,8 +24,10 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   children,
-  maxWidth = 'max-w-lg'
+  maxWidth = 'max-w-lg',
+  onDismissAttempt,
 }) => {
+  const dismiss = onDismissAttempt ?? onClose;
   const titleId = useId();
   const subtitleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -44,11 +48,11 @@ export const Modal: React.FC<ModalProps> = ({
       if (e.key !== 'Escape' || e.defaultPrevented) return;
       if (openModalStack[openModalStack.length - 1] !== titleId) return;
       e.preventDefault();
-      onClose();
+      dismiss();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, titleId]);
+  }, [isOpen, dismiss, titleId]);
 
   // Přesun fokusu do dialogu při otevření a jeho vrácení na původní prvek po zavření
   useEffect(() => {
@@ -93,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         className="fixed inset-0 bg-scrim/40 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={dismiss}
       />
       {/* Hlavička a patička stojí, posouvá se jen obsah; dialog se vždy vejde do viditelné výšky */}
       <div
