@@ -135,7 +135,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
       <div className="p-5 space-y-4">
       {/* Hlavička karty */}
       <div>
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
       </div>
 
       {/* SVG Canvas */}

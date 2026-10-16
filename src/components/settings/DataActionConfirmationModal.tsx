@@ -83,9 +83,9 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
 
         {/* Počty dotčených záznamů */}
         <div className="space-y-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
             Co se smaže
-          </h4>
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {affectedRecords.map((item, idx) => (
               <div

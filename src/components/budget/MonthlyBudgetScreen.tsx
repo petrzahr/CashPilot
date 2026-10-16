@@ -665,7 +665,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h4>
+              <h2 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h2>
               <p className="text-xs text-amber-700 leading-relaxed">
                 Souhrn období se počítá z výchozího účtu. V sekci <strong>Účty</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
               </p>
@@ -821,7 +821,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h3>
+        <h2 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
             <div
@@ -885,7 +885,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-slate-900">Položky období</h3>
+                <h2 className="text-sm font-bold text-slate-900">Položky období</h2>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                   {periodTransactions.length}
                 </span>

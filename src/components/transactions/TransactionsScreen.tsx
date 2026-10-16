@@ -606,7 +606,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-bold text-slate-900">Položky</h3>
+              <h2 className="text-sm font-bold text-slate-900">Položky</h2>
               <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-500 rounded-md">
                 {filteredTransactions.length}
               </span>

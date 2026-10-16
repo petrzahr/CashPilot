@@ -197,9 +197,9 @@ export const AnalyticsScreen: React.FC = () => {
         {/* Trend výdajů */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-slate-900">
               Trend výdajů mezi obdobími
-            </h3>
+            </h2>
           </div>
 
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -251,9 +251,9 @@ export const AnalyticsScreen: React.FC = () => {
         {/* Finanční extrémy a průměry */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-slate-900">
               Průměry a finanční extrémy
-            </h3>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -351,9 +351,9 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 6. Tabulka Nejvyšší výdaje */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-100">
-          <h3 className="text-sm font-bold text-slate-900">
+          <h2 className="text-sm font-bold text-slate-900">
             Nejvyšší výdaje ve vybraném období
-          </h3>
+          </h2>
         </div>
 
         {topExpenses.length > 0 ? (

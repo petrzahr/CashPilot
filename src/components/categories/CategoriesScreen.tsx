@@ -173,14 +173,14 @@ export const CategoriesScreen: React.FC = () => {
                     style={{ backgroundColor: mainCat.color }}
                   />
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
                         <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
                           Archivovaná
                         </span>
                       )}
-                    </h3>
+                    </h2>
                   </div>
                 </div>
 

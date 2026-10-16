@@ -92,8 +92,10 @@ export const LoginScreen: React.FC = () => {
         </div>
 
         {/* Žádost o přístup: aplikace je jen pro schválené testovací uživatele */}
-        <div className="pt-5 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1">
+        <div className="pt-5 border-t border-slate-100 text-center text-xs text-slate-500 space-y-1 select-text">
           <h2 className="font-semibold text-slate-600">Nemáte přístup?</h2>
+          {/* Adresa je vidět i jako text, aby šla označit a zkopírovat ručně */}
+          <p className="select-all text-slate-600 break-all">{ACCESS_REQUEST_EMAIL}</p>
           <div className="flex flex-col items-center">
             <a
               href={buildGmailComposeUrl()}

@@ -592,7 +592,7 @@ export const SettingsScreen: React.FC = () => {
                 {/* Synchronizace má jediné tlačítko „Synchronizovat“ v záhlaví sekce: nahrání i stažení dělají totéž */}
                 <div className="pt-3 mt-1 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h4>
+                    <h3 className="text-sm font-bold text-slate-900">Automatické zálohy na Disk</h3>
                     <p className="text-xs text-slate-500 mt-0.5 max-w-md">
                       Při spuštění aplikace (nejvýše jednou za 24 hodin) se uloží kopie dat do složky
                       <strong> „CashPilot zalohy“</strong> na vašem Google Disku. Uchovává se posledních {DRIVE_BACKUP_MAX_COUNT} záloh.

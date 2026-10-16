@@ -341,7 +341,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
         <button
           type="button"
           onClick={() => {
@@ -453,7 +453,7 @@ const BeforeAfter: React.FC<{ before?: string; after: string }> = ({ before, aft
 const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = ({ changes }) => (
   <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
     <div className="p-4 sm:p-5 border-b border-slate-100">
-      <h3 className="text-sm font-bold text-slate-900">Nadcházející změny</h3>
+      <h2 className="text-sm font-bold text-slate-900">Nadcházející změny</h2>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs">
