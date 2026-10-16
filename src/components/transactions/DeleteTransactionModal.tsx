@@ -103,8 +103,8 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
               destructiveScope="series"
               descriptions={{
                 occurrence: 'Ostatní výskyty série zůstanou beze změny.',
-                future: 'Opakování skončí před tímto výskytem. Minulé výskyty zůstanou.',
-                series: 'Smaže opakování i všechny jeho výskyty.',
+                future: 'Opakování skončí před tímto výskytem. Tento a budoucí výskyty se smažou, minulé zůstanou beze změny.',
+                series: 'Smaže opakování a všechny jeho výskyty, minulé i budoucí. Uskutečněné položky smaže jen na výslovné potvrzení.',
               }}
             />
             {/* Ochrana historických uskutečněných položek při mazání budoucích výskytů nebo celé série */}

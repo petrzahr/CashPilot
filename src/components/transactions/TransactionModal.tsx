@@ -486,7 +486,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               descriptions={{
                 occurrence: `Změna platí jen v období ${selectedPeriod.name}.`,
                 future: 'Změna platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.',
-                series: 'Změna platí pro všechny výskyty včetně minulých.',
+                series: 'Změna platí pro všechny výskyty, minulé i budoucí.',
               }}
             />
             {linkedRule && (
