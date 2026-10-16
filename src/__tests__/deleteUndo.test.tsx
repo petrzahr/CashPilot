@@ -4,7 +4,7 @@ import { FinanceProvider, useFinance } from '../context/FinanceContext';
 import { SyncController } from '../services/syncController';
 import { getActiveStorageKey, getInitialData, loadStoredDataResult, AppData } from '../services/storageService';
 import { saveStoredData } from './testStorageHelpers';
-import { Account, Transaction } from '../types/finance';
+import { Account, BalanceCorrection, Transaction } from '../types/finance';
 
 const storageMock = (() => {
   let store: Record<string, string> = {};
@@ -29,8 +29,8 @@ const makeTx = (id: string, title: string, sequence: number): Transaction => ({
   createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
 });
 
-async function setup(transactions: Transaction[]) {
-  const data: AppData = { ...getInitialData(), accounts: [account], transactions };
+async function setup(transactions: Transaction[], extra: Partial<AppData> = {}) {
+  const data: AppData = { ...getInitialData(), accounts: [account], transactions, ...extra };
   saveStoredData(data, getActiveStorageKey());
   let cloud = loadStoredDataResult().data;
   const controller = new SyncController('test', () => 'token', next => saveStoredData(next), {
@@ -72,6 +72,27 @@ describe('Smazání běžné položky a „Vrátit“', () => {
     await controller.sync();
     expect(getCloud().transactions.map((t: Transaction) => t.id).sort()).toEqual(['tx_a', 'tx_b', 'tx_c']);
     expect(dayOrder()).toEqual(['1:tx_a', '2:tx_b', '3:tx_c']);
+  });
+
+  it('korekce z řádku seznamu vrátí položku i záznam korekce', async () => {
+    const corrTx: Transaction = {
+      ...makeTx('corr_1', 'Korekce zůstatku', 1), type: 'balance_adjustment', status: 'executed',
+      actualAmountInHaler: 500, calculatedBalanceInHaler: 10000, actualBalanceInHaler: 9500, diffInHaler: -500,
+    };
+    const correction: BalanceCorrection = {
+      id: 'corr_1', accountId: 'acc_main', checkDate: '2026-11-20', actualBalanceInHaler: 9500,
+      calculatedBalanceInHaler: 10000, diffInHaler: -500, sequence: 1, createdAt: '2026-10-01T00:00:00.000Z',
+    };
+    const { ctx } = await setup([corrTx], { corrections: [correction] });
+
+    expect(await ctx.deleteCorrection('corr_1')).toBe(true);
+    expect(loadStoredDataResult().data.corrections).toHaveLength(0);
+
+    await new Promise(resolve => setTimeout(resolve, 5));
+    ctx.restoreDeletedTransaction(corrTx, correction);
+    const stored = loadStoredDataResult().data;
+    expect(stored.transactions.map(t => t.id)).toEqual(['corr_1']);
+    expect(stored.corrections.map(c => c.id)).toEqual(['corr_1']);
   });
 
   it('opakované vrácení stejné položky nic nezdvojí', async () => {

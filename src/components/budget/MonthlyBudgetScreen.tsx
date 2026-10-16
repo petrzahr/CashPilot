@@ -79,6 +79,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
+    deleteCorrection,
     reorderDayTransactions,
     reorderRecurringItem,
     showToast,
@@ -117,12 +118,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
-  // „Smazat korekci“ otevře detail rovnou s potvrzením smazání, oko jen detail
-  const [correctionDeleteFirst, setCorrectionDeleteFirst] = useState(false);
-  const openCorrection = (tx: Transaction, deleteFirst = false) => {
-    setCorrectionDeleteFirst(deleteFirst);
-    setSelectedCorrection(tx);
-  };
+  const openCorrection = (tx: Transaction) => setSelectedCorrection(tx);
 
   const deletingTxHasExecutedHistorical = useMemo(() => {
     if (!deletingTx) return false;
@@ -1242,7 +1238,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => openCorrection(tx, true)}
+                                      onClick={() => void deleteCorrection(tx.id)}
                                       title="Smazat korekci"
                                       aria-label={`Smazat korekci: ${tx.title}`}
                                       className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
@@ -1458,7 +1454,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => openCorrection(tx, true)}
+                                onClick={() => void deleteCorrection(tx.id)}
                                 title="Smazat korekci"
                                 aria-label={`Smazat korekci: ${tx.title}`}
                                 className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
@@ -1538,9 +1534,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <CorrectionDetailModal
         isOpen={Boolean(selectedCorrection)}
         onClose={() => setSelectedCorrection(null)}
-        correctionItem={selectedCorrection}
-        startWithDeleteConfirm={correctionDeleteFirst}
-      />
+        correctionItem={selectedCorrection}      />
     </div>
 );
 };

@@ -817,7 +817,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           : prev.corrections,
       };
     });
-    showToast('Položka byla obnovena.');
+    showToast(correction ? 'Korekce zůstatku byla obnovena.' : 'Položka byla obnovena.');
   }, [showToast]);
 
   const deleteTransaction = useCallback(async (
@@ -1019,7 +1019,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         const restoredTx = deletedPlainTx;
         const restoredCorrection = deletedCorrection;
         if (restoredTx) {
-          showToast(`Položka „${restoredTx.title}“ byla smazána.`, 'success', {
+          const text = restoredCorrection
+            ? 'Korekce zůstatku byla smazána.'
+            : `Položka „${restoredTx.title}“ byla smazána.`;
+          showToast(text, 'success', {
             label: 'Vrátit',
             onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
           });
@@ -1882,13 +1885,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (inTxs) {
       return deleteTransaction(id);
     }
+    const deleted = data.corrections.find(c => c.id === id);
     setData(prev => ({
       ...prev,
       corrections: prev.corrections.filter(c => c.id !== id)
     }));
-    showToast('Korekce zůstatku byla smazána.');
+    // Samostatná korekce (bez položky v seznamu) se vrací jen do korekcí
+    showToast('Korekce zůstatku byla smazána.', 'success', deleted ? {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => prev.corrections.some(c => c.id === deleted.id) ? prev : {
+          ...prev,
+          corrections: [...prev.corrections, { ...deleted, updatedAt: new Date().toISOString() }],
+        });
+        showToast('Korekce zůstatku byla obnovena.');
+      },
+    } : undefined);
     return true;
-  }, [data.transactions, deleteTransaction, showToast]);
+  }, [data.transactions, data.corrections, deleteTransaction, showToast]);
 
   // ------------------- SPRÁVA KATEGORIÍ -------------------
 
