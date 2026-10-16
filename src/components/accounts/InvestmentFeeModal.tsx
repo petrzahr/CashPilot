@@ -80,7 +80,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
             <select id={`${fieldId}-1`}
               value={selectedKey}
               onChange={(e) => fillForPeriod(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             >
               {periods.map(p => (
                 <option key={p.key} value={p.key}>
@@ -99,7 +99,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
               value={amountStr}
               onChange={(e) => { setAmountStr(e.target.value); setAmountError(null); }}
               {...fieldErrorProps(`${fieldId}-2`, amountError)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(amountError, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(amountError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-semibold`}
             />
             <FieldError inputId={`${fieldId}-2`} message={amountError} />
           </div>
@@ -112,7 +112,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
             placeholder="např. Výpis obchodníka za září"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
 

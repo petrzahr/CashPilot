@@ -348,7 +348,7 @@ export const SettingsScreen: React.FC = () => {
                   <select id={`${fieldId}-1`}
                     value={budgetStartDay}
                     onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
-                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
+                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
                   >
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <option key={day} value={day}>
@@ -377,7 +377,7 @@ export const SettingsScreen: React.FC = () => {
                       onChange={(e) => setOverdraftLimitStr(e.target.value)}
                       onBlur={saveOverdraft}
                       aria-describedby={`${fieldId}-2-hint`}
-                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
+                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>

@@ -762,7 +762,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     >
                       <option value="monthly">Každý měsíc</option>
                       <option value="bi_monthly">Každé 2 měsíce</option>
@@ -785,7 +785,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           const val = parseInt(e.target.value, 10);
                           setDayOfMonth(isNaN(val) ? 0 : val);
                         }}
-                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -800,7 +800,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     min={date}
                     onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
-                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
                   />
                   <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">

@@ -64,7 +64,7 @@ const SECTION_TOTAL_COLORS: Record<MandatoryGroup, string> = {
 const STANDARD_FREQUENCIES: RecurrenceFrequency[] = ['monthly', 'bi_monthly', 'quarterly', 'semi_annually', 'annually'];
 
 const inputClass =
-  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
+  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500';
 
 // Název platby a akce zůstávají viditelné i při vodorovném posunu široké tabulky
 const STICKY_LEFT = 'sticky left-0 z-10';
