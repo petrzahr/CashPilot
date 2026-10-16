@@ -60,7 +60,7 @@ export const LoginScreen: React.FC = () => {
 
         {/* Chybové hlášení při selhání přihlášení */}
         {driveError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-700">
+          <div className="panel panel-error flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold block">Přihlášení se nezdařilo</span>

@@ -185,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setMenuOpen(false);
                     }}
                     disabled={driveSyncStatus === 'syncing'}
-                    className="max-md:min-h-11 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait disabled:hover:bg-sky-50"
+                    className="btn-secondary w-full"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                     <span>Synchronizovat nyní</span>
@@ -197,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setMenuOpen(false);
                       setConfirmDisconnectOpen(true);
                     }}
-                    className="max-md:min-h-11 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 font-medium transition-colors cursor-pointer"
+                    className="btn-secondary btn-secondary-danger w-full"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Odpojit Google Disk</span>

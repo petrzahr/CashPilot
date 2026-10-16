@@ -65,7 +65,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
 
   if (!hasData) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm text-center text-slate-500 text-xs">
+      <div className="card empty-state">
         {emptyText}
       </div>
     );
@@ -136,7 +136,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   const hoveredItem = hoveredIdx !== null ? data[hoveredIdx] : null;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="card overflow-hidden">
       <div className="p-5 space-y-4">
       {/* Hlavička karty */}
       <div>

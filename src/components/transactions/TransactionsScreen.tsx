@@ -325,7 +325,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const emptyListMessage = baseTransactions.length === 0
     ? (periodFilter === 'current'
       ? 'V tomto období zatím nejsou žádné položky. Zobrazte všechny položky, nebo přidejte novou.'
-      : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Přidat položku.')
+      : 'Zatím nemáte žádné položky. Přidejte první tlačítkem Nová položka.')
     : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
@@ -384,7 +384,14 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <span className="truncate">{tx.title}</span>
           </button>
         ) : (
-          <span className="truncate min-w-0">{tx.title}</span>
+          // Název položky je vždy odkaz na její úpravu, stejně jako v Rozpočtu
+          <button
+            type="button"
+            onClick={() => onEditTransaction(tx)}
+            className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
+          >
+            {tx.title}
+          </button>
         )}
         {tx.recurringRuleId && (
           <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
@@ -483,7 +490,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => openCorrection(tx)}
           title="Detail a poznámka korekce"
           aria-label={`Detail a poznámka korekce: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Eye className="w-4 h-4" />
         </button>
@@ -492,7 +499,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => void deleteCorrection(tx.id)}
           title="Smazat korekci"
           aria-label={`Smazat korekci: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+          className="btn-icon btn-icon-danger"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -504,7 +511,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => onEditTransaction(tx)}
           title="Upravit položku"
           aria-label={`Upravit položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -512,7 +519,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           onClick={() => duplicateTransaction(tx)}
           title="Duplikovat položku"
           aria-label={`Duplikovat položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+          className="btn-icon"
         >
           <Copy className="w-4 h-4" />
         </button>
@@ -521,7 +528,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           disabled={isDeletingTx}
           title="Smazat položku"
           aria-label={`Smazat položku: ${tx.title}`}
-          className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+          className="btn-icon btn-icon-danger"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -534,7 +541,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   return (
     <div className="space-y-6">
       {dataConflicts && dataConflicts.length > 0 && (
-        <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex flex-col gap-2">
+        <div className="panel panel-warning flex flex-col gap-2">
           <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
             <span>Položky s datem před založením účtu ({dataConflicts.length})</span>
@@ -556,7 +563,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       )}
 
       {/* Horní akční lišta */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div className="card p-5 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -586,7 +593,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               className="btn-primary"
             >
               <Plus className="w-4 h-4" />
-              <span>Přidat položku</span>
+              <span>Nová položka</span>
             </button>
           </div>
         </div>
@@ -700,7 +707,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <button
               type="button"
               onClick={clearFilters}
-              className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+              className="btn-text"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
               Zrušit filtry ({activeFilterCount})
@@ -710,7 +717,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </div>
 
       {/* Seznam položek: do 1024px řádky-karty, od lg tabulka (bez posouvání od 1280px) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="card overflow-hidden">
         <ul className="lg:hidden divide-y divide-slate-100 text-xs">
           {filteredTransactions.length === 0 ? (
             <li className="py-8 px-4 text-center text-slate-500">{emptyListMessage}</li>
@@ -794,7 +801,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="empty-state">
                     {emptyListMessage}
                   </td>
                 </tr>

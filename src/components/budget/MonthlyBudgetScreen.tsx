@@ -390,7 +390,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Prázdný seznam: odliší období bez položek od filtrů, které nic nenašly
   const emptyListMessage = allPeriodTransactions.length === 0
-    ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Přidat položku.'
+    ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Nová položka.'
     : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
 
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
@@ -677,7 +677,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
         {/* Finanční bilance období (Souhrnný panel výchozího účtu) */}
         {!defaultAccount ? (
-          <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-start gap-3 shadow-sm">
+          <div className="panel panel-warning flex items-start gap-2.5">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <h2 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h2>
@@ -839,7 +839,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Dynamické sekce rozpočtu podle kategorií */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+      <div className="card p-5 space-y-4">
         <h2 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
@@ -900,7 +900,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Filtry položek tohoto období */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div className="card p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -918,14 +918,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-              <div className="h-8 max-md:h-[52px] flex items-center gap-1 p-1 bg-slate-100 rounded-xl text-xs">
+              <div className="segmented flex items-center">
                 <button
                   type="button"
                   onClick={() => setViewMode('daily')}
                   aria-pressed={viewMode === 'daily'}
-                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
-                    viewMode === 'daily' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                  className="segment"
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Po dnech</span>
@@ -935,9 +933,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   type="button"
                   onClick={() => setViewMode('list')}
                   aria-pressed={viewMode === 'list'}
-                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg font-semibold transition-all ${
-                    viewMode === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                  }`}
+                  className="segment"
                 >
                   <List className="w-3.5 h-3.5" />
                   <span>Seznam</span>
@@ -961,7 +957,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 className="btn-primary w-full sm:w-auto shrink-0"
               >
                 <Plus className="w-4 h-4" />
-                <span>Přidat položku</span>
+                <span>Nová položka</span>
               </button>
             </div>
           </div>
@@ -1046,7 +1042,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+                className="btn-text"
               >
                 <X className="w-3.5 h-3.5" aria-hidden="true" />
                 Zrušit filtry ({activeFilterCount})
@@ -1056,12 +1052,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       </div>
 
       {/* Seznam všech položek tohoto období */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="card overflow-hidden">
         {/* 1. REŽIM: PO DNECH S DRAG-AND-DROP A PRŮBĚŽNÝM ZŮSTATKEM */}
         {viewMode === 'daily' ? (
           <div className="divide-y divide-slate-100">
             {dayGroups.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 text-sm">
+              <div className="empty-state">
                 {emptyListMessage}
               </div>
             ) : (
@@ -1118,7 +1114,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                     </div>
 
                     {hasNegative && (
-                      <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-200">
+                      <p className="panel panel-error">
                         Během dne klesne zůstatek pod nulu (nejníž na {formatCurrency(intraDay.minBalanceDuringDayInHaler)}). Přesuňte příjem před výdaj a zůstatek zůstane kladný.
                       </p>
                     )}
@@ -1272,7 +1268,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       onClick={() => openCorrection(tx)}
                                       title="Detail a poznámka korekce"
                                       aria-label={`Detail a poznámka korekce: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                      className="btn-icon"
                                     >
                                       <Eye className="w-4 h-4" />
                                     </button>
@@ -1281,7 +1277,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       onClick={() => void deleteCorrection(tx.id)}
                                       title="Smazat korekci"
                                       aria-label={`Smazat korekci: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+                                      className="btn-icon btn-icon-danger"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -1293,7 +1289,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       onClick={() => onEditTransaction(tx)}
                                       title="Upravit položku"
                                       aria-label={`Upravit položku: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                      className="btn-icon"
                                     >
                                       <Edit3 className="w-4 h-4" />
                                     </button>
@@ -1301,7 +1297,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       onClick={() => duplicateTransaction(tx)}
                                       title="Duplikovat položku"
                                       aria-label={`Duplikovat položku: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                      className="btn-icon"
                                     >
                                       <Copy className="w-4 h-4" />
                                     </button>
@@ -1310,7 +1306,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       disabled={isDeletingTx}
                                       title="Smazat položku"
                                       aria-label={`Smazat položku: ${tx.title}`}
-                                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                      className="btn-icon btn-icon-danger"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -1364,7 +1360,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <tbody className="divide-y divide-slate-100">
               {sortedListTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="empty-state">
                     {emptyListMessage}
                   </td>
                 </tr>
@@ -1495,7 +1491,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 onClick={() => openCorrection(tx)}
                                 title="Detail a poznámka korekce"
                                 aria-label={`Detail a poznámka korekce: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                className="btn-icon"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
@@ -1504,7 +1500,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 onClick={() => void deleteCorrection(tx.id)}
                                 title="Smazat korekci"
                                 aria-label={`Smazat korekci: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+                                className="btn-icon btn-icon-danger"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1515,7 +1511,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 onClick={() => onEditTransaction(tx)}
                                 title="Upravit položku"
                                 aria-label={`Upravit položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                className="btn-icon"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
@@ -1523,7 +1519,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 onClick={() => duplicateTransaction(tx)}
                                 title="Duplikovat položku"
                                 aria-label={`Duplikovat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                className="btn-icon"
                               >
                                 <Copy className="w-4 h-4" />
                               </button>
@@ -1532,7 +1528,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 disabled={isDeletingTx}
                                 title="Smazat položku"
                                 aria-label={`Smazat položku: ${tx.title}`}
-                                className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                className="btn-icon btn-icon-danger"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

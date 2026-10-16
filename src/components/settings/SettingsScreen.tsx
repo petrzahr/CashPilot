@@ -64,7 +64,7 @@ const SyncErrorDetails: React.FC<{ message: string }> = ({ message }) => {
         <button
           type="button"
           onClick={() => void handleCopy()}
-          className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 rounded-lg font-semibold text-red-700 hover:bg-red-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
+          className="btn-secondary"
         >
           {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
           <span aria-live="polite">{copied ? 'Zkopírováno' : 'Zkopírovat'}</span>
@@ -325,8 +325,8 @@ export const SettingsScreen: React.FC = () => {
       <div className="xl:grid xl:grid-cols-[minmax(0,56rem)_13rem] xl:gap-8 xl:items-start">
         <div ref={contentRef} className="space-y-6 max-w-4xl min-w-0">
           {/* 1. Finanční pravidla a rozpočtový měsíc */}
-          <section id="nastaveni-obdobi" tabIndex={-1} aria-labelledby="nastaveni-obdobi-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-obdobi" tabIndex={-1} aria-labelledby="nastaveni-obdobi-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Calendar className="w-5 h-5" />
               </div>
@@ -399,8 +399,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 2. Zahrnutí jednotlivých účtů do rozpočtu */}
-          <section id="nastaveni-ucty" tabIndex={-1} aria-labelledby="nastaveni-ucty-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-ucty" tabIndex={-1} aria-labelledby="nastaveni-ucty-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Layers className="w-5 h-5" />
               </div>
@@ -450,8 +450,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* Vzhled aplikace (nastavení tohoto zařízení) */}
-          <section id="nastaveni-vzhled" tabIndex={-1} aria-labelledby="nastaveni-vzhled-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-vzhled" tabIndex={-1} aria-labelledby="nastaveni-vzhled-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Palette className="w-5 h-5" />
               </div>
@@ -463,7 +463,7 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            <div role="group" aria-label="Vzhled aplikace" className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl max-w-md">
+            <div role="group" aria-label="Vzhled aplikace" className="segmented grid grid-cols-3 max-w-md">
               {THEME_OPTIONS.map((option) => {
                 const active = themePreference === option.value;
                 return (
@@ -472,11 +472,9 @@ export const SettingsScreen: React.FC = () => {
                     type="button"
                     aria-pressed={active}
                     onClick={() => handleThemeChange(option.value)}
-                    className={`min-h-11 flex flex-col sm:flex-row items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                      active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                    }`}
+                    className="segment px-2"
                   >
-                    <span className={active ? 'text-sky-600' : ''}>{option.icon}</span>
+                    <span>{option.icon}</span>
                     <span>{option.label}</span>
                   </button>
                 );
@@ -485,8 +483,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 3. Google Disk – Cloudová synchronizace */}
-          <section id="nastaveni-disk" tabIndex={-1} aria-labelledby="nastaveni-disk-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+          <section id="nastaveni-disk" tabIndex={-1} aria-labelledby="nastaveni-disk-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                   <Cloud className="w-5 h-5" />
@@ -517,7 +515,7 @@ export const SettingsScreen: React.FC = () => {
                     type="button"
                     onClick={() => syncWithGoogleDrive('upload')}
                     disabled={driveSyncStatus === 'syncing'}
-                    className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition-colors cursor-pointer"
+                    className="btn-secondary"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${driveSyncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                     <span>Synchronizovat nyní</span>
@@ -526,7 +524,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmDisconnectOpen(true)}
-                    className="max-md:min-h-11 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    className="btn-secondary btn-secondary-danger"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Odpojit Google Disk</span>
@@ -579,7 +577,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {driveError && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 space-y-2">
+                  <div className="panel panel-error space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{describeSyncError(driveError)}</span>
@@ -604,7 +602,7 @@ export const SettingsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => void runDriveBackupNow()}
-                      className="max-md:min-h-11 px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
+                      className="btn-secondary"
                     >
                       Zálohovat nyní
                     </button>
@@ -624,8 +622,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 4. Zálohování a Export */}
-          <section id="nastaveni-zalohy" tabIndex={-1} aria-labelledby="nastaveni-zalohy-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-4`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-zalohy" tabIndex={-1} aria-labelledby="nastaveni-zalohy-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               <div className="p-2 rounded-xl bg-slate-100 text-slate-500">
                 <Download className="w-5 h-5" />
               </div>
@@ -670,8 +668,8 @@ export const SettingsScreen: React.FC = () => {
           </section>
 
           {/* 4. Správa dat a reset */}
-          <section id="nastaveni-data" tabIndex={-1} aria-labelledby="nastaveni-data-title" className={`${SECTION_CLASS} bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-6`}>
-            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <section id="nastaveni-data" tabIndex={-1} aria-labelledby="nastaveni-data-title" className={`${SECTION_CLASS} card p-5 space-y-4`}>
+            <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
               {/* Jediná barevná ikona sekcí: mazání dat nese význam, ostatní jsou neutrální */}
               <div className="p-2 rounded-xl bg-red-50 text-red-600">
                 <Trash2 className="w-5 h-5" />
@@ -702,7 +700,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearTransactionsOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny položky
                   </button>
@@ -719,7 +717,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearAccountsOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny účty
                   </button>
@@ -736,7 +734,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmClearCategoriesOpen(true)}
-                    className="max-md:min-h-11 px-4 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary btn-secondary-danger shrink-0 self-start sm:self-center"
                   >
                     Smazat všechny kategorie
                   </button>
@@ -773,7 +771,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmLoadDemoOpen(true)}
-                  className="max-md:min-h-11 px-3 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors"
+                  className="btn-secondary"
                 >
                   Načíst ukázková data (demo režim)
                 </button>

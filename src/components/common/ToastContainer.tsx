@@ -83,7 +83,7 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: (id: string) => void 
         type="button"
         onClick={() => onRemove(toast.id)}
         aria-label="Zavřít oznámení"
-        className="ml-3 p-3.5 -m-2.5 md:p-1 md:m-0 md:ml-3 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+        className="btn-icon ml-3 -my-2.5 -mr-2.5 md:m-0 md:ml-3"
       >
         <X className="w-4 h-4" />
       </button>

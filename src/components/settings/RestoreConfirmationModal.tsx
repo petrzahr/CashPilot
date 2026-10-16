@@ -71,7 +71,7 @@ export const RestoreConfirmationModal: React.FC<RestoreConfirmationModalProps> =
             <span className="font-semibold text-slate-900 truncate" title={preview.fileName}>{preview.fileName}</span>
           </div>
 
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-sky-50 text-sky-900">
+          <div className="panel panel-info flex items-start gap-2.5">
             <Info className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="text-xs">
               Záloha se sloučí s aktuálními daty. Přibudou jen záznamy, které v aplikaci ještě nejsou.

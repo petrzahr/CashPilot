@@ -68,11 +68,11 @@ describe('CategoriesScreen - Přepínač typu kategorií [Výdaje] [Příjmy]', 
       </FinanceProvider>
     );
 
-    // Výdaje mají aktivní styl (bílé pozadí, stín, červený text text-red-600)
-    expect(html).toMatch(/<button[^>]*class="[^"]*bg-white text-red-600 shadow-sm[^"]*"[^>]*>[\s\S]*?Výdaje[\s\S]*?<\/button>/);
+    // Výdaje jsou vybrané (aria-pressed) a mají barvu výdaje; vzhled vybrané volby nese třída segment
+    expect(html).toMatch(/<button[^>]*aria-pressed="true"[^>]*class="segment[^"]*text-red-600[^"]*"[^>]*>[\s\S]*?Výdaje[\s\S]*?<\/button>/);
 
-    // Příjmy mají neaktivní styl (šedý text text-slate-500)
-    expect(html).toMatch(/<button[^>]*class="[^"]*text-slate-500 hover:text-slate-900[^"]*"[^>]*>[\s\S]*?Příjmy[\s\S]*?<\/button>/);
+    // Příjmy nejsou vybrané a nemají barvu příjmu
+    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*class="segment flex-1 "[^>]*>[\s\S]*?Příjmy[\s\S]*?<\/button>/);
   });
 
   it('3. Po otevření stránky se pod přepínačem zobrazují výdajové kategorie (Bydlení, Auto) a nezobrazují se příjmové (Mzda)', () => {

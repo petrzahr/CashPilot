@@ -68,20 +68,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         ariaLabel="Období přehledů"
       />
       {/* Hlavní tabulka forecastu */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card overflow-hidden">
+        <div className="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Vývoj zůstatků po obdobích</h2>
           {/* Přepínač: Použitelné peníze vs Všechny účty */}
-          <div role="group" aria-label="Zobrazit zůstatky" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+          <div role="group" aria-label="Zobrazit zůstatky" className="segmented flex items-center">
             <button
               type="button"
               onClick={() => setForecastScope('usable')}
               aria-pressed={forecastScope === 'usable'}
-              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                forecastScope === 'usable'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className="segment min-w-[132px]"
             >
               Použitelné peníze
             </button>
@@ -89,11 +85,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               type="button"
               onClick={() => setForecastScope('all')}
               aria-pressed={forecastScope === 'all'}
-              className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                forecastScope === 'all'
-                  ? 'bg-white text-purple-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className={`segment min-w-[132px] ${forecastScope === 'all' ? 'text-purple-600' : ''}`}
             >
               Celkový majetek
             </button>
@@ -195,18 +187,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       </div>
 
       {/* Přehled účtů */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card overflow-hidden">
+        <div className="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Účty</h2>
           <div className="flex items-center gap-2">
-            <div role="group" aria-label="Zobrazení účtů" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+            <div role="group" aria-label="Zobrazení účtů" className="segmented flex items-center">
               <button
                 type="button"
                 onClick={() => setAccountViewMode('period')}
                 aria-pressed={accountViewMode === 'period'}
-                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                  accountViewMode === 'period' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                }`}
+                className="segment min-w-[132px]"
               >
                 Podle období
               </button>
@@ -214,9 +204,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 type="button"
                 onClick={() => setAccountViewMode('matrix')}
                 aria-pressed={accountViewMode === 'matrix'}
-                className={`max-md:min-h-11 min-w-[132px] px-3 py-1.5 text-xs font-semibold rounded-lg transition-all text-center ${
-                  accountViewMode === 'matrix' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                }`}
+                className="segment min-w-[132px]"
               >
                 Matice účtů
               </button>

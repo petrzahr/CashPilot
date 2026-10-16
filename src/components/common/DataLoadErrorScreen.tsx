@@ -78,7 +78,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
         </div>
 
         {restoreError && (
-          <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs">
+          <div role="alert" className="panel panel-error">
             {restoreError}
           </div>
         )}
@@ -122,7 +122,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             <button
               type="button"
               onClick={onRetry}
-              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-slate-500 hover:text-sky-700 hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+              className="btn-text -mx-1"
             >
               <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Načíst znovu</span>
@@ -131,7 +131,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
             <button
               type="button"
               onClick={() => setConfirmResetOpen(true)}
-              className="min-h-11 -my-1.5 px-2 -mx-2 rounded-lg flex items-center gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+              className="btn-text btn-text-danger -mx-1"
             >
               <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Začít s prázdnými daty</span>

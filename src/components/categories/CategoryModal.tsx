@@ -116,7 +116,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     onClose();
   };
 
-  let modalTitle = 'Nová hlavní kategorie';
+  let modalTitle = 'Nová kategorie';
   let modalSubtitle: string | undefined = undefined;
 
   if (isEditMode) {
@@ -158,14 +158,12 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <span id={`${fieldId}-type`} className="block text-xs font-semibold text-slate-500 mb-1">
               Typ kategorie
             </span>
-            <div role="group" aria-labelledby={`${fieldId}-type`} className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            <div role="group" aria-labelledby={`${fieldId}-type`} className="segmented grid grid-cols-2">
               <button
                 type="button"
                 aria-pressed={type === 'expense'}
                 onClick={() => setType('expense')}
-                className={`max-md:min-h-11 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  type === 'expense' ? 'bg-white text-red-600 shadow-sm font-semibold' : 'text-slate-500'
-                }`}
+                className={`segment ${type === 'expense' ? 'text-red-600' : ''}`}
               >
                 Výdajová
               </button>
@@ -173,9 +171,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 type="button"
                 aria-pressed={type === 'income'}
                 onClick={() => setType('income')}
-                className={`max-md:min-h-11 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                  type === 'income' ? 'bg-white text-emerald-600 shadow-sm font-semibold' : 'text-slate-500'
-                }`}
+                className={`segment ${type === 'income' ? 'text-emerald-600' : ''}`}
               >
                 Příjmová
               </button>
@@ -219,7 +215,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
         {/* Volba při změně rodičovské kategorie v editaci */}
         {isEditMode && categoryToEdit && categoryToEdit.parentId !== parentId && parentId && (
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs text-amber-900">
+          <div className="panel panel-warning space-y-2">
             <p className="font-semibold">Podkategorie se přesune do jiné hlavní kategorie.</p>
             <label className="flex items-start gap-2 cursor-pointer mt-1">
               <input

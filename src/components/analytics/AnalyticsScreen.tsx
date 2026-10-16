@@ -195,7 +195,7 @@ export const AnalyticsScreen: React.FC = () => {
       {/* 5. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trend výdajů */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div className="card p-5 space-y-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               Trend výdajů mezi obdobími
@@ -249,7 +249,7 @@ export const AnalyticsScreen: React.FC = () => {
         </div>
 
         {/* Finanční extrémy a průměry */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div className="card p-5 space-y-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               Průměry a finanční extrémy
@@ -343,8 +343,8 @@ export const AnalyticsScreen: React.FC = () => {
       </div>
 
       {/* 6. Tabulka Nejvyšší výdaje */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100">
+      <div className="card overflow-hidden">
+        <div className="card-header">
           <h2 className="text-sm font-bold text-slate-900">
             Nejvyšší výdaje ve vybraném období
           </h2>
@@ -394,7 +394,7 @@ export const AnalyticsScreen: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-slate-500">
+          <div className="empty-state">
             Ve vybraném období nebyly nalezeny žádné výdajové položky.
           </div>
         )}

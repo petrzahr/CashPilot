@@ -10,7 +10,10 @@ interface PeriodRangeSelectorProps {
   onSubmit: (event: React.FormEvent) => void;
 }
 
-export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, to, max, active, onFromChange, onToChange, onSubmit }) => (
+export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, to, max, active, onFromChange, onToChange, onSubmit }) => {
+  // Použitý vlastní rozsah poznáte podle polí: bílý podklad a modrý okraj (žádná předvolba není vybraná)
+  const inputState = active ? 'bg-white border-sky-500 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-500';
+  return (
   <form
     onSubmit={onSubmit}
     className="flex flex-wrap items-center max-sm:items-end gap-2 pt-2 lg:pt-0 max-sm:w-full"
@@ -24,7 +27,7 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onFromChange(e.target.value);
         }}
-        className="max-md:min-h-11 w-32 max-sm:w-full max-sm:min-w-0 shrink-0 max-sm:shrink px-2.5 max-sm:px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-500 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className={`max-md:min-h-11 w-32 max-sm:w-full max-sm:min-w-0 shrink-0 max-sm:shrink px-2.5 max-sm:px-2 py-1.5 rounded-xl border text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer ${inputState}`}
       />
     </label>
 
@@ -37,19 +40,16 @@ export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, 
         onChange={(e) => {
           onToChange(e.target.value);
         }}
-        className="max-md:min-h-11 w-32 max-sm:w-full max-sm:min-w-0 shrink-0 max-sm:shrink px-2.5 max-sm:px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-500 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        className={`max-md:min-h-11 w-32 max-sm:w-full max-sm:min-w-0 shrink-0 max-sm:shrink px-2.5 max-sm:px-2 py-1.5 rounded-xl border text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer ${inputState}`}
       />
     </label>
 
     <button
       type="submit"
-      className={`max-md:min-h-11 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-        active
-          ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-          : 'bg-white text-slate-500 border-slate-200 shadow-sm hover:text-sky-700 hover:border-sky-300'
-      }`}
+      className="btn-secondary"
     >
       OK
     </button>
   </form>
-);
+  );
+};

@@ -43,7 +43,7 @@ export const AccountsScreen: React.FC = () => {
 
   // Čekající potvrzení archivace nebo smazání účtu (vlastní dialog místo window.confirm)
   const [pendingAction, setPendingAction] = useState<
-    | { kind: 'archive' | 'delete'; account: Account }
+    | { kind: 'archive'; account: Account }
     | { kind: 'blocked'; account: Account; usage: UsageCount }
     | null
   >(null);
@@ -134,11 +134,15 @@ export const AccountsScreen: React.FC = () => {
   };
 
   // Použitý účet smazat nejde – místo varování „nelze vrátit“ rovnou nabídneme archivaci
+  // Nepoužitý účet se smaže hned a oznámení nabídne „Vrátit“
   const handleDelete = (acc: Account) => {
     const usage = getAccountUsage(acc.id, transactions, recurringRules);
-    setPendingAction(isInUse(usage)
-      ? { kind: 'blocked', account: acc, usage }
-      : { kind: 'delete', account: acc });
+    if (isInUse(usage)) {
+      setPendingAction({ kind: 'blocked', account: acc, usage });
+      return;
+    }
+    const res = deleteAccount(acc.id);
+    if (!res.success && res.message) showToast(res.message, 'error');
   };
 
   const confirmPendingAction = () => {
@@ -147,14 +151,7 @@ export const AccountsScreen: React.FC = () => {
       runArchive(pendingAction.account);
       return;
     }
-    if (pendingAction.kind === 'blocked') {
-      if (pendingAction.account.status === 'active') runArchive(pendingAction.account);
-      return;
-    }
-    const res = deleteAccount(pendingAction.account.id);
-    if (!res.success && res.message) {
-      showToast(res.message, 'error');
-    }
+    if (pendingAction.account.status === 'active') runArchive(pendingAction.account);
   };
 
   const pendingMessage = !pendingAction
@@ -165,9 +162,7 @@ export const AccountsScreen: React.FC = () => {
             ? `Můžete ho archivovat: zmizí z nabídek, ale historie zůstane.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`
             : 'Účet už je archivovaný, v nabídkách se nezobrazuje.'
         }`
-    : pendingAction.kind === 'archive'
-      ? `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`
-      : `Účet „${pendingAction.account.name}“ se smaže. Smazání nelze vrátit.${pendingAction.account.isDefault ? ' Je to výchozí účet, takže potom nebude žádný účet výchozí.' : ''}`;
+    : `„${pendingAction.account.name}“ je výchozí účet. Po archivaci nebude žádný účet výchozí: nové položky nebudou mít předvyplněný účet a rozpočet nezobrazí souhrn období. Archivaci jde později vrátit.`;
 
   const getTypeLabel = (type: AccountType) => {
     switch (type) {
@@ -183,7 +178,7 @@ export const AccountsScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Hlavička správy účtů */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="w-full sm:w-56 text-xs">
           <MultiSelectDropdown
             placeholder="Všechny typy účtů"
@@ -212,19 +207,19 @@ export const AccountsScreen: React.FC = () => {
             className="btn-primary"
           >
             <Plus className="w-4 h-4" />
-            <span>Přidat účet</span>
+            <span>Nový účet</span>
           </button>
         </div>
       </div>
 
       {displayedAccounts.length === 0 && (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm text-center space-y-1">
+        <div className="card empty-state">
           <p className="text-sm font-semibold text-slate-900">
             {accounts.length === 0 ? 'Zatím nemáte žádný účet' : 'Žádný účet neodpovídá výběru'}
           </p>
           <p className="text-xs text-slate-500">
             {accounts.length === 0
-              ? 'Přidejte první účet tlačítkem Přidat účet. Bez účtu nejde zapisovat položky.'
+              ? 'Přidejte první účet tlačítkem Nový účet. Bez účtu nejde zapisovat položky.'
               : 'Zrušte filtr typů nebo zapněte Zobrazit archivované účty.'}
           </p>
         </div>
@@ -260,7 +255,7 @@ export const AccountsScreen: React.FC = () => {
               onDragOver={(e) => handleDragOver(e, acc.id)}
               onDragLeave={() => setDropTargetAccountId(prev => (prev === acc.id ? null : prev))}
               onDrop={(e) => handleDrop(e, acc.id)}
-              className={`group bg-white rounded-2xl border p-5 shadow-sm transition-all space-y-4 ${
+              className={`group card p-5 transition-all space-y-4 ${
                 acc.status === 'archived'
                   ? 'border-slate-200 !bg-slate-50 border-dashed'
                   : 'border-slate-200 hover:border-slate-300'
@@ -315,7 +310,7 @@ export const AccountsScreen: React.FC = () => {
                     onClick={() => handleOpenEdit(acc)}
                     title="Upravit účet"
                     aria-label={`Upravit účet: ${acc.name}`}
-                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="btn-icon"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -324,7 +319,7 @@ export const AccountsScreen: React.FC = () => {
                       onClick={() => handleArchive(acc)}
                       title="Archivovat účet"
                       aria-label={`Archivovat účet: ${acc.name}`}
-                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors"
+                      className="btn-icon btn-icon-archive"
                     >
                       <Archive className="w-4 h-4" />
                     </button>
@@ -333,7 +328,7 @@ export const AccountsScreen: React.FC = () => {
                       onClick={() => restoreAccount(acc.id)}
                       title="Obnovit z archivu"
                       aria-label={`Obnovit z archivu: ${acc.name}`}
-                      className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 focus-visible:text-sky-600 hover:bg-sky-50 transition-colors"
+                      className="btn-icon btn-icon-restore"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -342,7 +337,7 @@ export const AccountsScreen: React.FC = () => {
                     onClick={() => handleDelete(acc)}
                     title="Smazat účet"
                     aria-label={`Smazat účet: ${acc.name}`}
-                    className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-red-600 focus-visible:text-red-600 hover:bg-red-50 transition-colors"
+                    className="btn-icon btn-icon-danger"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -504,19 +499,10 @@ export const AccountsScreen: React.FC = () => {
         isOpen={!!pendingAction}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmPendingAction}
-        title={
-          pendingAction?.kind === 'blocked' ? 'Účet nejde smazat'
-            : pendingAction?.kind === 'archive' ? 'Archivovat výchozí účet?'
-            : 'Smazat účet?'
-        }
+        title={pendingAction?.kind === 'blocked' ? 'Účet nejde smazat' : 'Archivovat výchozí účet?'}
         message={pendingMessage}
-        confirmText={
-          pendingAction?.kind === 'blocked'
-            ? (pendingAction.account.status === 'active' ? 'Archivovat účet' : 'Rozumím')
-            : pendingAction?.kind === 'archive' ? 'Archivovat účet' : 'Smazat účet'
-        }
-        showCancel={!(pendingAction?.kind === 'blocked' && pendingAction.account.status !== 'active')}
-        isDestructive={pendingAction?.kind === 'delete'}
+        confirmText={pendingAction?.account.status === 'active' ? 'Archivovat účet' : 'Rozumím'}
+        showCancel={pendingAction?.account.status === 'active'}
       />
     </div>
   );

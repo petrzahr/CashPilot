@@ -462,16 +462,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Přepínač typu pohybu */}
-        <div role="group" aria-label="Typ položky" className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
+        <div role="group" aria-label="Typ položky" className="segmented grid grid-cols-3">
           <button
             type="button"
             onClick={() => handleTypeChange('expense')}
             aria-pressed={type === 'expense'}
-            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
-              type === 'expense'
-                ? 'bg-white text-red-600 shadow-sm font-semibold'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+            className={`segment ${type === 'expense' ? 'text-red-600' : ''}`}
           >
             Výdaj
           </button>
@@ -479,11 +475,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             type="button"
             onClick={() => handleTypeChange('income')}
             aria-pressed={type === 'income'}
-            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
-              type === 'income'
-                ? 'bg-white text-emerald-600 shadow-sm font-semibold'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+            className={`segment ${type === 'income' ? 'text-emerald-600' : ''}`}
           >
             Příjem
           </button>
@@ -491,11 +483,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             type="button"
             onClick={() => handleTypeChange('transfer')}
             aria-pressed={type === 'transfer'}
-            className={`py-2 max-md:min-h-11 text-sm font-medium rounded-lg transition-all ${
-              type === 'transfer'
-                ? 'bg-white text-slate-900 shadow-sm font-semibold'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+            className="segment"
           >
             Převod
           </button>

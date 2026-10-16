@@ -34,25 +34,26 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
   if (!firstPeriod || !lastPeriod) return null;
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4" aria-label={ariaLabel}>
+    <div className="card p-5 space-y-4" aria-label={ariaLabel}>
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-slate-900 w-20 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
-            {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
-              const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
-              return <button
-                key={preset}
-                type="button"
-                aria-pressed={active}
-                onClick={() => { onRangeChange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
-                className={`max-md:min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${active
-                  ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200'}`}
-              >
-                {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
-              </button>;
-            })}
+            {/* Předvolby jsou segmentový přepínač; použitý vlastní rozsah nemá žádnou předvolbu vybranou */}
+            <div className="segmented flex flex-wrap">
+              {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
+                const active = range.direction === direction && (typeof preset === 'number' ? range.months === preset : range.preset === preset);
+                return <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => { onRangeChange(typeof preset === 'number' ? { direction, months: preset } : { direction, preset }); setValidationError(null); }}
+                  className="segment"
+                >
+                  {preset === 'ytd' ? 'Tento rok (YTD)' : preset === 'all' ? 'Celá historie' : `${direction === 'future' ? (preset === 3 ? 'Příští' : 'Příštích') : preset === 3 ? 'Poslední' : 'Posledních'} ${formatMonthsCount(preset)}`}
+                </button>;
+              })}
+            </div>
           </div>
           <div className="ml-auto max-w-full max-sm:w-full">
             <PeriodRangeSelector
@@ -76,7 +77,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
           </div>
         </div>
       ))}
-      {validationError && <p role="alert" className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-medium">{validationError}</p>}
+      {validationError && <p role="alert" className="panel panel-error font-medium">{validationError}</p>}
       <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
         <Calendar className="w-3.5 h-3.5" />
         {formatCzechDate(firstPeriod.startDate)} – {formatCzechDate(lastPeriod.endDate)}

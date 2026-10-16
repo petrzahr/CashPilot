@@ -120,9 +120,9 @@ export const Modal: React.FC<ModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Zavřít"
-            className="shrink-0 rounded-lg p-3 -m-1.5 md:p-1.5 md:m-0 text-slate-500 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="btn-icon -m-1.5 md:m-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
         <div className="modal-body flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5 has-[.modal-footer]:pb-0">

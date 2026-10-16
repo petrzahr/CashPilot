@@ -185,23 +185,39 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 
 ## Components
 
+Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@layer components`). Nové místo použije třídu, nevymýšlí vlastní kombinaci; rozložení (šířka, flex, grid, mezery kolem) doplňuje místo použití utilitami.
+
 ### Buttons
 - **Shape:** zaoblení 12px.
-- **Primary:** pilotní modř s bílým textem, 12px bold, odsazení 10px × 16px; v tmavém vzhledu noční modř s tmavým textem.
-- **Hover / Focus:** hover o stupeň tmavší (ve tmavém světlejší); fokus klávesnicí viditelný prstencem prohlížeče nebo modrým okrajem.
-- **Secondary:** povrch s vlasovou linkou a vedlejším inkoustem, hover do modré.
-- **Icon actions:** 16px ikony bez rámečku, na mobilu dotyková plocha 44×44px, vždy s `aria-label` obsahujícím název položky.
+- **Primary (`btn-primary`):** pilotní modř s bílým textem, 12px bold, výška 32px (v liště dialogu 40px), na dotyku 44px; v tmavém vzhledu noční modř s tmavým textem. Zakázané tlačítko je šedé (výplň s vedlejším inkoustem), ne průhledné.
+- **Danger (`btn-danger`):** stejný recept v červené pro nevratnou nebo mazací akci v dialogu.
+- **Secondary (`btn-secondary`):** povrch s vlasovou linkou, vedlejší inkoust, 12px semibold, jemný stín, hover modrý text i okraj. Zrušit v dialozích, Stáhnout, Dnes, Synchronizovat nyní, akce na kartách. Světle barevné podklady tlačítek se nepoužívají.
+- **Secondary danger (`btn-secondary btn-secondary-danger`):** vstup do mazání nebo odpojení (Smazat všechny položky / účty / kategorie, Odpojit Google Disk); červené až při najetí, nevratná červená akce je až v dialogu. Jen „Smazat všechna data“ má plné `btn-danger`.
+- **Text (`btn-text`, `btn-text-danger`):** nejtišší úroveň akce (hlavní → vedlejší → textová), bez rámečku a podkladu, modrý text jako odkaz, při najetí podtržení; červená varianta pro nevratný únik (reset na chybové obrazovce). Zrušit filtry, Načíst znovu.
+- **Hover / Focus:** hover o stupeň tmavší (ve tmavém světlejší); fokus klávesnicí modrý prstenec.
+- **Icon actions (`btn-icon`):** 16px ikona bez rámečku, zaoblení 8px, v klidu vedlejší inkoust, na mobilu plocha 44×44px, vždy `aria-label` s názvem položky. Barva při najetí jen podle významu: `btn-icon-danger` smazat (červená), `btn-icon-archive` archivovat (jantar), `btn-icon-restore` obnovit nebo přidat (modrá), ostatní tmavě šedá.
+- **Popisky:** tlačítko pro přidání se jmenuje stejně jako dialog, který otevře („Nová položka“, „Nový účet“, „Nová kategorie“).
 
 ### Chips
-- **Stav:** „Plánovaná“ jantarový nádech s jantarovým textem, „Uskutečněná“ zelený, „Zrušená“ šedý; štítek je zároveň tlačítko pro změnu stavu.
-- **Výběr:** segmentové přepínače (podklad výplň, aktivní volba povrch se stínem) hlásí stav přes `aria-pressed`.
+- **Tvar (`chip`):** zaoblení 6px, 12px medium, bez rámečku, barva jen podle významu: šedá (pořadí, počty, Archivovaný, Korekce, účet), červená (konflikt, v mínusu), modrá (Dnes, Aktuální), fialová (majetek), jantar (plánováno). Plně kulaté jsou jen tečky kategorií.
+- **Stav:** „Plánovaná“ jantarový nádech s jantarovým textem, „Uskutečněná“ zelený, „Zrušená“ šedý; štítek je zároveň tlačítko pro změnu stavu a má stejný tvar jako `chip`.
+- **Součet** se neukazuje jako štítek, ale jako tučné číslo barevné podle znaménka.
+
+### Segmented controls
+- **Recept (`segmented` + `segment`):** podklad výplň, 4px vnitřní okraj a mezera, volba 12px semibold, celková výška 32px (na dotyku 52px). Vybraná volba (`aria-pressed="true"`) je povrch se stínem; barvu má jen podle významu (výdaj červeně, příjem zeleně, celkový majetek fialově), jinak inkoust.
+
+### Empty states
+- **Recept (`empty-state`):** na střed, 32px nahoře a dole, 12px vedlejší inkoust. Volitelný nadpis nad textem je 14px tučně. Stejný v kartě, v tabulce i jako samostatná karta (`card empty-state`).
+
+### Panels
+- **Recept (`panel` + `panel-error` / `panel-warning` / `panel-info`):** odsazení 12px, zaoblení 12px, 1px linka, 12px text. Chyba červená, varování jantarová, informace modrá. Ikona vlevo (`flex items-start gap-2.5`) nebo skládaný obsah (`space-y-2`) doplní místo použití.
 
 ### Cards / Containers
 - **Corner Style:** 16px.
 - **Background:** povrch; zapuštěné panely uvnitř karty plátno.
 - **Shadow Strategy:** stín Karta.
 - **Border:** 1px vlasová linka.
-- **Internal Padding:** 20px (24px u sekcí Nastavení).
+- **Internal Padding:** 20px všude (třídy `card` + `p-5`), mezery uvnitř 16px. Karta s tabulkou má záhlaví `card-header` (20px do stran, 16px nahoru a dolů, linka pod ním).
 
 ### Dialogs
 - **Structure:** pevná hlavička, posouvající se obsah a akční lišta `ModalFooter` přilepená ke spodnímu okraji; dialog se vždy vejde do viditelné výšky (okraj 16px, od 640px 24px) a nikdy se neposouvá dvakrát.
@@ -215,6 +231,11 @@ Měkké, ale ne nafouklé tvary: karty 16px, tlačítka, pole a segmentové pře
 
 ### Navigation
 - **Style:** svislý seznam v postranním panelu, 12px semibold s ikonou 16px; aktivní položka modrý nádech a hluboká modř, `aria-current="page"`. Na mobilu zásuvka nad ztmavením, zavíraná křížkem nebo klepnutím mimo.
+
+### Interaction rules
+- **Mazání a archivace:** každá jednotlivá vratná akce (smazat položku, korekci, tržní hodnotu, poplatek, nepoužitý účet nebo kategorii; archivovat účet nebo kategorii) proběhne hned a oznámení nabídne „Vrátit“ (8 s, při najetí či fokusu se odpočet zastaví, Ctrl/⌘+Z). Dialog jen tam, kde je potřeba něco vybrat nebo vysvětlit: rozsah pravidelné položky, hromadné mazání, archivace výchozího účtu, smazání použitého účtu nebo kategorie (nabídne archivaci).
+- **Název položky** v seznamech je vždy odkaz na její úpravu (u korekce na detail).
+- **Oznámení** o jedné věci říká typ a název („Účet „Spoření“ byl archivován.“); věc bez názvu se pojmenuje datem nebo částkou. Vždy „smazat“, nikdy „odstranit“.
 
 ### Rozpočtová karta (signature)
 Hlavní KPI karta: popisek velkými písmeny 12px, pod ním částka 24px extrabold v tabulkových číslicích, barevná jen když nese význam (příjem, výdaj, investice).

@@ -73,7 +73,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-lg">
       <div className="space-y-4 text-sm text-slate-500" onKeyDown={handleKeyDown}>
         {/* Varování a popis */}
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-800">
+        <div className="panel panel-error flex items-start gap-2.5">
           <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-semibold text-xs sm:text-sm text-red-900">{description}</p>

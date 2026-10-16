@@ -131,7 +131,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
               />
               <button
                 type="submit"
-                className="px-3.5 py-2 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-xl hover:bg-sky-100 transition-colors flex items-center gap-1"
+                className="btn-secondary"
               >
                 <Check className="w-3.5 h-3.5" />
                 Uložit poznámku
@@ -140,7 +140,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
           </form>
 
           {/* Upozornění na neměnnost finanční částky */}
-          <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+          <div className="panel panel-warning flex items-start gap-2.5">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
             <span>
               Částku korekce nejde upravit, protože z ní vycházejí všechny další zůstatky. Pokud nesedí, korekci smažte a na účtu znovu zvolte Srovnat s bankou.
@@ -152,9 +152,9 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
             <button
               type="button"
               onClick={handleDelete}
-              className="px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1.5"
+              className="btn-secondary btn-secondary-danger"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
               Smazat korekci
             </button>
 
