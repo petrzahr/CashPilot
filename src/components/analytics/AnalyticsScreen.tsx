@@ -325,24 +325,18 @@ export const AnalyticsScreen: React.FC = () => {
               <div className="text-sm font-bold text-slate-900 tabular-nums">
                 {formatCurrency(extremes.avgMonthlyIncomeInHaler)}
               </div>
-              <p className="text-xs text-slate-500">Za zvolené období</p>
+              <p className="text-xs text-slate-500">Za vybraná období</p>
             </div>
 
-            {/* Průměrná čistá změna */}
+            {/* Průměrná čistá bilance: barva podle znaménka jako u nejlepší a nejhorší */}
             <div className="p-3 bg-slate-50 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
-                Průměrná čistá bilance
+                Průměrná čistá bilance za období
               </span>
-              <div
-                className={`text-sm font-bold tabular-nums ${
-                  extremes.avgMonthlyNetChangeInHaler < 0
-                    ? 'text-red-600'
-                    : 'text-slate-900'
-                }`}
-              >
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.avgMonthlyNetChangeInHaler)}`}>
                 {formatCurrency(extremes.avgMonthlyNetChangeInHaler)}
               </div>
-              <p className="text-xs text-slate-500">/ období</p>
+              <p className="text-xs text-slate-500">Za vybraná období</p>
             </div>
           </div>
         </div>
