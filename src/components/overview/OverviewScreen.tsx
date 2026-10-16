@@ -458,7 +458,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             </span>
                             <span
                               className={`text-xs font-bold whitespace-nowrap ${
-                                isClosingNegative ? 'text-red-600' : 'text-slate-900'
+                                isClosingNegative ? 'text-red-600' : 'text-purple-600'
                               }`}
                             >
                               {formatCurrency(totalClosing)}

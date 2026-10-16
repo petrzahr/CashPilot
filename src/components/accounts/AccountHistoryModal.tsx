@@ -191,18 +191,19 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                   const snap = item.data;
                   const snapInvested = getInvestedAmountAtValuation(account, transactions, snap.date);
                   const snapFees = getFeesUpToDate(investmentFees, account.id, snap.date, settings.budgetStartDay);
+                  const snapReturn = subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees));
                   return (
                     <div
                       key={snap.id}
-                      className="p-3 bg-purple-50/60 border border-purple-200 rounded-xl flex items-center justify-between gap-3 text-sm hover:bg-purple-50 transition-colors"
+                      className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-sm hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-purple-100 text-purple-700 rounded-lg shrink-0">
+                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg shrink-0">
                           <TrendingUp className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-purple-950">Tržní hodnota</span>
+                            <span className="font-semibold text-slate-900">Tržní hodnota</span>
                           </div>
                           <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>{formatCzechDate(snap.date)}</span>
@@ -212,7 +213,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="font-bold text-purple-900 text-base">
+                        <span className="font-bold text-slate-900 text-base">
                           {formatCurrency(snap.marketValueInHaler)}
                         </span>
                         <div className="flex justify-end gap-1 mt-1">
@@ -231,7 +232,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                             <div>Poplatky: {formatCurrency(-snapFees)}</div>
                             <div>Investováno: {formatCurrency(subHaler(snapInvested, snapFees))}</div>
                           </>}
-                          <div>Výnos: {formatCurrency(subHaler(snap.marketValueInHaler, subHaler(snapInvested, snapFees)))}</div>
+                          <div>Výnos: <span className={`font-semibold ${snapReturn >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(snapReturn, { showPlus: true })}</span></div>
                         </div>
                       </div>
                     </div>
@@ -279,7 +280,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                     key={tx.id}
                     className={`p-3 border rounded-xl flex items-center justify-between gap-3 text-sm transition-colors ${
                       isCorrection
-                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-50'
+                        ? 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                         : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >

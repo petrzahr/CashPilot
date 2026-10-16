@@ -830,7 +830,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
             <div
               key={category.id}
-              className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors space-y-2"
+              className="p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors space-y-2"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

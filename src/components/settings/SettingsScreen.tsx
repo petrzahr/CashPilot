@@ -651,18 +651,18 @@ export const SettingsScreen: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={exportJSON}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors text-center space-y-1.5"
+                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
               >
-                <Download className="w-5 h-5 text-sky-600" />
+                <Download className="w-5 h-5 text-slate-500" />
                 <span className="text-xs font-bold text-slate-900">Stáhnout zálohu (JSON)</span>
                 <span className="text-xs text-slate-500">Všechna data a nastavení</span>
               </button>
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors text-center space-y-1.5"
+                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
               >
-                <Upload className="w-5 h-5 text-emerald-600" />
+                <Upload className="w-5 h-5 text-slate-500" />
                 <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
                 <span className="text-xs text-slate-500">Sloučí soubor .json s aktuálními daty</span>
               </button>
@@ -676,9 +676,9 @@ export const SettingsScreen: React.FC = () => {
 
               <button
                 onClick={exportCSV}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors text-center space-y-1.5"
+                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
               >
-                <FileText className="w-5 h-5 text-purple-600" />
+                <FileText className="w-5 h-5 text-slate-500" />
                 <span className="text-xs font-bold text-slate-900">Stáhnout položky (CSV)</span>
                 <span className="text-xs text-slate-500">Pro Excel nebo jiné tabulky</span>
               </button>
@@ -708,7 +708,7 @@ export const SettingsScreen: React.FC = () => {
 
               <div className="space-y-2.5">
                 {/* 1. Vymazat všechny transakce */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny položky</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -725,7 +725,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 2. Vymazat všechny účty */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny účty</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -742,7 +742,7 @@ export const SettingsScreen: React.FC = () => {
                 </div>
 
                 {/* 3. Vymazat všechny kategorie */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-50 transition-colors gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors gap-3">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Smazat všechny kategorie</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
