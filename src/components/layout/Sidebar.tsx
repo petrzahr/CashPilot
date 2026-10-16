@@ -198,12 +198,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="shrink-0 px-3 py-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
           {/* Přehled platí k dnešku, ne k období vybranému v záhlaví.
-              Nadpis a souhrn rámují kartu stejným popiskem jako KPI v rozpočtu; výraznost nese jen částka majetku. */}
-          <p className="flex items-baseline justify-between gap-2 pb-1">
-            <span className="font-semibold text-slate-500 uppercase tracking-wide">K dnešku</span>
-            <span className="font-semibold text-slate-500 uppercase tracking-wide tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
-          </p>
-          <div className="space-y-1.5">
+              Nejdřív hlavní číslo (majetek jako KPI), pod linkou jeho rozpis po druzích účtů. */}
+          <div className="pb-2.5 border-b border-slate-200">
+            <p className="flex items-baseline justify-between gap-2">
+              <span className="min-w-0 font-semibold text-slate-500 uppercase tracking-wide truncate">Celkový majetek</span>
+              <span className="shrink-0 text-slate-500 tabular-nums" title="Stav k dnešku">{formatCzechDate(getTodayInPrague())}</span>
+            </p>
+            <p className={`mt-0.5 text-lg font-extrabold leading-tight tabular-nums truncate ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+              {formatCurrency(quickOverview.totalNetWorthInHaler)}
+            </p>
+          </div>
+          <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
@@ -234,14 +239,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {formatCurrency(quickOverview.pensionInHaler)}
               </span>
             </div>
-          </div>
-
-          {/* Souhrn na jednom řádku: 12px částka a 12px okraj karty pojmou popisek velkými písmeny i částky přes 10 mil. Kč */}
-          <div className="border-t border-slate-200 pt-2 flex items-baseline justify-between gap-2">
-            <span className="min-w-0 font-semibold text-slate-500 uppercase tracking-wide truncate" title="Celkový majetek">Celkový majetek</span>
-            <span className={`shrink-0 font-extrabold tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
-              {formatCurrency(quickOverview.totalNetWorthInHaler)}
-            </span>
           </div>
         </div>
       </aside>
