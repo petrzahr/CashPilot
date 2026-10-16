@@ -432,9 +432,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     const id = `${Date.now()}_${Math.random()}`;
     setToasts(prev => [...prev, { id, text, type, action }]);
     if (type === 'error' || type === 'warning') return;
+    // Oznámení s akcí (např. „Vrátit“) zůstane déle, aby se na tlačítko dalo dosáhnout
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 4000);
+    }, action ? 8000 : 4000);
   }, []);
 
   const removeToast = useCallback((id: string) => {
@@ -1923,12 +1924,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [showToast]);
 
   const archiveCategory = useCallback((id: string) => {
+    // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení. Vrátí jen ty,
+    // které archivace skutečně skryla – dřív archivované podkategorie zůstanou archivované.
+    const affectedIds = new Set(
+      data.categories.filter(c => (c.id === id || c.parentId === id) && c.status !== 'archived').map(c => c.id)
+    );
+    const name = data.categories.find(c => c.id === id)?.name;
     setData(prev => ({
       ...prev,
       categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'archived', updatedAt: new Date().toISOString() } : c)
     }));
-    showToast('Kategorie byla archivována.');
-  }, [showToast]);
+    showToast(name ? `Kategorie „${name}“ byla archivována.` : 'Kategorie byla archivována.', 'success', {
+      label: 'Vrátit',
+      onClick: () => {
+        setData(prev => ({
+          ...prev,
+          categories: prev.categories.map(c => affectedIds.has(c.id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
+        }));
+        showToast('Archivace byla vrácena.');
+      },
+    });
+  }, [data.categories, showToast]);
 
   const restoreCategory = useCallback((id: string) => {
     setData(prev => ({
