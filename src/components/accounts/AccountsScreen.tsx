@@ -21,7 +21,8 @@ import {
   RotateCcw, 
   Trash2, 
   Edit3, 
-  Clock, 
+  CalendarCheck,
+  CalendarClock,
   History,
   GripVertical
 } from 'lucide-react';
@@ -384,7 +385,7 @@ export const AccountsScreen: React.FC = () => {
                 {isInvestment ? (
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <CalendarClock className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                       Tržní hodnota zadána:
                     </span>
                     <span className="font-medium text-slate-500">
@@ -395,7 +396,7 @@ export const AccountsScreen: React.FC = () => {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <CalendarCheck className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
                         Naposledy srovnáno s bankou:
                       </span>
                       <span className="font-medium text-slate-500">

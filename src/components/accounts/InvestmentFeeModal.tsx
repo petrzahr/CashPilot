@@ -130,7 +130,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
           >
             Zrušit
           </button>
