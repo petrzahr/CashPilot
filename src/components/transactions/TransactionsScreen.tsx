@@ -68,6 +68,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   // Stav mazání položky
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
   const [isDeletingTx, setIsDeletingTx] = useState(false);
+  // Běžná položka se smaže hned (oznámení nabídne „Vrátit“), pravidelná potřebuje volbu rozsahu
+  const requestDelete = (tx: Transaction) => {
+    if (tx.recurringRuleId || tx.id.startsWith('virtual_')) setDeletingTx(tx);
+    else void deleteTransaction(tx.id);
+  };
 
   // Stav vybrané korekce pro detail modal
   const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
@@ -516,7 +521,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <Copy className="w-4 h-4" />
         </button>
         <button
-          onClick={() => setDeletingTx(tx)}
+          onClick={() => requestDelete(tx)}
           disabled={isDeletingTx}
           title="Smazat položku"
           aria-label={`Smazat položku: ${tx.title}`}

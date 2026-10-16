@@ -293,6 +293,8 @@ interface FinanceContextType {
     recurringMode?: 'occurrence' | 'future' | 'series',
     deleteHistoricalExecuted?: boolean
   ) => Promise<boolean>;
+  /** Vrácení smazané běžné položky (akce „Vrátit“ v oznámení po smazání) */
+  restoreDeletedTransaction: (tx: Transaction, correction?: BalanceCorrection) => void;
   duplicateTransaction: (tx: Transaction) => void;
   setTransactionStatus: (
     id: string,
@@ -801,12 +803,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Pořadí položek bylo uloženo.');
   }, [showToast]);
 
+  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni. Nové updatedAt
+  // je pozdější než záznam o smazání, takže synchronizace položku zase přijme.
+  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
+    const nowIso = new Date().toISOString();
+    setData(prev => {
+      if (prev.transactions.some(t => t.id === tx.id)) return prev;
+      return {
+        ...prev,
+        transactions: insertOrUpdateWithSequence({ ...tx, updatedAt: nowIso }, tx.sequence ?? 1, prev.transactions),
+        corrections: correction && !prev.corrections.some(c => c.id === correction.id)
+          ? [...prev.corrections, { ...correction, updatedAt: nowIso }]
+          : prev.corrections,
+      };
+    });
+    showToast('Položka byla obnovena.');
+  }, [showToast]);
+
   const deleteTransaction = useCallback(async (
     id: string,
     recurringMode: 'occurrence' | 'future' | 'series' = 'occurrence',
     deleteHistoricalExecuted: boolean = false
   ): Promise<boolean> => {
     let success = false;
+    let deletedPlainTx: Transaction | undefined;
+    let deletedCorrection: BalanceCorrection | undefined;
     try {
       // Ověření dostupnosti úložiště (pokud selže, vyvolá chybu)
       try {
@@ -851,6 +872,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           }
           const updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
           success = true;
+          deletedPlainTx = prev.transactions.find(t => t.id === id);
+          deletedCorrection = prev.corrections.find(c => c.id === id);
           return {
             ...prev,
             transactions: updatedTxs,
@@ -993,7 +1016,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       });
 
       if (success) {
-        showToast('Položka byla smazána.');
+        const restoredTx = deletedPlainTx;
+        const restoredCorrection = deletedCorrection;
+        if (restoredTx) {
+          showToast(`Položka „${restoredTx.title}“ byla smazána.`, 'success', {
+            label: 'Vrátit',
+            onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
+          });
+        } else {
+          showToast('Položka byla smazána.');
+        }
         return true;
       } else {
         return false;
@@ -1003,7 +1035,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       showToast('Položku se nepodařilo smazat. Zkuste to prosím znovu.', 'error');
       return false;
     }
-  }, [selectedPeriod.key, showToast]);
+  }, [selectedPeriod.key, showToast, restoreDeletedTransaction]);
 
   const duplicateTransaction = useCallback((tx: Transaction) => {
     const nowIso = new Date().toISOString();
@@ -2414,6 +2446,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    restoreDeletedTransaction,
     duplicateTransaction,
     setTransactionStatus,
     markTransactionExecuted,
