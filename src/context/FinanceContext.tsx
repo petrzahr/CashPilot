@@ -826,6 +826,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   ): Promise<boolean> => {
     let success = false;
     let deletedPlainTx: Transaction | undefined;
+    const deletedSeries: { title?: string } = {};
     let deletedCorrection: BalanceCorrection | undefined;
     try {
       // Ověření dostupnosti úložiště (pokud selže, vyvolá chybu)
@@ -862,6 +863,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         }
 
         const rule = ruleId ? prev.recurringRules.find(r => r.id === ruleId) : undefined;
+        deletedSeries.title = rule?.title;
         const isRecurring = Boolean(rule);
 
         // 1. BĚŽNÁ POLOŽKA (příjem, výdaj, převod) nebo položka bez aktivního pravidla
@@ -1026,7 +1028,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
             onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
           });
         } else {
-          showToast('Položka byla smazána.');
+          const name = deletedSeries.title ? ` „${deletedSeries.title}“` : '';
+          showToast(
+            recurringMode === 'series' ? `Pravidelná položka${name} byla smazána.`
+              : recurringMode === 'future' ? `Budoucí výskyty pravidelné položky${name} byly smazány.`
+              : `Výskyt pravidelné položky${name} byl smazán.`
+          );
         }
         return true;
       } else {
@@ -1392,9 +1399,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       };
     });
 
-    showToast('Pravidelná položka byla upravena.');
+    const ruleTitle = overrideData.title ?? data.recurringRules.find(r => r.id === ruleId)?.title;
+    showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla upravena.` : 'Pravidelná položka byla upravena.');
     return futureRuleId;
-  }, [showToast]);
+  }, [data.recurringRules, showToast]);
 
   const reorderRecurringItem = useCallback((
     ruleId: string,
@@ -1515,8 +1523,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         transactions: updatedTxs,
       };
     });
-    showToast('Pravidelná položka byla odstraněna.');
-  }, [showToast]);
+    const ruleTitle = data.recurringRules.find(r => r.id === id)?.title;
+    showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla smazána.` : 'Pravidelná položka byla smazána.');
+  }, [data.recurringRules, showToast]);
 
   // ------------------- SPRÁVA ÚČTŮ -------------------
 
@@ -1652,8 +1661,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       ...prev,
       accounts: prev.accounts.map(a => a.id === id ? { ...a, status: 'active', isDefault: false, updatedAt: nowIso } : a)
     }));
-    showToast('Účet byl obnoven z archivu.');
-  }, [showToast]);
+    const name = data.accounts.find(a => a.id === id)?.name;
+    showToast(name ? `Účet „${name}“ byl obnoven z archivu.` : 'Účet byl obnoven z archivu.');
+  }, [data.accounts, showToast]);
 
   const deleteAccount = useCallback((id: string) => {
     const hasTransactions = data.transactions.some(t => t.sourceAccountId === id || t.targetAccountId === id);
@@ -1890,7 +1900,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
     setData(prev => mutateMarketValueHistory(prev, id, edit));
-    showToast('Tržní hodnota byla upravena.');
+    showToast(`Tržní hodnota z ${formatCzechDate(edit.date)} byla upravena.`);
   }, [setData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
@@ -2056,8 +2066,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         transactions: updatedTxs
       };
     });
-    showToast('Podkategorie byla přesunuta do nové hlavní kategorie.');
-  }, [showToast]);
+    const subName = data.categories.find(c => c.id === subcategoryId)?.name;
+    const parentName = data.categories.find(c => c.id === newParentId)?.name;
+    showToast(subName && parentName
+      ? `Podkategorie „${subName}“ byla přesunuta do kategorie „${parentName}“.`
+      : 'Podkategorie byla přesunuta do jiné kategorie.');
+  }, [data.categories, showToast]);
 
   const archiveCategory = useCallback((id: string) => {
     // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení. Vrátí jen ty,
@@ -2077,7 +2091,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
           ...prev,
           categories: prev.categories.map(c => affectedIds.has(c.id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
         }));
-        showToast('Archivace byla vrácena.');
+        showToast(name ? `Archivace kategorie „${name}“ byla vrácena.` : 'Archivace kategorie byla vrácena.');
       },
     });
   }, [data.categories, showToast]);
@@ -2087,8 +2101,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       ...prev,
       categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
     }));
-    showToast('Kategorie byla obnovena.');
-  }, [showToast]);
+    const name = data.categories.find(c => c.id === id)?.name;
+    showToast(name ? `Kategorie „${name}“ byla obnovena z archivu.` : 'Kategorie byla obnovena z archivu.');
+  }, [data.categories, showToast]);
 
   const deleteCategory = useCallback((id: string) => {
     // Smazání hlavní kategorie odstraní i podkategorie, proto se počítá i jejich použití
