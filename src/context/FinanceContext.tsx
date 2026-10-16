@@ -253,6 +253,8 @@ export interface ToastMessage {
   text: string;
   /** Volitelná akce přímo v oznámení, např. „Zkusit znovu“ */
   action?: { label: string; onClick: () => void };
+  /** Za kolik ms oznámení samo zmizí (odpočet běží v ToastContainer a při najetí či fokusu se zastaví); bez hodnoty zůstává */
+  durationMs?: number;
 }
 
 interface FinanceContextType {
@@ -432,12 +434,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     action?: ToastMessage['action']
   ) => {
     const id = `${Date.now()}_${Math.random()}`;
-    setToasts(prev => [...prev, { id, text, type, action }]);
-    if (type === 'error' || type === 'warning') return;
     // Oznámení s akcí (např. „Vrátit“) zůstane déle, aby se na tlačítko dalo dosáhnout
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, action ? 8000 : 4000);
+    const durationMs = type === 'error' || type === 'warning' ? undefined : action ? 8000 : 4000;
+    setToasts(prev => [...prev, { id, text, type, action, durationMs }]);
   }, []);
 
   const removeToast = useCallback((id: string) => {
