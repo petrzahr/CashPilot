@@ -638,41 +638,36 @@ export const SettingsScreen: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                onClick={exportJSON}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <Download className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Stáhnout zálohu (JSON)</span>
-                <span className="text-xs text-slate-500">Všechna data a nastavení</span>
-              </button>
-
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <Upload className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Obnovit ze zálohy</span>
-                <span className="text-xs text-slate-500">Sloučí soubor .json s aktuálními daty</span>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <button
-                onClick={exportCSV}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-center space-y-1.5"
-              >
-                <FileText className="w-5 h-5 text-slate-500" />
-                <span className="text-xs font-bold text-slate-900">Stáhnout položky (CSV)</span>
-                <span className="text-xs text-slate-500">Pro Excel nebo jiné tabulky</span>
-              </button>
+            {/* Stejný vzor řádků jako v Mazání dat: popis vlevo, akce vpravo */}
+            <div className="divide-y divide-slate-200">
+              {[
+                { title: 'Stáhnout zálohu (JSON)', text: 'Všechna data a nastavení v jednom souboru.', label: 'Stáhnout zálohu', icon: Download, onClick: exportJSON },
+                { title: 'Obnovit ze zálohy', text: 'Sloučí soubor .json s aktuálními daty. Nic se nesmaže ani nepřepíše.', label: 'Vybrat soubor', icon: Upload, onClick: () => fileInputRef.current?.click() },
+                { title: 'Stáhnout položky (CSV)', text: 'Pro Excel nebo jiné tabulky.', label: 'Stáhnout CSV', icon: FileText, onClick: exportCSV },
+              ].map(({ title, text, label, icon: Icon, onClick }) => (
+                <div key={title} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onClick}
+                    className="max-md:min-h-11 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0 self-start sm:self-center"
+                  >
+                    <Icon className="w-4 h-4" aria-hidden="true" />
+                    {label}
+                  </button>
+                </div>
+              ))}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </section>
 
           {/* 4. Správa dat a reset */}
