@@ -3,16 +3,12 @@ import { useFinance } from '../../context/FinanceContext';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { StatusBadgeMenu, PAST_PLANNED_HINT } from '../shared/StatusBadgeMenu';
+import { StatusBadgeMenu } from '../shared/StatusBadgeMenu';
 import {
   Plus,
   Search,
-  Check,
-  Clock,
   Copy,
   Trash2,
-  Ban,
-  RotateCcw,
   Edit3,
   ArrowUp,
   ArrowDown,
@@ -360,8 +356,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
       ? tx.actualAmountInHaler
       : tx.amountInHaler;
-
-    const isExecuted = tx.status === 'executed';
     const isCancelled = tx.status === 'cancelled';
     const isCorrection = tx.type === 'balance_adjustment';
 
@@ -504,27 +498,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </>
     ) : (
       <>
-        {!isExecuted ? (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'executed')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Označit jako uskutečněnou"
-            aria-label={`Označit jako uskutečněnou: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-emerald-600 focus-visible:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'planned')}
-            disabled={updatingStatusTxId === tx.id || tx.date <= todayIso}
-            title={tx.date <= todayIso ? PAST_PLANNED_HINT : 'Vrátit do plánovaných'}
-            aria-label={`Vrátit do plánovaných: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-          >
-            <Clock className="w-4 h-4" />
-          </button>
-        )}
+        {/* Stav se mění jen štítkem stavu, řádek nese úpravu, duplikaci a smazání */}
         <button
           onClick={() => onEditTransaction(tx)}
           title="Upravit položku"
@@ -541,27 +515,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         >
           <Copy className="w-4 h-4" />
         </button>
-        {!isCancelled ? (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'cancelled')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Označit jako zrušenou"
-            aria-label={`Označit jako zrušenou: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
-          >
-            <Ban className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={() => handleStatusChange(tx.id, 'planned')}
-            disabled={updatingStatusTxId === tx.id}
-            title="Vrátit zrušenou položku do plánovaných"
-            aria-label={`Vrátit zrušenou položku do plánovaných: ${tx.title}`}
-            className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        )}
         <button
           onClick={() => setDeletingTx(tx)}
           disabled={isDeletingTx}
@@ -827,7 +780,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 <th className="w-[116px] py-2.5 px-4 text-right">
                   <span>Částka</span>
                 </th>
-                <th className="w-[170px] py-2.5 px-4 text-right">Akce</th>
+                <th className="w-[120px] py-2.5 px-4 text-right">Akce</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
