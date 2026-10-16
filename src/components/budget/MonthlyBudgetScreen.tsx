@@ -795,18 +795,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
             <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
-                aggregateSummary.investedInHaler >= 0 ? 'text-purple-600' : 'text-red-600'
-              }`}>
+              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedInHaler)}`}>
                 {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
               </span>
             </div>
 
             <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno %</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
-                aggregateSummary.investedPct === null ? 'text-slate-500' : aggregateSummary.investedPct < 0 ? 'text-red-600' : 'text-purple-600'
-              }`}>
+              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedPct)}`}>
                 {formatPercent(aggregateSummary.investedPct)}
               </span>
             </div>

@@ -130,7 +130,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 - **Zelená příjmu** (income-green): příjmy, kladné změny, „Uskutečněná“, úspěch.
 - **Červená výdaje** (expense-red): výdaje, záporné zůstatky, mazání, chyby.
 - **Jantar plánu** (planned-amber): stav „Plánovaná“, upozornění, vrácení do plánu.
-- **Fialová investic** (investment-purple): stav a identita, nikdy akce ani ozdoba. Částka celkového majetku (na všech obrazovkách), „Investováno“, štítek a volba „Celkový majetek“, ikona tržní hodnoty a infopanely investičních dialogů. Akce u investičních účtů jsou neutrální jako u ostatních účtů; výnos je zelený nebo červený.
+- **Fialová investic** (investment-purple): stav a identita, nikdy akce ani ozdoba. Částka celkového majetku (na všech obrazovkách), štítek a volba „Celkový majetek“, ikona tržní hodnoty a infopanely investičních dialogů. Akce u investičních účtů jsou neutrální jako u ostatních účtů; výnos i dlaždice „Investováno“ se barví podle znaménka (zelená/červená) jako ostatní toky období.
 
 ### Neutral
 - **Plátno** (canvas / night-canvas): pozadí aplikace, zapuštěné panely a hlavičky tabulek.
