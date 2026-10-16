@@ -115,7 +115,7 @@ export const RestoreConfirmationModal: React.FC<RestoreConfirmationModalProps> =
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              className="btn-secondary"
             >
               Zrušit
             </button>
@@ -126,11 +126,7 @@ export const RestoreConfirmationModal: React.FC<RestoreConfirmationModalProps> =
                 onConfirm(preview.content);
                 onClose();
               }}
-              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors ${
-                canRestore
-                  ? 'text-white bg-sky-600 hover:bg-sky-700 shadow-sm'
-                  : 'text-slate-500 bg-slate-200 cursor-not-allowed'
-              }`}
+              className="btn-primary"
             >
               Obnovit data
             </button>

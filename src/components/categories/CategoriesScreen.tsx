@@ -130,7 +130,7 @@ export const CategoriesScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAddMain}
-            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span>Nová hlavní kategorie</span>
@@ -176,7 +176,7 @@ export const CategoriesScreen: React.FC = () => {
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{mainCat.name}</span>
                       {mainCat.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
+                        <span className="chip bg-slate-100 text-slate-600">
                           Archivovaná
                         </span>
                       )}
@@ -249,7 +249,7 @@ export const CategoriesScreen: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-80 hover:opacity-100">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleOpenEdit(sub)}
                           title="Upravit nebo přesunout"
@@ -265,7 +265,7 @@ export const CategoriesScreen: React.FC = () => {
                             aria-label={`Archivovat kategorii: ${sub.name}`}
                             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-amber-600 focus-visible:text-amber-600 hover:bg-amber-50 transition-colors"
                           >
-                            <Archive className="w-3.5 h-3.5" />
+                            <Archive className="w-4 h-4" />
                           </button>
                         ) : (
                           <button
@@ -274,7 +274,7 @@ export const CategoriesScreen: React.FC = () => {
                             aria-label={`Obnovit kategorii: ${sub.name}`}
                             className="max-md:inline-flex items-center justify-center min-w-11 min-h-11 md:min-w-0 md:min-h-0 p-1 rounded-lg text-slate-500 hover:text-sky-600 focus-visible:text-sky-600 hover:bg-sky-50 transition-colors"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <RotateCcw className="w-4 h-4" />
                           </button>
                         )}
                         <button

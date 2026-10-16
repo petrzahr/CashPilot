@@ -138,7 +138,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
               value={valuationDate}
               onChange={(e) => { setValuationDate(e.target.value); setErrors(prev => ({ ...prev, date: undefined })); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.date)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.date, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.date, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             />
             <FieldError inputId={`${fieldId}-1`} message={errors.date} />
           </div>
@@ -156,7 +156,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
                 value={marketValueStr}
                 onChange={(e) => { setMarketValueStr(e.target.value); setErrors(prev => ({ ...prev, value: undefined })); }}
                 {...fieldErrorProps(`${fieldId}-2`, errors.value)}
-                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.value, 'border-slate-200 focus:ring-2 focus:ring-sky-500')} font-semibold`}
+                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.value, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-semibold`}
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>
@@ -173,7 +173,7 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             placeholder="např. Výpis z penzijní společnosti k 30. 9."
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
 
@@ -189,14 +189,14 @@ export const MarketValueModal: React.FC<MarketValueModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50"
+            className="btn-secondary"
           >
             Zrušit
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm disabled:opacity-50"
+            className="btn-primary"
           >
             {isSubmitting ? 'Ukládám…' : 'Uložit tržní hodnotu'}
           </button>

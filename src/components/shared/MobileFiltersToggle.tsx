@@ -25,7 +25,7 @@ export const MobileFiltersToggle: React.FC<MobileFiltersToggleProps> = ({ isOpen
       <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
       Filtry
       {activeCount > 0 && (
-        <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-700">{activeCount}</span>
+        <span className="chip bg-sky-50 text-sky-700">{activeCount}</span>
       )}
     </span>
     <ChevronDown

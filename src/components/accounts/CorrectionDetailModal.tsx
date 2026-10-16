@@ -81,7 +81,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
                 <Calendar className="w-4 h-4 text-slate-500" />
                 {dateStr ? formatCzechDate(dateStr) : '—'}
                 {sequence !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">
+                  <span className="ml-1 chip bg-slate-100 text-slate-600">
                     {sequence}. v pořadí dne
                   </span>
                 )}
@@ -127,7 +127,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="např. výpis z banky k 15. 10."
-                className="flex-1 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="flex-1 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
               <button
                 type="submit"
@@ -161,7 +161,7 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              className="btn-secondary"
             >
               Zavřít
             </button>

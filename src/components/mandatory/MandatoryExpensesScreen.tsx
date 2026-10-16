@@ -64,7 +64,7 @@ const SECTION_TOTAL_COLORS: Record<MandatoryGroup, string> = {
 const STANDARD_FREQUENCIES: RecurrenceFrequency[] = ['monthly', 'bi_monthly', 'quarterly', 'semi_annually', 'annually'];
 
 const inputClass =
-  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500';
+  'w-full h-7 max-md:h-11 px-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500';
 
 // Název platby a akce zůstávají viditelné i při vodorovném posunu široké tabulky
 const STICKY_LEFT = 'sticky left-0 z-10';
@@ -285,13 +285,13 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
           {item.title}
           {(item.simState === 'added' || item.simState === 'edited') && (
-            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-100 text-sky-800 whitespace-nowrap">
+            <span className="ml-1.5 chip bg-sky-50 text-sky-700">
               {item.simState === 'added' ? 'nová' : 'upravená'}
             </span>
           )}
           {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
           {!isDeleted && item.frequency !== 'monthly' && (
-            <span className="ml-1.5 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">rozpočítaná</span>
+            <span className="ml-1.5 chip bg-slate-100 text-slate-600">rozpočítaná</span>
           )}
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
@@ -315,13 +315,13 @@ const SectionTable: React.FC<SectionTableProps> = ({
         <td className={`py-2 px-2 whitespace-nowrap text-right ${STICKY_RIGHT} ${rowBg}`}>
           {isDeleted ? (
             <button type="button" title="Vrátit zpět" aria-label={`Vrátit zpět: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-4 h-4" />
             </button>
           ) : (
             <>
               {item.simState === 'edited' && (
                 <button type="button" title="Vrátit původní hodnoty" aria-label={`Vrátit původní hodnoty: ${item.title}`} className={iconButtonClass} onClick={() => onRestore(item)}>
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4" />
                 </button>
               )}
               <button type="button" title="Upravit v simulaci" aria-label={`Upravit v simulaci: ${item.title}`} className={iconButtonClass} onClick={() => startEdit(item)}>
@@ -349,7 +349,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             setAddDraft(emptyDraft());
           }}
           disabled={!!addDraft || accountOptions.length === 0}
-          className="max-md:min-h-11 -my-1 inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          className="btn-secondary -my-1"
         >
           <Plus className="w-3.5 h-3.5" />
           Přidat
@@ -627,15 +627,16 @@ export const MandatoryExpensesScreen: React.FC = () => {
               : <>Období <strong className="text-slate-700">{overview.periodName}</strong></>}
             {' '}· zaokrouhleno na 100 Kč
           </p>
-          <button
-            type="button"
-            onClick={() => setConfirmResetOpen(true)}
-            disabled={!isSimulating}
-            className="max-md:min-h-11 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Obnovit výchozí stav
-          </button>
+          {isSimulating && (
+            <button
+              type="button"
+              onClick={() => setConfirmResetOpen(true)}
+              className="btn-secondary"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Obnovit výchozí stav
+            </button>
+          )}
         </div>
 
         {/* Souhrn měsíčních průměrů z opakovaných plateb */}

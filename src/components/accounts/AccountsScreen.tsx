@@ -209,7 +209,7 @@ export const AccountsScreen: React.FC = () => {
 
           <button
             onClick={handleOpenAdd}
-            className="h-8 max-md:h-11 flex items-center gap-1.5 px-4 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span>Přidat účet</span>
@@ -293,7 +293,7 @@ export const AccountsScreen: React.FC = () => {
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
-                        <span className="px-1.5 py-0.5 text-xs font-semibold bg-slate-200 text-slate-700 rounded">
+                        <span className="chip bg-slate-100 text-slate-600">
                           Archivovaný
                         </span>
                       )}
@@ -414,12 +414,12 @@ export const AccountsScreen: React.FC = () => {
               {/* Příznaky zahrnutí do rozpočtu */}
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 {acc.isUsableCash && (
-                  <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 font-semibold">
+                  <span className="chip bg-sky-50 text-sky-700">
                     Použitelné peníze
                   </span>
                 )}
                 {acc.isNetWorth && (
-                  <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold">
+                  <span className="chip bg-purple-50 text-purple-700">
                     Celkový majetek
                   </span>
                 )}
@@ -432,7 +432,7 @@ export const AccountsScreen: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setMarketValueAccount(acc)}
-                      className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                      className="btn-secondary flex-1"
                     >
                       Tržní hodnota
                     </button>
@@ -440,7 +440,7 @@ export const AccountsScreen: React.FC = () => {
                       type="button"
                       onClick={() => setFeeAccount(acc)}
                       title="Zadat měsíční poplatek obchodníka"
-                      className="max-md:min-h-11 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shrink-0"
+                      className="btn-secondary shrink-0"
                     >
                       Poplatek
                     </button>
@@ -449,7 +449,7 @@ export const AccountsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setReconcileAccount(acc)}
-                    className="max-md:min-h-11 flex-1 py-2 px-3 text-xs font-semibold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors text-center"
+                    className="btn-secondary flex-1"
                   >
                     Srovnat s bankou
                   </button>
@@ -458,7 +458,7 @@ export const AccountsScreen: React.FC = () => {
                   type="button"
                   onClick={() => setHistoryAccount(acc)}
                   title="Historie účtu"
-                  className="max-md:min-h-11 py-2 px-3 text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors flex items-center gap-1 shrink-0"
+                  className="btn-secondary shrink-0"
                 >
                   <History className="w-3.5 h-3.5 text-slate-500" />
                   <span>Historie</span>

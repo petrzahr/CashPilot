@@ -147,7 +147,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             value={name}
             onChange={(e) => { setName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })); }}
             {...fieldErrorProps(`${fieldId}-1`, errors.name)}
-            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.name, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.name, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
           />
           <FieldError inputId={`${fieldId}-1`} message={errors.name} />
         </div>
@@ -202,7 +202,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 }
               }}
               {...fieldErrorProps(`${fieldId}-2`, errors.parent)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.parent, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.parent, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             >
               {isSubcategoryMode && !parentId && (
                 <option value="">Vyberte hlavní kategorii</option>
@@ -263,13 +263,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+            className="btn-secondary"
           >
             Zrušit
           </button>
           <button
             type="submit"
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm"
+            className="btn-primary"
           >
             {isEditMode ? 'Uložit změny' : isSubcategoryMode ? 'Vytvořit podkategorii' : 'Vytvořit kategorii'}
           </button>

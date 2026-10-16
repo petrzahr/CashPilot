@@ -64,14 +64,14 @@ export const ReorderScopeDialog: React.FC<ReorderScopeDialogProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="btn-secondary"
           >
             Zrušit
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 active:bg-sky-800 rounded-xl shadow-sm transition-all cursor-pointer"
+            className="btn-primary"
           >
             <span>Uložit pořadí</span>
           </button>

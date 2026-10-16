@@ -303,26 +303,22 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                           <span className="min-w-0 max-w-full font-semibold text-slate-900 truncate">
                             {tx.title}
                           </span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            isCorrection
-                              ? 'bg-slate-100 text-slate-600'
-                              : 'bg-slate-100 text-slate-500'
-                          }`}>
+                          <span className="chip bg-slate-100 text-slate-600">
                             {typeBadge}
                           </span>
                           {/* Historie obsahuje i plán: stav musí být vidět, jinak se plánovaná tváří jako proběhlá */}
                           {!isCorrection && tx.status === 'planned' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="chip bg-amber-50 text-amber-700">
                               <Clock className="w-3 h-3" aria-hidden="true" /> Plánovaná
                             </span>
                           )}
                           {!isCorrection && tx.status === 'cancelled' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                            <span className="chip bg-slate-100 text-slate-600">
                               <Ban className="w-3 h-3" aria-hidden="true" /> Zrušená
                             </span>
                           )}
                           {tx.sequence !== undefined && (
-                            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 shrink-0">
+                            <span className="chip bg-slate-100 text-slate-600 shrink-0">
                               #{tx.sequence}
                             </span>
                           )}
@@ -360,7 +356,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+              className="btn-secondary"
             >
               Zavřít
             </button>

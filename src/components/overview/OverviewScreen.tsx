@@ -123,6 +123,17 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                 const closing = forecastScope === 'usable' ? p.usableClosingInHaler : p.closingBalanceInHaler;
                 const change = forecastScope === 'usable' ? p.usableNetChangeInHaler : p.netChangeInHaler;
 
+                // Příjmy, výdaje a čisté převody jen z účtů zvoleného pohledu, aby řádek seděl na Čistou změnu
+                let scopeIncome = 0;
+                let scopeExpense = 0;
+                let scopeTransfers = 0;
+                for (const [accountId, bal] of Object.entries(p.accountBalances)) {
+                  if (forecastScope === 'usable' && !accounts.find(a => a.id === accountId)?.isUsableCash) continue;
+                  scopeIncome = addHaler(scopeIncome, bal.incomeInHaler);
+                  scopeExpense = addHaler(scopeExpense, bal.expenseInHaler);
+                  scopeTransfers = addHaler(scopeTransfers, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler));
+                }
+
                 const isNegative = closing < 0;
 
                 return (
@@ -146,7 +157,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         {p.period.name}
                       </button>
                       {isCurrent && (
-                        <span className="ml-2 max-sm:ml-0 max-sm:mt-1 max-sm:inline-block px-1.5 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200/70">
+                        <span className="ml-2 max-sm:ml-0 max-sm:mt-1 chip bg-sky-50 text-sky-700">
                           Aktuální
                         </span>
                       )}
@@ -155,13 +166,15 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       {formatCurrency(opening)}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-emerald-600">
-                      {p.incomeInHaler > 0 ? `+${formatCurrency(p.incomeInHaler)}` : '0 Kč'}
+                      {scopeIncome > 0 ? `+${formatCurrency(scopeIncome)}` : '0 Kč'}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-red-600">
-                      {p.expenseInHaler > 0 ? `−${formatCurrency(p.expenseInHaler)}` : '0 Kč'}
+                      {scopeExpense > 0 ? `−${formatCurrency(scopeExpense)}` : '0 Kč'}
                     </td>
-                    <td className="py-3 px-4 w-[120px] text-right font-semibold text-slate-900">
-                      {p.transfersInHaler > 0 ? formatCurrency(p.transfersInHaler) : '0 Kč'}
+                    <td className={`py-3 px-4 w-[120px] text-right font-semibold ${
+                      scopeTransfers > 0 ? 'text-emerald-600' : scopeTransfers < 0 ? 'text-red-600' : 'text-slate-500'
+                    }`}>
+                      {formatCurrency(scopeTransfers, { showPlus: true })}
                     </td>
                     <td className={`py-3 px-4 w-[130px] text-right font-medium ${
                       change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-500'

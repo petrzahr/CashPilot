@@ -202,11 +202,11 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     });
   });
 
-  it('obrazovka se vykreslí s tlačítky Přidat a Obnovit výchozí stav', () => {
+  it('obrazovka se vykreslí s tlačítkem Přidat; Obnovit výchozí stav jen při simulaci', () => {
     const html = renderToStaticMarkup(
       React.createElement(FinanceProvider, null, React.createElement(MandatoryExpensesScreen))
     );
-    expect(html).toContain('Obnovit výchozí stav');
+    expect(html).not.toContain('Obnovit výchozí stav');
     expect(html).toContain('Přidat');
     expect(html).toContain('Mandatorní výdaje / měsíc');
   });

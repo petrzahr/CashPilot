@@ -27,6 +27,36 @@
 }
 
 @layer components {
+  /* Hlavní a nevratná akce: jeden recept všude (12px tučně), v liště dialogu 40/44px z ModalFooter.
+     Zakázané tlačítko je šedé, ne průhledné, aby se nepletlo s aktivním. */
+  .btn-primary,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 min-h-8 max-md:min-h-11 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-colors cursor-pointer;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2;
+  }
+  .btn-primary {
+    @apply bg-sky-600 hover:bg-sky-700;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700;
+  }
+  .btn-primary:disabled,
+  .btn-danger:disabled {
+    @apply bg-slate-200 text-slate-500 shadow-none cursor-not-allowed;
+  }
+  /* Vedlejší akce (Zrušit, Stáhnout, Dnes…): povrch s vlasovou linkou, hover do modré */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 min-h-8 max-md:min-h-11 px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 bg-white border border-slate-200 shadow-sm transition-colors cursor-pointer;
+    @apply hover:text-sky-700 hover:border-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2;
+  }
+  /* Malý štítek (pořadí, počty, Dnes, konflikt…): stejný tvar jako štítek stavu, barva jen podle významu */
+  .chip {
+    @apply inline-flex items-center gap-1 px-1.5 py-px rounded-md text-xs font-medium leading-4 whitespace-nowrap;
+  }
+  .btn-secondary:disabled {
+    @apply opacity-50 cursor-not-allowed text-slate-500 border-slate-200;
+  }
+
   /* Pole ve formulářových dialozích: jednotná výška bez ohledu na typ (datum, výběr, číslo mají jiné výchozí výšky prohlížeče) */
   .modal-body :is(input:not([type='checkbox'], [type='radio'], [type='color'], [type='file'], [type='range']), select) {
     height: 2.5rem;

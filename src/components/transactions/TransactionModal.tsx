@@ -655,7 +655,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <FieldError inputId={`${fieldId}-7`} message={errors.target || targetAccError} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-2">
               <div>
                 <label htmlFor={`${fieldId}-8`} className="block text-xs font-semibold text-slate-500 mb-1">
                   Kategorie
@@ -762,7 +762,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     >
                       <option value="monthly">Každý měsíc</option>
                       <option value="bi_monthly">Každé 2 měsíce</option>
@@ -785,7 +785,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           const val = parseInt(e.target.value, 10);
                           setDayOfMonth(isNaN(val) ? 0 : val);
                         }}
-                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -800,7 +800,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     min={date}
                     onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
-                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500')}`}
+                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
                   />
                   <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">
@@ -836,7 +836,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+            className="btn-secondary"
           >
             Zrušit
           </button>
@@ -845,7 +845,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               type="submit"
               disabled={isSaving}
               onClick={() => { addAnotherRef.current = true; }}
-              className="px-4 py-2 text-sm font-semibold text-sky-700 bg-white border border-slate-200 rounded-xl hover:bg-sky-50 transition-colors disabled:opacity-50"
+              className="btn-secondary"
             >
               Uložit a další
             </button>
@@ -853,7 +853,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             type="submit"
             disabled={isSaving}
-            className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="btn-primary"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             <span>{isEditing ? 'Uložit změny' : 'Vytvořit položku'}</span>

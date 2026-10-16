@@ -348,7 +348,7 @@ export const SettingsScreen: React.FC = () => {
                   <select id={`${fieldId}-1`}
                     value={budgetStartDay}
                     onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
-                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-slate-900"
+                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
                   >
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <option key={day} value={day}>
@@ -377,7 +377,7 @@ export const SettingsScreen: React.FC = () => {
                       onChange={(e) => setOverdraftLimitStr(e.target.value)}
                       onBlur={saveOverdraft}
                       aria-describedby={`${fieldId}-2-hint`}
-                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold"
+                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>
@@ -506,7 +506,7 @@ export const SettingsScreen: React.FC = () => {
                   type="button"
                   onClick={connectGoogleDrive}
                   disabled={driveSyncStatus === 'syncing'}
-                  className="max-md:min-h-11 flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+                  className="btn-secondary"
                 >
                   <GoogleIcon className="w-4 h-4 shrink-0" />
                   <span>{driveSyncStatus === 'syncing' ? 'Připojuji…' : 'Připojit Google Disk'}</span>
@@ -652,7 +652,7 @@ export const SettingsScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={onClick}
-                    className="max-md:min-h-11 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-xl shadow-sm hover:text-sky-700 hover:border-sky-300 transition-colors shrink-0 self-start sm:self-center"
+                    className="btn-secondary shrink-0 self-start sm:self-center"
                   >
                     <Icon className="w-4 h-4" aria-hidden="true" />
                     {label}
@@ -760,7 +760,7 @@ export const SettingsScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmResetAllOpen(true)}
-                  className="max-md:min-h-11 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors shrink-0 self-start sm:self-center"
+                  className="btn-danger shrink-0 self-start sm:self-center"
                 >
                   Smazat všechna data
                 </button>
