@@ -8,13 +8,13 @@ if (!fs.existsSync(publicDir)) {
 }
 
 // SVG definition for CashPilot icon
-// Wallet silhouette on the existing sky-600 to sky-500 brand gradient.
+// Wallet silhouette on the aviation-blue sky-600 to sky-500 brand gradient (see src/theme.css).
 // Broad shapes keep the wallet and clasp legible at 16px; all surfaces use this source.
 const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="cpGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0284c7" />
-      <stop offset="100%" stop-color="#0ea5e9" />
+      <stop offset="0%" stop-color="#1d4f91" />
+      <stop offset="100%" stop-color="#2c62a8" />
     </linearGradient>
   </defs>
   <!-- Background squircle -->
@@ -23,7 +23,7 @@ const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512
   <g id="wallet">
     <path d="M128 176v-16a32 32 0 0 1 26-31l172-33a20 20 0 0 1 24 20v44H160a32 32 0 0 0-32 16Z" fill="#ffffff" />
     <rect x="112" y="184" width="288" height="208" rx="40" fill="#ffffff" />
-    <path d="M328 248h72v80h-72a40 40 0 0 1 0-80Z" fill="#0284c7" />
+    <path d="M328 248h72v80h-72a40 40 0 0 1 0-80Z" fill="#1d4f91" />
     <circle cx="328" cy="288" r="12" fill="#ffffff" />
   </g>
 </svg>
