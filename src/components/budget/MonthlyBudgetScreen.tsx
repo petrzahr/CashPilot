@@ -657,7 +657,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   const isOverdraftExceeded = defaultWithOverdraft < 0;
 
   // Části řádku seznamu sdílí tabulka (od lg) i řádky-karty na mobilu, stejně jako ve Všech položkách
-  const getListRowParts = (tx: Transaction, rowIndex: number) => {
+  const getListRowParts = (
+    tx: Transaction,
+    rowIndex: number,
+    openStatusUp = rowIndex >= sortedListTransactions.length - 3 && sortedListTransactions.length > 3
+  ) => {
     const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
     const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
     const cat = categories.find(c => c.id === tx.categoryId);
@@ -757,7 +761,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         Korekce
       </span>
     ) : (
-      renderStatusBadge(tx, rowIndex >= sortedListTransactions.length - 3 && sortedListTransactions.length > 3)
+      renderStatusBadge(tx, openStatusUp)
     );
 
     const amountClass = isCorrection
@@ -1251,8 +1255,37 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   )}
                   {/* Dnešek nese štítek „Dnes“ a čára; záhlaví dne má šedý pás jako záhlaví tabulek */}
                   <div data-budget-date={date} className="scroll-mt-20 p-4 sm:p-5 space-y-3">
+                    {/* Záhlaví dne na mobilu: jeden řádek, začátek dne je konec předchozího */}
+                    <div className="lg:hidden -mx-4 sm:-mx-5 -mt-4 sm:-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+                        <span className="font-bold text-slate-900 text-sm">
+                          {formatCzechDate(date)}
+                        </span>
+                        {isToday && (
+                          <span className="chip bg-sky-50 text-sky-700">
+                            Dnes
+                          </span>
+                        )}
+                        <span className="text-slate-500">
+                          · {txs.length} {txs.length === 1 ? 'položka' : txs.length < 5 ? 'položky' : 'položek'}
+                        </span>
+                        {hasNegative && (
+                          <span className="chip bg-red-100 text-red-700">
+                            <AlertTriangle className="w-3 h-3" />
+                            Během dne v mínusu
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        title="Konec dne"
+                        className={`shrink-0 font-bold tabular-nums ${intraDay.endOfDayBalanceInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}
+                      >
+                        {formatCurrency(intraDay.endOfDayBalanceInHaler)}
+                      </span>
+                    </div>
+
                     {/* Záhlaví dne */}
-                    <div className="-mx-4 sm:-mx-5 -mt-4 sm:-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="max-lg:hidden -mx-4 sm:-mx-5 -mt-4 sm:-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <span className="font-bold text-slate-900 text-sm">
                           {formatCzechDate(date)}
@@ -1291,8 +1324,57 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                       </p>
                     )}
 
+                    {/* Položky dne na mobilu: řádky-karty jako v Seznamu, pořadí mění šipky */}
+                    <ul className={`lg:hidden -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 divide-y divide-slate-100 text-xs ${hasNegative ? '' : '!mt-0'}`}>
+                      {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }, stepIndex) => {
+                        const p = getListRowParts(tx, stepIndex, false);
+                        const balanceAfterInHaler = sourceAccountBalanceByTxId.get(tx.id) ?? runningBalanceInHaler;
+                        const isNegativeRow = balanceAfterInHaler < 0 && tx.status !== 'cancelled' && tx.type !== 'balance_adjustment';
+
+                        return (
+                          <li key={tx.id} className={`px-4 sm:px-5 py-3 space-y-1.5 ${isNegativeRow ? 'bg-red-50/60' : p.rowTone}`}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 font-semibold text-slate-900">
+                                {p.title}
+                                {p.note}
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <div className={`font-bold tabular-nums ${p.amountClass}`}>{p.amount}</div>
+                                <div className={`tabular-nums ${balanceAfterInHaler < 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                  zůstatek {formatCurrency(balanceAfterInHaler)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-slate-500 min-w-0">
+                              {p.categoryInline}
+                              {p.categoryInline && p.accountInline && <span aria-hidden="true">·</span>}
+                              {p.accountInline && <span className="truncate">{p.accountInline}</span>}
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-x-2">
+                              <div>{p.status}</div>
+                              <div className="ml-auto flex items-center justify-end -mr-2">
+                                <MoveButtons
+                                  layout="inline"
+                                  itemLabel={tx.title}
+                                  canMoveUp={stepIndex > 0}
+                                  canMoveDown={stepIndex < intraDay.steps.length - 1}
+                                  onMove={(direction) => handleMoveDayTransaction(
+                                    date,
+                                    intraDay.steps.map(s => s.transaction.id),
+                                    tx,
+                                    direction
+                                  )}
+                                />
+                                {p.actions}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
                     {/* Seznam položek v rámci dne (Draggable) */}
-                    <div className="space-y-1.5">
+                    <div className="max-lg:hidden space-y-1.5">
                       {intraDay.steps.map(({ transaction: tx, runningBalanceInHaler }, stepIndex) => {
                         const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
                         const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;

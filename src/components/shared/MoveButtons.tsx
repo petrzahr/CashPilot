@@ -11,9 +11,10 @@ interface MoveButtonsProps {
   className?: string;
   /**
    * stack = na desktopu šipky pod sebou, vždy vidět a úzké (řádky položek dne);
-   * row = vedle sebe, na desktopu jen při najetí (karty účtů).
+   * row = vedle sebe, na desktopu jen při najetí (karty účtů);
+   * inline = vedle sebe a vždy vidět (řádky-karty položek dne na mobilu a tabletu).
    */
-  layout?: 'row' | 'stack';
+  layout?: 'row' | 'stack' | 'inline';
 }
 
 /**
@@ -27,7 +28,9 @@ export const MoveButtons: React.FC<MoveButtonsProps> = ({ itemLabel, canMoveUp, 
   // Skryté tlačítko by na desktopu dál drželo místo a v řádku by zela prázdná mezera
   const containerClass = layout === 'stack'
     ? 'md:flex-col md:gap-0'
-    : 'md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity';
+    : layout === 'inline'
+      ? ''
+      : 'md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity';
   const desktopButtonClass = layout === 'stack' ? 'md:p-0 md:h-4' : 'md:p-1';
   const buttons: { direction: MoveDirection; enabled: boolean; label: string; Icon: typeof ChevronUp }[] = [
     { direction: 'up', enabled: canMoveUp, label: 'Posunout nahoru', Icon: ChevronUp },
