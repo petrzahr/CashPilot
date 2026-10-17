@@ -22,7 +22,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 ## Key Files
 - `src/context/FinanceContext.tsx` - central app state
 - `src/services/storageService.ts` - local browser storage
-- `src/services/syncController.ts`, `src/services/syncModel.ts` - Google Drive sync logic
+- `src/services/syncController.ts`, `src/services/syncModel.ts` - Google Drive sync logic; design in `docs/synchronization-v2.md` (read before changing sync)
 - `src/services/driveBackupService.ts` - backups to a visible Drive folder
 - `src/services/themeService.ts` - light/dark mode
 - `src/theme.css`, `src/index.css` - design tokens and component recipes; rules in `DESIGN.md`
