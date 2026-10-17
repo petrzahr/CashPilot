@@ -226,7 +226,7 @@ export const AccountsScreen: React.FC = () => {
       )}
 
       {/* Karty jednotlivých účtů */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
         {displayedAccounts.map((acc, index) => {
           const accBal = currentSummary?.accountBalances[acc.id];
           const closingBalance = accBal?.closingBalanceInHaler ?? acc.initialBalanceInHaler;
@@ -284,7 +284,7 @@ export const AccountsScreen: React.FC = () => {
                     className="w-4 h-4 rounded-full shrink-0 shadow-sm"
                     style={{ backgroundColor: acc.color }}
                   />
-                  <div>
+                  <div className="min-w-0">
                     <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <span>{acc.name}</span>
                       {acc.status === 'archived' && (
@@ -299,7 +299,7 @@ export const AccountsScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 max-md:ml-auto">
+                <div className="flex items-center gap-1 shrink-0 max-md:ml-auto">
                   <MoveButtons
                     itemLabel={`účet ${acc.name}`}
                     canMoveUp={index > 0}
@@ -356,15 +356,15 @@ export const AccountsScreen: React.FC = () => {
                 </div>
 
                 {isInvestment && (
-                  <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">
+                  <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-500 min-w-0">
                       {`Vklady: ${formatCurrency(contributedPrincipal)}`}
                       {feesTotal !== 0 && <>
                         <span className="block">{`Poplatky: ${formatCurrency(-feesTotal)}`}</span>
                         <span className="block">{`Investováno: ${formatCurrency(investedPrincipal)}`}</span>
                       </>}
                     </span>
-                    <span className={`font-bold ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <span className={`font-bold text-right shrink-0 ${unrealizedProfitHaler >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {formatCurrency(unrealizedProfitHaler, { showPlus: true })} ({formatPercent(unrealizedPct, { showPlus: true })})
                     </span>
                   </div>
@@ -421,7 +421,7 @@ export const AccountsScreen: React.FC = () => {
               </div>
 
               {/* Akční tlačítka pro účet */}
-              <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 [&>button]:whitespace-nowrap">
                 {isInvestment ? (
                   <>
                     <button
