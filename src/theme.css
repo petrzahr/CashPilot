@@ -4,8 +4,10 @@
  * světlý a tmavý vzhled ("Noční modř") se přepínají jen výměnou hodnot, ne tříd.
  * Hodnoty jsou kanály "R G B", aby fungovaly modifikátory průhlednosti (bg-white/80).
  * Tmavé hodnoty jsou navržené podle rolí (plátno < karta < výplň), ne mechanicky převrácené;
- * světlé odstíny slate-500 a sky/emerald/amber/red-600 jsou mírně ztmavené pro kontrast AA,
+ * světlé odstíny slate-500 a emerald/amber/red-600 jsou mírně ztmavené pro kontrast AA,
  * světlý sky-500 (fokus prstenec a okraj pole) drží aspoň 3:1 vůči povrchu i plátnu.
+ * Rodina sky nese "leteckou modř" (sky-600 #1d4f91) a purple tlumenou fialovou majetku (purple-600 #6d4bb8);
+ * jména tříd zůstávají, mění se jen hodnoty.
  * Tmavé jantarové podklady (amber-50 až 200) jsou teplé hnědé, aby nesplývaly s červenými.
  * .theme-light uzamkne podstrom ve světlých hodnotách (pro výjimečné prvky, které se nesmí přepnout).
  */
@@ -22,17 +24,17 @@
   --c-slate-800: 30 41 59;
   --c-slate-900: 15 23 42;
   --c-slate-950: 2 6 23;
-  --c-sky-50: 240 249 255;
-  --c-sky-100: 224 242 254;
-  --c-sky-200: 186 230 253;
-  --c-sky-300: 125 211 252;
-  --c-sky-400: 56 189 248;
-  --c-sky-500: 2 132 199;
-  --c-sky-600: 2 120 182;
-  --c-sky-700: 3 105 161;
-  --c-sky-800: 7 89 133;
-  --c-sky-900: 12 74 110;
-  --c-sky-950: 8 47 73;
+  --c-sky-50: 238 243 250;
+  --c-sky-100: 221 231 245;
+  --c-sky-200: 189 208 234;
+  --c-sky-300: 142 174 219;
+  --c-sky-400: 88 132 196;
+  --c-sky-500: 44 98 168;
+  --c-sky-600: 29 79 145;
+  --c-sky-700: 22 62 115;
+  --c-sky-800: 18 51 95;
+  --c-sky-900: 15 42 78;
+  --c-sky-950: 10 28 52;
   --c-red-50: 254 242 242;
   --c-red-100: 254 226 226;
   --c-red-200: 254 202 202;
@@ -66,17 +68,17 @@
   --c-emerald-800: 6 95 70;
   --c-emerald-900: 6 78 59;
   --c-emerald-950: 2 44 34;
-  --c-purple-50: 250 245 255;
-  --c-purple-100: 243 232 255;
-  --c-purple-200: 233 213 255;
-  --c-purple-300: 216 180 254;
-  --c-purple-400: 192 132 252;
-  --c-purple-500: 168 85 247;
-  --c-purple-600: 147 51 234;
-  --c-purple-700: 126 34 206;
-  --c-purple-800: 107 33 168;
-  --c-purple-900: 88 28 135;
-  --c-purple-950: 59 7 100;
+  --c-purple-50: 245 242 252;
+  --c-purple-100: 235 229 248;
+  --c-purple-200: 217 207 242;
+  --c-purple-300: 187 169 230;
+  --c-purple-400: 149 125 212;
+  --c-purple-500: 125 95 198;
+  --c-purple-600: 109 75 184;
+  --c-purple-700: 91 60 158;
+  --c-purple-800: 74 50 130;
+  --c-purple-900: 60 42 105;
+  --c-purple-950: 39 26 71;
 }
 :root[data-theme="dark"] {
   --c-white: 18 28 48;
@@ -91,17 +93,17 @@
   --c-slate-800: 221 228 239;
   --c-slate-900: 238 242 248;
   --c-slate-950: 247 249 252;
-  --c-sky-50: 16 41 65;
-  --c-sky-100: 15 51 79;
-  --c-sky-200: 10 70 110;
-  --c-sky-300: 5 111 169;
-  --c-sky-400: 14 165 233;
-  --c-sky-500: 56 189 248;
-  --c-sky-600: 56 189 248;
-  --c-sky-700: 125 211 252;
-  --c-sky-800: 186 230 253;
-  --c-sky-900: 224 242 254;
-  --c-sky-950: 240 249 255;
+  --c-sky-50: 19 35 61;
+  --c-sky-100: 23 43 75;
+  --c-sky-200: 30 58 102;
+  --c-sky-300: 47 92 156;
+  --c-sky-400: 91 143 214;
+  --c-sky-500: 127 176 239;
+  --c-sky-600: 127 176 239;
+  --c-sky-700: 163 198 244;
+  --c-sky-800: 199 220 248;
+  --c-sky-900: 227 238 252;
+  --c-sky-950: 241 247 254;
   --c-red-50: 49 28 43;
   --c-red-100: 73 29 39;
   --c-red-200: 110 28 37;
@@ -135,17 +137,17 @@
   --c-emerald-800: 167 243 208;
   --c-emerald-900: 209 250 229;
   --c-emerald-950: 236 253 245;
-  --c-purple-50: 38 28 72;
-  --c-purple-100: 53 28 92;
-  --c-purple-200: 77 31 135;
-  --c-purple-300: 121 46 197;
-  --c-purple-400: 168 85 247;
-  --c-purple-500: 192 132 252;
-  --c-purple-600: 192 132 252;
-  --c-purple-700: 216 180 254;
-  --c-purple-800: 233 213 255;
-  --c-purple-900: 243 232 255;
-  --c-purple-950: 250 245 255;
+  --c-purple-50: 34 29 61;
+  --c-purple-100: 45 37 82;
+  --c-purple-200: 62 50 117;
+  --c-purple-300: 101 80 176;
+  --c-purple-400: 149 125 212;
+  --c-purple-500: 185 163 236;
+  --c-purple-600: 185 163 236;
+  --c-purple-700: 210 196 244;
+  --c-purple-800: 227 218 248;
+  --c-purple-900: 239 234 251;
+  --c-purple-950: 247 244 253;
 }
 
 :root, .theme-light {
@@ -156,6 +158,8 @@
   --c-table-nonmonthly: 244 246 249;
   /* Ztmavení pozadí pod dialogem a mobilním menu (v obou vzhledech tmavé) */
   --c-scrim: 15 23 42;
+  /* Plátno aplikace: o stupeň tmavší než zapuštěné panely (slate-50), aby karty vystoupily bez stínu */
+  --c-canvas: 240 243 247;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -163,5 +167,6 @@
   --c-table-category: 16 25 43;
   --c-table-nonmonthly: 24 34 54;
   --c-scrim: 2 6 15;
+  --c-canvas: 9 16 29;
   color-scheme: dark;
 }

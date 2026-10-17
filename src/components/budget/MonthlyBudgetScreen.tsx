@@ -57,6 +57,20 @@ const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
 const signTone = (value: number | null) =>
   value === null ? 'text-slate-500' : value > 0 ? 'text-emerald-600' : value < 0 ? 'text-red-600' : 'text-slate-900';
 
+/** Hodnota toku na dlaždici: částka je inkoustem, barvu podle znaménka nese jen znaménko (DESIGN.md). */
+const SignedValue: React.FC<{ text: string; value: number | null }> = ({ text, value }) => {
+  const match = /^([+−-])\s?(.*)$/.exec(text);
+  if (value === null || !match) return <>{text}</>;
+  return (
+    <>
+      <span className={signTone(value)}>{match[1]}</span> {match[2]}
+    </>
+  );
+};
+
+/** Barva textu dlaždice toku: inkoust, chybějící hodnota „—“ vedlejším inkoustem. */
+const flowTone = (value: number | null) => (value === null ? 'text-slate-500' : 'text-slate-900');
+
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
   onEditTransaction: (tx: Transaction) => void;
@@ -242,6 +256,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   const formatPercent = (value: number | null) => value === null
     ? '—'
     : `${new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 }).format(value)} %`;
+  // Procento toku nese znaménko jako částky, protože barvu má jen znaménko
+  const formatSignedPercent = (value: number | null) =>
+    value !== null && value > 0 ? `+ ${formatPercent(value)}` : formatPercent(value);
 
   // Všechny efektivní položky v tomto období (pro souhrny kategorií a převody)
   const allPeriodTransactions = useMemo(() => {
@@ -835,16 +852,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <div className="space-y-4">
         {/* Zvýrazněný řádek: použitelný zůstatek a celkový majetek přes všechny účty */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200">
             <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Použitelný zůstatek</span>
-            <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+            <span className={`text-xl sm:text-[32px] sm:leading-tight font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200">
             <span className="text-xs text-slate-500 block font-bold uppercase tracking-wider">Celkový majetek</span>
-            <span className={`text-xl sm:text-2xl font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+            <span className={`text-xl sm:text-[32px] sm:leading-tight font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
           </div>
@@ -871,55 +888,49 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
               </div>
 
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <span className="text-xs text-slate-500 block font-medium">+ Příjmy</span>
-                <span className="text-base font-bold text-emerald-600 block mt-auto pt-0.5 truncate">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
+                <span className="text-xs text-slate-500 block font-medium"><span className="text-emerald-600 font-bold">+</span> Příjmy</span>
+                <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultIncomeBalance)}
                 </span>
               </div>
 
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <span className="text-xs text-slate-500 block font-medium">− Výdaje</span>
-                <span className="text-base font-bold text-red-600 block mt-auto pt-0.5 truncate">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
+                <span className="text-xs text-slate-500 block font-medium"><span className="text-red-600 font-bold">−</span> Výdaje</span>
+                <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultExpenseBalance)}
                 </span>
               </div>
 
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 block font-medium">Převody</span>
-                <span
-                  className={`text-base font-bold block mt-auto pt-0.5 truncate ${
-                    defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-900'
-                  }`}
-                >
-                  {formatCurrency(defaultNetTransfers, { showPlus: true })}
+                <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                  <SignedValue text={formatCurrency(defaultNetTransfers, { showPlus: true })} value={defaultNetTransfers} />
                 </span>
               </div>
 
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
-                <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
-                  signTone(defaultNetChange)
-                }`}>
-                  {formatCurrency(defaultNetChange, { showPlus: true })}
+                <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                  <SignedValue text={formatCurrency(defaultNetChange, { showPlus: true })} value={defaultNetChange} />
                 </span>
               </div>
 
-              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
                 <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultClosingBalance)}
                 </span>
               </div>
 
-              <div className={`flex flex-col p-3 rounded-xl border shadow-sm col-span-2 sm:col-span-1 transition-colors ${
+              <div className={`flex flex-col p-3 rounded-xl border col-span-2 sm:col-span-1 transition-colors ${
                 isOverdraftExceeded
                   ? 'bg-red-50/90 border-red-300'
                   : 'bg-white border-slate-200'
@@ -943,58 +954,54 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
-                signTone(aggregateSummary.actuallySavedInHaler)
-              }`}>
-                {formatCurrency(aggregateSummary.actuallySavedInHaler, { showPlus: true })}
+              <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                <SignedValue text={formatCurrency(aggregateSummary.actuallySavedInHaler, { showPlus: true })} value={aggregateSummary.actuallySavedInHaler} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno %</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.actuallySavedPct)}`}>
-                {formatPercent(aggregateSummary.actuallySavedPct)}
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.actuallySavedPct)}`}>
+                <SignedValue text={formatSignedPercent(aggregateSummary.actuallySavedPct)} value={aggregateSummary.actuallySavedPct} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
-                signTone(aggregateSummary.savedInHaler)
-              }`}>
-                {formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })}
+              <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                <SignedValue text={formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })} value={aggregateSummary.savedInHaler} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno %</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.savedPct)}`}>
-                {formatPercent(aggregateSummary.savedPct)}
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.savedPct)}`}>
+                <SignedValue text={formatSignedPercent(aggregateSummary.savedPct)} value={aggregateSummary.savedPct} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Investováno</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.investedInHaler)}`}>
-                {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
+              <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                <SignedValue text={formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })} value={aggregateSummary.investedInHaler} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
               <span className="text-xs text-slate-500 block font-medium">Investováno %</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.investedPct)}`}>
-                {formatPercent(aggregateSummary.investedPct)}
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.investedPct)}`}>
+                <SignedValue text={formatSignedPercent(aggregateSummary.investedPct)} value={aggregateSummary.investedPct} />
               </span>
             </div>
 
-            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
+            <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 col-span-2 sm:col-span-1">
               <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
-              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
-                signTone(aggregateSummary.investmentChange)
-              }`}>
-                {aggregateSummary.investmentChange === null ? '—' : formatCurrency(aggregateSummary.investmentChange, { showPlus: true })}
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.investmentChange)}`}>
+                {aggregateSummary.investmentChange === null
+                  ? '—'
+                  : <SignedValue text={formatCurrency(aggregateSummary.investmentChange, { showPlus: true })} value={aggregateSummary.investmentChange} />}
               </span>
             </div>
           </div>

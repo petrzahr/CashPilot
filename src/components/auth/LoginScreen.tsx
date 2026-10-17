@@ -39,7 +39,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 select-none">
+    <div className="min-h-screen bg-canvas flex flex-col justify-center items-center p-4 sm:p-6 select-none">
       {/* Minimální vstup: kdo jsem, jedna akce, cesta pro ty, kdo přístup nemají */}
       <div className="max-w-sm w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-7 sm:p-8 space-y-6">
 
