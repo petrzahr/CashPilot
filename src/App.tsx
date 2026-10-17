@@ -132,7 +132,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-dvh bg-slate-50 overflow-hidden">
+    <div className="flex h-dvh bg-canvas overflow-hidden">
       {/* Postranní navigace */}
       <Sidebar
         currentScreen={currentScreen}
@@ -265,7 +265,7 @@ export function AppContent() {
     // Při chybě přestane obrazovka předstírat načítání a nabídne cestu ven
     const hasError = !!driveError || driveSyncStatus === 'error' || driveSyncStatus === 'conflict';
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="text-center space-y-4 p-6 max-w-sm" role="status">
           <img src="./favicon.svg?v=3" alt="" className={`inline-block w-16 h-16 rounded-2xl ${hasError ? '' : 'animate-pulse motion-reduce:animate-none'}`} />
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">CashPilot</h1>

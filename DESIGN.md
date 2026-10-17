@@ -2,10 +2,11 @@
 name: CashPilot
 description: Osobní finance pod kontrolou – rozpočet, předpověď zůstatků a přehledy v soukromém Google Disku.
 colors:
-  pilot-blue: "#0278b6"
-  pilot-blue-deep: "#0369a1"
-  pilot-blue-tint: "#f0f9ff"
-  canvas: "#f8fafc"
+  pilot-blue: "#1d4f91"
+  pilot-blue-deep: "#163e73"
+  pilot-blue-tint: "#eef3fa"
+  canvas: "#f0f3f7"
+  inset: "#f8fafc"
   surface: "#ffffff"
   fill: "#f1f5f9"
   hairline: "#e2e8f0"
@@ -15,18 +16,26 @@ colors:
   expense-red: "#d62424"
   planned-amber: "#b45309"
   planned-amber-tint: "#fffbeb"
-  investment-purple: "#9333ea"
-  night-canvas: "#0b1322"
+  investment-purple: "#6d4bb8"
+  night-canvas: "#09101d"
+  night-inset: "#0b1322"
   night-surface: "#121c30"
   night-fill: "#1a2640"
   night-hairline: "#263452"
   night-ink: "#eef2f8"
   night-ink-secondary: "#97a6c0"
-  night-blue: "#38bdf8"
+  night-blue: "#7fb0ef"
+  night-purple: "#b9a3ec"
 typography:
   kpi:
     fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
-    fontSize: "24px"
+    fontSize: "32px"
+    fontWeight: 800
+    lineHeight: 1.25
+    fontFeature: "tnum"
+  kpi-mobile:
+    fontFamily: "Plus Jakarta Sans, system-ui, sans-serif"
+    fontSize: "20px"
     fontWeight: 800
     lineHeight: 1.25
     fontFeature: "tnum"
@@ -111,7 +120,7 @@ CashPilot je přístrojová deska osobních financí. Pilot nepotřebuje efekty,
 Aplikace má dva rovnocenné vzhledy. Světlý je papírově čistý (bílé karty na velmi světlém plátně), tmavý „Noční modř“ je kokpit v noci: plátno je nejtmavší, karty o stupeň světlejší, výplně a hover ještě o stupeň výš. Tmavý vzhled není převrácený světlý – každá role má vlastní, ručně zvolenou hodnotu s ověřeným kontrastem. Výchozí je vzhled podle systému; uživatel ho může v Nastavení → Vzhled přepnout natrvalo pro dané zařízení.
 
 **Key Characteristics:**
-- Čísla jsou hlavní obsah: tabulkové číslice, KPI v 24px extrabold, částky zarovnané vpravo.
+- Čísla jsou hlavní obsah: tabulkové číslice, hlavní KPI v 32px extrabold, částky zarovnané vpravo.
 - Barva nese význam (příjem, výdaj, plánováno, investice, akce), nikdy dekoraci.
 - Ploché karty se 16px zaobleními a jemným stínem, žádné vnořené karty.
 - Hustá typografie s pevnou spodní hranicí 12px.
@@ -122,7 +131,7 @@ Aplikace má dva rovnocenné vzhledy. Světlý je papírově čistý (bílé kar
 Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými barvami pro peníze.
 
 ### Primary
-- **Pilotní modř** (pilot-blue): primární tlačítka („Nová položka“, „Přidat položku“), aktivní volby, odkazy a fokus. V tmavém vzhledu ji nahrazuje **Noční modř** (night-blue) s tmavým textem na tlačítku.
+- **Pilotní modř** (pilot-blue): hluboká „letecká“ modř, ne výchozí Tailwind sky (ve třídách zůstává jméno `sky`). Primární tlačítka („Nová položka“, „Přidat položku“), aktivní volby, odkazy a fokus. V tmavém vzhledu ji nahrazuje **Noční modř** (night-blue) s tmavým textem na tlačítku.
 - **Hluboká pilotní modř** (pilot-blue-deep): hover primárního tlačítka, text aktivní položky navigace.
 - **Modrý nádech** (pilot-blue-tint): pozadí aktivní položky navigace a informačních štítků.
 
@@ -130,10 +139,12 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 - **Zelená příjmu** (income-green): příjmy, kladné změny, „Uskutečněná“, úspěch.
 - **Červená výdaje** (expense-red): výdaje, záporné zůstatky, mazání, chyby. Výjimka: hodnoty dlaždic Rozpočtu „Počáteční stav“, „Konečný stav“ a „Včetně kontokorentu“ jsou vždy inkoustem, i když jsou záporné; překročený kontokorent hlásí jen podklad, popisek a ikona dlaždice.
 - **Jantar plánu** (planned-amber): stav „Plánovaná“, upozornění, vrácení do plánu.
-- **Fialová investic** (investment-purple): stav a identita, nikdy akce ani ozdoba. Částka celkového majetku (na všech obrazovkách), štítek a volba „Celkový majetek“, ikona tržní hodnoty a infopanely investičních dialogů. Akce u investičních účtů jsou neutrální jako u ostatních účtů; výnos i dlaždice „Investováno“ se barví podle znaménka (zelená/červená) jako ostatní toky období.
+- **Fialová investic** (investment-purple, tmavě night-purple): tlumená, aby nepřebíjela Použitelný zůstatek; stav a identita, nikdy akce ani ozdoba. Částka celkového majetku (na všech obrazovkách), štítek a volba „Celkový majetek“, ikona tržní hodnoty a infopanely investičních dialogů. Akce u investičních účtů jsou neutrální jako u ostatních účtů; výnos i dlaždice „Investováno“ se barví podle znaménka (zelená/červená) jako ostatní toky období.
+- **Dlaždice toků na Rozpočtu** (Příjmy, Výdaje, Převody, Čistá změna, Uspořeno…, Investováno…, Změna investic): částka je inkoustem, barvu podle znaménka nese jen znaménko `+` / `−` (u Příjmů a Výdajů znaménko v popisku). Barevná čísla jinde (řádky položek, Přehledy) zůstávají.
 
 ### Neutral
-- **Plátno** (canvas / night-canvas): pozadí aplikace, zapuštěné panely a hlavičky tabulek.
+- **Plátno** (canvas / night-canvas, třída `bg-canvas`): pozadí aplikace, o stupeň tmavší než zapuštěné panely, aby karty vystoupily bez stínu.
+- **Zapuštěný panel** (inset / night-inset, `bg-slate-50`): zapuštěné panely uvnitř karet a hlavičky tabulek.
 - **Povrch** (surface / night-surface): karty, dialogy, hlavička, postranní panel.
 - **Výplň** (fill / night-fill): hover, podklad segmentových přepínačů, štítky.
 - **Linka** (hairline / night-hairline): okraje karet a polí, oddělovače řádků.
@@ -143,7 +154,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 ### Named Rules
 **The Meaning-Only Rule.** Barva v rozhraní vždy znamená peníze nebo stav: zelená přichází, červená odchází, jantar čeká, fialová roste, modrá jedná. Kategorie mají vlastní uživatelské barvy jen jako tečky a pruhy grafů.
 
-**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple, white) nebo tokeny `scrim` a `table-*`. Paleta v `tailwind.config.js` je uzavřená, jiné rodiny (rose, blue, gray…) neexistují. Linky a podklady jsou plné (`border-slate-200`, `bg-slate-50`); průhlednost jen tam, kde leží nad barvou. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
+**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple, white) nebo tokeny `scrim`, `canvas` a `table-*`. Paleta v `tailwind.config.js` je uzavřená, jiné rodiny (rose, blue, gray…) neexistují. Linky a podklady jsou plné (`border-slate-200`, `bg-slate-50`); průhlednost jen tam, kde leží nad barvou. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
 
 **The AA Rule.** Každá dvojice text/pozadí má v obou vzhledech kontrast alespoň 4,5:1 (ikony a ovládací prvky 3:1). Proto jsou světlé odstíny slate-500, sky-500 (fokus) a sky/emerald/amber/red-600 oproti výchozímu Tailwindu mírně ztmavené. V tmavém vzhledu jsou jantarové podklady teplé hnědé, aby se plánované a upozornění nepletly s chybami.
 
@@ -154,7 +165,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 **Character:** Jedna geometricky vlídná bezpatková rodina pro všechno; hierarchii nese řez a velikost, ne druhé písmo.
 
 ### Hierarchy
-- **KPI** (800, 24px): hlavní čísla na kartách rozpočtu („Použitelný zůstatek“, „Celkový majetek“).
+- **KPI** (800, 32px, pod 640px 20px kvůli dvěma sloupcům): hlavní čísla na kartách rozpočtu („Použitelný zůstatek“, „Celkový majetek“).
 - **Headline** (700, 16px): název obrazovky v hlavičce a nadpisy sekcí v Nastavení.
 - **Title** (700, 14px): nadpisy karet, názvy kategorií a účtů.
 - **Body** (500, 12px, tabulkové číslice): data, řádky tabulek, popisy, formulářové popisky.
@@ -169,10 +180,10 @@ Postranní panel 256px vlevo (na mobilu vysouvací zásuvka), hlavička 64px a o
 
 ## Elevation & Depth
 
-Hloubka je tonální, stín jen podporuje. Ve světlém vzhledu leží bílé karty na světlém plátně s jemným stínem; v tmavém je karta o stupeň světlejší než plátno a výplň o další stupeň. Výraznější stín mají jen plovoucí vrstvy.
+Hloubka je tonální. Ve světlém vzhledu leží bílé karty s vlasovou linkou na o stupeň tmavším plátně, bez stínu; v tmavém je karta o stupeň světlejší než plátno a výplň o další stupeň. Výraznější stín mají jen plovoucí vrstvy.
 
 ### Shadow Vocabulary
-- **Karta** (`box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05)`): karty, segmentové volby, sekundární tlačítka.
+- **Jemný** (`box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05)`): segmentové volby, tlačítka. Karty a dlaždice stín nemají.
 - **Plovoucí nabídka** (`box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)`): rozbalovací menu, toasty, bubliny grafů (povrch s linkou v obou vzhledech).
 - **Dialog** (`box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)`): modální okna nad ztmavujícím `scrim`.
 
@@ -215,7 +226,7 @@ Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@laye
 ### Cards / Containers
 - **Corner Style:** 16px.
 - **Background:** povrch; zapuštěné panely uvnitř karty plátno.
-- **Shadow Strategy:** stín Karta.
+- **Shadow Strategy:** bez stínu, od plátna ji odděluje tón a linka.
 - **Border:** 1px vlasová linka.
 - **Internal Padding:** 20px všude (třídy `card` + `p-5`), mezery uvnitř 16px. Karta s tabulkou má záhlaví `card-header` (20px do stran, 16px nahoru a dolů, linka pod ním).
 
@@ -238,12 +249,12 @@ Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@laye
 - **Oznámení** o jedné věci říká typ a název („Účet „Spoření“ byl archivován.“); věc bez názvu se pojmenuje datem nebo částkou. Vždy „smazat“, nikdy „odstranit“.
 
 ### Rozpočtová karta (signature)
-Hlavní KPI karta: popisek velkými písmeny 12px, pod ním částka 24px extrabold v tabulkových číslicích, barevná jen když nese význam (příjem, výdaj, investice).
+Hlavní KPI karta: popisek velkými písmeny 12px, pod ním částka 32px (pod 640px 20px) extrabold v tabulkových číslicích, barevná jen když nese význam (celkový majetek fialově, záporná hodnota červeně).
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** používej Tailwind třídy palety a tokeny `scrim` a `table-*`; nové barevné role přidávej do `src/theme.css` pro oba vzhledy současně.
+- **Do** používej Tailwind třídy palety a tokeny `scrim`, `canvas` a `table-*`; nové barevné role přidávej do `src/theme.css` pro oba vzhledy současně.
 - **Do** ověř každý nový text v obou vzhledech na kontrast alespoň 4,5:1.
 - **Do** drž text na 12px a výš; důležitost odlišuj řezem a barvou.
 - **Do** dávej částkám tabulkové číslice a zarovnání vpravo.

@@ -90,15 +90,15 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
     it('obsahuje meta description, Open Graph a Twitter karty se sjednoceným názvem', () => {
       expect(indexHtml).toContain('meta property="og:title" content="CashPilot – Vaše osobní finance pod kontrolou"');
       expect(indexHtml).toContain('meta name="twitter:title" content="CashPilot – Vaše osobní finance pod kontrolou"');
-      expect(indexHtml).toContain('meta name="theme-color" content="#0284c7"');
+      expect(indexHtml).toContain('meta name="theme-color" content="#1d4f91"');
     });
 
-    it('odkazuje na favikony a manifest s verzováním proti cache (?v=3) a relativní cestou', () => {
-      expect(indexHtml).toContain('href="./favicon.svg?v=3"');
-      expect(indexHtml).toContain('href="./favicon-32x32.png?v=3"');
-      expect(indexHtml).toContain('href="./favicon-16x16.png?v=3"');
-      expect(indexHtml).toContain('href="./apple-touch-icon.png?v=3"');
-      expect(indexHtml).toContain('href="./site.webmanifest?v=3"');
+    it('odkazuje na favikony a manifest s verzováním proti cache (?v=4) a relativní cestou', () => {
+      expect(indexHtml).toContain('href="./favicon.svg?v=4"');
+      expect(indexHtml).toContain('href="./favicon-32x32.png?v=4"');
+      expect(indexHtml).toContain('href="./favicon-16x16.png?v=4"');
+      expect(indexHtml).toContain('href="./apple-touch-icon.png?v=4"');
+      expect(indexHtml).toContain('href="./site.webmanifest?v=4"');
     });
   });
 
@@ -111,8 +111,8 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
 
       const svgContent = fs.readFileSync(svgPath, 'utf8');
       expect(svgContent).toContain('<svg');
-      expect(svgContent).toContain('#0284c7'); // sky-600
-      expect(svgContent).toContain('#0ea5e9'); // sky-500
+      expect(svgContent).toContain('#1d4f91'); // sky-600
+      expect(svgContent).toContain('#2c62a8'); // sky-500
       expect(svgContent).toContain('id="wallet"');
       expect(svgContent).not.toContain('16.24 7.76'); // obsolete compass needle
     });
@@ -145,7 +145,7 @@ describe('CashPilot – Sjednocení brandingu a metadat', () => {
       expect(manifestContent.icons[0].sizes).toBe('192x192');
       expect(manifestContent.icons[1].sizes).toBe('512x512');
       expect(manifestContent.icons.map((icon: { src: string }) => icon.src)).toEqual([
-        './favicon-192x192.png?v=3', './favicon-512x512.png?v=3',
+        './favicon-192x192.png?v=4', './favicon-512x512.png?v=4',
       ]);
     });
   });

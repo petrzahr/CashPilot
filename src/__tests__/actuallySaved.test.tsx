@@ -174,6 +174,9 @@ describe('MonthlyBudgetScreen — nové rozvržení karet', () => {
     ];
     const { html } = renderScreen(txs);
     // 5000 − 2000 Kč = 3000 Kč (převod na spoření se nezapočítává)
-    expect(html).toContain(formatCurrency(300000, { showPlus: true }));
+    const visibleText = html.replace(/<[^>]+>/g, '');
+    expect(visibleText).toContain(formatCurrency(300000, { showPlus: true }));
+    // Na dlaždici toku nese barvu jen znaménko, částka je inkoustem
+    expect(html).toContain('<span class="text-emerald-600">+</span> 3');
   });
 });

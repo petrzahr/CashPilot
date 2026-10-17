@@ -20,6 +20,7 @@ export default {
       white: token('white'),
       ...Object.fromEntries(THEMED_FAMILIES.map((name) => [name, family(name)])),
       scrim: token('scrim'),
+      canvas: token('canvas'),
       table: {
         header: token('table-header'),
         category: token('table-category'),

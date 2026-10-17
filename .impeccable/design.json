@@ -4,7 +4,7 @@
   "title": "Design System: CashPilot",
   "extensions": {
     "colorMeta": {
-      "pilot-blue": { "role": "primary", "displayName": "Pilotní modř", "canonical": "rgb(var(--c-sky-600))", "tonalRamp": ["#082f49", "#0c4a6e", "#075985", "#0369a1", "#0278b6", "#0ea5e9", "#7dd3fc", "#e0f2fe"] },
+      "pilot-blue": { "role": "primary", "displayName": "Pilotní modř", "canonical": "rgb(var(--c-sky-600))", "tonalRamp": ["#0a1c34", "#0f2a4e", "#12335f", "#163e73", "#1d4f91", "#2c62a8", "#8eaedb", "#dde7f5"] },
       "pilot-blue-deep": { "role": "primary", "displayName": "Hluboká pilotní modř", "canonical": "rgb(var(--c-sky-700))" },
       "pilot-blue-tint": { "role": "primary", "displayName": "Modrý nádech", "canonical": "rgb(var(--c-sky-50))" },
       "canvas": { "role": "neutral", "displayName": "Plátno", "canonical": "rgb(var(--c-slate-50))", "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#607087", "#cbd5e1", "#f1f5f9", "#f8fafc"] },
@@ -24,7 +24,7 @@
       "night-hairline": { "role": "neutral", "displayName": "Noční linka", "canonical": "rgb(var(--c-slate-200)) v data-theme=dark" },
       "night-ink": { "role": "neutral", "displayName": "Noční inkoust", "canonical": "rgb(var(--c-slate-900)) v data-theme=dark" },
       "night-ink-secondary": { "role": "neutral", "displayName": "Noční vedlejší inkoust", "canonical": "rgb(var(--c-slate-500)) v data-theme=dark" },
-      "night-blue": { "role": "primary", "displayName": "Noční modř", "canonical": "rgb(var(--c-sky-600)) v data-theme=dark", "tonalRamp": ["#102941", "#0f334f", "#0a466e", "#056fa9", "#0ea5e9", "#38bdf8", "#7dd3fc", "#e0f2fe"] }
+      "night-blue": { "role": "primary", "displayName": "Noční modř", "canonical": "rgb(var(--c-sky-600)) v data-theme=dark", "tonalRamp": ["#13233d", "#172b4b", "#1e3a66", "#2f5c9c", "#5b8fd6", "#7fb0ef", "#a3c6f4", "#e3eefc"] }
     },
     "typographyMeta": {
       "kpi": { "displayName": "KPI", "purpose": "Hlavní čísla na kartách rozpočtu. Na telefonu (pod 640px) ve dvousloupcové řadě o stupeň menší (20px), aby se celé částky vešly bez oříznutí." },
