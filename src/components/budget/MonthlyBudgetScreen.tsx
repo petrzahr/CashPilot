@@ -1016,12 +1016,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               key={category.id}
               className="p-3 rounded-xl bg-slate-50 space-y-2"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.color }} />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: category.color }} />
                   <span className="text-xs font-bold text-slate-900">{category.name}</span>
                 </div>
-                <span className={`text-xs font-bold ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                <span className={`text-xs font-bold shrink-0 ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {formatCurrency(totalInHaler)}
                 </span>
               </div>
@@ -1029,9 +1029,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               {subcategories.length > 0 ? (
                 <div className="space-y-1 pt-1 border-t border-slate-200">
                   {subcategories.map(({ sub, totalInHaler: subTotal }) => (
-                    <div key={sub.id} className="flex justify-between text-xs text-slate-500">
-                      <span>{sub.name}</span>
-                      <span className="font-medium text-slate-500">{formatCurrency(subTotal)}</span>
+                    <div key={sub.id} className="flex justify-between gap-3 text-xs text-slate-500">
+                      <span className="min-w-0">{sub.name}</span>
+                      <span className="font-medium shrink-0">{formatCurrency(subTotal)}</span>
                     </div>
                   ))}
                 </div>
