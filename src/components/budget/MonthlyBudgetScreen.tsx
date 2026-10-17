@@ -443,6 +443,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     let target: HTMLElement | null = null;
     let bestDistance = Infinity;
     document.querySelectorAll<HTMLElement>('[data-budget-date]').forEach(el => {
+      // Seznam má karty i tabulku, skrytá podoba nemá kam posunout
+      if (el.getClientRects().length === 0) return;
       const date = el.dataset.budgetDate!;
       const distance = Math.abs(Date.parse(date) - today) - (date >= todayIso ? 0.5 : 0);
       if (distance < bestDistance) { bestDistance = distance; target = el; }
@@ -653,6 +655,176 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
   const defaultWithOverdraft = defaultClosingBalance + overdraftLimit;
   const isOverdraftExceeded = defaultWithOverdraft < 0;
+
+  // Části řádku seznamu sdílí tabulka (od lg) i řádky-karty na mobilu, stejně jako ve Všech položkách
+  const getListRowParts = (tx: Transaction, rowIndex: number) => {
+    const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
+    const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
+    const cat = categories.find(c => c.id === tx.categoryId);
+    const subCat = categories.find(c => c.id === tx.subcategoryId);
+
+    const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
+      ? tx.actualAmountInHaler
+      : tx.amountInHaler;
+    const isCancelled = tx.status === 'cancelled';
+    const isCorrection = tx.type === 'balance_adjustment';
+
+    const diff = tx.diffInHaler ?? (
+      tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
+        ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
+        : tx.amountInHaler
+    );
+
+    const rowTone = isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : '';
+
+    const title = (
+      <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
+        {isCorrection ? (
+          <button
+            type="button"
+            onClick={() => openCorrection(tx)}
+            className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+            <span className="truncate">{tx.title}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onEditTransaction(tx)}
+            className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
+          >
+            {tx.title}
+          </button>
+        )}
+        {tx.recurringRuleId && (
+          <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
+            <Repeat className="w-3.5 h-3.5 text-slate-500" />
+          </span>
+        )}
+        {isCorrection && (
+          <span className="chip bg-slate-100 text-slate-600 shrink-0">
+            Korekce
+          </span>
+        )}
+      </div>
+    );
+
+    const note = tx.note ? <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span> : null;
+
+    const category = isCorrection ? (
+      <span className="chip bg-slate-100 text-slate-600">
+        Korekce zůstatku
+      </span>
+    ) : cat ? (
+      <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+          <span className="truncate">{cat.name}</span>
+        </div>
+        {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
+      </div>
+    ) : tx.type === 'transfer' ? (
+      <span className="text-slate-500 font-medium">Převod</span>
+    ) : (
+      <span className="text-slate-500 italic text-xs">Bez kategorie</span>
+    );
+
+    // Na mobilu stačí kategorie na jednom řádku; korekci už ohlašuje štítek u názvu
+    const categoryInline = isCorrection ? null : cat ? (
+      <span className="inline-flex items-center gap-1.5 min-w-0">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+        <span className="truncate">{subCat ? `${cat.name} › ${subCat.name}` : cat.name}</span>
+      </span>
+    ) : tx.type === 'transfer' ? (
+      <span className="font-medium">Převod</span>
+    ) : (
+      <span className="italic">Bez kategorie</span>
+    );
+
+    const account = sourceAcc ? (
+      <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
+        <span className="block truncate">{sourceAcc.name}</span>
+        {targetAcc && <span className="block text-slate-500 truncate">→ {targetAcc.name}</span>}
+      </span>
+    ) : '—';
+
+    const accountInline = sourceAcc ? (targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name) : null;
+
+    // Stejný štítek jako v zobrazení po dnech: korekce má vlastní štítek, ostatní stav lze změnit
+    const status = isCorrection ? (
+      <span className="chip bg-slate-100 text-slate-600">
+        Korekce
+      </span>
+    ) : (
+      renderStatusBadge(tx, rowIndex >= sortedListTransactions.length - 3 && sortedListTransactions.length > 3)
+    );
+
+    const amountClass = isCorrection
+      ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
+      : tx.type === 'income'
+        ? 'text-emerald-600'
+        : tx.type === 'expense'
+          ? 'text-red-600'
+          : 'text-slate-900';
+
+    const amount = isCorrection
+      ? formatCurrency(diff, { showPlus: true })
+      : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`;
+
+    const actions = isCorrection ? (
+      <>
+        <button
+          type="button"
+          onClick={() => openCorrection(tx)}
+          title="Detail a poznámka korekce"
+          aria-label={`Detail a poznámka korekce: ${tx.title}`}
+          className="btn-icon"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => void deleteCorrection(tx.id)}
+          title="Smazat korekci"
+          aria-label={`Smazat korekci: ${tx.title}`}
+          className="btn-icon btn-icon-danger"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </>
+    ) : (
+      <>
+        <button
+          onClick={() => onEditTransaction(tx)}
+          title="Upravit položku"
+          aria-label={`Upravit položku: ${tx.title}`}
+          className="btn-icon"
+        >
+          <Edit3 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => duplicateTransaction(tx)}
+          title="Duplikovat položku"
+          aria-label={`Duplikovat položku: ${tx.title}`}
+          className="btn-icon"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => requestDelete(tx)}
+          disabled={isDeletingTx}
+          title="Smazat položku"
+          aria-label={`Smazat položku: ${tx.title}`}
+          className="btn-icon btn-icon-danger"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </>
+    );
+
+    return { rowTone, title, note, category, categoryInline, account, accountInline, status, amountClass, amount, actions };
+  };
 
   return (
     <div className="space-y-6">
@@ -1325,8 +1497,49 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             )}
           </div>
         ) : (
-          /* 2. REŽIM: KLASICKÁ TABULKA POLOŽEK */
-          <div className="overflow-x-auto">
+          /* 2. REŽIM: SEZNAM POLOŽEK — do 1024px řádky-karty jako ve Všech položkách, od lg tabulka */
+          <>
+          <ul className="lg:hidden divide-y divide-slate-100 text-xs">
+            {sortedListTransactions.length === 0 ? (
+              <li className="empty-state">{emptyListMessage}</li>
+            ) : (
+              sortedListTransactions.map((tx, rowIndex) => {
+                const p = getListRowParts(tx, rowIndex);
+                return (
+                  <li key={tx.id} data-budget-date={tx.date} className={`scroll-mt-28 p-3 space-y-1.5 ${p.rowTone}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 font-semibold text-slate-900">
+                        {p.title}
+                        {p.note}
+                      </div>
+                      <div className={`shrink-0 font-bold tabular-nums ${p.amountClass}`}>{p.amount}</div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-slate-500 min-w-0">
+                      <span className="shrink-0">{formatCzechDate(tx.date)}</span>
+                      {p.categoryInline && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          {p.categoryInline}
+                        </>
+                      )}
+                      {p.accountInline && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate">{p.accountInline}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-2">
+                      <div>{p.status}</div>
+                      <div className="ml-auto flex items-center justify-end -mr-2">{p.actions}</div>
+                    </div>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+
+          <div className="max-lg:hidden overflow-x-auto">
             <table className="w-full min-w-[1080px] text-left text-xs whitespace-nowrap table-fixed">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold select-none">
@@ -1366,30 +1579,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </tr>
               ) : (
                 sortedListTransactions.map((tx, rowIndex) => {
-                  const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
-                  const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
-                  const cat = categories.find(c => c.id === tx.categoryId);
-                  const subCat = categories.find(c => c.id === tx.subcategoryId);
-
-                  const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-                    ? tx.actualAmountInHaler
-                    : tx.amountInHaler;
-                  const isCancelled = tx.status === 'cancelled';
-                  const isCorrection = tx.type === 'balance_adjustment';
-
-                  const diff = tx.diffInHaler ?? (
-                    tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
-                      ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
-                      : tx.amountInHaler
-                  );
-
+                  const p = getListRowParts(tx, rowIndex);
                   return (
                     <tr
                       key={tx.id}
                       data-budget-date={tx.date}
-                      className={`scroll-mt-28 hover:bg-slate-50 transition-colors ${
-                        isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : ''
-                      }`}
+                      className={`scroll-mt-28 hover:bg-slate-50 transition-colors ${p.rowTone}`}
                     >
                       <td className="py-3 px-4 text-slate-500 overflow-hidden">
                         {formatCzechDate(tx.date)}
@@ -1400,141 +1595,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-900 overflow-hidden">
-                        <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
-                          {isCorrection ? (
-                            <button
-                              type="button"
-                              onClick={() => openCorrection(tx)}
-                              className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
-                            >
-                              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{tx.title}</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => onEditTransaction(tx)}
-                              className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
-                            >
-                              {tx.title}
-                            </button>
-                          )}
-                          {tx.recurringRuleId && (
-                            <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
-                              <Repeat className="w-3.5 h-3.5 text-slate-500" />
-                            </span>
-                          )}
-                          {isCorrection && (
-                            <span className="chip bg-slate-100 text-slate-600 shrink-0">
-                              Korekce
-                            </span>
-                          )}
-                        </div>
-                        {tx.note && <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span>}
+                        {p.title}
+                        {p.note}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 overflow-hidden">
-                        {isCorrection ? (
-                          <span className="chip bg-slate-100 text-slate-600">
-                            Korekce zůstatku
-                          </span>
-                        ) : cat ? (
-                          <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
-                            <div className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                              <span className="truncate">{cat.name}</span>
-                            </div>
-                            {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
-                          </div>
-                        ) : tx.type === 'transfer' ? (
-                          <span className="text-slate-500 font-medium">Převod</span>
-                        ) : (
-                          <span className="text-slate-500 italic text-xs">Bez kategorie</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 overflow-hidden">
-                        {sourceAcc ? (
-                          <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
-                            <span className="block truncate">{sourceAcc.name}</span>
-                            {targetAcc && <span className="block text-slate-500 truncate">→ {targetAcc.name}</span>}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {/* Stejný štítek jako v zobrazení po dnech: korekce má vlastní štítek, ostatní stav lze změnit */}
-                        {isCorrection ? (
-                          <span className="chip bg-slate-100 text-slate-600">
-                            Korekce
-                          </span>
-                        ) : (
-                          renderStatusBadge(tx, rowIndex >= sortedListTransactions.length - 3 && sortedListTransactions.length > 3)
-                        )}
-                      </td>
-                      <td className={`py-3 px-4 text-right font-bold overflow-hidden ${
-                        isCorrection
-                          ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
-                          : tx.type === 'income' 
-                            ? 'text-emerald-600' 
-                            : tx.type === 'expense' 
-                              ? 'text-red-600'
-                              : 'text-slate-900'
-                      }`}>
-                        {isCorrection
-                          ? formatCurrency(diff, { showPlus: true })
-                          : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`}
-                      </td>
+                      <td className="py-3 px-4 text-slate-500 overflow-hidden">{p.category}</td>
+                      <td className="py-3 px-4 text-slate-500 overflow-hidden">{p.account}</td>
+                      <td className="py-3 px-4">{p.status}</td>
+                      <td className={`py-3 px-4 text-right font-bold overflow-hidden ${p.amountClass}`}>{p.amount}</td>
                       <td className="py-3 px-4 text-right overflow-hidden">
-                        <div className="flex items-center justify-end gap-1">
-                          {isCorrection ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openCorrection(tx)}
-                                title="Detail a poznámka korekce"
-                                aria-label={`Detail a poznámka korekce: ${tx.title}`}
-                                className="btn-icon"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void deleteCorrection(tx.id)}
-                                title="Smazat korekci"
-                                aria-label={`Smazat korekci: ${tx.title}`}
-                                className="btn-icon btn-icon-danger"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => onEditTransaction(tx)}
-                                title="Upravit položku"
-                                aria-label={`Upravit položku: ${tx.title}`}
-                                className="btn-icon"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => duplicateTransaction(tx)}
-                                title="Duplikovat položku"
-                                aria-label={`Duplikovat položku: ${tx.title}`}
-                                className="btn-icon"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => requestDelete(tx)}
-                                disabled={isDeletingTx}
-                                title="Smazat položku"
-                                aria-label={`Smazat položku: ${tx.title}`}
-                                className="btn-icon btn-icon-danger"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        <div className="flex items-center justify-end gap-1">{p.actions}</div>
                       </td>
                     </tr>
                   );
@@ -1543,6 +1612,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </tbody>
           </table>
         </div>
+          </>
       )}
       </div>
 
