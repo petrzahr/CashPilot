@@ -13,7 +13,7 @@
       "hairline": { "role": "neutral", "displayName": "Linka", "canonical": "rgb(var(--c-slate-200))" },
       "ink": { "role": "neutral", "displayName": "Inkoust", "canonical": "rgb(var(--c-slate-900))" },
       "ink-secondary": { "role": "neutral", "displayName": "Vedlejší inkoust", "canonical": "rgb(var(--c-slate-500))" },
-      "income-green": { "role": "secondary", "displayName": "Zelená příjmu", "canonical": "rgb(var(--c-emerald-600))", "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#04835d", "#10b981", "#6ee7b7", "#d1fae5"] },
+      "income-green": { "role": "secondary", "displayName": "Zelená příjmu", "canonical": "rgb(var(--c-emerald-600))", "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#047f5a", "#10b981", "#6ee7b7", "#d1fae5"] },
       "expense-red": { "role": "secondary", "displayName": "Červená výdaje", "canonical": "rgb(var(--c-red-600))", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#d62424", "#ef4444", "#fca5a5", "#fee2e2"] },
       "planned-amber": { "role": "secondary", "displayName": "Jantar plánu", "canonical": "rgb(var(--c-amber-700))", "tonalRamp": ["#451a03", "#78350f", "#92400e", "#b45309", "#b85709", "#f59e0b", "#fcd34d", "#fef3c7"] },
       "planned-amber-tint": { "role": "secondary", "displayName": "Jantarový nádech", "canonical": "rgb(var(--c-amber-50))" },

@@ -133,11 +133,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     key={p.period.key}
                     onClick={() => handlePeriodClick(p.period)}
                     className={`cursor-pointer transition-colors group ${
-                      isCurrent ? 'bg-sky-50 hover:bg-sky-100' : 'bg-white hover:bg-slate-50'
+                      isCurrent ? 'bg-sky-50' : 'bg-white hover:bg-slate-50'
                     }`}
                   >
                     <td className={`sticky left-0 z-[1] py-3 px-4 max-sm:px-3 max-sm:whitespace-normal font-semibold text-slate-900 transition-colors ${
-                      isCurrent ? 'bg-sky-50 group-hover:bg-sky-100' : 'bg-white group-hover:bg-slate-50'
+                      isCurrent ? 'bg-sky-50' : 'bg-white group-hover:bg-slate-50'
                     }`}>
                       {/* Řádek je klikací myší; klávesnice a čtečky dostávají skutečné tlačítko */}
                       <button

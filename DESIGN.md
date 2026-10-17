@@ -11,7 +11,7 @@ colors:
   hairline: "#e2e8f0"
   ink: "#0f172a"
   ink-secondary: "#607087"
-  income-green: "#04835d"
+  income-green: "#047f5a"
   expense-red: "#d62424"
   planned-amber: "#b45309"
   planned-amber-tint: "#fffbeb"
