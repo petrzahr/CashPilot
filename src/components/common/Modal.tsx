@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -93,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         className="fixed inset-0 bg-scrim/40 backdrop-blur-sm transition-opacity"
@@ -131,6 +132,10 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
+
+  // Portal into body so parent layout utilities (e.g. space-y margins) never shift the overlay;
+  // static rendering without a DOM (server-rendered tests) keeps the dialog inline
+  return typeof document === 'undefined' ? dialog : createPortal(dialog, document.body);
 };
 
 /**

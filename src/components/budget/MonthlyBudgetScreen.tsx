@@ -871,23 +871,25 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
-                <span className="text-base font-bold text-slate-900 block mt-0.5 truncate">
+                <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
+                  defaultOpeningBalance < 0 ? 'text-red-600' : 'text-slate-900'
+                }`}>
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">+ Příjmy</span>
-                <span className="text-base font-bold text-emerald-600 block mt-0.5 truncate">
+                <span className="text-base font-bold text-emerald-600 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultIncomeBalance)}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">− Výdaje</span>
-                <span className="text-base font-bold text-red-600 block mt-0.5 truncate">
+                <span className="text-base font-bold text-red-600 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultExpenseBalance)}
                 </span>
               </div>
@@ -895,7 +897,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Převody</span>
                 <span
-                  className={`text-base font-bold block mt-0.5 truncate ${
+                  className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                     defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-900'
                   }`}
                 >
@@ -903,18 +905,18 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Čistá změna</span>
-                <span className={`text-base font-bold block mt-0.5 truncate ${
+                <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                   signTone(defaultNetChange)
                 }`}>
                   {formatCurrency(defaultNetChange, { showPlus: true })}
                 </span>
               </div>
 
-              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Konečný stav</span>
-                <span className={`text-base font-bold block mt-0.5 truncate ${
+                <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                   defaultClosingBalance < 0 ? 'text-red-600' : 'text-slate-900'
                 }`}>
                   {formatCurrency(defaultClosingBalance)}
@@ -935,7 +937,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   ) : 'Včetně kontokorentu'}
                 </span>
                 <span
-                  className={`text-base font-bold block mt-0.5 truncate ${
+                  className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                     isOverdraftExceeded ? 'text-red-600' : 'text-slate-900'
                   }`}
                 >
@@ -951,7 +953,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                 signTone(aggregateSummary.actuallySavedInHaler)
               }`}>
                 {formatCurrency(aggregateSummary.actuallySavedInHaler, { showPlus: true })}
@@ -960,14 +962,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno %</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.actuallySavedPct)}`}>
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.actuallySavedPct)}`}>
                 {formatPercent(aggregateSummary.actuallySavedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                 signTone(aggregateSummary.savedInHaler)
               }`}>
                 {formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })}
@@ -976,28 +978,28 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Uspořeno %</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.savedPct)}`}>
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.savedPct)}`}>
                 {formatPercent(aggregateSummary.savedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedInHaler)}`}>
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.investedInHaler)}`}>
                 {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <span className="text-xs text-slate-500 block font-medium">Investováno %</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedPct)}`}>
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${signTone(aggregateSummary.investedPct)}`}>
                 {formatPercent(aggregateSummary.investedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
               <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
-              <span className={`text-base font-bold block mt-0.5 truncate ${
+              <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
                 signTone(aggregateSummary.investmentChange)
               }`}>
                 {aggregateSummary.investmentChange === null ? '—' : formatCurrency(aggregateSummary.investmentChange, { showPlus: true })}
@@ -1016,12 +1018,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               key={category.id}
               className="p-3 rounded-xl bg-slate-50 space-y-2"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: category.color }} />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: category.color }} />
                   <span className="text-xs font-bold text-slate-900">{category.name}</span>
                 </div>
-                <span className={`text-xs font-bold ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                <span className={`text-xs font-bold shrink-0 ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {formatCurrency(totalInHaler)}
                 </span>
               </div>
@@ -1029,9 +1031,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               {subcategories.length > 0 ? (
                 <div className="space-y-1 pt-1 border-t border-slate-200">
                   {subcategories.map(({ sub, totalInHaler: subTotal }) => (
-                    <div key={sub.id} className="flex justify-between text-xs text-slate-500">
-                      <span>{sub.name}</span>
-                      <span className="font-medium text-slate-500">{formatCurrency(subTotal)}</span>
+                    <div key={sub.id} className="flex justify-between gap-3 text-xs text-slate-500">
+                      <span className="min-w-0">{sub.name}</span>
+                      <span className="font-medium shrink-0">{formatCurrency(subTotal)}</span>
                     </div>
                   ))}
                 </div>
