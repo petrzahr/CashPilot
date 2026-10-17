@@ -37,7 +37,6 @@ import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
 import { MoveButtons } from '../shared/MoveButtons';
 import { StatusBadgeMenu } from '../shared/StatusBadgeMenu';
-import { InfoLabel } from '../shared/InfoLabel';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
 
@@ -894,10 +893,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <InfoLabel
-                  label="Převody"
-                  info={`Čisté převody výchozího účtu v období: příchozí ${formatCurrency(defaultTransfersIn)}, odchozí ${formatCurrency(defaultTransfersOut)}.`}
-                />
+                <span className="text-xs text-slate-500 block font-medium">Převody</span>
                 <span
                   className={`text-base font-bold block mt-0.5 truncate ${
                     defaultNetTransfers > 0 ? 'text-emerald-600' : defaultNetTransfers < 0 ? 'text-red-600' : 'text-slate-900'
@@ -930,17 +926,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   ? 'bg-red-50/90 border-red-300'
                   : 'bg-white border-slate-200'
               }`}>
-                <InfoLabel
-                  label={isOverdraftExceeded ? (
+                <span className={`text-xs font-medium block ${isOverdraftExceeded ? 'text-red-700 font-bold' : 'text-slate-500'}`}>
+                  {isOverdraftExceeded ? (
                     <span className="inline-flex items-center gap-1">
                       Včetně kontokorentu
                       <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" aria-hidden="true" />
                     </span>
                   ) : 'Včetně kontokorentu'}
-                  name="Včetně kontokorentu"
-                  labelClassName={`text-xs font-medium ${isOverdraftExceeded ? 'text-red-700 font-bold' : 'text-slate-500'}`}
-                  info={`Konečný stav výchozího účtu plus limit kontokorentu ${formatCurrency(overdraftLimit)}.${isOverdraftExceeded ? ' Kontokorent je překročen.' : ''}`}
-                />
+                </span>
                 <span
                   className={`text-base font-bold block mt-0.5 truncate ${
                     isOverdraftExceeded ? 'text-red-600' : 'text-slate-900'
@@ -957,7 +950,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Skutečně uspořeno" info="Příjmy − výdaje + korekce na běžných účtech a v hotovosti, bez převodů." />
+              <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.actuallySavedInHaler)
               }`}>
@@ -966,14 +959,14 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Skutečně uspořeno %" info="Skutečně uspořeno jako podíl příjmů období." />
+              <span className="text-xs text-slate-500 block font-medium">Skutečně uspořeno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.actuallySavedPct)}`}>
                 {formatPercent(aggregateSummary.actuallySavedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Uspořeno" info="Čisté převody na spořicí účty v období (příchozí − odchozí)." />
+              <span className="text-xs text-slate-500 block font-medium">Uspořeno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.savedInHaler)
               }`}>
@@ -982,28 +975,28 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Uspořeno %" info="Uspořeno jako podíl příjmů období." />
+              <span className="text-xs text-slate-500 block font-medium">Uspořeno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.savedPct)}`}>
                 {formatPercent(aggregateSummary.savedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Investováno" info="Čisté převody na investiční a penzijní účty v období (příchozí − odchozí)." />
+              <span className="text-xs text-slate-500 block font-medium">Investováno</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedInHaler)}`}>
                 {formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-              <InfoLabel label="Investováno %" info="Investováno jako podíl příjmů období." />
+              <span className="text-xs text-slate-500 block font-medium">Investováno %</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${signTone(aggregateSummary.investedPct)}`}>
                 {formatPercent(aggregateSummary.investedPct)}
               </span>
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm col-span-2 sm:col-span-1">
-              <InfoLabel label="Změna investic" info="Změna výnosu investic mezi posledním oceněním minulého a tohoto období: tržní hodnota − vklady, po poplatcích. Bez ocenění na obou koncích se ukáže —." />
+              <span className="text-xs text-slate-500 block font-medium">Změna investic</span>
               <span className={`text-base font-bold block mt-0.5 truncate ${
                 signTone(aggregateSummary.investmentChange)
               }`}>
