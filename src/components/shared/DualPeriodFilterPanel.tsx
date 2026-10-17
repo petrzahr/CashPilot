@@ -38,7 +38,7 @@ export const DualPeriodFilterPanel: React.FC<DualPeriodFilterPanelProps> = ({
       {(['future', 'past'] as const).map(direction => (
         <div key={direction} className="flex flex-wrap items-center justify-between gap-3" role="group" aria-label={direction === 'future' ? 'Budoucí období' : 'Minulá období'}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-slate-900 w-20 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
+            <span className="text-sm font-bold text-slate-900 w-24 max-sm:w-full">{direction === 'future' ? 'Budoucnost' : 'Historie'}</span>
             {/* Předvolby jsou segmentový přepínač; použitý vlastní rozsah nemá žádnou předvolbu vybranou */}
             <div className="segmented flex flex-wrap">
               {(direction === 'future' ? [3, 6, 12, 18, 24] as const : [3, 6, 12, 'ytd', 'all'] as const).map(preset => {
