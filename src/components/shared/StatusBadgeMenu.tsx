@@ -87,7 +87,7 @@ export const StatusBadgeMenu: React.FC<StatusBadgeMenuProps> = ({ tx, todayIso, 
         aria-label={`Stav položky ${tx.title}: ${current.label}. Změnit stav`}
         title="Změnit stav položky (Plánovaná, Uskutečněná, Zrušená)"
         onClick={() => setIsOpen(prev => !prev)}
-        className={`relative max-md:after:absolute max-md:after:-inset-3 max-md:after:content-[''] inline-flex items-center gap-0.5 pl-1 pr-1.5 py-px rounded-md text-xs font-medium leading-4 transition-colors cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${current.badgeClass} ${
+        className={`relative max-md:after:absolute max-md:after:-inset-x-3 max-md:after:-inset-y-3.5 max-md:after:content-[''] inline-flex items-center gap-0.5 pl-1 pr-1.5 py-px rounded-md text-xs font-medium leading-4 transition-colors cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${current.badgeClass} ${
           isUpdating ? 'opacity-70 cursor-wait' : ''
         }`}
       >
