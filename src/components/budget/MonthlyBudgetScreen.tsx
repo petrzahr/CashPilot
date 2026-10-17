@@ -873,7 +873,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                 <span className="text-xs text-slate-500 block font-medium">Počáteční stav</span>
-                <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
+                <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${
+                  defaultOpeningBalance < 0 ? 'text-red-600' : 'text-slate-900'
+                }`}>
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
               </div>
