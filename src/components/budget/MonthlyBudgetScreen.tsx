@@ -1020,7 +1020,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: category.color }} />
-                  <span className="text-xs font-bold text-slate-900">{category.name}</span>
+                  <span className="text-xs font-bold text-slate-900 truncate" title={category.name}>{category.name}</span>
                 </div>
                 <span className={`text-xs font-bold shrink-0 ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {formatCurrency(totalInHaler)}
@@ -1031,7 +1031,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <div className="space-y-1 pt-1 border-t border-slate-200">
                   {subcategories.map(({ sub, totalInHaler: subTotal }) => (
                     <div key={sub.id} className="flex justify-between gap-3 text-xs text-slate-500">
-                      <span className="min-w-0">{sub.name}</span>
+                      <span className="truncate min-w-0" title={sub.name}>{sub.name}</span>
                       <span className="font-medium shrink-0">{formatCurrency(subTotal)}</span>
                     </div>
                   ))}
@@ -1044,12 +1044,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
           {/* Sekce Spoření a převody */}
           <div className="p-3 rounded-xl bg-slate-50 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />
-                <span className="text-xs font-bold text-slate-900">Spoření a převody</span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+                <span className="text-xs font-bold text-slate-900 truncate">Spoření a převody</span>
               </div>
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-slate-900 shrink-0">
                 {formatCurrency(totalTransfersInHaler)}
               </span>
             </div>
@@ -1057,7 +1057,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <div className="space-y-1 pt-1 border-t border-slate-200">
                 {transferTxs.map(tx => (
                   <div key={tx.id} className="flex justify-between gap-3 text-xs text-slate-500">
-                    <span className="truncate min-w-0">{tx.title}</span>
+                    <span className="truncate min-w-0" title={tx.title}>{tx.title}</span>
                     <span className="font-medium shrink-0">{formatCurrency(tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler)}</span>
                   </div>
                 ))}
