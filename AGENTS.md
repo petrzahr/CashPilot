@@ -64,9 +64,9 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 ## Context Preservation & File Exclusions
 To conserve token limits and avoid context rot:
 - Don't open or analyze:
-  - Build/compiler directories: .next/, dist/, build/, out/
+  - Build output: dist/
   - Package dependencies: node_modules/
-  - Lockfiles: package-lock.json, pnpm-lock.yaml, yarn.lock
+  - Lockfile: package-lock.json
   - Large binary/vector assets: *.svg, *.png, *.jpg, *.ico
 - If dependency information is needed, refer only to package.json.
 
