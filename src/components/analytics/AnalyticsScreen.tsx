@@ -24,8 +24,7 @@ import {
   getPeriodForDate,
 } from '../../services/periodService';
 
-// Držíme stav vybraného období na úrovni modulu, aby zůstal zachován při přechodu do jiné sekce
-let savedRange: DualPeriodRange = { direction: 'past', months: 12 };
+import { getInitialRange, rememberRange } from '../../services/periodRangePreference';
 
 /** Čistá bilance nese barvu jen podle znaménka: přebytek zelený, schodek červený. */
 const netTone = (amountInHaler: number | undefined) =>
@@ -62,13 +61,12 @@ export const AnalyticsScreen: React.FC = () => {
     return getPeriodForDate(todayStr, budgetStartDay);
   }, [todayStr, budgetStartDay]);
 
-  // Stav výběru období
-  const [range, setRange] = useState<DualPeriodRange>(() => savedRange);
+  // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
+  const [range, setRange] = useState<DualPeriodRange>(getInitialRange(settings, 'analytics'));
 
-  // Aktualizace uloženého stavu
   const updateRange = (newRange: DualPeriodRange) => {
     setRange(newRange);
-    savedRange = newRange;
+    rememberRange(settings, 'analytics', newRange);
   };
 
   // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Majetek)

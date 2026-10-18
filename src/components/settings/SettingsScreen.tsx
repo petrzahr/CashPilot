@@ -9,6 +9,8 @@ import { ConfirmationModal } from '../common/ConfirmationModal';
 import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
 import { describeSyncError, getSyncErrorDetails } from '../../services/syncErrorText';
 import { DataActionConfirmationModal } from './DataActionConfirmationModal';
+import { PERIOD_RANGE_PRESETS, getDefaultRangeId } from '../../services/periodRangePreference';
+import type { PeriodRangePresetId, PeriodRangeScreen } from '../../types/finance';
 import { 
   Download, 
   Upload, 
@@ -264,6 +266,12 @@ export const SettingsScreen: React.FC = () => {
     setConfirmStartDayOpen(false);
   };
 
+  // Výchozí rozsah filtru období se ukládá hned po výběru, ostatní obrazovky si ponechá
+  const handleDefaultRangeChange = (screen: PeriodRangeScreen, id: PeriodRangePresetId) => {
+    if (id === getDefaultRangeId(settings, screen)) return;
+    updateSettings({ defaultPeriodRanges: { ...settings.defaultPeriodRanges, [screen]: id } });
+  };
+
   // Kontokorent se ukládá sám po opuštění pole nebo Enteru, stejně jako ostatní nastavení
   const [overdraftSaved, setOverdraftSaved] = useState(false);
   useEffect(() => {
@@ -333,7 +341,7 @@ export const SettingsScreen: React.FC = () => {
               <div>
                 <h2 id="nastaveni-obdobi-title" className="text-base font-bold text-slate-900">Rozpočtové období a pravidla</h2>
                 <p className="text-xs text-slate-500">
-                  Kdy začíná rozpočtové období a jak hluboko smí výchozí účet do mínusu
+                  Kdy začíná rozpočtové období, jak hluboko smí výchozí účet do mínusu a jaké období ukázat v přehledech
                 </p>
               </div>
             </div>
@@ -394,7 +402,30 @@ export const SettingsScreen: React.FC = () => {
                   </p>
                 </div>
 
+                {/* Výchozí rozsah období pro Majetek a Analýzu */}
+                {([
+                  { screen: 'overview', label: 'Výchozí rozsah – Majetek', suffix: 3 },
+                  { screen: 'analytics', label: 'Výchozí rozsah – Analýza a trendy', suffix: 4 },
+                ] as const).map(({ screen, label, suffix }) => (
+                  <div key={screen}>
+                    <label htmlFor={`${fieldId}-${suffix}`} className="block text-xs font-semibold text-slate-500 mb-1">
+                      {label}
+                    </label>
+                    <select id={`${fieldId}-${suffix}`}
+                      value={getDefaultRangeId(settings, screen)}
+                      onChange={(e) => handleDefaultRangeChange(screen, e.target.value as PeriodRangePresetId)}
+                      className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
+                    >
+                      {PERIOD_RANGE_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>{preset.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
               </div>
+              <p className="text-xs text-slate-500">
+                Rozsah, se kterým se Majetek a Analýza otevřou. Synchronizuje se přes Google Disk.
+              </p>
             </form>
           </section>
 
