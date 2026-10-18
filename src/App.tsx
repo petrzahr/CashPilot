@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/layout/Header';
 import { Sidebar, NavScreen } from './components/layout/Sidebar';
+import { MobileNav } from './components/layout/MobileNav';
 import { OverviewScreen } from './components/overview/OverviewScreen';
 import { AnalyticsScreen } from './components/analytics/AnalyticsScreen';
 import { MandatoryExpensesScreen } from './components/mandatory/MandatoryExpensesScreen';
@@ -144,12 +145,11 @@ const MainLayout: React.FC = () => {
 
       {/* Hlavní obsahová oblast */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <Header
-          activeScreenTitle={getScreenTitle()}          onToggleMobileMenu={() => setMobileMenuOpen(prev => !prev)}
-        />
+        <Header activeScreenTitle={getScreenTitle()} />
 
         <div ref={scrollContainerRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 md:pb-16 max-w-7xl w-full mx-auto">
+          {/* Na telefonu spodní odsazení uvolní místo pro spodní lištu (56px) a tlačítko Nová položka nad ní */}
+          <main className="flex-1 p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(9rem+env(safe-area-inset-bottom))] md:pb-16 max-w-7xl w-full mx-auto">
             {/* Na telefonu se název sekce do hlavičky nevejde, proto stojí nad obsahem */}
             <h1 className="sm:hidden text-base font-bold text-slate-900 leading-tight mb-4">
               {getScreenTitle()}
@@ -198,12 +198,19 @@ const MainLayout: React.FC = () => {
         </div>
       </div>
 
+      <MobileNav
+        currentScreen={currentScreen}
+        onSelectScreen={handleSelectScreen}
+        drawerOpen={mobileMenuOpen}
+        onOpenDrawer={() => setMobileMenuOpen(true)}
+      />
+
       {/* Rychlý zápis na telefonu: tlačítko v dosahu palce, na desktopu stačí akce v obsahu a postranním panelu */}
       {!isTxModalOpen && !mobileMenuOpen && (
         <button
           type="button"
           onClick={() => handleOpenNewTx()}
-          className="md:hidden fixed bottom-4 right-4 z-40 flex items-center gap-2 h-14 pl-4 pr-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
+          className="md:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 h-14 pl-4 pr-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
         >
           <Plus className="w-5 h-5" aria-hidden="true" />
           <span>Nová položka</span>

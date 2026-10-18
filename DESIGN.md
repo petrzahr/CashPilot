@@ -242,6 +242,7 @@ Každý opakovaný prvek má jeden recept jako třídu v `src/index.css` (`@laye
 
 ### Navigation
 - **Style:** svislý seznam v postranním panelu, 12px semibold s ikonou 16px; aktivní položka modrý nádech a hluboká modř, `aria-current="page"`. Na mobilu zásuvka nad ztmavením, zavíraná křížkem nebo klepnutím mimo.
+- **Mobilní lišta:** pod 768px spodní lišta se čtyřmi hlavními sekcemi (Rozpočet, Přehledy, Analýza, Položky) a „Více“, které otevírá zásuvku; ikona 20px v čipu, pod ní popisek 12px semibold, aktivní čip modrý nádech a hluboká modř. Tlačítko Nová položka plave nad lištou.
 
 ### Interaction rules
 - **Mazání a archivace:** každá jednotlivá vratná akce (smazat položku, korekci, tržní hodnotu, poplatek, nepoužitý účet nebo kategorii; archivovat účet nebo kategorii) proběhne hned a oznámení nabídne „Vrátit“ (8 s, při najetí či fokusu se odpočet zastaví, Ctrl/⌘+Z). Dialog jen tam, kde je potřeba něco vybrat nebo vysvětlit: rozsah pravidelné položky, hromadné mazání, archivace výchozího účtu, smazání použitého účtu nebo kategorie (nabídne archivaci).

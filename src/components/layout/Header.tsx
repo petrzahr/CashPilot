@@ -2,7 +2,7 @@ import { SYNC_LABELS } from '../../services/syncController';
 import React, { useState, useRef, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatPeriodRange } from '../../services/periodService';
-import { ChevronLeft, ChevronRight, Menu, Calendar, RefreshCw, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, RefreshCw, LogOut } from 'lucide-react';
 
 import { GoogleIcon } from '../common/GoogleIcon';
 import { SyncStatusIcon, SyncStatusLabel, formatLastSync } from '../common/SyncStatusIndicator';
@@ -10,12 +10,10 @@ import { DisconnectDriveDialog } from '../common/DisconnectDriveDialog';
 import { describeSyncError } from '../../services/syncErrorText';
 
 interface HeaderProps {
-  onToggleMobileMenu: () => void;
   activeScreenTitle: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onToggleMobileMenu,
   activeScreenTitle,
 }) => {
   const {
@@ -66,18 +64,9 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
     <header className="h-16 min-h-16 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-4 max-[359px]:px-2 sm:px-6 flex items-center justify-between gap-2 max-[359px]:gap-1 select-none">
-      {/* Levá strana: mobilní menu + název sekce */}
+      {/* Levá strana: název sekce; menu je na telefonu ve spodní liště */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-        <button
-          type="button"
-          onClick={onToggleMobileMenu}
-          aria-label="Otevřít menu"
-          className="p-3 -m-1 rounded-xl text-slate-500 hover:bg-slate-100 md:hidden shrink-0"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {/* Na úzkém mobilu se název nevejde vedle navigace obdobím; aktivní sekci ukazuje menu */}
+        {/* Na úzkém mobilu se název nevejde vedle navigace obdobím; aktivní sekci ukazuje spodní lišta */}
         <div className="min-w-0 hidden sm:block">
           <h1 className="text-base font-bold text-slate-900 leading-tight truncate">
             {activeScreenTitle}
