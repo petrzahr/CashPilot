@@ -321,10 +321,10 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(html).not.toMatch(/>-\d+%</);
   });
 
-  it('10c. Budoucí období berou projektovaný konečný stav z forecastu, minulá/probíhající skutečný stav', () => {
-    const current = createBudgetPeriod(2026, 8, 15);
+  it('10c. Probíhající a budoucí období berou projektovaný konečný stav z forecastu, minulá skutečný stav', () => {
+    const past = createBudgetPeriod(2026, 7, 15);
     const future = createBudgetPeriod(2026, 9, 15);
-    const periods = generateBudgetPeriodSequence(current, future, 15, today);
+    const periods = generateBudgetPeriodSequence(past, future, 15, today);
     const summary = (key: string, chk: number, sav: number) =>
       ({
         period: { key },
@@ -334,21 +334,23 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
         },
       }) as unknown as PeriodSummary;
     const forecast = {
-      periods: [],
-      forecastPeriods: [summary('2026-08', 1, 1), summary('2026-09', 12000000, 25000000)],
+      periods: [summary('2026-07', 1, 1)],
+      forecastPeriods: [summary('2026-08', 11000000, 21000000), summary('2026-09', 12000000, 25000000)],
     } as unknown as ForecastResult;
 
     const result = calculatePortfolioComposition(periods, [checking, savings], [], [], [], forecast, today);
 
-    // Probíhající období: skutečný stav, forecast se ignoruje
+    // Minulé období: skutečný stav, forecast se ignoruje
     expect(result[0].totalNetWorthInHaler).toBe(30000000);
+    // Probíhající období: projekce konce období z forecastu
+    expect(result[1].totalNetWorthInHaler).toBe(32000000);
     // Budoucí období: projekce z forecastu
-    expect(result[1].segments.find((s) => s.key === checking.id)!.balanceInHaler).toBe(12000000);
-    expect(result[1].totalNetWorthInHaler).toBe(37000000);
+    expect(result[2].segments.find((s) => s.key === checking.id)!.balanceInHaler).toBe(12000000);
+    expect(result[2].totalNetWorthInHaler).toBe(37000000);
 
     // Bez forecastu zůstává původní chování (dnešní stav)
     const fallback = calculatePortfolioComposition(periods, [checking, savings], [], [], [], undefined, today);
-    expect(fallback[1].totalNetWorthInHaler).toBe(30000000);
+    expect(fallback[2].totalNetWorthInHaler).toBe(30000000);
   });
 
   it('11. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {
