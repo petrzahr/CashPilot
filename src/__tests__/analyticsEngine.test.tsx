@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Sidebar } from '../components/layout/Sidebar';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
 import { FinanceProvider } from '../context/FinanceContext';
+import { PeriodRangeSelector } from '../components/shared/PeriodRangeSelector';
 import {
   resolveAnalyticsDateRange,
   getFilteredExecutedTransactions,
@@ -557,15 +558,13 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
 
   // 1. Pole Od a Do používají pouze výběr měsíce a roku
   it('1. Pole Od a Do používají pouze výběr měsíce a roku (input type="month")', () => {
+    // Pole se zobrazují až po volbě Vlastní, proto se ověřuje přímo výběr rozsahu
     const html = renderToStaticMarkup(
-      <FinanceProvider>
-        <AnalyticsScreen />
-      </FinanceProvider>
+      <PeriodRangeSelector from="2026-01" to="2026-03" onFromChange={() => {}} onToChange={() => {}} onSubmit={() => {}} />
     );
-    expect(html).toContain('type="month"');
-    // Obsahuje popisky Od: a Do:
-    expect(html).toContain('Od:');
-    expect(html).toContain('Do:');
+    expect(html.match(/type="month"/g)).toHaveLength(2);
+    expect(html).toContain('Od</span>');
+    expect(html).toContain('Do</span>');
   });
 
   // 2. V polích se nezobrazují celé rozsahy období
