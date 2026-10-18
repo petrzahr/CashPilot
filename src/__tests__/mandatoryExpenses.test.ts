@@ -35,7 +35,7 @@ const rule = (partial: Partial<RecurringRule>): RecurringRule => ({
 });
 
 describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
-  const accounts = [acc('chk', 'Běžný', 'checking'), acc('sav', 'Spořicí', 'savings')];
+  const accounts = [{ ...acc('chk', 'Běžný', 'checking'), isDefault: true }, acc('sav', 'Spořicí', 'savings')];
   const categories = [
     cat('salary', 'Mzda', 'income'),
     cat('housing', 'Bydlení', 'expense'),
@@ -78,8 +78,38 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     expect(result.transfer.monthlyInHaler).toBe(500000);
     expect(result.transfer.categories[0].items[0].accountLabel).toBe('Běžný → Spořicí');
     expect(result.remainingMonthlyInHaler).toBe(9600000 - 2430000 - 500000);
-    // Skutečně uspořeno = příjmy − výdaje na běžném účtu, bez převodů
+    // Skutečně uspořeno = příjmy − výdaje výchozího účtu, bez převodů
     expect(result.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000);
+  });
+
+  it('Průměrně ušetří a Zbývá počítají jen s výchozím účtem a na sebe navazují', () => {
+    const more = [
+      { ...acc('chk2', 'Druhý běžný', 'checking') },
+      acc('pen', 'Penzijní', 'pension'),
+      acc('inv', 'Investice', 'investment'),
+    ];
+    const r = calculateMandatoryOverview(
+      [
+        ...rules,
+        rule({ id: 'state', title: 'Státní příspěvek', type: 'income', categoryId: 'salary', amountInHaler: 30000, sourceAccountId: 'pen' }),
+        rule({ id: 'other_exp', title: 'Výdaj z druhého účtu', categoryId: 'car', amountInHaler: 70000, sourceAccountId: 'chk2' }),
+        rule({ id: 'dps', title: 'DPS', type: 'transfer', targetAccountId: 'pen', amountInHaler: 170000 }),
+        rule({ id: 'back', title: 'Ze spoření zpět', type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 100000 }),
+        rule({ id: 'between', title: 'Spoření → investice', type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'inv', amountInHaler: 200000 }),
+      ],
+      categories, [...accounts, ...more], today, 15
+    );
+    const saved = 9600000 - 2430000;
+    expect(r.actuallySavedMonthlyInHaler).toBe(saved);
+    expect(r.remainingMonthlyInHaler).toBe(saved - 500000 - 170000 + 100000);
+    // Tabulkové součty dál obsahují všechny účty
+    expect(r.income.monthlyInHaler).toBe(9600000 + 30000);
+  });
+
+  it('bez výchozího účtu jsou Průměrně ušetří i Zbývá 0', () => {
+    const r = calculateMandatoryOverview(rules, categories, accounts.map((a) => ({ ...a, isDefault: false })), today, 15);
+    expect(r.actuallySavedMonthlyInHaler).toBe(0);
+    expect(r.remainingMonthlyInHaler).toBe(0);
   });
 
   describe('trvalá změna platby (rozdělení na starou a novou větev)', () => {
