@@ -1,6 +1,6 @@
 import { Account, BudgetPeriod, Category, RecurrenceFrequency, RecurringRule } from '../types/finance';
 import { czechStringCompare } from './categoryService';
-import { addHaler, subHaler } from './currencyService';
+import { addHaler } from './currencyService';
 import { doesRuleApplyInPeriod, generateOccurrenceForPeriod } from './financialEngine';
 import { generatePeriodsSequence, getPeriodForDate } from './periodService';
 
@@ -53,7 +53,7 @@ export interface MandatoryItem {
   accountLabel: string;         // "Účet" nebo "Z účtu → Na účet"
   scheduleLabel: string;        // např. "ročně, 15. 3." nebo "čtvrtletně, 10. (led, dub, čvc, říj)"
   nextDate: string | null;      // nejbližší splatnost od dneška
-  fromCashAccount: boolean;     // zdrojový účet je běžný nebo hotovostní
+  defaultAccountSign: 1 | -1 | 0; // dopad na výchozí účet: +1 přitéká, −1 odtéká, 0 se ho netýká
   amountInHaler: number;      // částka jedné platby
   monthlyInHaler: number;       // průměr na měsíc
   yearlyInHaler: number;        // průměr na rok
@@ -101,11 +101,11 @@ export interface MandatoryOverview {
   expense: MandatorySection;
   transfer: MandatorySection;
   /**
-   * Příjmy − výdaje na běžných a hotovostních účtech, bez převodů (průměr na měsíc) -
+   * Příjmy − výdaje výchozího účtu, bez převodů (průměr na měsíc) -
    * stejná definice jako "Skutečně uspořeno" v Měsíčním rozpočtu.
    */
   actuallySavedMonthlyInHaler: number;
-  /** Příjmy − výdaje − spoření & převody (průměr na měsíc) */
+  /** Průměrně ušetří − čisté převody z výchozího účtu (průměr na měsíc) */
   remainingMonthlyInHaler: number;
 }
 
@@ -263,7 +263,16 @@ export function calculateMandatoryOverview(
     );
   };
 
-  const isCashAccount = (id?: string) => ['checking', 'cash'].includes((id && accMap.get(id)?.type) || '');
+  const defaultAccountId = accounts.find((a) => a.isDefault && a.status !== 'archived')?.id;
+  const defaultAccountSign = (group: MandatoryGroup, sourceAccountId: string, targetAccountId?: string): 1 | -1 | 0 => {
+    if (!defaultAccountId) return 0;
+    if (group === 'transfer') {
+      if (sourceAccountId === targetAccountId) return 0;
+      return sourceAccountId === defaultAccountId ? -1 : targetAccountId === defaultAccountId ? 1 : 0;
+    }
+    if (sourceAccountId !== defaultAccountId) return 0;
+    return group === 'income' ? 1 : -1;
+  };
   const withAmounts = (item: Omit<MandatoryItem, 'monthlyInHaler' | 'yearlyInHaler'>, intervalDays?: number): MandatoryItem => {
     const factor = getMonthlyFactor({ frequency: item.frequency, intervalDays });
     return {
@@ -303,7 +312,7 @@ export function calculateMandatoryOverview(
       // Při změně frekvence v simulaci už neznáme konkrétní měsíce splatnosti
       scheduleLabel: frequency === rule.frequency ? scheduleFor(rule) : buildScheduleLabel({ ...rule, frequency }, []),
       nextDate: frequency === rule.frequency ? findNextDate(rule) : null,
-      fromCashAccount: isCashAccount(rule.sourceAccountId),
+      defaultAccountSign: defaultAccountSign(rule.type as MandatoryGroup, rule.sourceAccountId, rule.targetAccountId),
       amountInHaler: edit?.amountInHaler ?? rule.amountInHaler,
     }, rule.intervalDays);
   });
@@ -322,7 +331,7 @@ export function calculateMandatoryOverview(
         p.group === 'transfer' ? `${accName(p.sourceAccountId)} → ${accName(p.targetAccountId)}` : accName(p.sourceAccountId),
       scheduleLabel: FREQUENCY_LABELS[p.frequency],
       nextDate: null,
-      fromCashAccount: isCashAccount(p.sourceAccountId),
+      defaultAccountSign: defaultAccountSign(p.group, p.sourceAccountId, p.targetAccountId),
       amountInHaler: p.amountInHaler,
     });
   });
@@ -419,9 +428,12 @@ export function calculateMandatoryOverview(
   const expense = buildSection('expense');
   const transfer = buildSection('transfer');
 
-  const actuallySavedMonthlyInHaler = items
-    .filter((i) => counted(i) && i.fromCashAccount && i.group !== 'transfer')
-    .reduce((s, i) => (i.group === 'income' ? addHaler(s, i.monthlyInHaler) : subHaler(s, i.monthlyInHaler)), 0);
+  // Čistý měsíční tok výchozího účtu za zvolené skupiny položek
+  const defaultAccountFlow = (include: (i: MandatoryItem) => boolean) => items
+    .filter((i) => counted(i) && include(i))
+    .reduce((s, i) => addHaler(s, i.defaultAccountSign * i.monthlyInHaler), 0);
+  const actuallySavedMonthlyInHaler = defaultAccountFlow((i) => i.group !== 'transfer');
+  const remainingMonthlyInHaler = addHaler(actuallySavedMonthlyInHaler, defaultAccountFlow((i) => i.group === 'transfer'));
 
   return {
     periodName: currentPeriod.name,
@@ -430,6 +442,6 @@ export function calculateMandatoryOverview(
     expense,
     transfer,
     actuallySavedMonthlyInHaler,
-    remainingMonthlyInHaler: income.monthlyInHaler - expense.monthlyInHaler - transfer.monthlyInHaler,
+    remainingMonthlyInHaler,
   };
 }
