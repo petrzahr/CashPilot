@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Edit3, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, Edit3, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
@@ -90,6 +90,9 @@ interface Draft {
 interface SectionTableProps {
   section: MandatorySection;
   categoryOptions: Category[];
+  /** Zdroj přidaných plateb je vždy výchozí účet */
+  defaultAccount: Account;
+  /** Ostatní aktivní účty - cíle převodů */
   accountOptions: Account[];
   onSaveEdit: (item: MandatoryItem, draft: Draft) => void;
   onAdd: (group: MandatoryGroup, draft: Draft) => void;
@@ -113,6 +116,7 @@ const FrequencySelect: React.FC<{ value: RecurrenceFrequency; onChange: (f: Recu
 const SectionTable: React.FC<SectionTableProps> = ({
   section,
   categoryOptions,
+  defaultAccount,
   accountOptions,
   onSaveEdit,
   onAdd,
@@ -133,8 +137,8 @@ const SectionTable: React.FC<SectionTableProps> = ({
     amount: '',
     frequency: 'monthly',
     categoryId: categoryOptions[0]?.id ?? '',
-    sourceAccountId: accountOptions[0]?.id ?? '',
-    targetAccountId: accountOptions[1]?.id ?? accountOptions[0]?.id ?? '',
+    sourceAccountId: defaultAccount.id,
+    targetAccountId: accountOptions[0]?.id ?? '',
   });
 
   const isDraftValid = (d: Draft | null, requireAccounts: boolean) =>
@@ -176,12 +180,8 @@ const SectionTable: React.FC<SectionTableProps> = ({
           </td>
         )}
         <td className="py-2 px-4">
-          <div className="flex items-center gap-1">
-            <select aria-label="Zdrojový účet" className={`${inputClass} min-w-[8rem]`} value={addDraft.sourceAccountId} onChange={(e) => set({ sourceAccountId: e.target.value })}>
-              {accountOptions.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <span className="text-slate-600">{defaultAccount.name}</span>
             {isTransfer && (
               <>
                 <span className="text-slate-500">→</span>
@@ -346,7 +346,7 @@ const SectionTable: React.FC<SectionTableProps> = ({
             cancelEdit();
             setAddDraft(emptyDraft());
           }}
-          disabled={!!addDraft || accountOptions.length === 0}
+          disabled={!!addDraft || (isTransfer && accountOptions.length === 0)}
           className="btn-secondary -my-1"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -528,6 +528,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   );
 
   const accountOptions = useMemo(() => sortAccountsByOrder(accounts).filter((a) => a.status === 'active'), [accounts]);
+  const defaultAccount = accounts.find((a) => a.isDefault && a.status !== 'archived');
   const categoryOptions = (group: MandatoryGroup) =>
     sortCategoriesAlphabetically(
       categories.filter((c) => !c.parentId && c.status === 'active' && (group === 'income' ? c.type === 'income' : c.type !== 'income'))
@@ -590,7 +591,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
       value: overview.actuallySavedMonthlyInHaler,
       base: baseline.actuallySavedMonthlyInHaler,
       className: overview.actuallySavedMonthlyInHaler < 0 ? 'text-red-600' : 'text-emerald-600',
-      title: 'Příjmy − výdaje na běžných účtech a hotovosti, bez převodů',
+      title: 'Příjmy − mandatorní výdaje výchozího účtu, bez převodů',
     },
     { label: 'Spoření a převody / měsíc', value: overview.transfer.monthlyInHaler, base: baseline.transfer.monthlyInHaler, className: 'text-slate-900' },
     {
@@ -598,12 +599,28 @@ export const MandatoryExpensesScreen: React.FC = () => {
       value: overview.remainingMonthlyInHaler,
       base: baseline.remainingMonthlyInHaler,
       className: overview.remainingMonthlyInHaler < 0 ? 'text-red-600' : 'text-slate-900',
-      title: 'Příjmy − mandatorní výdaje − spoření a převody',
+      title: 'Průměrně ušetří − spoření a převody z výchozího účtu',
     },
   ];
 
+  // Přehled je jen o výchozím účtu, bez něj nemá co ukázat
+  if (!defaultAccount) {
+    return (
+      <div className="panel panel-warning flex items-start gap-2.5">
+        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <h2 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h2>
+          <p className="text-xs text-amber-700 leading-relaxed">
+            Mandatorní výdaje se počítají z výchozího účtu. V sekci <strong>Účty</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const sectionProps = {
-    accountOptions,
+    defaultAccount,
+    accountOptions: accountOptions.filter((a) => a.id !== defaultAccount.id),
     onSaveEdit: handleSaveEdit,
     onAdd: handleAdd,
     onDelete: handleDelete,
