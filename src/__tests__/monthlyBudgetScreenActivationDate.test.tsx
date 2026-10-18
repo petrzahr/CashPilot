@@ -36,12 +36,12 @@ describe('MonthlyBudgetScreen respects account activation date for recurring rul
     vi.mocked(useFinance).mockReturnValue({
       selectedPeriod: period, forecast, settings, accounts: [checking], categories: [],
       transactions: [], recurringRules: [rule], recurringExceptions: [], marketValueSnapshots: [],
-      duplicateTransaction: vi.fn(), setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
+      setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
       cancelTransaction: vi.fn(), deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(), showToast: vi.fn(),
     } as unknown as ReturnType<typeof useFinance>);
 
     const html = renderToStaticMarkup(
-      <MonthlyBudgetScreen onOpenTransactionModal={vi.fn()} onEditTransaction={vi.fn()} />
+      <MonthlyBudgetScreen onOpenTransactionModal={vi.fn()} onEditTransaction={vi.fn()} onDuplicateTransaction={vi.fn()} />
     );
 
     // The "Položky období" list must not show the phantom pre-activation occurrence,

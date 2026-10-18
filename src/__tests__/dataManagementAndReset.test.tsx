@@ -496,6 +496,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
         <TransactionsScreen
           onOpenTransactionModal={() => {}}
           onEditTransaction={() => {}}
+          onDuplicateTransaction={() => {}}
         />
       </FinanceProvider>
     );
