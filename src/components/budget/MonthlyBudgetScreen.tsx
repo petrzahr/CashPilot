@@ -1280,7 +1280,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                     </div>
 
                     {/* Záhlaví dne */}
-                    <div className="max-lg:hidden -mx-4 sm:-mx-5 -mt-4 sm:-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="max-lg:hidden -mx-4 sm:-mx-5 !-mt-5 px-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
                         <span className="font-bold text-slate-900 text-sm">
                           {formatCzechDate(date)}
