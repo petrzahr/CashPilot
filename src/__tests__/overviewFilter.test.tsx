@@ -44,12 +44,14 @@ function nodes(element: any): any[] {
   return [element, ...React.Children.toArray(element.props?.children).flatMap(nodes)];
 }
 function click(text: string) {
-  const button = nodes(render()).find(node => node.type === 'button' && node.props.children === text);
+  const button = nodes(render()).find(node => node.type === 'button' && (node.props['aria-label'] ?? node.props.children) === text);
   expect(button, text).toBeDefined();
   button.props.onClick();
 }
-function selector(direction: 'future' | 'past') {
-  return nodes(render()).filter(node => node.type === PeriodRangeSelector)[direction === 'future' ? 0 : 1].props;
+// Jediný výběr vlastního rozsahu; při prvním použití ho otevře volba Vlastní
+function selector() {
+  if (!nodes(render()).some(node => node.type === PeriodRangeSelector)) click('Vlastní');
+  return nodes(render()).find(node => node.type === PeriodRangeSelector).props;
 }
 function expectRange(first: string, last: string, count: number) {
   const tree = render();
@@ -82,46 +84,36 @@ it.each([3, 18, 24])('applies the %i-month future preset to both sections', coun
   click(`${count === 3 ? 'Příští' : 'Příštích'} ${count} ${count === 3 ? 'měsíce' : 'měsíců'}`);
   const last = generatePeriodsSequence(2026, 8, count, 31)[count - 1];
   expectRange('2026-08', last.key, count);
-  expect(selector('future')).toMatchObject({ from: '2026-08', to: last.key, active: false });
+  expect(selector()).toMatchObject({ from: '2026-08', to: last.key });
 });
 it('applies history, YTD and complete activity history using budget boundaries', () => {
   click('Posledních 6 měsíců');
   expectRange('2026-03', '2026-08', 6);
-  click('Tento rok (YTD)');
+  click('Tento rok');
   expectRange('2026-01', '2026-08', 8);
   click('Celá historie');
   expectRange('2024-01', '2026-08', 32);
 });
-it.each(['future', 'past'] as const)('keeps %s drafts unapplied until OK and permits switching back to presets', direction => {
+it.each([['future', '2028-01', '2028-03'], ['past', '2023-02', '2023-04'], ['spanning', '2026-06', '2026-08']] as const)('keeps a %s draft unapplied until submitted and permits switching back to presets', (_, from, to) => {
   render();
-  const from = direction === 'future' ? '2028-01' : '2023-02';
-  const to = direction === 'future' ? '2028-03' : '2023-04';
-  selector(direction).onFromChange(from);
-  selector(direction).onToChange(to);
+  selector().onFromChange(from);
+  selector().onToChange(to);
   expectRange('2026-08', '2027-07', 12);
-  selector(direction).onSubmit({ preventDefault: vi.fn() });
+  selector().onSubmit({ preventDefault: vi.fn() });
   expectRange(from, to, 3);
-  expect(selector(direction).active).toBe(true);
+  expect(renderToStaticMarkup(render())).toContain('Vlastní rozsah');
   click('Příští 3 měsíce');
   expectRange('2026-08', '2026-10', 3);
+  expect(nodes(render()).some(node => node.type === PeriodRangeSelector)).toBe(false);
 });
-it('rejects incomplete, reversed and future history ranges without changing the selection', () => {
-  selector('past').onSubmit({ preventDefault: vi.fn() });
+it('rejects incomplete and reversed custom ranges without changing the selection', () => {
+  selector().onFromChange('');
+  selector().onSubmit({ preventDefault: vi.fn() });
   expect(renderToStaticMarkup(render())).toContain('Vyberte prosím');
-  selector('past').onFromChange('2026-08');
-  selector('past').onToChange('2026-01');
-  selector('past').onSubmit({ preventDefault: vi.fn() });
+  selector().onFromChange('2026-08');
+  selector().onToChange('2026-01');
+  selector().onSubmit({ preventDefault: vi.fn() });
   expect(renderToStaticMarkup(render())).toContain('Počáteční měsíc nesmí');
-  selector('past').onToChange('2026-09');
-  selector('past').onSubmit({ preventDefault: vi.fn() });
-  expect(renderToStaticMarkup(render())).toContain('nesmí být v budoucnosti');
-  expectRange('2026-08', '2027-07', 12);
-});
-it('rejects a future range whose end lies before the current period', () => {
-  selector('future').onFromChange('2026-01');
-  selector('future').onToChange('2026-03');
-  selector('future').onSubmit({ preventDefault: vi.fn() });
-  expect(renderToStaticMarkup(render())).toContain('nesmí být v minulosti');
   expectRange('2026-08', '2027-07', 12);
 });
 it('removes only the matrix legend and retains balances, P/K labels and shared columns', () => {
