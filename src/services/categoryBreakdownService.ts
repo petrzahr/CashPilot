@@ -1,4 +1,4 @@
-import { Account, Category, RecurringException, RecurringRule, Transaction } from '../types/finance';
+import { Account, BudgetPeriod, Category, RecurringException, RecurringRule, Transaction } from '../types/finance';
 import { BudgetPeriodInfo } from './analyticsEngine';
 import { czechStringCompare, sortCategoriesAlphabetically } from './categoryService';
 import { addHaler } from './currencyService';
@@ -50,7 +50,7 @@ const sum = (values: number[]) => values.reduce((s, v) => addHaler(s, v), 0);
  * S `accountId` se berou jen příjmy a výdaje tohoto účtu a jen převody z něj odchozí.
  */
 export function calculateCategoryBreakdown(
-  periods: BudgetPeriodInfo[],
+  periods: Pick<BudgetPeriodInfo, 'period'>[],
   transactions: Transaction[],
   recurringRules: RecurringRule[],
   recurringExceptions: RecurringException[],
@@ -210,5 +210,94 @@ export function calculateCategoryBreakdown(
     incomeTotalInHaler: sum(incomeTotalsInHaler),
     expenseTotalsInHaler,
     expenseTotalInHaler: sum(expenseTotalsInHaler),
+  };
+}
+
+export interface BudgetCategoryCard {
+  key: string;
+  label: string;
+  color: string;
+  group: 'income' | 'expense';
+  totalInHaler: number;
+  subcategories: { key: string; label: string; totalInHaler: number }[];
+}
+
+export interface BudgetCategoryOverview {
+  cards: BudgetCategoryCard[];
+  transferTotalInHaler: number;
+  transfers: Transaction[];
+}
+
+/**
+ * "Přehled rozpočtu podle kategorií" v Měsíčním rozpočtu za jedno období. Částky se berou
+ * z calculateCategoryBreakdown se stejným `accountId`, takže sedí s Analýzou a trendy.
+ * Aktivní hlavní kategorie se zobrazují vždy (i s nulou), archivované a "Bez kategorie"
+ * jen s nenulovou částkou. Převody jsou jednotlivé položky (s `accountId` jen odchozí).
+ */
+export function calculateBudgetCategoryOverview(
+  period: BudgetPeriod,
+  transactions: Transaction[],
+  recurringRules: RecurringRule[],
+  recurringExceptions: RecurringException[],
+  categories: Category[],
+  accounts: Account[],
+  startDay: number,
+  accountId?: string
+): BudgetCategoryOverview {
+  const breakdown = calculateCategoryBreakdown(
+    [{ period }],
+    transactions,
+    recurringRules,
+    recurringExceptions,
+    categories,
+    accounts,
+    startDay,
+    accountId
+  );
+  const rowMap = new Map(breakdown.rows.map((r) => [r.key, r]));
+
+  const toCard = (row: CategoryBreakdownRow): BudgetCategoryCard => ({
+    key: row.key,
+    label: row.label,
+    color: row.color,
+    group: row.group === 'income' ? 'income' : 'expense',
+    totalInHaler: row.totalInHaler,
+    // Položky přímo na hlavní kategorii jsou jen v součtu karty, bez vlastního řádku
+    subcategories: row.children
+      .filter((c) => c.key !== `${row.key}__direct`)
+      .map((c) => ({ key: c.key, label: c.label, totalInHaler: c.totalInHaler })),
+  });
+
+  const cardsFor = (group: 'income' | 'expense'): BudgetCategoryCard[] => {
+    const mains = categories.filter(
+      (c) => !c.parentId && (c.type === 'income') === (group === 'income') && (c.status === 'active' || rowMap.has(c.id))
+    );
+    const cards = sortCategoriesAlphabetically(mains).map((c) => {
+      const row = rowMap.get(c.id);
+      return row
+        ? toCard(row)
+        : { key: c.id, label: c.name, color: c.color, group, totalInHaler: 0, subcategories: [] };
+    });
+    const uncategorized = rowMap.get(`${UNCATEGORIZED_KEY}_${group}`);
+    return uncategorized ? [...cards, toCard(uncategorized)] : cards;
+  };
+
+  const periodTxs = getEffectiveTransactionsForPeriod(
+    period,
+    transactions,
+    recurringRules,
+    recurringExceptions,
+    startDay,
+    undefined,
+    accounts
+  );
+  const transfers = periodTxs.filter(
+    (t) => t.type === 'transfer' && t.status !== 'cancelled' && (!accountId || t.sourceAccountId === accountId)
+  );
+
+  return {
+    cards: [...cardsFor('income'), ...cardsFor('expense')],
+    transferTotalInHaler: rowMap.get(TRANSFERS_KEY)?.totalInHaler ?? 0,
+    transfers,
   };
 }

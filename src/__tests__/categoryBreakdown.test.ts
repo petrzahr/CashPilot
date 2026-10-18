@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createBudgetPeriodInfo } from '../services/analyticsEngine';
-import { calculateCategoryBreakdown, NO_SUBCATEGORY_LABEL } from '../services/categoryBreakdownService';
+import { calculateBudgetCategoryOverview, calculateCategoryBreakdown, NO_SUBCATEGORY_LABEL } from '../services/categoryBreakdownService';
 import { createBudgetPeriod } from '../services/periodService';
 import { Account, Category, Transaction } from '../types/finance';
 import { CategoryBreakdownTable } from '../components/analytics/CategoryBreakdownTable';
@@ -105,5 +105,66 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     const transfers = scoped.rows.find((r) => r.group === 'transfer')!;
     expect(transfers.amountsInHaler).toEqual([0, 1200000]);
     expect(transfers.children.map((c) => c.label)).toEqual(['Spořicí']);
+  });
+});
+
+describe('Přehled rozpočtu podle kategorií (calculateBudgetCategoryOverview)', () => {
+  const periodInfo = createBudgetPeriodInfo(createBudgetPeriod(2026, 8, 15), today);
+  const accounts = [acc('chk', 'Běžný', 'checking'), acc('sav', 'Spořicí', 'savings')];
+  const categories = [
+    cat('salary', 'Mzda', 'income'),
+    cat('housing', 'Bydlení', 'expense'),
+    cat('rent', 'Nájem', 'expense', 'housing'),
+    cat('auto', 'Auto', 'expense'),
+    { ...cat('old', 'Stará', 'expense'), status: 'archived' as const },
+    { ...cat('oldEmpty', 'Stará prázdná', 'expense'), status: 'archived' as const },
+  ];
+  const transactions = [
+    tx({ type: 'income', categoryId: 'salary', amountInHaler: 9600000, date: '2026-08-20' }),
+    tx({ categoryId: 'housing', subcategoryId: 'rent', amountInHaler: 2200000, date: '2026-08-21' }),
+    tx({ categoryId: 'housing', amountInHaler: 10000, date: '2026-08-22' }),
+    tx({ categoryId: 'old', amountInHaler: 30000, date: '2026-08-22' }),
+    tx({ amountInHaler: 5000, date: '2026-08-22' }),
+    tx({ type: 'transfer', targetAccountId: 'sav', amountInHaler: 1000000, actualAmountInHaler: 1200000, date: '2026-08-25' }),
+    // Jiný účet - do přehledu výchozího účtu nepatří
+    tx({ categoryId: 'auto', amountInHaler: 50000, sourceAccountId: 'sav', date: '2026-08-23' }),
+    tx({ type: 'income', categoryId: 'salary', amountInHaler: 70000, sourceAccountId: 'sav', date: '2026-08-23' }),
+    tx({ type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 400000, date: '2026-08-24' }),
+  ];
+
+  const overview = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 15, 'chk');
+  const analytics = calculateCategoryBreakdown([periodInfo], transactions, [], [], categories, accounts, 15, 'chk');
+
+  it('ukazuje aktivní kategorie vždy, archivované a Bez kategorie jen s částkou', () => {
+    expect(overview.cards.map((c) => c.label)).toEqual(['Mzda', 'Auto', 'Bydlení', 'Stará', 'Bez kategorie']);
+    expect(overview.cards.find((c) => c.key === 'auto')!.totalInHaler).toBe(0);
+  });
+
+  it('počítá jen výchozí účet a sedí s tabulkou v Analýze', () => {
+    const cardTotal = (group: 'income' | 'expense') =>
+      overview.cards.filter((c) => c.group === group).reduce((s, c) => s + c.totalInHaler, 0);
+    expect(cardTotal('income')).toBe(analytics.incomeTotalInHaler);
+    expect(cardTotal('expense')).toBe(analytics.expenseTotalInHaler);
+    expect(cardTotal('income')).toBe(9600000);
+    expect(cardTotal('expense')).toBe(2200000 + 10000 + 30000 + 5000);
+
+    for (const row of analytics.rows.filter((r) => r.group !== 'transfer')) {
+      expect(overview.cards.find((c) => c.key === row.key)!.totalInHaler).toBe(row.totalInHaler);
+    }
+    const housing = overview.cards.find((c) => c.key === 'housing')!;
+    expect(housing.subcategories).toEqual([{ key: 'rent', label: 'Nájem', totalInHaler: 2200000 }]);
+  });
+
+  it('převody jsou jen odchozí z výchozího účtu', () => {
+    const analyticsTransfers = analytics.rows.find((r) => r.group === 'transfer')!;
+    expect(overview.transferTotalInHaler).toBe(analyticsTransfers.totalInHaler);
+    expect(overview.transferTotalInHaler).toBe(1200000);
+    expect(overview.transfers.map((t) => t.sourceAccountId)).toEqual(['chk']);
+  });
+
+  it('bez výchozího účtu počítá všechny účty jako Analýza', () => {
+    const all = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 15);
+    expect(all.cards.find((c) => c.key === 'auto')!.totalInHaler).toBe(50000);
+    expect(all.transfers).toHaveLength(2);
   });
 });

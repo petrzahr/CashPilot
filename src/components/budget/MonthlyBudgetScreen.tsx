@@ -39,7 +39,8 @@ import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
 import { MoveButtons } from '../shared/MoveButtons';
 import { StatusBadgeMenu } from '../shared/StatusBadgeMenu';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
-import { czechStringCompare, sortCategoriesAlphabetically } from '../../services/categoryService';
+import { czechStringCompare } from '../../services/categoryService';
+import { calculateBudgetCategoryOverview } from '../../services/categoryBreakdownService';
 
 const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
   { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
@@ -566,68 +567,17 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     setPendingRecurringReorder(null);
   };
 
-  // Dynamické seskupení rozpočtu podle hlavních kategorií:
-  // 1. všechny příjmové kategorie abecedně od A do Z,
-  // 2. následně všechny výdajové kategorie abecedně od A do Z.
-  const mainCategories = useMemo(() => {
-    const activeMains = categories.filter(c => !c.parentId && c.status === 'active');
-    const incomeMains = sortCategoriesAlphabetically(activeMains.filter(c => c.type === 'income'));
-    const expenseMains = sortCategoriesAlphabetically(activeMains.filter(c => c.type !== 'income'));
-    return [...incomeMains, ...expenseMains];
-  }, [categories]);
-
-  const categoryBreakdown = useMemo(() => {
-    const result: {
-      category: typeof mainCategories[0];
-      totalInHaler: number;
-      subcategories: { sub: typeof categories[0]; totalInHaler: number }[];
-    }[] = [];
-
-    mainCategories.forEach(mainCat => {
-      const subs = sortCategoriesAlphabetically(categories.filter(c => c.parentId === mainCat.id));
-      let catTotal = 0;
-      const subItems = subs.map(sub => {
-        // Spočítat částky pro tuto podkategorii v dané periodě
-        const matchingTxs = allPeriodTransactions.filter(t => 
-          t.status !== 'cancelled' && 
-          t.subcategoryId === sub.id
-        );
-        const subSum = matchingTxs.reduce((sum, t) => {
-          const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-          return sum + amt;
-        }, 0);
-        catTotal += subSum;
-        return { sub, totalInHaler: subSum };
-      });
-
-      // Přičíst i položky přímo přiřazené hlavní kategorii (bez explicitní podkategorie)
-      const directTxs = allPeriodTransactions.filter(t => t.status !== 'cancelled' && t.categoryId === mainCat.id && !t.subcategoryId);
-      const directSum = directTxs.reduce((sum, t) => {
-        const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-        return sum + amt;
-      }, 0);
-      catTotal += directSum;
-
-      result.push({
-        category: mainCat,
-        totalInHaler: catTotal,
-        subcategories: subItems
-          .filter(s => s.totalInHaler > 0)
-          .sort((a, b) => czechStringCompare(a.sub.name, b.sub.name)),
-      });
-    });
-
-    return result;
-  }, [mainCategories, categories, allPeriodTransactions]);
-
-  // Převody v této periodě
-  const transferTxs = useMemo(() => {
-    return allPeriodTransactions.filter(t => t.type === 'transfer' && t.status !== 'cancelled');
-  }, [allPeriodTransactions]);
-
-  const totalTransfersInHaler = useMemo(() => {
-    return transferTxs.reduce((sum, t) => addHaler(sum, t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler), 0);
-  }, [transferTxs]);
+  // Přehled podle kategorií jen z výchozího účtu - stejný výpočet jako v Analýze a trendech
+  const categoryOverview = useMemo(() => calculateBudgetCategoryOverview(
+    selectedPeriod,
+    transactions,
+    recurringRules,
+    recurringExceptions,
+    categories,
+    accounts,
+    settings.budgetStartDay,
+    defaultAccount?.id
+  ), [selectedPeriod, transactions, recurringRules, recurringExceptions, categories, accounts, settings.budgetStartDay, defaultAccount]);
 
   const defaultAccountBalance = useMemo(() => {
     if (!defaultAccount) return null;
@@ -991,26 +941,26 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       <div className="card p-5 space-y-4">
         <h2 className="text-sm font-bold text-slate-900">Přehled rozpočtu podle kategorií</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {categoryBreakdown.map(({ category, totalInHaler, subcategories }) => (
+          {categoryOverview.cards.map(({ key, label, color, group, totalInHaler, subcategories }) => (
             <div
-              key={category.id}
+              key={key}
               className="p-3 rounded-xl bg-slate-50 space-y-2"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: category.color }} />
-                  <span className="text-xs font-bold text-slate-900 truncate" title={category.name}>{category.name}</span>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span className="text-xs font-bold text-slate-900 truncate" title={label}>{label}</span>
                 </div>
-                <span className={`text-xs font-bold shrink-0 ${category.type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                <span className={`text-xs font-bold shrink-0 ${group === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
                   {formatCurrency(totalInHaler)}
                 </span>
               </div>
 
               {subcategories.length > 0 ? (
                 <div className="space-y-1 pt-1 border-t border-slate-200">
-                  {subcategories.map(({ sub, totalInHaler: subTotal }) => (
-                    <div key={sub.id} className="flex justify-between gap-3 text-xs text-slate-500">
-                      <span className="truncate min-w-0" title={sub.name}>{sub.name}</span>
+                  {subcategories.map(({ key: subKey, label: subLabel, totalInHaler: subTotal }) => (
+                    <div key={subKey} className="flex justify-between gap-3 text-xs text-slate-500">
+                      <span className="truncate min-w-0" title={subLabel}>{subLabel}</span>
                       <span className="font-medium shrink-0">{formatCurrency(subTotal)}</span>
                     </div>
                   ))}
@@ -1029,12 +979,12 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-xs font-bold text-slate-900 truncate">Spoření a převody</span>
               </div>
               <span className="text-xs font-bold text-slate-900 shrink-0">
-                {formatCurrency(totalTransfersInHaler)}
+                {formatCurrency(categoryOverview.transferTotalInHaler)}
               </span>
             </div>
-            {transferTxs.length > 0 ? (
+            {categoryOverview.transfers.length > 0 ? (
               <div className="space-y-1 pt-1 border-t border-slate-200">
-                {transferTxs.map(tx => (
+                {categoryOverview.transfers.map(tx => (
                   <div key={tx.id} className="flex justify-between gap-3 text-xs text-slate-500">
                     <span className="truncate min-w-0" title={tx.title}>{tx.title}</span>
                     <span className="font-medium shrink-0">{formatCurrency(tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler)}</span>
