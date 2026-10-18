@@ -189,7 +189,10 @@ export const AnalyticsScreen: React.FC = () => {
       <PortfolioCompositionChart data={portfolioComposition} />
 
       {/* 3. Finanční přehled: příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
-      <CashFlowCompositionChart data={cashFlowComposition} />
+      <CashFlowCompositionChart
+        data={cashFlowComposition}
+        defaultAccountName={accounts.find((a) => a.isDefault && a.status !== 'archived')?.name}
+      />
 
       {/* 4. Souhrn podle kategorií a podkategorií za vybrané období */}
       <CategoryBreakdownTable periods={dateRange.periods} data={categoryBreakdown} />

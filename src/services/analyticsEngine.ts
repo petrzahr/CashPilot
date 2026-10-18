@@ -668,8 +668,8 @@ export const CASH_FLOW_COMPOSITION_COLORS = {
 /**
  * Spočítá procentuální rozložení Příjmy / Výdaje / Skutečně uspořeno podle rozpočtových
  * period. Hodnoty odpovídají souhrnným ukazatelům v Měsíčním rozpočtu (stejný souhrn
- * období z forecastu): příjmy a výdaje běžných a hotovostních účtů a "Skutečně uspořeno"
- * = příjmy − výdaje + korekce na těchto účtech (bez převodů). Základna pro % (= 100 %) je
+ * období z forecastu): příjmy a výdaje výchozího účtu a "Skutečně uspořeno"
+ * = příjmy − výdaje + korekce výchozího účtu (bez převodů). Bez výchozího účtu jsou nulové. Základna pro % (= 100 %) je
  * součet absolutních hodnot všech tří ukazatelů, záporné "Skutečně uspořeno" tak jde pod nulu.
  */
 export function calculateCashFlowComposition(
@@ -677,23 +677,15 @@ export function calculateCashFlowComposition(
   forecast: ForecastResult,
   accounts: Account[]
 ): CashFlowCompositionPoint[] {
-  const cashAccounts = accounts.filter(
-    (a) => (a.type === 'checking' || a.type === 'cash') && a.status === 'active'
-  );
+  const defaultAccount = accounts.find((a) => a.isDefault && a.status !== 'archived');
 
   return periods.map((p) => {
     const summary = getAccountPeriodSummary(forecast, p.key);
+    const bal = defaultAccount ? summary?.accountBalances[defaultAccount.id] : undefined;
 
-    let incomeInHaler = 0;
-    let expenseInHaler = 0;
-    let correctionsInHaler = 0;
-    for (const acc of cashAccounts) {
-      const bal = summary?.accountBalances[acc.id];
-      if (!bal) continue;
-      incomeInHaler = addHaler(incomeInHaler, bal.incomeInHaler);
-      expenseInHaler = addHaler(expenseInHaler, bal.expenseInHaler);
-      correctionsInHaler = addHaler(correctionsInHaler, bal.correctionsInHaler);
-    }
+    const incomeInHaler = bal?.incomeInHaler ?? 0;
+    const expenseInHaler = bal?.expenseInHaler ?? 0;
+    const correctionsInHaler = bal?.correctionsInHaler ?? 0;
     const actuallySavedInHaler = addHaler(subHaler(incomeInHaler, expenseInHaler), correctionsInHaler);
 
     const base = sumAbsoluteHaler([incomeInHaler, expenseInHaler, actuallySavedInHaler]);
