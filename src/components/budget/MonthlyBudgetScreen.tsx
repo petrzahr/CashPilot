@@ -4,6 +4,7 @@ import { addHaler, formatCurrency, subHaler } from '../../services/currencyServi
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
+import { calculateDefaultAccountKpis } from '../../services/budgetKpiService';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { 
   Plus, 
@@ -210,50 +211,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     };
   }, [forecast, selectedPeriod.key]);
 
-  // Souhrnné ukazatele za všechny účty, respektující vybrané rozpočtové období
-  const aggregateSummary = useMemo(() => {
-    // Toky za celé období bereme z neprojektovaného souhrnu - projekce aktiv od dneška
-    // obsahuje jen zbývající (neprovedené) převody a uskutečněné by vynechala.
-    const flowBalances = (forecast.periods.find(p => p.period.key === selectedPeriod.key) ?? currentSummary).accountBalances;
-
-    const savedInHaler = accounts
-      .filter(a => a.type === 'savings' && a.status === 'active')
-      .reduce((sum, acc) => {
-        const bal = flowBalances[acc.id];
-        return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
-      }, 0);
-
-    const investedInHaler = accounts
-      .filter(a => (a.type === 'investment' || a.type === 'pension') && a.status === 'active')
-      .reduce((sum, acc) => {
-        const bal = flowBalances[acc.id];
-        return bal ? addHaler(sum, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler)) : sum;
-      }, 0);
-
-    const income = currentSummary.incomeInHaler;
-    const savedPct = income > 0 ? (savedInHaler / income) * 100 : null;
-    const investedPct = income > 0 ? (investedInHaler / income) * 100 : null;
-
-    const actuallySavedInHaler = accounts
-      .filter(a => (a.type === 'checking' || a.type === 'cash') && a.status === 'active')
-      .reduce((sum, acc) => {
-        const bal = currentSummary.accountBalances[acc.id];
-        return bal ? addHaler(sum, addHaler(subHaler(bal.incomeInHaler, bal.expenseInHaler), bal.correctionsInHaler)) : sum;
-      }, 0);
-    const actuallySavedPct = income > 0 ? (actuallySavedInHaler / income) * 100 : null;
-
-    const investmentChange = calculatePeriodInvestmentChange(
-      accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay, undefined, transactions
-    );
-
-    return {
-      usableClosingInHaler: currentSummary.usableClosingInHaler,
-      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
-      savedInHaler, savedPct, investedInHaler, investedPct, investmentChange,
-      actuallySavedInHaler, actuallySavedPct,
-    };
-  }, [accounts, forecast.periods, currentSummary, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
-
   const formatPercent = (value: number | null) => value === null
     ? '—'
     : `${new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 }).format(value)} %`;
@@ -273,6 +230,32 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       accounts
     );
   }, [selectedPeriod, transactions, recurringRules, recurringExceptions, settings.budgetStartDay, accounts]);
+
+  // Výchozí účet a jeho souhrnné údaje
+  const defaultAccount = useMemo(() => {
+    return accounts.find(a => a.isDefault && a.status !== 'archived');
+  }, [accounts]);
+
+  // KPI dlaždice počítané z výchozího účtu; Změna investic zůstává za všechny investiční účty
+  const aggregateSummary = useMemo(() => {
+    const kpis = calculateDefaultAccountKpis(
+      defaultAccount,
+      accounts,
+      defaultAccount ? currentSummary.accountBalances[defaultAccount.id] : undefined,
+      allPeriodTransactions
+    );
+
+    const investmentChange = calculatePeriodInvestmentChange(
+      accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay, undefined, transactions
+    );
+
+    return {
+      usableClosingInHaler: currentSummary.usableClosingInHaler,
+      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
+      ...kpis,
+      investmentChange,
+    };
+  }, [defaultAccount, accounts, currentSummary, allPeriodTransactions, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
 
   // Seznam účtů seřazený abecedně A–Z (včetně archivovaných, pokud mají záznam v tomto období)
   const sortedAccounts = useMemo(() => {
@@ -646,11 +629,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     return transferTxs.reduce((sum, t) => addHaler(sum, t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler), 0);
   }, [transferTxs]);
 
-  // Výchozí účet a jeho souhrnné údaje
-  const defaultAccount = useMemo(() => {
-    return accounts.find(a => a.isDefault && a.status !== 'archived');
-  }, [accounts]);
-
   const defaultAccountBalance = useMemo(() => {
     if (!defaultAccount) return null;
     return currentSummary.accountBalances[defaultAccount.id] || null;
@@ -952,7 +930,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           </div>
         )}
 
-        {/* Souhrnné ukazatele za všechny účty (respektují vybrané rozpočtové období) */}
+        {/* KPI dlaždice výchozího účtu (respektují vybrané rozpočtové období) */}
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
