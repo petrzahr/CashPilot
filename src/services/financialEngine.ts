@@ -552,7 +552,7 @@ export function calculateForecast(
       // firstPeriod.startDate > initDate (účet byl aktivován již před začátkem první periody)
       if (isAsset) {
         const priorSnapshots = safeSnapshots
-          .filter(s => s.accountId === acc.id && s.date >= initDate && (!firstPeriod || s.date <= firstPeriod.startDate))
+          .filter(s => s.accountId === acc.id && s.date >= initDate && (!firstPeriod || s.date < firstPeriod.startDate))
           .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
         const latestPriorSnap = priorSnapshots[0];
 
@@ -562,7 +562,7 @@ export function calculateForecast(
         if (latestPriorSnap) {
           baseVal = latestPriorSnap.marketValueInHaler;
           valDate = latestPriorSnap.date;
-        } else if (acc.currentMarketValueInHaler !== undefined && acc.marketValueUpdatedAt && acc.marketValueUpdatedAt >= initDate && (!firstPeriod || acc.marketValueUpdatedAt <= firstPeriod.startDate)) {
+        } else if (acc.currentMarketValueInHaler !== undefined && acc.marketValueUpdatedAt && acc.marketValueUpdatedAt >= initDate && (!firstPeriod || acc.marketValueUpdatedAt < firstPeriod.startDate)) {
           baseVal = acc.currentMarketValueInHaler;
           valDate = acc.marketValueUpdatedAt;
         } else if (acc.currentMarketValueInHaler !== undefined && !acc.marketValueUpdatedAt) {
