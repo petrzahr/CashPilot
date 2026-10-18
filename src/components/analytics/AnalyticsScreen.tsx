@@ -1,5 +1,5 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
-import { PortfolioCompositionChart } from './PortfolioCompositionChart';
+import { AlertCircle } from 'lucide-react';
 import { CashFlowCompositionChart } from './CashFlowCompositionChart';
 import { CategoryBreakdownTable } from './CategoryBreakdownTable';
 import { calculateCategoryBreakdown } from '../../services/categoryBreakdownService';
@@ -15,7 +15,6 @@ import {
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
-  calculatePortfolioComposition,
   calculateCashFlowComposition,
 } from '../../services/analyticsEngine';
 import { formatCurrency, formatPercent } from '../../services/currencyService';
@@ -27,12 +26,6 @@ import {
 
 // Držíme stav vybraného období na úrovni modulu, aby zůstal zachován při přechodu do jiné sekce
 let savedRange: DualPeriodRange = { direction: 'past', months: 12 };
-
-const noFilters: AnalyticsFilters = {
-  accountId: null,
-  categoryId: null,
-  subcategoryId: null,
-};
 
 /** Čistá bilance nese barvu jen podle znaménka: přebytek zelený, schodek červený. */
 const netTone = (amountInHaler: number | undefined) =>
@@ -55,6 +48,16 @@ export const AnalyticsScreen: React.FC = () => {
   const todayStr = getTodayInPrague();
   const budgetStartDay = settings?.budgetStartDay || 15;
 
+  // Celá analýza se počítá jen z výchozího účtu (stejně jako Měsíční rozpočet)
+  const defaultAccount = useMemo(
+    () => accounts.find((a) => a.isDefault && a.status !== 'archived'),
+    [accounts]
+  );
+  const accountFilters = useMemo<AnalyticsFilters>(
+    () => ({ accountId: defaultAccount?.id ?? null, categoryId: null, subcategoryId: null }),
+    [defaultAccount]
+  );
+
   const currentPeriod = useMemo(() => {
     return getPeriodForDate(todayStr, budgetStartDay);
   }, [todayStr, budgetStartDay]);
@@ -68,7 +71,7 @@ export const AnalyticsScreen: React.FC = () => {
     savedRange = newRange;
   };
 
-  // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Přehledy)
+  // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Majetek)
   const periods = useMemo(() => {
     return resolveDualPeriodRange(
       range,
@@ -84,7 +87,7 @@ export const AnalyticsScreen: React.FC = () => {
     );
   }, [range, currentPeriod, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
 
-  // Forecast musí pokrývat celý vybraný rozsah (stejně jako v sekci Přehledy),
+  // Forecast musí pokrývat celý vybraný rozsah (stejně jako v sekci Majetek),
   // aby graf Příjmy/Výdaje/Skutečně uspořeno měl souhrny pro všechna období
   const firstPeriodKey = periods[0]?.key;
   const lastPeriodKey = periods[periods.length - 1]?.key;
@@ -112,11 +115,11 @@ export const AnalyticsScreen: React.FC = () => {
     return getFilteredExecutedTransactions(
       transactions,
       dateRange,
-      noFilters,
+      accountFilters,
       categories,
       todayStr
     );
-  }, [transactions, dateRange, categories, todayStr]);
+  }, [transactions, dateRange, accountFilters, categories, todayStr]);
 
   // Všechny uskutečněné transakce (pro meziměsíční trendy i mimo vybraný rozsah)
   const allExecutedTxs = useMemo(() => {
@@ -131,12 +134,12 @@ export const AnalyticsScreen: React.FC = () => {
     return calculateExpenseMoMTrend(
       dateRange.periods,
       allExecutedTxs,
-      noFilters,
+      accountFilters,
       categories,
       todayStr,
       budgetStartDay
     );
-  }, [dateRange.periods, allExecutedTxs, categories, todayStr, budgetStartDay]);
+  }, [dateRange.periods, allExecutedTxs, accountFilters, categories, todayStr, budgetStartDay]);
 
   const topExpenses = useMemo(() => {
     return getTopExpenses(filteredTxs, accounts, categories);
@@ -145,18 +148,6 @@ export const AnalyticsScreen: React.FC = () => {
   const extremes = useMemo(() => {
     return calculateFinancialExtremes(monthlyCashFlow);
   }, [monthlyCashFlow]);
-
-  const portfolioComposition = useMemo(() => {
-    return calculatePortfolioComposition(
-      dateRange.periods,
-      accounts,
-      transactions,
-      corrections,
-      marketValueSnapshots,
-      forecast,
-      todayStr
-    );
-  }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots, forecast, todayStr]);
 
   const cashFlowComposition = useMemo(() => {
     return calculateCashFlowComposition(dateRange.periods, forecast, accounts);
@@ -170,9 +161,10 @@ export const AnalyticsScreen: React.FC = () => {
       recurringExceptions,
       categories,
       accounts,
-      budgetStartDay
+      budgetStartDay,
+      defaultAccount?.id
     );
-  }, [dateRange.periods, transactions, recurringRules, recurringExceptions, categories, accounts, budgetStartDay]);
+  }, [dateRange.periods, transactions, recurringRules, recurringExceptions, categories, accounts, budgetStartDay, defaultAccount]);
 
   return (
     <div className="space-y-6">
@@ -185,14 +177,28 @@ export const AnalyticsScreen: React.FC = () => {
         ariaLabel="Analyzované období"
       />
 
-      {/* 2. Rozložení celkového majetku napříč účty za vybrané období */}
-      <PortfolioCompositionChart data={portfolioComposition} />
+      {!defaultAccount ? (
+        <div className="panel panel-warning flex items-start gap-2.5">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-amber-900">Chybí výchozí účet</h2>
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Analýza se počítá z výchozího účtu. V sekci <strong>Účty</strong> upravte hlavní účet a zaškrtněte Výchozí účet.
+            </p>
+          </div>
+        </div>
+      ) : (
+      <>
+      {/* 2. Rozsah analýzy: všechny sekce níže jsou jen z výchozího účtu */}
+      <div className="flex items-center gap-2 px-0.5 text-xs text-slate-500">
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: defaultAccount.color }} aria-hidden="true" />
+        <span>
+          Výchozí účet: <span className="font-semibold text-slate-900">{defaultAccount.name}</span>
+        </span>
+      </div>
 
       {/* 3. Finanční přehled: příjmy, výdaje a skutečně uspořeno (hodnoty shodné s Měsíčním rozpočtem) */}
-      <CashFlowCompositionChart
-        data={cashFlowComposition}
-        defaultAccountName={accounts.find((a) => a.isDefault && a.status !== 'archived')?.name}
-      />
+      <CashFlowCompositionChart data={cashFlowComposition} />
 
       {/* 4. Souhrn podle kategorií a podkategorií za vybrané období */}
       <CategoryBreakdownTable periods={dateRange.periods} data={categoryBreakdown} />
@@ -404,6 +410,8 @@ export const AnalyticsScreen: React.FC = () => {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

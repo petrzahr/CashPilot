@@ -714,7 +714,7 @@ export function calculateCashFlowComposition(
  * ABSOLUTNÍCH hodnot všech zůstatků, takže kladná a záporná strana dohromady dávají vždy
  * přesně 100 % (např. účet na -15 % => kladné účty sahají jen do 85 %).
  * Minulá období ukazují skutečný stav ke konci období; probíhající a budoucí období berou
- * projektovaný konečný stav účtu z forecastu (shodný s Přehledy a "Konečným stavem"
+ * projektovaný konečný stav účtu z forecastu (shodný se sekcí Majetek a "Konečným stavem"
  * v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav.
  */
 export function calculatePortfolioComposition(

@@ -9,6 +9,7 @@ import {
 import { createBudgetPeriod } from '../services/periodService';
 import { Account, ForecastResult, MarketValueSnapshot, PeriodSummary } from '../types/finance';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
+import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { PortfolioCompositionChart } from '../components/analytics/PortfolioCompositionChart';
 import { FinanceProvider } from '../context/FinanceContext';
 import { saveStoredAuth, clearStoredAuth } from '../services/googleDriveService';
@@ -353,7 +354,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(fallback[2].totalNetWorthInHaler).toBe(30000000);
   });
 
-  it('11. Graf se v AnalyticsScreen renderuje bezprostředně pod panelem filtru období a nad Trend výdajů/extrémy', () => {
+  it('11. Graf se renderuje v sekci Majetek mezi Vývojem zůstatků a Účty, v Analýze už není', () => {
     saveStoredAuth({
       accessToken: 'mock_token',
       expiresAt: Date.now() + 3600000,
@@ -364,19 +365,24 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
       React.createElement(
         FinanceProvider,
         null,
-        React.createElement(AnalyticsScreen)
+        React.createElement(OverviewScreen, { onNavigateToBudget: () => {} })
       )
     );
 
-    const idxFilter = html.indexOf('Analyzované období');
+    const idxBalances = html.indexOf('Vývoj zůstatků po obdobích');
     const idxPortfolio = html.indexOf('Rozložení celkového majetku');
-    const idxTrend = html.indexOf('Trend výdajů mezi obdobími');
+    const idxAccounts = html.indexOf('>Účty</h2>');
 
-    expect(idxFilter).toBeGreaterThan(-1);
+    expect(idxBalances).toBeGreaterThan(-1);
     expect(idxPortfolio).toBeGreaterThan(-1);
-    expect(idxTrend).toBeGreaterThan(-1);
-    expect(idxFilter).toBeLessThan(idxPortfolio);
-    expect(idxPortfolio).toBeLessThan(idxTrend);
+    expect(idxAccounts).toBeGreaterThan(-1);
+    expect(idxBalances).toBeLessThan(idxPortfolio);
+    expect(idxPortfolio).toBeLessThan(idxAccounts);
+
+    const analyticsHtml = renderToStaticMarkup(
+      React.createElement(FinanceProvider, null, React.createElement(AnalyticsScreen))
+    );
+    expect(analyticsHtml).not.toContain('Rozložení celkového majetku');
 
     // Popisek karty už neobsahuje odstraněný pomocný text
     expect(html).not.toContain('Procentuální podíl jednotlivých účtů na celkovém majetku za vybrané období');

@@ -133,7 +133,7 @@ const MainLayout: React.FC = () => {
   const getScreenTitle = () => {
     switch (currentScreen) {
       case 'budget': return 'Měsíční rozpočet';
-      case 'overview': return 'Přehledy';
+      case 'overview': return 'Majetek';
       case 'analytics': return 'Analýza a trendy';
       case 'mandatory': return 'Mandatorní výdaje';
       case 'transactions': return 'Všechny položky';

@@ -125,7 +125,9 @@ it('removes only the matrix legend and retains balances, P/K labels and shared c
   expect(html).not.toContain('konečný</span>');
   expect(html).toContain('title="P – počáteční stav"');
   expect(html).toContain('title="K – konečný stav"');
-  for (const table of html.split('<table').slice(1)) {
+  // Graf Rozložení majetku má vlastní tabulku se zkrácenými názvy období, kontrolují se jen tabulky zůstatků
+  const balanceTables = html.replace(/Rozložení celkového majetku[\s\S]*?(?=>Účty<\/h2>)/, '');
+  for (const table of balanceTables.split('<table').slice(1)) {
     for (const month of ['Srpen 2026', 'Září 2026', 'Říjen 2026']) expect(table).toContain(month);
   }
   expect(JSON.stringify(hooks.finance.forecast)).toBe(before);
