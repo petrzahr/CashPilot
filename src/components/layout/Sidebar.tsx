@@ -194,13 +194,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
-        <div className="shrink-0 px-3 py-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
-          {/* Přehled platí k dnešku, ne k období vybranému v záhlaví.
-              Nahoře tichý řádek s datem, pod ním rozpis po druzích účtů a pod linkou celkový majetek jako součet. */}
-          <p className="flex items-baseline justify-between gap-2 text-slate-500">
-            <span>K dnešku</span>
-            <span className="tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
-          </p>
+        {/* Přehled platí k dnešku, ne k období vybranému v záhlaví; datum nese jen tooltip karty.
+            Rozpis po druzích účtů, pod linkou celkový majetek jako součet. */}
+        <div
+          className="shrink-0 px-3 py-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs"
+          title={`Stav k ${formatCzechDate(getTodayInPrague())}`}
+        >
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
