@@ -152,9 +152,11 @@ export const AnalyticsScreen: React.FC = () => {
       accounts,
       transactions,
       corrections,
-      marketValueSnapshots
+      marketValueSnapshots,
+      forecast,
+      todayStr
     );
-  }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots]);
+  }, [dateRange.periods, accounts, transactions, corrections, marketValueSnapshots, forecast, todayStr]);
 
   const cashFlowComposition = useMemo(() => {
     return calculateCashFlowComposition(dateRange.periods, forecast, accounts);

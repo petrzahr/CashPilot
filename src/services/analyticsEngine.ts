@@ -720,13 +720,18 @@ export function calculateCashFlowComposition(
  * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % (= 100 %) je součet
  * ABSOLUTNÍCH hodnot všech zůstatků, takže kladná a záporná strana dohromady dávají vždy
  * přesně 100 % (např. účet na -15 % => kladné účty sahají jen do 85 %).
+ * Minulá a probíhající období ukazují skutečný stav k analysisEndDate; budoucí období
+ * (začínající po dnešku) berou projektovaný konečný stav účtu z forecastu (shodný s
+ * "Konečným stavem" v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
   accounts: Account[],
   transactions: Transaction[],
   corrections: BalanceCorrection[],
-  snapshots: MarketValueSnapshot[]
+  snapshots: MarketValueSnapshot[],
+  forecast?: ForecastResult,
+  todayStr: string = getTodayInPrague()
 ): PortfolioCompositionPoint[] {
   const eligibleAccounts = sortAccountsByOrder(accounts).filter(
     (a) => a.isNetWorth && a.status === 'active'
@@ -734,12 +739,15 @@ export function calculatePortfolioComposition(
 
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
+    const projected =
+      forecast && p.startDate > todayStr ? getAccountPeriodSummary(forecast, p.key) : undefined;
 
     const rawSegments = eligibleAccounts.map((acc) => {
       const balanceInHaler =
-        acc.type === 'investment' || acc.type === 'pension'
+        projected?.accountBalances[acc.id]?.closingBalanceInHaler ??
+        (acc.type === 'investment' || acc.type === 'pension'
           ? computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
-          : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections);
+          : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections));
 
       return { key: acc.id, label: acc.name, color: acc.color, balanceInHaler };
     });
