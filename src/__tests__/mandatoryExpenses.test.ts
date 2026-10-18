@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { FinanceProvider } from '../context/FinanceContext';
+import { useFinance } from '../context/FinanceContext';
 import { MandatoryExpensesScreen } from '../components/mandatory/MandatoryExpensesScreen';
 import { calculateMandatoryOverview, getMonthlyFactor } from '../services/mandatoryExpensesService';
 import { Account, Category, RecurringRule } from '../types/finance';
 import { createBudgetPeriod } from '../services/periodService';
+
+vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 
 const today = '2026-10-06';
 
@@ -82,7 +84,7 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     expect(result.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000);
   });
 
-  it('Průměrně ušetří a Zbývá počítají jen s výchozím účtem a na sebe navazují', () => {
+  it('zobrazí jen platby výchozího účtu a dlaždice na sebe navazují', () => {
     const more = [
       { ...acc('chk2', 'Druhý běžný', 'checking') },
       acc('pen', 'Penzijní', 'pension'),
@@ -99,15 +101,46 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
       ],
       categories, [...accounts, ...more], today, 15
     );
-    const saved = 9600000 - 2430000;
-    expect(r.actuallySavedMonthlyInHaler).toBe(saved);
-    expect(r.remainingMonthlyInHaler).toBe(saved - 500000 - 170000 + 100000);
-    // Tabulkové součty dál obsahují všechny účty
-    expect(r.income.monthlyInHaler).toBe(9600000 + 30000);
+    const ids = (s: typeof r.income) => s.categories.flatMap((c) => c.items).map((i) => i.ruleId).sort();
+    // Příjem na penzijní účet, výdaj z jiného účtu a převod mezi jinými účty se nezobrazí
+    expect(ids(r.income)).toEqual(['salary']);
+    expect(ids(r.expense)).toEqual(['gas', 'ins', 'rent']);
+    expect(ids(r.transfer)).toEqual(['back', 'dps', 'save']);
+
+    // Příjmy − Výdaje = Průměrně ušetří; − Převody (čistý odtok, převod zpět se odečte) = Zbývá
+    expect(r.income.monthlyInHaler).toBe(9600000);
+    expect(r.expense.monthlyInHaler).toBe(2430000);
+    expect(r.transfer.monthlyInHaler).toBe(500000 + 170000 - 100000);
+    expect(r.actuallySavedMonthlyInHaler).toBe(9600000 - 2430000);
+    expect(r.remainingMonthlyInHaler).toBe(9600000 - 2430000 - 570000);
   });
 
-  it('bez výchozího účtu jsou Průměrně ušetří i Zbývá 0', () => {
+  it('nadcházející změny obsahují jen platby výchozího účtu', () => {
+    const r = calculateMandatoryOverview(
+      [
+        rule({ id: 'mine', title: 'Daň', amountInHaler: 120000, frequency: 'annually', dayOfMonth: 20, startDate: '2026-12-20' }),
+        rule({ id: 'foreign', title: 'Cizí', amountInHaler: 50000, startDate: '2026-12-20', sourceAccountId: 'sav' }),
+      ],
+      categories, accounts, today, 15
+    );
+    expect(r.upcomingChanges.map((c) => c.ruleId)).toEqual(['mine']);
+  });
+
+  it('simulovaná platba, která se výchozího účtu netýká, se nezapočítá', () => {
+    const r = calculateMandatoryOverview(rules, categories, accounts, today, 15, {
+      edits: {},
+      deleted: [],
+      added: [{ id: 'sim_x', title: 'Cizí', group: 'expense', categoryId: 'car', sourceAccountId: 'sav', amountInHaler: 500000, frequency: 'monthly' }],
+    });
+    expect(r.expense.monthlyInHaler).toBe(2430000);
+  });
+
+  it('bez výchozího účtu je přehled prázdný', () => {
     const r = calculateMandatoryOverview(rules, categories, accounts.map((a) => ({ ...a, isDefault: false })), today, 15);
+    expect(r.hasDefaultAccount).toBe(false);
+    expect(r.income.categories).toEqual([]);
+    expect(r.expense.categories).toEqual([]);
+    expect(r.transfer.categories).toEqual([]);
     expect(r.actuallySavedMonthlyInHaler).toBe(0);
     expect(r.remainingMonthlyInHaler).toBe(0);
   });
@@ -232,13 +265,25 @@ describe('Mandatorní výdaje (calculateMandatoryOverview)', () => {
     });
   });
 
+  const renderScreen = (screenAccounts: Account[]) => {
+    vi.mocked(useFinance).mockReturnValue({
+      recurringRules: rules, categories, accounts: screenAccounts,
+      settings: { budgetStartDay: 15 }, selectedPeriod: createBudgetPeriod(2026, 9, 15),
+    } as unknown as ReturnType<typeof useFinance>);
+    return renderToStaticMarkup(React.createElement(MandatoryExpensesScreen));
+  };
+
   it('obrazovka se vykreslí s tlačítkem Přidat; Obnovit výchozí stav jen při simulaci', () => {
-    const html = renderToStaticMarkup(
-      React.createElement(FinanceProvider, null, React.createElement(MandatoryExpensesScreen))
-    );
+    const html = renderScreen(accounts);
     expect(html).not.toContain('Obnovit výchozí stav');
     expect(html).toContain('Přidat');
     expect(html).toContain('Mandatorní výdaje / měsíc');
+  });
+
+  it('bez výchozího účtu obrazovka vyzve k jeho nastavení', () => {
+    const html = renderScreen(accounts.map((a) => ({ ...a, isDefault: false })));
+    expect(html).toContain('Chybí výchozí účet');
+    expect(html).not.toContain('Mandatorní výdaje / měsíc');
   });
 
   it('vlastní interval ve dnech přepočítá podle průměrné délky měsíce', () => {

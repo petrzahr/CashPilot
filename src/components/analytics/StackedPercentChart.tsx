@@ -19,6 +19,8 @@ export interface StackedPercentPoint {
 
 interface StackedPercentChartProps {
   title: string;
+  /** Doplňující popisek vedle nadpisu (např. z jakého účtu se počítá) */
+  subtitle?: string;
   emptyText: string;
   rowHeaderLabel: string;
   data: StackedPercentPoint[];
@@ -38,6 +40,7 @@ interface StackedPercentChartProps {
  */
 export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   title,
+  subtitle,
   emptyText,
   rowHeaderLabel,
   data,
@@ -139,8 +142,9 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
     <div className="card overflow-hidden">
       <div className="p-5 space-y-4">
       {/* Hlavička karty */}
-      <div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+        {subtitle && <span className="text-xs text-slate-500">{subtitle}</span>}
       </div>
 
       {/* SVG Canvas */}

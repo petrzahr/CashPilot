@@ -38,9 +38,9 @@ const buildForecast = (summary: Partial<PeriodSummary>): ForecastResult =>
 describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowComposition)', () => {
   const period = createBudgetPeriod(2026, 8, 15);
   const periods = generateBudgetPeriodSequence(period, period, 15, today);
-  const accounts = [account('chk', 'checking'), account('cash', 'cash'), account('sav', 'savings')];
+  const accounts = [{ ...account('chk', 'checking'), isDefault: true }, account('cash', 'cash'), account('sav', 'savings')];
 
-  it('sčítá jen běžné a hotovostní účty a Skutečně uspořeno = příjmy − výdaje + korekce', () => {
+  it('bere jen výchozí účet a Skutečně uspořeno = příjmy − výdaje + korekce', () => {
     const forecast = buildForecast({
       period,
       accountBalances: {
@@ -54,8 +54,17 @@ describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowCompositio
     const byKey = Object.fromEntries(point.segments.map((s) => [s.key, s]));
 
     expect(byKey.income.amountInHaler).toBe(9530000);
-    expect(byKey.expense.amountInHaler).toBe(10110000);
-    expect(byKey.actuallySaved.amountInHaler).toBe(9530000 - 10110000 - 50000);
+    expect(byKey.expense.amountInHaler).toBe(10000000);
+    expect(byKey.actuallySaved.amountInHaler).toBe(9530000 - 10000000 - 50000);
+  });
+
+  it('bez výchozího účtu jsou hodnoty nulové', () => {
+    const forecast = buildForecast({ period, accountBalances: { chk: bal('chk', 9530000, 10000000) } });
+    const [point] = calculateCashFlowComposition(periods, forecast, accounts.map((a) => ({ ...a, isDefault: false })));
+    for (const seg of point.segments) {
+      expect(seg.amountInHaler).toBe(0);
+      expect(seg.pct).toBeNull();
+    }
   });
 
   it('kladná a záporná strana dávají dohromady 100 %, záporné uspořeno jde pod nulu', () => {
