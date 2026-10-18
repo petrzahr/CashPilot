@@ -15,6 +15,9 @@ export const CZECH_MONTHS = [
   'Prosinec'
 ];
 
+// Červen and Červenec would both truncate to "Čer", so short names are listed explicitly
+export const CZECH_MONTHS_SHORT = ['Led', 'Úno', 'Bře', 'Dub', 'Kvě', 'Čvn', 'Čvc', 'Srp', 'Zář', 'Říj', 'Lis', 'Pro'];
+
 /**
  * Převede datum YYYY-MM-DD nebo Date na formát "15. 9. 2026"
  */

@@ -742,6 +742,11 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
     expect(cf[2].dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
   });
 
+  it('14b. Červen a Červenec mají rozlišitelné zkratky (Čvn / Čvc)', () => {
+    expect(createBudgetPeriodInfo(createBudgetPeriod(2027, 6, 15), '2026-10-18').shortLabel).toBe('Čvn 2027');
+    expect(createBudgetPeriodInfo(createBudgetPeriod(2027, 7, 15), '2026-10-18').shortLabel).toBe('Čvc 2027');
+  });
+
   // 15. Tooltip ukazuje skutečný rozsah období
   it('15. Tooltip ukazuje skutečný analyzovaný rozsah období a stav (Probíhající vs Uzavřené)', () => {
     const range = resolveAnalyticsDateRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;

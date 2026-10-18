@@ -88,7 +88,14 @@ describe('Reconciliation and Market Value Engine', () => {
       expect(result.usableCashNowInHaler).toBe(5000000);
       expect(result.expectedClosingCurrentPeriodInHaler).toBe(5000000);
       expect(result.netWorthNowInHaler).toBe(23000000 + marketValue);
-      for (const period of result.forecastPeriods!) {
+      // Current period keeps its period-start opening; only the closing is anchored at today
+      const [current, ...later] = result.forecastPeriods!;
+      expect(current.accountBalances[investment.id].openingBalanceInHaler).toBe(30000000);
+      expect(current.accountBalances[investment.id].closingBalanceInHaler).toBe(marketValue);
+      expect(current.openingBalanceInHaler).toBe(55000000);
+      expect(current.netWorthOpeningInHaler).toBe(55000000);
+      expect(current.closingBalanceInHaler).toBe(23000000 + marketValue);
+      for (const period of later) {
         expect(period.accountBalances[investment.id].openingBalanceInHaler).toBe(marketValue);
         expect(period.accountBalances[investment.id].closingBalanceInHaler).toBe(marketValue);
         expect(period.openingBalanceInHaler).toBe(23000000 + marketValue);
@@ -114,12 +121,48 @@ describe('Reconciliation and Market Value Engine', () => {
         transactions, [], [], [], DEFAULT_SETTINGS, snapshots, periodSep2026.key, '2026-09-21');
       const first = result.forecastPeriods![0];
       expect(result.netWorthNowInHaler).toBe(40100000);
-      expect(first.accountBalances[investment.id].openingBalanceInHaler).toBe(35100000);
+      expect(first.accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
+      expect(first.accountBalances[investment.id].transfersInInHaler).toBe(300000);
       expect(first.accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
       expect(result.forecastPeriods![1].accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
       expect(first.usableClosingInHaler).toBe(5150000);
       expect(result.expectedClosingCurrentPeriodInHaler).toBe(first.usableClosingInHaler);
       expect(result.periods[0].accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
+    });
+
+    it('keeps asset income out of transfers and rows add up in current and future periods', () => {
+      const pension: Account = { ...samplePensionAccount, currentMarketValueInHaler: undefined, marketValueUpdatedAt: undefined };
+      const tx = (id: string, date: string, status: Transaction['status'], type: Transaction['type'], amount: number): Transaction => ({
+        id, date, status, type, sequence: 1, amountInHaler: amount,
+        sourceAccountId: type === 'transfer' ? sampleCheckingAccount.id : pension.id,
+        targetAccountId: type === 'transfer' ? pension.id : undefined,
+        title: id, createdAt: date, updatedAt: date,
+      });
+      const transactions = [
+        tx('sep_contribution', '2026-09-16', 'executed', 'transfer', 170000),
+        tx('sep_state', '2026-10-01', 'planned', 'income', 220000),
+        tx('oct_contribution', '2026-10-20', 'planned', 'transfer', 170000),
+        tx('oct_state', '2026-10-25', 'planned', 'income', 220000),
+      ];
+      const result = calculateForecast([periodSep2026, periodOct2026], [sampleCheckingAccount, pension],
+        transactions, [], [], [], DEFAULT_SETTINGS, [], periodSep2026.key, '2026-09-21');
+      const [sep, oct] = result.forecastPeriods!;
+
+      expect(sep.accountBalances[pension.id]).toMatchObject({
+        openingBalanceInHaler: 20000000, incomeInHaler: 220000, transfersInInHaler: 170000, closingBalanceInHaler: 20390000,
+      });
+      expect(oct.accountBalances[pension.id]).toMatchObject({
+        openingBalanceInHaler: 20390000, incomeInHaler: 220000, transfersInInHaler: 170000, closingBalanceInHaler: 20780000,
+      });
+
+      for (const p of [sep, oct]) {
+        let flows = 0;
+        for (const b of Object.values(p.accountBalances)) {
+          flows += b.incomeInHaler - b.expenseInHaler + b.transfersInInHaler - b.transfersOutInHaler + b.correctionsInHaler;
+        }
+        expect(p.openingBalanceInHaler + flows).toBe(p.closingBalanceInHaler);
+        expect(p.netWorthOpeningInHaler + p.netChangeInHaler).toBe(p.netWorthClosingInHaler);
+      }
     });
   });
 
