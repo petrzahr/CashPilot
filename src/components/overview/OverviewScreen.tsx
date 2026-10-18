@@ -5,7 +5,8 @@ import { getOverviewPeriods, OverviewRange } from '../../services/periodService'
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
-import { DualPeriodRange, resolveAnalyticsDateRange } from '../../services/analyticsEngine';
+import { DualPeriodRange, resolveAnalyticsDateRange, calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
+import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
 import { createBudgetPeriod, generatePeriodsBetween, getTodayInPrague } from '../../services/periodService';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -44,8 +45,20 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
 
   const accountPeriods = displayPeriods;
 
+  // Rozložení celkového majetku za stejná období jako tabulky
+  const todayStr = getTodayInPrague();
+  const portfolioComposition = useMemo(() => calculatePortfolioComposition(
+    selectedPeriods.map(period => createBudgetPeriodInfo(period, todayStr)),
+    accounts,
+    transactions,
+    corrections,
+    marketValueSnapshots,
+    forecast,
+    todayStr
+  ), [selectedPeriods, accounts, transactions, corrections, marketValueSnapshots, forecast, todayStr]);
+
   // Režimy zobrazení hlavní forecast tabulky
-  const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('usable');
+  const [forecastScope, setForecastScope] = useState<'usable' | 'all'>('all');
 
   // Režimy zobrazení přehledu účtů
   const [accountViewMode, setAccountViewMode] = useState<'period' | 'matrix'>('period');
@@ -71,16 +84,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
       <div className="card overflow-hidden">
         <div className="card-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-slate-900">Vývoj zůstatků po obdobích</h2>
-          {/* Přepínač: Použitelné peníze vs Všechny účty */}
+          {/* Přepínač: Celkový majetek vs Použitelné peníze */}
           <div role="group" aria-label="Zobrazit zůstatky" className="segmented flex items-center">
-            <button
-              type="button"
-              onClick={() => setForecastScope('usable')}
-              aria-pressed={forecastScope === 'usable'}
-              className="segment min-w-[132px]"
-            >
-              Použitelné peníze
-            </button>
             <button
               type="button"
               onClick={() => setForecastScope('all')}
@@ -88,6 +93,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               className={`segment min-w-[132px] ${forecastScope === 'all' ? 'text-purple-600' : ''}`}
             >
               Celkový majetek
+            </button>
+            <button
+              type="button"
+              onClick={() => setForecastScope('usable')}
+              aria-pressed={forecastScope === 'usable'}
+              className="segment min-w-[132px]"
+            >
+              Použitelné peníze
             </button>
           </div>
         </div>
@@ -185,6 +198,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
           </table>
         </div>
       </div>
+
+      {/* Rozložení celkového majetku napříč účty za vybrané období */}
+      <PortfolioCompositionChart data={portfolioComposition} />
 
       {/* Přehled účtů */}
       <div className="card overflow-hidden">

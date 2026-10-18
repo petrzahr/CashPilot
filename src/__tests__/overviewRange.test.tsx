@@ -57,7 +57,9 @@ describe.each(['future', 'past'] as const)('shared %s overview range', direction
     Object.assign(selection, { direction, months: 3, matrix: true });
     const { html, finance } = renderOverview(31);
     const periods = getOverviewPeriods(finance.currentPeriod, selection as OverviewRange, 31);
-    for (const table of html.split('<table').slice(1)) {
+    // Graf Rozložení majetku má vlastní tabulku se zkrácenými názvy období, kontrolují se jen tabulky zůstatků
+    const balanceTables = html.replace(/Rozložení celkového majetku[\s\S]*?(?=>Účty<\/h2>)/, '');
+    for (const table of balanceTables.split('<table').slice(1)) {
       for (const period of periods) expect(table).toContain(period.name);
     }
     expect(finance.currentPeriod.key).toBe('2026-08');

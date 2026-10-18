@@ -14,7 +14,7 @@ const labels = (html: string) =>
 
 describe('MobileNav - spodní lišta na telefonu', () => {
   it('ukazuje čtyři hlavní sekce a „Více“ v daném pořadí', () => {
-    expect(labels(render('budget'))).toEqual(['Rozpočet', 'Přehledy', 'Analýza', 'Položky', 'Více']);
+    expect(labels(render('budget'))).toEqual(['Rozpočet', 'Majetek', 'Analýza', 'Položky', 'Více']);
   });
 
   it('označí aktivní hlavní sekci přes aria-current', () => {

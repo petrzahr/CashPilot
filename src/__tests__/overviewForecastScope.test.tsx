@@ -62,6 +62,8 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); });
 
 it('sums income, expense and signed net transfers only from accounts in the usable scope', () => {
+  // Stav pohledu je druhý useState v komponentě; výchozí je Celkový majetek
+  hooks.values[1] = 'usable';
   const html = forecastTable();
   expect(html).toContain(`+${formatCurrency(5000000)}`);
   // Výdaj ze spořicího účtu do použitelných peněz nepatří
@@ -73,9 +75,8 @@ it('sums income, expense and signed net transfers only from accounts in the usab
   expect(html).toContain(formatCurrency(2000000, { showPlus: true }));
 });
 
-it('nets internal transfers to zero across all accounts', () => {
-  // Stav pohledu je druhý useState v komponentě; výdaj i ze spořicího účtu dokazuje, že přepnutí proběhlo
-  hooks.values[1] = 'all';
+it('nets internal transfers to zero across all accounts by default', () => {
+  // Výdaj i ze spořicího účtu dokazuje, že výchozí pohled je Celkový majetek
   const html = forecastTable();
   expect(html).toContain(`−${formatCurrency(2010000)}`);
   expect(html).toContain(formatCurrency(0, { showPlus: true }));

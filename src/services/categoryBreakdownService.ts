@@ -47,6 +47,7 @@ const sum = (values: number[]) => values.reduce((s, v) => addHaler(s, v), 0);
  * Kategorie i podkategorie jsou řazené abecedně (nejdřív příjmové, pak výdajové), prázdné
  * řádky se vynechávají. Převody jsou v samostatném řádku "Spoření & Převody" rozpadlém
  * podle cílového účtu. Provedené položky se počítají se skutečnou částkou, plánované s plánovanou.
+ * S `accountId` se berou jen příjmy a výdaje tohoto účtu a jen převody z něj odchozí.
  */
 export function calculateCategoryBreakdown(
   periods: BudgetPeriodInfo[],
@@ -55,7 +56,8 @@ export function calculateCategoryBreakdown(
   recurringExceptions: RecurringException[],
   categories: Category[],
   accounts: Account[],
-  startDay: number
+  startDay: number,
+  accountId?: string
 ): CategoryBreakdownResult {
   const periodCount = periods.length;
   const zeros = () => new Array<number>(periodCount).fill(0);
@@ -92,6 +94,7 @@ export function calculateCategoryBreakdown(
 
     for (const t of txs) {
       if (t.status === 'cancelled' || t.type === 'balance_adjustment') continue;
+      if (accountId && t.sourceAccountId !== accountId) continue;
       const amount = effectiveAmount(t);
 
       if (t.type === 'transfer') {

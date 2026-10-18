@@ -30,7 +30,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'budget', label: 'Měsíční rozpočet', shortLabel: 'Rozpočet', icon: CalendarDays },
-  { id: 'overview', label: 'Přehledy', shortLabel: 'Přehledy', icon: LayoutDashboard },
+  { id: 'overview', label: 'Majetek', shortLabel: 'Majetek', icon: LayoutDashboard },
   { id: 'analytics', label: 'Analýza a trendy', shortLabel: 'Analýza', icon: TrendingUp },
   { id: 'mandatory', label: 'Mandatorní výdaje', icon: Repeat },
   { id: 'transactions', label: 'Všechny položky', shortLabel: 'Položky', icon: Receipt },

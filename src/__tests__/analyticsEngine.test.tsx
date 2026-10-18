@@ -513,9 +513,9 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     // Položka je v menu přítomna
     expect(sidebarHtml).toContain('Analýza a trendy');
 
-    // Ověříme pořadí: Měsíční rozpočet -> Přehled -> Analýza & trendy -> Všechny položky
+    // Ověříme pořadí: Měsíční rozpočet -> Majetek -> Analýza & trendy -> Všechny položky
     const idxBudget = sidebarHtml.indexOf('Měsíční rozpočet');
-    const idxOverview = sidebarHtml.indexOf('Přehled');
+    const idxOverview = sidebarHtml.indexOf('Majetek');
     const idxAnalytics = sidebarHtml.indexOf('Analýza a trendy');
     const idxTransactions = sidebarHtml.indexOf('Všechny položky');
 
@@ -532,10 +532,11 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
 
     expect(screenHtml).toContain('Analyzované období');
     expect(screenHtml).toContain('Posledních 12 měsíců');
-    expect(screenHtml).toContain('Rozložení celkového majetku');
-    expect(screenHtml).toContain('Trend výdajů mezi obdobími');
-    expect(screenHtml).toContain('Nejvyšší výdaje ve vybraném období');
-    expect(screenHtml).toContain('Průměry a finanční extrémy');
+    // Rozložení majetku patří do sekce Majetek, Analýza je jen z výchozího účtu;
+    // výchozí data žádný výchozí účet nemají, proto místo sekcí varování
+    expect(screenHtml).not.toContain('Rozložení celkového majetku');
+    expect(screenHtml).toContain('Chybí výchozí účet');
+    expect(screenHtml).not.toContain('Trend výdajů mezi obdobími');
   });
 });
 

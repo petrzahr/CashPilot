@@ -91,4 +91,19 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     expect(html).toContain('Příjmy celkem');
     expect(html).not.toContain('Nájem');
   });
+
+  it('s accountId bere jen příjmy a výdaje účtu a jen převody z něj odchozí', () => {
+    const scoped = calculateCategoryBreakdown(periods, [
+      ...transactions,
+      tx({ categoryId: 'auto', amountInHaler: 50000, sourceAccountId: 'sav', date: '2026-08-23' }),
+      tx({ type: 'income', categoryId: 'salary', amountInHaler: 70000, sourceAccountId: 'sav', date: '2026-08-23' }),
+      tx({ type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 400000, date: '2026-08-24' }),
+    ], [], [], categories, accounts, 15, 'chk');
+
+    expect(scoped.incomeTotalsInHaler).toEqual([9500000, 9600000]);
+    expect(scoped.expenseTotalInHaler).toBe(2200000 + 660000 + 300000);
+    const transfers = scoped.rows.find((r) => r.group === 'transfer')!;
+    expect(transfers.amountsInHaler).toEqual([0, 1200000]);
+    expect(transfers.children.map((c) => c.label)).toEqual(['Spořicí']);
+  });
 });
