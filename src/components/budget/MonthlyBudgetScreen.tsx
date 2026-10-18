@@ -74,11 +74,13 @@ const flowTone = (value: number | null) => (value === null ? 'text-slate-500' : 
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
   onEditTransaction: (tx: Transaction) => void;
+  onDuplicateTransaction: (tx: Transaction) => void;
 }
 
 export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   onOpenTransactionModal,
   onEditTransaction,
+  onDuplicateTransaction,
 }) => {
   const {
     selectedPeriod,
@@ -90,7 +92,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     recurringRules,
     recurringExceptions,
     marketValueSnapshots = [],
-    duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
     deleteCorrection,
@@ -824,7 +825,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
           <Edit3 className="w-4 h-4" />
         </button>
         <button
-          onClick={() => duplicateTransaction(tx)}
+          onClick={() => onDuplicateTransaction(tx)}
           title="Duplikovat položku"
           aria-label={`Duplikovat položku: ${tx.title}`}
           className="btn-icon"
@@ -1542,7 +1543,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                       <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button
-                                      onClick={() => duplicateTransaction(tx)}
+                                      onClick={() => onDuplicateTransaction(tx)}
                                       title="Duplikovat položku"
                                       aria-label={`Duplikovat položku: ${tx.title}`}
                                       className="btn-icon"

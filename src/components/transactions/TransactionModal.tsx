@@ -2,7 +2,7 @@ import React, { useState, useEffect, useId, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
-import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
+import { Account, Category, MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
 import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
@@ -15,12 +15,37 @@ import { FieldError, FieldErrors, FormError, fieldStateClass, fieldErrorProps, f
 
 type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
 
+/**
+ * Údaje nové položky převzaté při duplikaci (datum, pořadí a stav se určí jako u nové položky).
+ * Archivované účty a kategorie se v nové položce nenabízejí, proto se nepředvyplní.
+ */
+export function getDuplicateDraft(source: Transaction, accounts: Account[], categories: Category[]) {
+  const isActiveAcc = (id?: string | null) => !!id && accounts.some(a => a.id === id && a.status === 'active');
+  const isActiveCat = (id?: string | null) => !!id && categories.some(c => c.id === id && c.status === 'active');
+  const haler = source.status === 'executed' && source.actualAmountInHaler !== undefined
+    ? source.actualAmountInHaler
+    : source.amountInHaler;
+  const categoryId = isActiveCat(source.categoryId) ? source.categoryId! : '';
+  return {
+    title: source.title,
+    amountStr: halerToInputValue(haler),
+    type: source.type,
+    sourceAccountId: isActiveAcc(source.sourceAccountId) ? source.sourceAccountId : '',
+    targetAccountId: isActiveAcc(source.targetAccountId) ? source.targetAccountId! : '',
+    categoryId,
+    subcategoryId: categoryId && isActiveCat(source.subcategoryId) ? source.subcategoryId! : '',
+    note: source.note || '',
+  };
+}
+
 interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   transactionToEdit?: Transaction | null;
   initialType?: MovementType;
   initialDate?: string;
+  /** Nová položka předvyplněná podle existující (duplikace); datum a pořadí jako u nové položky. */
+  transactionToDuplicate?: Transaction | null;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -29,6 +54,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   transactionToEdit,
   initialType = 'expense',
   initialDate,
+  transactionToDuplicate,
 }) => {
   const fieldId = useId();
   const {
@@ -161,25 +187,38 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     } else {
       const defaultDate = initialDate || getDefaultDateForPeriod(selectedPeriod);
       const defaultDay = parseInt(defaultDate.split('-')[2], 10) || 1;
-      setTitle('');
-      setAmountStr('');
       setDate(defaultDate);
       const nextSeq = getEffectiveNextSequence(defaultDate);
       setSequenceStr(nextSeq.toString());
-      setType(initialType);
 
-      // Default account: preselect only if an active account is marked as default and valid for defaultDate
-      const defaultAcc = accounts.find(a => a.status === 'active' && a.isDefault);
-      const isDefaultValid = defaultAcc && (!defaultAcc.initialBalanceDate || defaultAcc.initialBalanceDate <= defaultDate);
-      setSourceAccountId(isDefaultValid ? defaultAcc.id : '');
-      setTargetAccountId('');
+      if (transactionToDuplicate) {
+        const draft = getDuplicateDraft(transactionToDuplicate, accounts, categories);
+        setTitle(draft.title);
+        setAmountStr(draft.amountStr);
+        setType(draft.type);
+        setSourceAccountId(draft.sourceAccountId);
+        setTargetAccountId(draft.targetAccountId);
+        setCategoryId(draft.categoryId);
+        setSubcategoryId(draft.subcategoryId);
+        setNote(draft.note);
+      } else {
+        setTitle('');
+        setAmountStr('');
+        setType(initialType);
 
-      // No category or subcategory preselected by default
-      setCategoryId('');
-      setSubcategoryId('');
+        // Default account: preselect only if an active account is marked as default and valid for defaultDate
+        const defaultAcc = accounts.find(a => a.status === 'active' && a.isDefault);
+        const isDefaultValid = defaultAcc && (!defaultAcc.initialBalanceDate || defaultAcc.initialBalanceDate <= defaultDate);
+        setSourceAccountId(isDefaultValid ? defaultAcc.id : '');
+        setTargetAccountId('');
+
+        // No category or subcategory preselected by default
+        setCategoryId('');
+        setSubcategoryId('');
+        setNote('');
+      }
 
       setStatus(getStatusForDate(defaultDate));
-      setNote('');
       setIsRecurring(false);
       setFrequency('monthly');
       setDayOfMonth(defaultDay);
@@ -190,7 +229,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     // (např. periodická kontrola splatných položek na pozadí), jinak by to za běhu smazalo
     // rozepsaný formulář uživateli pod rukama.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactionToEdit?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
+  }, [transactionToEdit?.id, transactionToDuplicate?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
 
   // Plánovaná položka s dnešním či starším datem se sama uskuteční, proto ji tak nejde nastavit
   const isPastOrToday = !!date && date <= getTodayInPrague();

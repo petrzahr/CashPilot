@@ -297,7 +297,6 @@ interface FinanceContextType {
   ) => Promise<boolean>;
   /** Vrácení smazané běžné položky (akce „Vrátit“ v oznámení po smazání) */
   restoreDeletedTransaction: (tx: Transaction, correction?: BalanceCorrection) => void;
-  duplicateTransaction: (tx: Transaction) => void;
   setTransactionStatus: (
     id: string,
     newStatus: TransactionStatus,
@@ -1045,29 +1044,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       return false;
     }
   }, [selectedPeriod.key, showToast, restoreDeletedTransaction]);
-
-  const duplicateTransaction = useCallback((tx: Transaction) => {
-    const nowIso = new Date().toISOString();
-    const nextSeq = getNextSequenceForDate(tx.date, data.transactions);
-    const autoStatus = getStatusForDate(tx.date);
-    const copy: Transaction = {
-      ...tx,
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      title: `${tx.title} (kopie)`,
-      sequence: nextSeq,
-      status: autoStatus,
-      actualAmountInHaler: autoStatus === 'executed' ? (tx.actualAmountInHaler ?? tx.amountInHaler) : undefined,
-      recurringRuleId: undefined,
-      isException: false,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-    setData(prev => ({
-      ...prev,
-      transactions: insertOrUpdateWithSequence(copy, nextSeq, prev.transactions)
-    }));
-    showToast(`Vytvořena kopie položky „${copy.title}“.`);
-  }, [data.transactions, showToast]);
 
   const setTransactionStatus = useCallback((
     id: string,
@@ -2579,7 +2555,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     updateTransaction,
     deleteTransaction,
     restoreDeletedTransaction,
-    duplicateTransaction,
     setTransactionStatus,
     markTransactionExecuted,
     cancelTransaction,

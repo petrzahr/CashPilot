@@ -30,13 +30,13 @@ it('denní pohled nabízí posun položek tlačítky s názvem položky, na okra
   vi.mocked(useFinance).mockReturnValue({
     selectedPeriod: period, forecast, settings, accounts: [checking], categories: [],
     transactions, recurringRules: [], recurringExceptions: [], marketValueSnapshots: [],
-    duplicateTransaction: vi.fn(), setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
+    setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
     cancelTransaction: vi.fn(), deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(),
     reorderRecurringItem: vi.fn(), showToast: vi.fn(),
   } as unknown as ReturnType<typeof useFinance>);
 
   const html = renderToStaticMarkup(
-    <MonthlyBudgetScreen onOpenTransactionModal={vi.fn()} onEditTransaction={vi.fn()} />
+    <MonthlyBudgetScreen onOpenTransactionModal={vi.fn()} onEditTransaction={vi.fn()} onDuplicateTransaction={vi.fn()} />
   );
 
   // Pořadí v rámci dne podle sequence: Nákup (#1), Nájem (#2)

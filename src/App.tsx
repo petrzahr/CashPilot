@@ -46,6 +46,7 @@ const MainLayout: React.FC = () => {
   // Globální správa modálu pro položky
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
   const [txToEdit, setTxToEdit] = useState<Transaction | null>(null);
+  const [txToDuplicate, setTxToDuplicate] = useState<Transaction | null>(null);
   const [initialTxType, setInitialTxType] = useState<MovementType>('expense');
   const [initialTxDate, setInitialTxDate] = useState<string | undefined>(undefined);
 
@@ -70,6 +71,7 @@ const MainLayout: React.FC = () => {
 
   const handleOpenNewTx = (initialDate?: string, initialType?: MovementType) => {
     setTxToEdit(null);
+    setTxToDuplicate(null);
     setInitialTxDate(initialDate);
     if (initialType) setInitialTxType(initialType);
     setIsTxModalOpen(true);
@@ -77,6 +79,15 @@ const MainLayout: React.FC = () => {
 
   const handleEditTx = (tx: Transaction) => {
     setTxToEdit(tx);
+    setTxToDuplicate(null);
+    setIsTxModalOpen(true);
+  };
+
+  // Duplikace otevře novou položku předvyplněnou podle zdrojové, s výchozím datem nové položky
+  const handleDuplicateTx = (tx: Transaction) => {
+    setTxToEdit(null);
+    setTxToDuplicate(tx);
+    setInitialTxDate(undefined);
     setIsTxModalOpen(true);
   };
 
@@ -159,6 +170,7 @@ const MainLayout: React.FC = () => {
               <MonthlyBudgetScreen
                 onOpenTransactionModal={handleOpenNewTx}
                 onEditTransaction={handleEditTx}
+                onDuplicateTransaction={handleDuplicateTx}
               />
             )}
 
@@ -180,6 +192,7 @@ const MainLayout: React.FC = () => {
               <TransactionsScreen
                 onOpenTransactionModal={handleOpenNewTx}
                 onEditTransaction={handleEditTx}
+                onDuplicateTransaction={handleDuplicateTx}
               />
             )}
 
@@ -222,6 +235,7 @@ const MainLayout: React.FC = () => {
         isOpen={isTxModalOpen}
         onClose={() => setIsTxModalOpen(false)}
         transactionToEdit={txToEdit}
+        transactionToDuplicate={txToDuplicate}
         initialType={initialTxType}
         initialDate={initialTxDate}
       />

@@ -43,11 +43,13 @@ const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
 interface TransactionsScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
   onEditTransaction: (tx: Transaction) => void;
+  onDuplicateTransaction: (tx: Transaction) => void;
 }
 
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onOpenTransactionModal,
   onEditTransaction,
+  onDuplicateTransaction,
 }) => {
   const {
     transactions,
@@ -57,7 +59,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     accounts,
     categories,
     selectedPeriod,
-    duplicateTransaction,
     setTransactionStatus,
     deleteTransaction,
     deleteCorrection,
@@ -516,7 +517,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <Edit3 className="w-4 h-4" />
         </button>
         <button
-          onClick={() => duplicateTransaction(tx)}
+          onClick={() => onDuplicateTransaction(tx)}
           title="Duplikovat položku"
           aria-label={`Duplikovat položku: ${tx.title}`}
           className="btn-icon"
