@@ -720,9 +720,9 @@ export function calculateCashFlowComposition(
  * (sortAccountsByOrder), konzistentně napříč obdobími. Základna pro % (= 100 %) je součet
  * ABSOLUTNÍCH hodnot všech zůstatků, takže kladná a záporná strana dohromady dávají vždy
  * přesně 100 % (např. účet na -15 % => kladné účty sahají jen do 85 %).
- * Minulá a probíhající období ukazují skutečný stav k analysisEndDate; budoucí období
- * (začínající po dnešku) berou projektovaný konečný stav účtu z forecastu (shodný s
- * "Konečným stavem" v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav.
+ * Minulá období ukazují skutečný stav ke konci období; probíhající a budoucí období berou
+ * projektovaný konečný stav účtu z forecastu (shodný s Přehledy a "Konečným stavem"
+ * v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav.
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -740,7 +740,7 @@ export function calculatePortfolioComposition(
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
     const projected =
-      forecast && p.startDate > todayStr ? getAccountPeriodSummary(forecast, p.key) : undefined;
+      forecast && p.endDate >= todayStr ? getAccountPeriodSummary(forecast, p.key) : undefined;
 
     const rawSegments = eligibleAccounts.map((acc) => {
       const balanceInHaler =
