@@ -12,12 +12,32 @@ import {
   Plus, 
   X, 
   TrendingUp,
-  Repeat
+  Repeat,
+  type LucideIcon
 } from 'lucide-react';
 
 const MOBILE_QUERY = '(max-width: 767.98px)';
 
 export type NavScreen = 'budget' | 'overview' | 'analytics' | 'mandatory' | 'transactions' | 'accounts' | 'categories' | 'settings';
+
+export interface NavItem {
+  id: NavScreen;
+  label: string;
+  /** Short label for the phone bottom bar; only set on items shown there */
+  shortLabel?: string;
+  icon: LucideIcon;
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { id: 'budget', label: 'Měsíční rozpočet', shortLabel: 'Rozpočet', icon: CalendarDays },
+  { id: 'overview', label: 'Přehledy', shortLabel: 'Přehledy', icon: LayoutDashboard },
+  { id: 'analytics', label: 'Analýza a trendy', shortLabel: 'Analýza', icon: TrendingUp },
+  { id: 'mandatory', label: 'Mandatorní výdaje', icon: Repeat },
+  { id: 'transactions', label: 'Všechny položky', shortLabel: 'Položky', icon: Receipt },
+  { id: 'accounts', label: 'Účty', icon: Landmark },
+  { id: 'categories', label: 'Kategorie', icon: FolderTree },
+  { id: 'settings', label: 'Nastavení', icon: Settings },
+];
 
 interface SidebarProps {
   currentScreen: NavScreen;
@@ -95,17 +115,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       : { inert: '', 'aria-hidden': true }
     : {};
 
-  const navItems: { id: NavScreen; label: string; icon: React.ReactNode }[] = [
-    { id: 'budget', label: 'Měsíční rozpočet', icon: <CalendarDays className="w-4 h-4" /> },
-    { id: 'overview', label: 'Přehledy', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'analytics', label: 'Analýza a trendy', icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'mandatory', label: 'Mandatorní výdaje', icon: <Repeat className="w-4 h-4" /> },
-    { id: 'transactions', label: 'Všechny položky', icon: <Receipt className="w-4 h-4" /> },
-    { id: 'accounts', label: 'Účty', icon: <Landmark className="w-4 h-4" /> },
-    { id: 'categories', label: 'Kategorie', icon: <FolderTree className="w-4 h-4" /> },
-    { id: 'settings', label: 'Nastavení', icon: <Settings className="w-4 h-4" /> },
-  ];
-
   const handleNavClick = (id: NavScreen) => {
     onSelectScreen(id);
     onCloseMobile();
@@ -123,6 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <aside
         ref={asideRef}
+        id="app-drawer"
         {...drawerAttributes}
         className={`fixed md:static inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-slate-200 flex flex-col transition-transform duration-200 ease-in-out motion-reduce:transition-none ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -170,8 +180,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Navigační položky */}
           <nav className="space-y-1">
-            {navItems.map((item) => {
+            {NAV_ITEMS.map((item) => {
               const isActive = currentScreen === item.id;
+              const Icon = item.icon;
               return (
                 <button
                   key={item.id}
@@ -184,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <span className={isActive ? 'text-sky-600' : 'text-slate-500'}>
-                    {item.icon}
+                    <Icon className="w-4 h-4" />
                   </span>
                   <span>{item.label}</span>
                 </button>
