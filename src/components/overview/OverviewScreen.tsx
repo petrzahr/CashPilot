@@ -262,7 +262,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             // Pro investiční/penzijní účty konečný stav zahrnuje i změnu tržní hodnoty,
                             // kterou je nutné promítnout do pohybů, jinak počáteční + pohyby != konečný stav.
                             const valuationChangeInHaler = (acc.type === 'investment' || acc.type === 'pension')
-                              ? subHaler(subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler), subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler))
+                              ? subHaler(
+                                  subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler),
+                                  addHaler(subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler), subHaler(accBal.incomeInHaler, accBal.expenseInHaler))
+                                )
                               : 0;
 
                             const incoming = addHaler(accBal.incomeInHaler, accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0, valuationChangeInHaler > 0 ? valuationChangeInHaler : 0);

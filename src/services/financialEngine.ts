@@ -902,7 +902,9 @@ export function calculateForecast(
     ? periodSummaries.slice(currentPeriodIdx, currentPeriodIdx + forecastMonths)
     : periodSummaries.slice(0, forecastMonths);
 
-  // Keep historical period balances intact; anchor the displayed asset forecast at today.
+  // Keep historical period balances intact; anchor the projected asset closing at today's value.
+  // The period that has already started keeps its period-start opening and full-period flows,
+  // so the row still adds up (opening + flows = closing, unless the market value changed).
   const assetValues = new Map(safeAccounts
     .filter(a => (a.type === 'investment' || a.type === 'pension') && (!a.initialBalanceDate || a.initialBalanceDate <= today))
     .map(a => [a.id, getCurrentAssetValue(a, safeTxs, safeSnapshots, today)]));
@@ -911,21 +913,18 @@ export function calculateForecast(
     const remainingTxs = getEffectiveForPeriod(summary.period)
       .filter(t => t.status !== 'cancelled' && !(t.status === 'executed' && t.date <= today));
     for (const acc of safeAccounts) {
-      const opening = assetValues.get(acc.id);
-      if (opening === undefined) continue;
+      const anchor = assetValues.get(acc.id);
+      if (anchor === undefined) continue;
       const original = summary.accountBalances[acc.id];
-      let incoming = 0;
-      let outgoing = 0;
+      let remainingFlow = 0;
       for (const tx of remainingTxs) {
         const amount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler;
-        const flow = getAssetFlowInHaler(tx, acc.id, amount);
-        if (flow > 0) incoming = addHaler(incoming, flow);
-        if (flow < 0) outgoing = addHaler(outgoing, -flow);
+        remainingFlow = addHaler(remainingFlow, getAssetFlowInHaler(tx, acc.id, amount));
       }
-      const closing = addHaler(opening, incoming, -outgoing);
+      const opening = summary.period.startDate <= today ? original.openingBalanceInHaler : anchor;
+      const closing = addHaler(anchor, remainingFlow);
       projected.accountBalances[acc.id] = {
         ...original, openingBalanceInHaler: opening, closingBalanceInHaler: closing,
-        transfersInInHaler: incoming, transfersOutInHaler: outgoing,
         marketValueInHaler: closing,
         unrealizedGainLossInHaler: subHaler(closing, original.investedPrincipalInHaler || 0),
       };

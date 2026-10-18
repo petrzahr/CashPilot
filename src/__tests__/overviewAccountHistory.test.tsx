@@ -55,7 +55,7 @@ const cases = [
 ] as const;
 
 describe.each(['investment', 'pension'] as const)('Overview %s forecast', type => {
-  it.each(cases)('$name', ({ values, closing }) => {
+  it.each(cases)('$name', ({ values, opening, closing }) => {
     const period = createBudgetPeriod(2026, 8, 15);
     const last = values[values.length - 1];
     const asset: Account = {
@@ -86,14 +86,15 @@ describe.each(['investment', 'pension'] as const)('Overview %s forecast', type =
       const row = html.split(`<span>${name}</span>`)[1].split('</tr>')[0];
       return [...row.matchAll(/<td[^>]*>([^<]*)<\/td>/g)].map(match => match[1]);
     };
-    // With no remaining transfers, the forecast stays at the current valuation.
-    const valuationChange = 0;
+    // The running period opens at its period-start valuation and closes at the current one;
+    // the difference is shown as a market value change.
+    const valuationChange = closing - opening;
     expect(cells(asset.name)).toEqual([
-      formatCurrency(closing * 100),
+      formatCurrency(opening * 100),
       valuationChange > 0 ? `+${formatCurrency(valuationChange * 100)}` : '0 Kč',
       valuationChange < 0 ? `−${formatCurrency(Math.abs(valuationChange) * 100)}` : '0 Kč',
       '0 Kč',
-      '0 Kč',
+      formatCurrency(valuationChange * 100, { showPlus: true }),
       formatCurrency(closing * 100),
     ]);
     expect(cells(cash.name)).toEqual([formatCurrency(1000000), `+${formatCurrency(100000)}`, '0 Kč', '0 Kč', formatCurrency(100000, { showPlus: true }), formatCurrency(1100000)]);
