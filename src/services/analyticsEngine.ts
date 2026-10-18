@@ -10,6 +10,7 @@ import {
 import { addHaler, subHaler } from './currencyService';
 import {
   CZECH_MONTHS,
+  CZECH_MONTHS_SHORT,
   createBudgetPeriod,
   getPeriodForDate,
   getPreviousPeriod,
@@ -201,7 +202,7 @@ export function createBudgetPeriodInfo(
   const analysisEndDate = isCurrentPeriod ? (todayStr < period.endDate ? todayStr : period.endDate) : period.endDate;
   const monthName = CZECH_MONTHS[period.month - 1];
   const label = `${monthName} ${period.year}`;
-  const shortLabel = `${monthName.substring(0, 3)} ${period.year}`;
+  const shortLabel = `${CZECH_MONTHS_SHORT[period.month - 1]} ${period.year}`;
 
   const totalDaysInPeriod = getDaysBetweenInclusive(period.startDate, period.endDate);
   const daysInPeriodCount = getDaysBetweenInclusive(period.startDate, analysisEndDate);
