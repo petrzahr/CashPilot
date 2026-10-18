@@ -7,6 +7,7 @@ import { DualPeriodFilterPanel } from '../components/shared/DualPeriodFilterPane
 import { calculateForecast } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 import { getInitialData } from '../services/storageService';
+import { resetSessionRanges } from '../services/periodRangePreference';
 
 // Exercise the event handlers and subsequent renders without adding a DOM dependency.
 const hooks = vi.hoisted(() => ({ values: [] as any[], index: 0, effects: [] as any[], effectIndex: 0, finance: {} as any }));
@@ -69,6 +70,8 @@ function expectRange(first: string, last: string, count: number) {
 beforeEach(() => {
   hooks.values = [];
   hooks.effects = [];
+  // Výběr rozsahu se v rámci relace pamatuje, každý test začíná od výchozího
+  resetSessionRanges();
   const data = getInitialData();
   data.settings.budgetStartDay = 31;
   data.accounts = [{ id: 'cash', name: 'Cash', type: 'checking', currency: 'CZK', initialBalanceInHaler: 10000,

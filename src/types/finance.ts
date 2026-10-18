@@ -171,7 +171,14 @@ export interface AppSettings {
   minReserveInHaler?: number; // @deprecated Pro zpětnou kompatibilitu původních dat
   roundAmounts: boolean;
   accountUsableOverrides?: Record<string, boolean>;
+  // Výchozí rozsah filtru období; chybějící nebo neznámá hodnota = vestavěná výchozí (od verze dat 2, nepovinné)
+  defaultPeriodRanges?: Partial<Record<PeriodRangeScreen, PeriodRangePresetId>>;
 }
+
+export type PeriodRangeScreen = 'overview' | 'analytics';
+export type PeriodRangePresetId =
+  | 'past:all' | 'past:ytd' | 'past:12' | 'past:6' | 'past:3'
+  | 'future:3' | 'future:6' | 'future:12' | 'future:18' | 'future:24';
 
 // Výpočtové struktury
 export interface AccountPeriodBalance {

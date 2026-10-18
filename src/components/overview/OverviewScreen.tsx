@@ -7,6 +7,7 @@ import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { DualPeriodRange, resolveAnalyticsDateRange, calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
 import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
+import { getInitialRange, rememberRange } from '../../services/periodRangePreference';
 import { createBudgetPeriod, generatePeriodsBetween, getTodayInPrague } from '../../services/periodService';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -20,7 +21,12 @@ interface OverviewScreenProps {
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
   const { forecast, settings, accounts, setSelectedPeriod, setOverviewPeriodBounds, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
-  const [range, setRange] = useState<DualPeriodRange>({ direction: 'future', months: 12 });
+  // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
+  const [range, setRangeState] = useState<DualPeriodRange>(getInitialRange(settings, 'overview'));
+  const setRange = (newRange: DualPeriodRange) => {
+    setRangeState(newRange);
+    rememberRange(settings, 'overview', newRange);
+  };
   const selectedPeriods = useMemo(() => {
     if (range.preset === 'custom') {
       const [fy, fm] = range.from!.split('-').map(Number);
