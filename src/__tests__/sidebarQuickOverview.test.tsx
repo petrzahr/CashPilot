@@ -669,9 +669,9 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
       </FinanceProvider>
     );
 
-    // Celkový majetek stojí nahoře (vedle data) a od rozpisu účtů ho dělí linka
-    expect(html).toContain('border-b border-slate-200');
-    expect(html.indexOf('Celkový majetek')).toBeLessThan(html.indexOf('Běžné účty'));
+    // Celkový majetek je součet pod rozpisem účtů, oddělený linkou
+    expect(html).toContain('border-t border-slate-200');
+    expect(html.indexOf('Celkový majetek')).toBeGreaterThan(html.indexOf('Penzijní účty'));
     // Přítomnost formátování v Kč
     expect(html).toContain('Kč');
     // Třída tabular-nums pro zarovnání čísel

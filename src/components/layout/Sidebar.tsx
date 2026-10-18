@@ -196,16 +196,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Spodní rychlý finanční přehled k dnešnímu dni */}
         <div className="shrink-0 px-3 py-4 m-3 mt-0 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
           {/* Přehled platí k dnešku, ne k období vybranému v záhlaví.
-              Nejdřív hlavní číslo (majetek jako KPI), pod linkou jeho rozpis po druzích účtů. */}
-          {/* Jeden řádek: vlevo den, ke kterému stav platí, vpravo celkový majetek (fialová ho označuje všude v aplikaci) */}
-          <p className="pb-2.5 border-b border-slate-200 flex items-baseline justify-between gap-2" title="Celkový majetek k dnešku">
-            <span className="shrink-0 font-semibold text-slate-500 tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
-            <span className="sr-only">Celkový majetek</span>
-            <span className={`min-w-0 text-lg font-extrabold leading-tight tabular-nums truncate ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
-              {formatCurrency(quickOverview.totalNetWorthInHaler)}
-            </span>
+              Nahoře tichý řádek s datem, pod ním rozpis po druzích účtů a pod linkou celkový majetek jako součet. */}
+          <p className="flex items-baseline justify-between gap-2 text-slate-500">
+            <span>K dnešku</span>
+            <span className="tabular-nums">{formatCzechDate(getTodayInPrague())}</span>
           </p>
-          <div className="space-y-1.5 pt-0.5">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-slate-500">
               <span className="truncate pr-2" title="Běžné účty">Běžné účty</span>
               <span className={`shrink-0 font-medium tabular-nums ${quickOverview.checkingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
@@ -236,6 +232,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {formatCurrency(quickOverview.pensionInHaler)}
               </span>
             </div>
+          </div>
+
+          {/* Součet pod linkou: tučný popisek v ink, výraznost nese částka (fialová označuje majetek všude v aplikaci) */}
+          <div className="border-t border-slate-200 pt-2.5 flex items-baseline justify-between gap-2">
+            <span className="min-w-0 font-semibold text-slate-900 truncate" title="Celkový majetek">Celkový majetek</span>
+            <span className={`shrink-0 text-base font-extrabold leading-tight tabular-nums ${quickOverview.totalNetWorthInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
+              {formatCurrency(quickOverview.totalNetWorthInHaler)}
+            </span>
           </div>
         </div>
       </aside>
