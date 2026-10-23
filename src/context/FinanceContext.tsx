@@ -1,4 +1,4 @@
-import { accountStorageKey, mergeBackupData } from '../services/syncModel';
+import { accountStorageKey } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -76,7 +76,6 @@ import {
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
   applyRuleRankOrder,
-  sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
 import {
   CommandResult,
@@ -123,6 +122,7 @@ import {
   undoArchiveCategory as undoArchiveCategoryCommand,
   updateCategory as updateCategoryCommand,
 } from '../services/categoryCommands';
+import { importBackup as importBackupCommand } from '../services/dataCommands';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -1283,43 +1283,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const importJSON = useCallback((jsonStr: string): boolean => {
     try {
       const parsed = validateAndParseBackup(jsonStr);
-      // Merges against the live controller state (via the functional setData form), never a
-      // possibly-stale `data` snapshot from this closure's render.
-      setData(prev => {
-        const merged = mergeBackupData(prev, parsed);
-        const prevIds = new Set(prev.transactions.map(t => t.id));
-        // Pořadí (sequence) v zálože je jen lokální v rámci importovaného souboru. Existující
-        // transakce daného dne se nesmí přeřazovat - nově přidané se do řady připojí až za ně,
-        // ve stejném vzájemném pořadí, v jakém byly v souboru.
-        const addedByDate = new Map<string, Transaction[]>();
-        for (const t of merged.transactions) {
-          if (prevIds.has(t.id)) continue;
-          const list = addedByDate.get(t.date) || [];
-          list.push(t);
-          addedByDate.set(t.date, list);
-        }
-        const transactions = merged.transactions.filter(t => prevIds.has(t.id));
-        for (const added of addedByDate.values()) {
-          const ordered = [...added].sort((a, b) =>
-            (a.sequence ?? 1) - (b.sequence ?? 1) ||
-            (a.createdAt || '').localeCompare(b.createdAt || '') ||
-            (a.id || '').localeCompare(b.id || ''));
-          for (const t of ordered) {
-            transactions.push({ ...t, sequence: getNextSequenceForDate(t.date, transactions) });
-          }
-        }
-        return {
-          ...merged,
-          transactions: sortTransactionsByDateAndSequence(transactions)
-        };
-      });
+      // Slučuje se s aktuálními daty v controlleru, nikdy se starší kopií z tohoto renderu
+      runCommand(prev => importBackupCommand(prev, parsed));
       showToast('Záloha byla sloučena s aktuálními daty.');
       return true;
     } catch (err: any) {
       showToast(`Zálohu se nepodařilo obnovit: ${err.message}`, 'error');
       return false;
     }
-  }, [showToast]);
+  }, [runCommand, showToast]);
 
   const exportCSV = useCallback(() => {
     exportTransactionsCSV(data.transactions, data.accounts, data.categories);
