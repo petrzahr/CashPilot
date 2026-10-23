@@ -34,6 +34,9 @@ try {
   const context = await browser.newContext();
   await context.addInitScript(() => {
     localStorage.setItem('cashpilot_google_auth_v1', JSON.stringify({ accessToken: 'test-only-token', expiresAt: Date.now() + 3600000 }));
+    // Automatická záloha do viditelné složky na Disku je samostatná funkce s vlastními testy;
+    // tady se testuje jen synchronizace appData souboru.
+    localStorage.setItem('cashpilot_drive_backup_enabled_v1', '0');
   });
   await context.route('https://www.googleapis.com/**', async route => {
     const request = route.request(), url = new URL(request.url());
