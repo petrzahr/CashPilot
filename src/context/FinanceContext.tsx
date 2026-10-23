@@ -36,7 +36,6 @@ import {
 } from '../constants/defaultData';
 import {
   calculateForecast,
-  generateOccurrenceForPeriod,
   calculateQuickFinancialOverview,
   QuickFinancialOverview,
 } from '../services/financialEngine';
@@ -48,9 +47,7 @@ import {
   getOverviewPeriods,
   getNextPeriod,
   getPeriodForDate,
-  getDaysInMonth,
   getPreviousPeriod,
-  getPreviousDay,
   getTodayInPrague,
   formatCzechDate
 } from '../services/periodService';
@@ -78,172 +75,27 @@ import {
 
 
 import {
-  deleteTransactionAndReorder,
-  deleteTransactionsAndReorder,
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
   applyRuleRankOrder,
-  applyRulePositions,
   sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
-
-/** ID pravidla z ID virtuálního výskytu (virtual_<ruleId>_<periodKey>); periodKey neobsahuje podtržítko. */
-function ruleIdFromVirtualId(id: string): string | null {
-  if (!id.startsWith('virtual_')) return null;
-  const rest = id.slice('virtual_'.length);
-  const cut = rest.lastIndexOf('_');
-  return cut > 0 ? rest.slice(0, cut) : null;
-}
-
-/**
- * Zruší pevné pozice (overrideSequence) jednotlivých period u daných pravidel, aby pořadí
- * série platilo všude. Výjimky, které po tom nenesou žádnou jinou změnu, se odstraní.
- */
-function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<string>): RecurringException[] {
-  return exceptions.flatMap(e => {
-    if (!ruleIds.has(e.ruleId) || e.overrideSequence === undefined) return [e];
-    const { overrideSequence: _removed, ...rest } = e;
-    const carriesOtherChange = rest.isCancelled || rest.overrideDate !== undefined ||
-      rest.overrideAmountInHaler !== undefined || rest.overrideSourceAccountId !== undefined ||
-      rest.overrideTargetAccountId !== undefined || rest.overrideCategoryId !== undefined ||
-      rest.overrideSubcategoryId !== undefined;
-    return carriesOtherChange ? [{ ...rest, updatedAt: new Date().toISOString() }] : [];
-  });
-}
-
-/**
- * Pro každou opakující se položku dne: absolutní pozice ve dni (positions, pro jednu periodu)
- * a pořadí mezi opakovanými platbami (ranks, platné napříč obdobími). Klíčem je ID pravidla.
- */
-function ruleOrderFromOrderedIds(
-  orderedIds: string[],
-  transactions: Transaction[],
-  rules: RecurringRule[]
-): { positions: Map<string, number>; ranks: Map<string, number> } {
-  const positions = new Map<string, number>();
-  const ranks = new Map<string, number>();
-  orderedIds.forEach((id, idx) => {
-    const ruleId = ruleIdFromVirtualId(id) ?? transactions.find(t => t.id === id)?.recurringRuleId;
-    if (ruleId && !positions.has(ruleId) && rules.some(r => r.id === ruleId)) {
-      positions.set(ruleId, idx + 1);
-      ranks.set(ruleId, ranks.size + 1);
-    }
-  });
-  return { positions, ranks };
-}
-
-/** Spojí rank a pozici série podle ID pravidla (vstup pro applyRulePositions). */
-function toRuleOrder(
-  ranks: Map<string, number>,
-  positions: Map<string, number>
-): Map<string, { position: number; rank: number }> {
-  const order = new Map<string, { position: number; rank: number }>();
-  ranks.forEach((rank, ruleId) => order.set(ruleId, { rank, position: positions.get(ruleId) ?? rank }));
-  return order;
-}
-
-/** Zapíše požadovanou pozici do výjimek dané periody (vytvoří je, pokud chybí). */
-function withSequenceExceptions(
-  exceptions: RecurringException[],
-  positions: Map<string, number>,
-  periodKey: string,
-  nowIso: string
-): RecurringException[] {
-  let result = exceptions;
-  positions.forEach((seq, ruleId) => {
-    const idx = result.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
-    result = idx >= 0
-      ? result.map((e, i) => i === idx ? { ...e, overrideSequence: seq, updatedAt: nowIso } : e)
-      : [...result, { id: `ex_${Date.now()}_${ruleId}`, ruleId, periodKey, overrideSequence: seq, createdAt: nowIso, updatedAt: nowIso }];
-  });
-  return result;
-}
-
-/**
- * Rozštěpí opakující se pravidlo na "starou" větev (končící den před effectiveDate)
- * a novou větev od effectiveDate dál, a přepojí na ni už materializované budoucí
- * transakce a výjimky. Sdíleno mezi editací obsahu (updateRecurringRule, mode 'future')
- * a přeuspořádáním pořadí (reorderRecurringItem, mode 'future').
- */
-function splitRecurringRuleForFuture(
-  rule: RecurringRule,
-  effectiveDate: string,
-  overrideData: Partial<Transaction>,
-  originalTransactionId: string | undefined,
-  prevTransactions: Transaction[],
-  prevExceptions: RecurringException[],
-  budgetStartDay: number,
-  nowIso: string,
-  idSuffix: string = '',
-  newRuleId?: string
-): {
-  updatedOldRule: RecurringRule;
-  newFutureRule: RecurringRule;
-  updatedTransactions: Transaction[];
-  updatedExceptions: RecurringException[];
-} {
-  const cutOffDate = getPreviousDay(effectiveDate);
-  const willBeActive = cutOffDate >= rule.startDate;
-
-  const updatedOldRule: RecurringRule = {
-    ...rule,
-    endDate: cutOffDate,
-    isActive: willBeActive ? rule.isActive : false,
-    updatedAt: nowIso
-  };
-
-  const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
-  const newFutureRule: RecurringRule = {
-    ...rule,
-    id: newRuleId ?? `rec_${Date.now()}${idSuffix}_split`,
-    title: overrideData.title || rule.title,
-    amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
-    dayOfMonth: newDayOfMonth,
-    startDate: effectiveDate,
-    sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
-    targetAccountId: overrideData.targetAccountId || rule.targetAccountId,
-    categoryId: overrideData.categoryId || rule.categoryId,
-    subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
-    note: overrideData.note !== undefined ? overrideData.note : rule.note,
-    updatedAt: nowIso,
-    createdAt: nowIso
-  };
-
-  // Přepsat již materializované reálné transakce od editovaného výskytu dále,
-  // ať se změna projeví okamžitě i u položek, které už nejsou pouze virtuální.
-  const updatedTransactions = prevTransactions.map(t => {
-    if (t.recurringRuleId !== rule.id || t.date < effectiveDate) return t;
-    const isEditedOccurrence = originalTransactionId
-      ? t.id === originalTransactionId
-      : t.date === effectiveDate;
-    return {
-      ...t,
-      recurringRuleId: newFutureRule.id,
-      title: newFutureRule.title,
-      amountInHaler: newFutureRule.amountInHaler,
-      actualAmountInHaler: t.status === 'executed' ? newFutureRule.amountInHaler : t.actualAmountInHaler,
-      sourceAccountId: newFutureRule.sourceAccountId,
-      targetAccountId: newFutureRule.targetAccountId,
-      categoryId: newFutureRule.categoryId,
-      subcategoryId: newFutureRule.subcategoryId,
-      note: newFutureRule.note,
-      date: isEditedOccurrence ? effectiveDate : t.date,
-      updatedAt: nowIso,
-    };
-  });
-
-  // Výjimky pro periody od rozštěpení dál patří nově pod nové pravidlo -
-  // jinak by se hledaly pod starým (už useknutým) ruleId a nikdy by se nenašly.
-  const cutoffPeriodKey = getPeriodForDate(effectiveDate, budgetStartDay).key;
-  const updatedExceptions = prevExceptions.map(e =>
-    e.ruleId === rule.id && e.periodKey >= cutoffPeriodKey
-      ? { ...e, ruleId: newFutureRule.id }
-      : e
-  );
-
-  return { updatedOldRule, newFutureRule, updatedTransactions, updatedExceptions };
-}
+import {
+  CommandResult,
+  RecurringMode,
+  StatusUpdates,
+  createCommandContext,
+  parseVirtualId,
+  withSequenceExceptions,
+  addRecurringRule as addRecurringRuleCommand,
+  deleteRecurringRule as deleteRecurringRuleCommand,
+  deleteTransaction as deleteTransactionCommand,
+  reorderRecurringItem as reorderRecurringItemCommand,
+  restoreDeletedTransaction as restoreDeletedTransactionCommand,
+  setTransactionStatus as setTransactionStatusCommand,
+  updateRecurringRule as updateRecurringRuleCommand,
+} from '../services/transactionCommands';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -781,7 +633,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       // výjimku periody, jinak by se při dalším výpočtu vždy vrátily na konec dne.
       const virtualPositions = new Map<string, number>();
       orderedIds.forEach((id, idx) => {
-        const ruleId = ruleIdFromVirtualId(id);
+        const ruleId = parseVirtualId(id)?.ruleId;
         if (ruleId && prev.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
       });
       const recurringExceptions = virtualPositions.size > 0
@@ -801,32 +653,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Pořadí položek bylo uloženo.');
   }, [showToast]);
 
-  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni. Nové updatedAt
-  // je pozdější než záznam o smazání, takže synchronizace položku zase přijme.
-  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
-    const nowIso = new Date().toISOString();
+  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
+  // updater synchronně; bez načtených dat (před první synchronizací) vrací undefined.
+  const runCommand = useCallback(<O,>(command: (prev: AppData) => CommandResult<O>): O | undefined => {
+    let outcome: O | undefined;
     setData(prev => {
-      if (prev.transactions.some(t => t.id === tx.id)) return prev;
-      return {
-        ...prev,
-        transactions: insertOrUpdateWithSequence({ ...tx, updatedAt: nowIso }, tx.sequence ?? 1, prev.transactions),
-        corrections: correction && !prev.corrections.some(c => c.id === correction.id)
-          ? [...prev.corrections, { ...correction, updatedAt: nowIso }]
-          : prev.corrections,
-      };
+      const result = command(prev);
+      outcome = result.outcome;
+      return result.data;
     });
+    return outcome;
+  }, [setData]);
+
+  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni.
+  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
+    runCommand(prev => restoreDeletedTransactionCommand(prev, { transaction: tx, correction }, createCommandContext(todayStr)));
     showToast(correction ? 'Korekce zůstatku byla obnovena.' : 'Položka byla obnovena.');
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteTransaction = useCallback(async (
     id: string,
-    recurringMode: 'occurrence' | 'future' | 'series' = 'occurrence',
+    recurringMode: RecurringMode = 'occurrence',
     deleteHistoricalExecuted: boolean = false
   ): Promise<boolean> => {
-    let success = false;
-    let deletedPlainTx: Transaction | undefined;
-    const deletedSeries: { title?: string } = {};
-    let deletedCorrection: BalanceCorrection | undefined;
     try {
       // Ověření dostupnosti úložiště (pokud selže, vyvolá chybu)
       try {
@@ -836,327 +685,63 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         throw new Error('Úložiště není dostupné.');
       }
 
-      setData(prev => {
-        const isVirtual = id.startsWith('virtual_');
-        let ruleId: string | undefined;
-        let periodKey: string | undefined;
-        let txDate: string | undefined;
+      const outcome = runCommand(prev => deleteTransactionCommand(
+        prev,
+        { id, mode: recurringMode, deleteHistoricalExecuted },
+        createCommandContext(todayStr)
+      ));
+      if (!outcome || outcome.kind === 'none') return false;
 
-        if (isVirtual) {
-          const withoutPrefix = id.slice('virtual_'.length);
-          const lastUnderscore = withoutPrefix.lastIndexOf('_');
-          if (lastUnderscore !== -1) {
-            ruleId = withoutPrefix.slice(0, lastUnderscore);
-            periodKey = withoutPrefix.slice(lastUnderscore + 1);
-          }
-        } else {
-          const realTx = prev.transactions.find(t => t.id === id);
-          if (realTx) {
-            txDate = realTx.date;
-            ruleId = realTx.recurringRuleId;
-            periodKey = getPeriodForDate(realTx.date, prev.settings.budgetStartDay).key;
-          } else {
-            // ID nenalezeno v transakcích a není virtuální
-            return prev;
-          }
-        }
-
-        const rule = ruleId ? prev.recurringRules.find(r => r.id === ruleId) : undefined;
-        deletedSeries.title = rule?.title;
-        const isRecurring = Boolean(rule);
-
-        // 1. BĚŽNÁ POLOŽKA (příjem, výdaj, převod) nebo položka bez aktivního pravidla
-        if (!isRecurring) {
-          if (isVirtual) {
-            return prev;
-          }
-          const updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
-          success = true;
-          deletedPlainTx = prev.transactions.find(t => t.id === id);
-          deletedCorrection = prev.corrections.find(c => c.id === id);
-          return {
-            ...prev,
-            transactions: updatedTxs,
-            corrections: prev.corrections.filter(c => c.id !== id),
-          };
-        }
-
-        // 2. PRAVIDELNÁ POLOŽKA
-        // 2A: POUZE TATO POLOŽKA (výjimka v sérii)
-        if (recurringMode === 'occurrence') {
-          let updatedTxs = prev.transactions;
-          if (!isVirtual) {
-            updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
-          }
-
-          const targetPeriodKey = periodKey || selectedPeriod.key;
-          const existingExIndex = prev.recurringExceptions.findIndex(
-            e => e.ruleId === ruleId && e.periodKey === targetPeriodKey
-          );
-
-          const cancelledEx: RecurringException = {
-            id: existingExIndex >= 0 ? prev.recurringExceptions[existingExIndex].id : `ex_${Date.now()}`,
-            ruleId: ruleId!,
-            periodKey: targetPeriodKey,
-            isCancelled: true,
-            createdAt: new Date().toISOString()
-          };
-
-          const newExceptions = existingExIndex >= 0
-            ? prev.recurringExceptions.map((item, idx) => idx === existingExIndex ? cancelledEx : item)
-            : [...prev.recurringExceptions, cancelledEx];
-
-          success = true;
-          return {
-            ...prev,
-            recurringExceptions: newExceptions,
-            transactions: updatedTxs,
-          };
-        }
-
-        // 2B: TATO A VŠECHNY BUDOUCÍ POLOŽKY (ukončení pravidla)
-        if (recurringMode === 'future') {
-          let occDate = txDate;
-          if (!occDate && isVirtual && periodKey && rule) {
-            const [yStr, mStr] = periodKey.split('-');
-            const period = createBudgetPeriod(parseInt(yStr, 10), parseInt(mStr, 10), prev.settings.budgetStartDay);
-            const occ = generateOccurrenceForPeriod(rule, period, prev.recurringExceptions, prev.settings.budgetStartDay);
-            occDate = occ?.date || period.startDate;
-          }
-          if (!occDate) {
-            occDate = new Date().toISOString().slice(0, 10);
-          }
-
-          const cutOffDate = getPreviousDay(occDate);
-          const nowIso = new Date().toISOString();
-
-          // Nastavit endDate na den před výskytem
-          const updatedRules = prev.recurringRules.map(r => {
-            if (r.id !== ruleId) return r;
-            const willBeActive = cutOffDate >= r.startDate;
-            return {
-              ...r,
-              endDate: cutOffDate,
-              isActive: willBeActive ? r.isActive : false,
-              updatedAt: nowIso
-            };
-          });
-
-          // Z reálných transakcí smazat položky tohoto pravidla od data occDate
-          const idsToDelete = new Set<string>();
-          for (const t of prev.transactions) {
-            if (t.recurringRuleId === ruleId && t.date >= occDate) {
-              if (deleteHistoricalExecuted || t.status !== 'executed') {
-                idsToDelete.add(t.id);
-              }
-            }
-          }
-          if (!isVirtual) {
-            idsToDelete.add(id);
-          }
-
-          let updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
-
-          // Pokud po smazání budoucích výskytů zůstává v sérii nejvýše jedna položka,
-          // pravidlo už nemá smysl udržovat jako opakující se - převést zbylou položku
-          // na běžnou (nepravidelnou) a pravidlo odstranit.
-          const remainingInRule = updatedTxs.filter(t => t.recurringRuleId === ruleId);
-          if (remainingInRule.length <= 1) {
-            updatedTxs = updatedTxs.map(t =>
-              t.recurringRuleId === ruleId
-                ? { ...t, recurringRuleId: undefined, isException: false, updatedAt: nowIso }
-                : t
-            );
-            success = true;
-            return {
-              ...prev,
-              recurringRules: prev.recurringRules.filter(r => r.id !== ruleId),
-              recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== ruleId),
-              transactions: updatedTxs,
-            };
-          }
-
-          success = true;
-          return {
-            ...prev,
-            recurringRules: updatedRules,
-            transactions: updatedTxs,
-          };
-        }
-
-        // 2C: CELÁ SÉRIE (smazání pravidla a všech neuskutečněných výskytů)
-        if (recurringMode === 'series') {
-          const updatedRules = prev.recurringRules.filter(r => r.id !== ruleId);
-          const updatedExceptions = prev.recurringExceptions.filter(e => e.ruleId !== ruleId);
-
-          const idsToDelete = new Set<string>();
-          for (const t of prev.transactions) {
-            if (t.recurringRuleId === ruleId) {
-              if (deleteHistoricalExecuted || t.status !== 'executed') {
-                idsToDelete.add(t.id);
-              }
-            }
-          }
-          if (!isVirtual) {
-            idsToDelete.add(id);
-          }
-
-          const updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
-
-          success = true;
-          return {
-            ...prev,
-            recurringRules: updatedRules,
-            recurringExceptions: updatedExceptions,
-            transactions: updatedTxs,
-          };
-        }
-
-        return prev;
-      });
-
-      if (success) {
-        const restoredTx = deletedPlainTx;
-        const restoredCorrection = deletedCorrection;
-        if (restoredTx) {
-          const text = restoredCorrection
-            ? 'Korekce zůstatku byla smazána.'
-            : `Položka „${restoredTx.title}“ byla smazána.`;
-          showToast(text, 'success', {
-            label: 'Vrátit',
-            onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
-          });
-        } else {
-          const name = deletedSeries.title ? ` „${deletedSeries.title}“` : '';
-          showToast(
-            recurringMode === 'series' ? `Pravidelná položka${name} byla smazána.`
-              : recurringMode === 'future' ? `Budoucí výskyty pravidelné položky${name} byly smazány.`
-              : `Výskyt pravidelné položky${name} byl smazán.`
-          );
-        }
-        return true;
+      if (outcome.kind === 'plain') {
+        const { transaction, correction } = outcome;
+        const text = correction
+          ? 'Korekce zůstatku byla smazána.'
+          : `Položka „${transaction.title}“ byla smazána.`;
+        showToast(text, 'success', {
+          label: 'Vrátit',
+          onClick: () => restoreDeletedTransaction(transaction, correction),
+        });
       } else {
-        return false;
+        const name = outcome.ruleTitle ? ` „${outcome.ruleTitle}“` : '';
+        showToast(
+          recurringMode === 'series' ? `Pravidelná položka${name} byla smazána.`
+            : recurringMode === 'future' ? `Budoucí výskyty pravidelné položky${name} byly smazány.`
+            : `Výskyt pravidelné položky${name} byl smazán.`
+        );
       }
+      return true;
     } catch (err) {
       console.error('Chyba při mazání položky:', err);
       showToast('Položku se nepodařilo smazat. Zkuste to prosím znovu.', 'error');
       return false;
     }
-  }, [selectedPeriod.key, showToast, restoreDeletedTransaction]);
+  }, [runCommand, todayStr, showToast, restoreDeletedTransaction]);
 
   const setTransactionStatus = useCallback((
     id: string,
     newStatus: TransactionStatus,
-    updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
+    updates?: StatusUpdates
   ) => {
-    let success = false;
-    let itemTitle = '';
+    const outcome = runCommand(prev => setTransactionStatusCommand(
+      prev,
+      { id, status: newStatus, updates },
+      createCommandContext(todayStr)
+    ));
+    if (!outcome) return;
 
-    setData(prev => {
-      const nowIso = new Date().toISOString();
-
-      if (id.startsWith('virtual_')) {
-        const withoutPrefix = id.slice('virtual_'.length);
-        const lastUnderscore = withoutPrefix.lastIndexOf('_');
-        if (lastUnderscore === -1) return prev;
-        const ruleId = withoutPrefix.slice(0, lastUnderscore);
-        const periodKey = withoutPrefix.slice(lastUnderscore + 1);
-
-        const rule = prev.recurringRules.find(r => r.id === ruleId);
-        if (!rule) return prev;
-
-        const [yStr, mStr] = periodKey.split('-');
-        const period = createBudgetPeriod(parseInt(yStr, 10), parseInt(mStr, 10), prev.settings.budgetStartDay);
-        const occurrence = generateOccurrenceForPeriod(rule, period, prev.recurringExceptions, prev.settings.budgetStartDay);
-
-        const effectiveDate = updates?.date || occurrence?.date || todayStr;
-        const baseAmount = occurrence?.amountInHaler ?? rule.amountInHaler;
-        const effectiveActualAmount = newStatus === 'executed'
-          ? (updates?.actualAmountInHaler !== undefined ? updates.actualAmountInHaler : (occurrence?.actualAmountInHaler || baseAmount))
-          : undefined;
-
-        const assignedSeq = getNextSequenceForDate(effectiveDate, prev.transactions);
-
-        const realTx: Transaction = {
-          id: `tx_real_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          title: rule.title,
-          amountInHaler: baseAmount,
-          plannedAmountInHaler: baseAmount,
-          actualAmountInHaler: effectiveActualAmount,
-          date: effectiveDate,
-          sequence: assignedSeq,
-          type: rule.type,
-          sourceAccountId: updates?.sourceAccountId || occurrence?.sourceAccountId || rule.sourceAccountId,
-          targetAccountId: occurrence?.targetAccountId || rule.targetAccountId,
-          categoryId: updates?.categoryId || occurrence?.categoryId || rule.categoryId,
-          subcategoryId: occurrence?.subcategoryId || rule.subcategoryId,
-          status: newStatus,
-          recurringRuleId: rule.id,
-          note: rule.note,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-
-        success = true;
-        itemTitle = rule.title;
-
-        const cleanExceptions = prev.recurringExceptions.filter(
-          e => !(e.ruleId === ruleId && e.periodKey === periodKey)
-        );
-
-        return {
-          ...prev,
-          recurringExceptions: cleanExceptions,
-          transactions: insertOrUpdateWithSequence(realTx, assignedSeq, prev.transactions)
-        };
-      }
-
-      const tx = prev.transactions.find(t => t.id === id);
-      if (!tx) return prev;
-
-      let effectiveActualAmount = tx.actualAmountInHaler;
-      if (newStatus === 'executed') {
-        effectiveActualAmount = updates?.actualAmountInHaler !== undefined
-          ? updates.actualAmountInHaler
-          : (tx.actualAmountInHaler || tx.amountInHaler);
-      } else if (newStatus === 'planned') {
-        effectiveActualAmount = undefined;
-      }
-
-      const updated: Transaction = {
-        ...tx,
-        status: newStatus,
-        actualAmountInHaler: effectiveActualAmount,
-        date: updates?.date || tx.date,
-        sourceAccountId: updates?.sourceAccountId || tx.sourceAccountId,
-        categoryId: updates?.categoryId || tx.categoryId,
-        updatedAt: nowIso
-      };
-
-      success = true;
-      itemTitle = tx.title;
-
-      return {
-        ...prev,
-        transactions: prev.transactions.map(t => t.id === id ? updated : t)
-      };
-    });
-
-    if (success) {
-      if (newStatus === 'executed') {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako uskutečněná.` : 'Položka byla označena jako uskutečněná.', 'success');
-      } else if (newStatus === 'cancelled') {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako zrušená.` : 'Položka byla označena jako zrušená.', 'info');
-      } else {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla nastavena jako plánovaná.` : 'Položka byla nastavena jako plánovaná.', 'info');
-      }
+    const itemTitle = outcome.title;
+    if (newStatus === 'executed') {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako uskutečněná.` : 'Položka byla označena jako uskutečněná.', 'success');
+    } else if (newStatus === 'cancelled') {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako zrušená.` : 'Položka byla označena jako zrušená.', 'info');
+    } else {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla nastavena jako plánovaná.` : 'Položka byla nastavena jako plánovaná.', 'info');
     }
-  }, [todayStr, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const markTransactionExecuted = useCallback((
     id: string,
-    updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
+    updates?: StatusUpdates
   ) => {
     setTransactionStatus(id, 'executed', updates);
   }, [setTransactionStatus]);
@@ -1173,335 +758,63 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     initialStatus?: TransactionStatus,
     existingTransactionId?: string
   ) => {
-    const srcAcc = data.accounts.find(a => a.id === ruleData.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && ruleData.startDate < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
-    }
-    if (ruleData.type === 'transfer' && ruleData.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === ruleData.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && ruleData.startDate < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
+    const outcome = runCommand(prev => addRecurringRuleCommand(
+      prev,
+      { ruleData, initialSequence, initialStatus, existingTransactionId },
+      createCommandContext(getTodayInPrague())
+    ));
+    if (!outcome) throw new Error('Data ještě nejsou načtená. Zkuste to prosím za chvíli znovu.');
+    if ('error' in outcome) {
+      if (outcome.kind === 'inactiveAccount') showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
 
-    const nowIso = new Date().toISOString();
-    const newRule: RecurringRule = {
-      ...ruleData,
-      id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-
-    const effectiveStatus: TransactionStatus = initialStatus || getStatusForDate(newRule.startDate);
-
-    setData(prev => {
-      const existingTx = existingTransactionId
-        ? prev.transactions.find(t => t.id === existingTransactionId)
-        : undefined;
-      if (existingTransactionId && (!existingTx || existingTx.recurringRuleId)) {
-        throw new Error('Položka již patří do pravidelné série nebo neexistuje.');
-      }
-
-      let targetSeq = initialSequence && initialSequence > 0
-        ? Math.round(initialSequence)
-        : getNextSequenceForDate(newRule.startDate, prev.transactions);
-
-      const firstOccurrenceTx: Transaction = {
-        ...existingTx,
-        id: existingTx?.id || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        title: newRule.title,
-        amountInHaler: newRule.amountInHaler,
-        plannedAmountInHaler: existingTx ? existingTx.plannedAmountInHaler : newRule.amountInHaler,
-        actualAmountInHaler: effectiveStatus === 'executed' ? newRule.amountInHaler : (effectiveStatus === 'planned' ? undefined : existingTx?.actualAmountInHaler),
-        date: newRule.startDate,
-        sequence: targetSeq,
-        type: newRule.type,
-        sourceAccountId: newRule.sourceAccountId,
-        targetAccountId: newRule.targetAccountId,
-        categoryId: newRule.categoryId,
-        subcategoryId: newRule.subcategoryId,
-        status: effectiveStatus,
-        recurringRuleId: newRule.id,
-        note: newRule.note,
-        createdAt: existingTx?.createdAt || nowIso,
-        updatedAt: nowIso,
-      };
-
-      const updatedTxs = insertOrUpdateWithSequence(firstOccurrenceTx, targetSeq, prev.transactions, existingTx?.date);
-
-      return {
-        ...prev,
-        recurringRules: [...prev.recurringRules, newRule],
-        transactions: updatedTxs,
-      };
-    });
-
-    showToast(`Pravidelná položka „${newRule.title}“ byla vytvořena.`);
-    return newRule;
-  }, [data.accounts, showToast]);
+    showToast(`Pravidelná položka „${outcome.rule.title}“ byla vytvořena.`);
+    return outcome.rule;
+  }, [runCommand, showToast]);
 
   const updateRecurringRule = useCallback((
     ruleId: string,
-    mode: 'occurrence' | 'future' | 'series',
+    mode: RecurringMode,
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
   ): string | undefined => {
-    // ID nové větve se určí předem (mimo updater), aby ho volající znal - např. pro
-    // následné nastavení pořadí - a aby bylo stejné i při opakovaném spuštění updateru.
-    const futureRuleId = mode === 'future' ? `rec_${Date.now()}_split` : undefined;
-    setData(prev => {
-      const rule = prev.recurringRules.find(r => r.id === ruleId);
-      if (!rule) return prev;
+    const ctx = createCommandContext(todayStr);
+    // ID nové větve se určí předem, aby ho volající znal - např. pro následné nastavení pořadí.
+    const futureRuleId = mode === 'future' ? ctx.newId('rec', '_split') : undefined;
+    const outcome = runCommand(prev => updateRecurringRuleCommand(
+      prev,
+      { ruleId, mode, periodKey, overrideData, originalTransactionId, futureRuleId },
+      ctx
+    ));
 
-      if (mode === 'occurrence') {
-        const existingExIndex = prev.recurringExceptions.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
-        const ex: RecurringException = {
-          id: existingExIndex >= 0 ? prev.recurringExceptions[existingExIndex].id : `ex_${Date.now()}`,
-          ruleId,
-          periodKey,
-          overrideAmountInHaler: overrideData.amountInHaler,
-          overrideDate: overrideData.date,
-          overrideSourceAccountId: overrideData.sourceAccountId,
-          overrideTargetAccountId: overrideData.targetAccountId,
-          overrideCategoryId: overrideData.categoryId,
-          overrideSubcategoryId: overrideData.subcategoryId,
-          createdAt: new Date().toISOString()
-        };
-
-        const newExceptions = existingExIndex >= 0
-          ? prev.recurringExceptions.map((item, idx) => idx === existingExIndex ? ex : item)
-          : [...prev.recurringExceptions, ex];
-
-        return { ...prev, recurringExceptions: newExceptions };
-      }
-
-      const nowIso = new Date().toISOString();
-
-      if (mode === 'future') {
-        const originalTx = originalTransactionId
-          ? prev.transactions.find(t => t.id === originalTransactionId)
-          : undefined;
-        const effectiveDate = overrideData.date || originalTx?.date || periodKey + '-15';
-        const { updatedOldRule, newFutureRule, updatedTransactions, updatedExceptions } = splitRecurringRuleForFuture(
-          rule,
-          effectiveDate,
-          overrideData,
-          originalTransactionId,
-          prev.transactions,
-          prev.recurringExceptions,
-          prev.settings.budgetStartDay,
-          nowIso,
-          '',
-          futureRuleId
-        );
-
-        return {
-          ...prev,
-          recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedOldRule : r), newFutureRule],
-          recurringExceptions: updatedExceptions,
-          transactions: updatedTransactions,
-        };
-      }
-
-      // Změna data u celé série = nový den v měsíci pro všechny výskyty. Začátek pravidla
-      // se posune na nový den ve stejném měsíci, aby první výskyt nevypadl (occDate < startDate).
-      const newDay = overrideData.date ? parseInt(overrideData.date.split('-')[2], 10) : NaN;
-      const dayChanged = !isNaN(newDay) && newDay >= 1 && newDay <= 31;
-      const withDay = (dateStr: string): string => {
-        const [y, m] = dateStr.split('-').map(Number);
-        const day = Math.min(newDay, getDaysInMonth(y, m));
-        return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      };
-
-      const updatedSeries: RecurringRule = {
-        ...rule,
-        dayOfMonth: dayChanged ? newDay : rule.dayOfMonth,
-        startDate: dayChanged ? withDay(rule.startDate) : rule.startDate,
-        title: overrideData.title || rule.title,
-        amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
-        sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
-        targetAccountId: overrideData.targetAccountId || rule.targetAccountId,
-        categoryId: overrideData.categoryId || rule.categoryId,
-        subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
-        note: overrideData.note !== undefined ? overrideData.note : rule.note,
-        updatedAt: nowIso
-      };
-
-      // "Včetně minulých" - promítnout změnu i do už materializovaných transakcí série.
-      let updatedTxs = prev.transactions.map(t => {
-        if (t.recurringRuleId !== ruleId) return t;
-        return {
-          ...t,
-          title: updatedSeries.title,
-          amountInHaler: updatedSeries.amountInHaler,
-          actualAmountInHaler: t.status === 'executed' ? updatedSeries.amountInHaler : t.actualAmountInHaler,
-          sourceAccountId: updatedSeries.sourceAccountId,
-          targetAccountId: updatedSeries.targetAccountId,
-          categoryId: updatedSeries.categoryId,
-          subcategoryId: updatedSeries.subcategoryId,
-          note: updatedSeries.note,
-          date: !dayChanged ? t.date : (t.id === originalTransactionId ? overrideData.date! : withDay(t.date)),
-          updatedAt: nowIso,
-        };
-      });
-
-      // Přesunuté výskyty dostanou pořadí v novém dni (na jeho konec) a ve starém dni
-      // se zbylé položky přečíslují - jinak by si nesly původní pořadí (např. #13 v prázdném dni).
-      if (dayChanged) {
-        for (const oldTx of prev.transactions) {
-          if (oldTx.recurringRuleId !== ruleId) continue;
-          const moved = updatedTxs.find(t => t.id === oldTx.id);
-          if (!moved || moved.date === oldTx.date) continue;
-          const seq = getNextSequenceForDate(moved.date, updatedTxs.filter(t => t.id !== moved.id));
-          updatedTxs = insertOrUpdateWithSequence(moved, seq, updatedTxs, oldTx.date);
-        }
-        if (updatedSeries.orderPosition !== undefined) {
-          updatedTxs = applyRulePositions(updatedTxs, new Map([[ruleId, {
-            position: updatedSeries.orderPosition,
-            rank: updatedSeries.orderRank ?? updatedSeries.orderPosition,
-          }]]));
-        }
-      }
-
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedSeries : r),
-        transactions: updatedTxs,
-      };
-    });
-
-    const ruleTitle = overrideData.title ?? data.recurringRules.find(r => r.id === ruleId)?.title;
+    const ruleTitle = outcome?.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla upravena.` : 'Pravidelná položka byla upravena.');
     return futureRuleId;
-  }, [data.recurringRules, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const reorderRecurringItem = useCallback((
     ruleId: string,
-    mode: 'occurrence' | 'future' | 'series',
+    mode: RecurringMode,
     date: string,
     periodKey: string,
     orderedIds: string[],
     movedTransactionId: string
   ) => {
-    setData(prev => {
-      const rule = prev.recurringRules.find(r => r.id === ruleId);
-      if (!rule) return prev;
-
-      const nowIso = new Date().toISOString();
-
-      // Pozice VŠECH opakujících se položek toho dne (ne jen přetažené). Kdyby měla pozici jen
-      // přetažená, při posunu dolů pod jinou opakovanou platbu by se její index zkrátil na
-      // začátek dne a původní pořadí by se vrátilo.
-      const { positions, ranks } = ruleOrderFromOrderedIds(orderedIds, prev.transactions, prev.recurringRules);
-      if (!ranks.has(ruleId)) {
-        positions.set(ruleId, Math.max(1, orderedIds.indexOf(movedTransactionId) + 1));
-        ranks.set(ruleId, ranks.size + 1);
-      }
-      const involvedRuleIds = Array.from(ranks.keys());
-
-      // Zhmotněné (reálné) transakce toho dne se přeuspořádají i fyzicky - hinty ovlivňují
-      // jen generování virtuálních výskytů.
-      const reorderRealToday = (txs: Transaction[]) => reorderDayTxsService(date, orderedIds, txs);
-
-      if (mode === 'occurrence') {
-        return {
-          ...prev,
-          recurringExceptions: withSequenceExceptions(prev.recurringExceptions, positions, periodKey, nowIso),
-          transactions: reorderRealToday(prev.transactions),
-        };
-      }
-
-      if (mode === 'future') {
-        let rules = prev.recurringRules;
-        let txs = prev.transactions;
-        let exceptions = prev.recurringExceptions;
-        const newRanks = new Map<string, number>();
-        const newPositions = new Map<string, number>();
-        involvedRuleIds.forEach((rid, i) => {
-          const current = rules.find(r => r.id === rid);
-          if (!current) return;
-          // Pravidlo, které začíná až tímto dnem (např. právě odštěpená větev), nemá žádnou
-          // minulost k zachování - pořadí se nastaví přímo, bez dalšího štěpení.
-          if (current.startDate >= date) {
-            rules = rules.map(r => r.id === rid
-              ? { ...r, orderRank: ranks.get(rid), orderPosition: positions.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
-              : r);
-            newRanks.set(rid, ranks.get(rid) as number);
-            if (positions.has(rid)) newPositions.set(rid, positions.get(rid) as number);
-            return;
-          }
-          const split = splitRecurringRuleForFuture(
-            current, date, {}, undefined, txs, exceptions, prev.settings.budgetStartDay, nowIso, `_${i}`
-          );
-          const hinted: RecurringRule = {
-            ...split.newFutureRule,
-            orderRank: ranks.get(rid),
-            orderPosition: positions.get(rid),
-            orderRankUpdatedAt: nowIso,
-          };
-          rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
-          txs = split.updatedTransactions;
-          exceptions = split.updatedExceptions;
-          newRanks.set(hinted.id, ranks.get(rid) as number);
-          if (positions.has(rid)) newPositions.set(hinted.id, positions.get(rid) as number);
-        });
-
-        // Už zhmotněné výskyty od tohoto dne dál (provedené i plánované) dostanou nové pořadí hned.
-        // Přetažený den si navíc drží přesné pozice (i vůči ručním položkám) - samotný rank
-        // řadí jen opakované platby mezi sebou a virtuální výskyt by jinak skočil zpět za ruční.
-        return {
-          ...prev,
-          recurringRules: rules,
-          recurringExceptions: withSequenceExceptions(
-            clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
-          ),
-          transactions: applyRulePositions(reorderRealToday(txs), toRuleOrder(newRanks, newPositions), date),
-        };
-      }
-
-      // mode === 'series' - pořadí se uloží do pravidel a propíše i do všech už zhmotněných výskytů.
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
-          ? { ...r, orderRank: ranks.get(r.id), orderPosition: positions.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
-          : r),
-        recurringExceptions: withSequenceExceptions(
-          clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
-        ),
-        transactions: applyRulePositions(reorderRealToday(prev.transactions), toRuleOrder(ranks, positions)),
-      };
-    });
-
+    runCommand(prev => reorderRecurringItemCommand(
+      prev,
+      { ruleId, mode, date, periodKey, orderedIds, movedTransactionId },
+      createCommandContext(todayStr)
+    ));
     showToast('Pořadí pravidelné položky bylo uloženo.');
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteRecurringRule = useCallback((id: string) => {
-    setData(prev => {
-      const idsToDelete = new Set<string>();
-      for (const t of prev.transactions) {
-        if (t.recurringRuleId === id && t.status !== 'executed') {
-          idsToDelete.add(t.id);
-        }
-      }
-      const updatedTxs = idsToDelete.size > 0
-        ? deleteTransactionsAndReorder(idsToDelete, prev.transactions)
-        : prev.transactions;
-
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.filter(r => r.id !== id),
-        recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== id),
-        transactions: updatedTxs,
-      };
-    });
-    const ruleTitle = data.recurringRules.find(r => r.id === id)?.title;
+    const outcome = runCommand(prev => deleteRecurringRuleCommand(prev, id));
+    const ruleTitle = outcome?.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla smazána.` : 'Pravidelná položka byla smazána.');
-  }, [data.recurringRules, showToast]);
+  }, [runCommand, showToast]);
 
   // ------------------- SPRÁVA ÚČTŮ -------------------
 
