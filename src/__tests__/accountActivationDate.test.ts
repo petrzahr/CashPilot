@@ -7,6 +7,7 @@ import {
   formatCzechDate,
 } from '../services/periodService';
 import { addTransaction, createCommandContext } from '../services/transactionCommands';
+import { addMarketValue, reconcileBalance } from '../services/accountCommands';
 import { createEmptyAppData } from '../constants/defaultData';
 
 // Stav účtu k datu včetně plánovaných položek (stejně jako při korekci)
@@ -352,13 +353,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateReconciliation = (acc: Account, checkDate: string) => {
-      if (acc.initialBalanceDate && checkDate < acc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(acc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      return { valid: true };
+      const { outcome } = reconcileBalance(
+        { ...createEmptyAppData(), accounts: [acc] },
+        { accountId: acc.id, actualBalanceInHaler: 0, checkDate },
+        createCommandContext('2026-03-01')
+      );
+      return outcome.kind === 'warning' ? { valid: false, error: outcome.message } : { valid: true };
     };
 
     const res = validateReconciliation(account, '2026-03-15');
@@ -385,13 +385,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateMarketValuation = (acc: Account, valuationDate: string) => {
-      if (acc.initialBalanceDate && valuationDate < acc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(acc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      return { valid: true };
+      const { outcome } = addMarketValue(
+        { ...createEmptyAppData(), accounts: [acc] },
+        { accountId: acc.id, marketValueInHaler: 0, date: valuationDate },
+        createCommandContext('2026-03-01')
+      );
+      return outcome.kind === 'warning' ? { valid: false, error: outcome.message } : { valid: true };
     };
 
     const res = validateMarketValuation(investAcc, '2026-04-30');
