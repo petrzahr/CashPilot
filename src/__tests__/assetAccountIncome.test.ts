@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calculateForecast, getCurrentAssetValue } from '../services/financialEngine';
+import { calculateForecast } from '../services/financialEngine';
 import { getInvestedAmountAtValuation } from '../services/investmentPerformanceService';
-import { computeAssetAccountBalanceAtDate } from '../services/analyticsEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { Account, Transaction } from '../types/finance';
 
 const pension = {
@@ -22,14 +22,15 @@ const tx = (over: Partial<Transaction>): Transaction => ({
   ...over,
 } as unknown as Transaction);
 
+const valueAt = (transactions: Transaction[]) => getAccountBalanceAtDate(pension, '2026-09-20', { transactions });
+
 describe('income and expense on investment/pension accounts', () => {
   it('income increases the current value', () => {
-    expect(getCurrentAssetValue(pension, [tx({})], [], '2026-09-20')).toBe(150000);
-    expect(computeAssetAccountBalanceAtDate(pension, '2026-09-20', [tx({})], [])).toBe(150000);
+    expect(valueAt([tx({})])).toBe(150000);
   });
 
   it('expense decreases the current value', () => {
-    expect(getCurrentAssetValue(pension, [tx({ type: 'expense' })], [], '2026-09-20')).toBe(50000);
+    expect(valueAt([tx({ type: 'expense' })])).toBe(50000);
   });
 
   it('counts income and expense as invested capital, not as gain', () => {
@@ -48,6 +49,6 @@ describe('income and expense on investment/pension accounts', () => {
   });
 
   it('ignores planned income', () => {
-    expect(getCurrentAssetValue(pension, [tx({ status: 'planned' })], [], '2026-09-20')).toBe(100000);
+    expect(valueAt([tx({ status: 'planned' })])).toBe(100000);
   });
 });

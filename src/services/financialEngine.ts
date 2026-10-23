@@ -13,10 +13,10 @@ import {
   InvestmentFee
 } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
-import { computeLiquidAccountBalanceAtDate } from './analyticsEngine';
+import { getAccountBalanceAtDate } from './accountBalance';
 import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getAccountFlowInHaler, getEffectiveAmountInHaler } from './accountScope';
-import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
+import { getPeriodForDate, getPreviousDay, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
 /**
@@ -318,150 +318,6 @@ export function getEffectiveTransactionsForPeriod(
 }
 
 /**
- * Vypočítá přesný stav účtu k zadanému kalendářnímu datu a volitelně před zadaným pořadím v rámci dne.
- * Používá se pro určení vypočítaného stavu před aplikací nové korekce zůstatku.
- */
-export function getAccountBalanceAtDate(
-  accountId: string,
-  targetDate: string,
-  targetSequence?: number,
-  transactions: Transaction[] = [],
-  corrections: BalanceCorrection[] = [],
-  accounts: Account[] = []
-): number {
-  const safeAccounts = Array.isArray(accounts) ? accounts : [];
-  const safeTxs = Array.isArray(transactions) ? transactions : [];
-  const safeCorrections = Array.isArray(corrections) ? corrections : [];
-
-  const account = safeAccounts.find(a => a.id === accountId);
-  if (!account) return 0;
-
-  const initDate = account.initialBalanceDate || '1970-01-01';
-  // Před datem aktivace účet ještě neexistuje a jeho zůstatek je striktně 0 Kč
-  if (targetDate < initDate) {
-    return 0;
-  }
-
-  let balance = account.initialBalanceInHaler;
-
-  const relevantTxs = safeTxs.filter(t => {
-    if (t.status === 'cancelled') return false;
-    if (t.sourceAccountId !== accountId && t.targetAccountId !== accountId) return false;
-    if (t.date < initDate) return false;
-    if (t.date < targetDate) return true;
-    if (t.date === targetDate) {
-      if (targetSequence !== undefined) {
-        return (t.sequence ?? 1) < targetSequence;
-      }
-      return true;
-    }
-    return false;
-  });
-
-  const sorted = sortTransactionsByDateAndSequence(relevantTxs, 'asc');
-
-  for (const t of sorted) {
-    const amount = getEffectiveAmountInHaler(t);
-
-    if (t.type === 'income' && t.sourceAccountId === accountId) {
-      balance = addHaler(balance, amount);
-    } else if (t.type === 'expense' && t.sourceAccountId === accountId) {
-      balance = subHaler(balance, amount);
-    } else if (t.type === 'transfer') {
-      if (t.sourceAccountId === accountId) {
-        balance = subHaler(balance, amount);
-      }
-      if (t.targetAccountId === accountId) {
-        balance = addHaler(balance, amount);
-      }
-    } else if (t.type === 'balance_adjustment' && t.sourceAccountId === accountId) {
-      const diff = t.diffInHaler !== undefined ? t.diffInHaler : amount;
-      balance = addHaler(balance, diff);
-    }
-  }
-
-  // Započíst starší legacy korekce pouze pro standardní účty a pouze pokud nejsou již v transactions
-  if (account.type !== 'investment' && account.type !== 'pension') {
-    const relevantLegacyCorrections = safeCorrections.filter(c => {
-      if (c.accountId !== accountId) return false;
-      if (c.checkDate < initDate) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
-      if (isAlreadyInTxs) return false;
-      return c.checkDate <= targetDate;
-    });
-    for (const c of relevantLegacyCorrections) {
-      balance = addHaler(balance, c.diffInHaler);
-    }
-  }
-
-  return balance;
-}
-
-export function getAccountBalanceBeforeDate(
-  accountId: string,
-  targetStartDate: string,
-  transactions: Transaction[] = [],
-  corrections: BalanceCorrection[] = [],
-  accounts: Account[] = []
-): number {
-  const safeAccounts = Array.isArray(accounts) ? accounts : [];
-  const safeTxs = Array.isArray(transactions) ? transactions : [];
-  const safeCorrections = Array.isArray(corrections) ? corrections : [];
-
-  const account = safeAccounts.find(a => a.id === accountId);
-  if (!account) return 0;
-
-  const initDate = account.initialBalanceDate || '1970-01-01';
-  // Pokud datum začátku leží před datem aktivace nebo v den aktivace, před tímto dnem je zůstatek 0
-  if (targetStartDate <= initDate) {
-    return 0;
-  }
-
-  let balance = account.initialBalanceInHaler;
-
-  const priorTxs = safeTxs.filter(t => 
-    t.date >= initDate &&
-    t.date < targetStartDate && 
-    t.status !== 'cancelled' &&
-    (t.sourceAccountId === accountId || t.targetAccountId === accountId)
-  );
-
-  for (const t of priorTxs) {
-    const amount = getEffectiveAmountInHaler(t);
-
-    if (t.type === 'income' && t.sourceAccountId === accountId) {
-      balance = addHaler(balance, amount);
-    } else if (t.type === 'expense' && t.sourceAccountId === accountId) {
-      balance = subHaler(balance, amount);
-    } else if (t.type === 'transfer') {
-      if (t.sourceAccountId === accountId) {
-        balance = subHaler(balance, amount);
-      }
-      if (t.targetAccountId === accountId) {
-        balance = addHaler(balance, amount);
-      }
-    } else if (t.type === 'balance_adjustment' && t.sourceAccountId === accountId) {
-      const diff = t.diffInHaler !== undefined ? t.diffInHaler : amount;
-      balance = addHaler(balance, diff);
-    }
-  }
-
-  // Korekce zůstatku se aplikují POUZE pro standardní účty (nikoliv pro majetkové investiční a penzijní účty)
-  if (account.type !== 'investment' && account.type !== 'pension') {
-    const priorCorrections = safeCorrections.filter(c => {
-      if (c.accountId !== accountId || c.checkDate < initDate || c.checkDate >= targetStartDate) return false;
-      const isAlreadyInTxs = safeTxs.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === c.accountId && t.date === c.checkDate && t.diffInHaler === c.diffInHaler));
-      return !isAlreadyInTxs;
-    });
-    for (const c of priorCorrections) {
-      balance = addHaler(balance, c.diffInHaler);
-    }
-  }
-
-  return balance;
-}
-
-/**
  * Roztřídí položky do období podle data jedním průchodem (binární hledání v obdobích seřazených
  * podle začátku). Vrací null, pokud se období překrývají - pak volající filtruje postaru.
  */
@@ -532,7 +388,6 @@ export function calculateForecast(
   const investedPrincipals: Record<string, number> = {};
 
   for (const acc of safeAccounts) {
-    const isAsset = acc.type === 'investment' || acc.type === 'pension';
     const initDate = acc.initialBalanceDate || '1970-01-01';
     const initBal = acc.initialBalanceInHaler || 0;
 
@@ -546,44 +401,12 @@ export function calculateForecast(
       investedPrincipals[acc.id] = initBal;
     } else {
       // firstPeriod.startDate > initDate (účet byl aktivován již před začátkem první periody)
-      if (isAsset) {
-        const priorSnapshots = safeSnapshots
-          .filter(s => s.accountId === acc.id && s.date >= initDate && (!firstPeriod || s.date < firstPeriod.startDate))
-          .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
-        const latestPriorSnap = priorSnapshots[0];
-
-        let baseVal = initBal;
-        let valDate = initDate;
-
-        if (latestPriorSnap) {
-          baseVal = latestPriorSnap.marketValueInHaler;
-          valDate = latestPriorSnap.date;
-        } else if (acc.currentMarketValueInHaler !== undefined && acc.marketValueUpdatedAt && acc.marketValueUpdatedAt >= initDate && (!firstPeriod || acc.marketValueUpdatedAt < firstPeriod.startDate)) {
-          baseVal = acc.currentMarketValueInHaler;
-          valDate = acc.marketValueUpdatedAt;
-        } else if (acc.currentMarketValueInHaler !== undefined && !acc.marketValueUpdatedAt) {
-          baseVal = acc.currentMarketValueInHaler;
-        }
-
-        let netTransfers = 0;
-        if (firstPeriod) {
-          for (const t of safeTxs) {
-            if (t.status === 'cancelled') continue;
-            if (t.date >= initDate && t.date > valDate && t.date < firstPeriod.startDate) {
-              netTransfers = addHaler(netTransfers, getAccountFlowInHaler(t, acc.id));
-            }
-          }
-        }
-        runningBalances[acc.id] = addHaler(baseVal, netTransfers);
-      } else {
-        runningBalances[acc.id] = getAccountBalanceBeforeDate(
-          acc.id,
-          firstPeriod.startDate,
-          safeTxs,
-          safeCorrections,
-          safeAccounts
-        );
-      }
+      runningBalances[acc.id] = getAccountBalanceAtDate(
+        acc,
+        getPreviousDay(firstPeriod.startDate),
+        { transactions: safeTxs, corrections: safeCorrections, snapshots: safeSnapshots },
+        { includePlanned: true }
+      );
       investedPrincipals[acc.id] = acc.type === 'investment' || acc.type === 'pension'
         ? getInvestedAmountAtValuation(acc, safeTxs.filter(t => t.date < firstPeriod.startDate), firstPeriod.startDate)
         : runningBalances[acc.id];
@@ -897,7 +720,7 @@ export function calculateForecast(
   // so the row still adds up (opening + flows = closing, unless the market value changed).
   const assetValues = new Map(safeAccounts
     .filter(a => (a.type === 'investment' || a.type === 'pension') && (!a.initialBalanceDate || a.initialBalanceDate <= today))
-    .map(a => [a.id, getCurrentAssetValue(a, safeTxs, safeSnapshots, today)]));
+    .map(a => [a.id, getAccountBalanceAtDate(a, today, { transactions: safeTxs, snapshots: safeSnapshots })]));
   const forecastPeriods = historicalForecastPeriods.map(summary => {
     const projected = { ...summary, accountBalances: { ...summary.accountBalances } };
     const remainingTxs = getEffectiveForPeriod(summary.period)
@@ -970,67 +793,13 @@ export function calculateForecast(
         const previousValue = currentSummary?.accountBalances[acc.id]?.openingBalanceInHaler || 0;
         const activatedValue = currentSummary && initDate > currentSummary.period.startDate && initDate <= today
           ? acc.initialBalanceInHaler : 0;
-        netWorthNow += getCurrentAssetValue(acc, safeTxs, safeSnapshots, today) - previousValue - activatedValue;
+        netWorthNow += getAccountBalanceAtDate(acc, today, { transactions: safeTxs, snapshots: safeSnapshots }) - previousValue - activatedValue;
       }
       return netWorthNow;
     })(),
     plannedIncomeCurrentPeriodInHaler: currentSummary ? currentSummary.incomeInHaler : 0,
     plannedExpenseCurrentPeriodInHaler: currentSummary ? currentSummary.expenseInHaler : 0,
   };
-}
-
-/** Current investment/pension value, including executed transfers after valuation. */
-export function getCurrentAssetValue(
-  acc: Account,
-  safeTxs: Transaction[],
-  safeSnapshots: MarketValueSnapshot[],
-  todayStr: string
-): number {
-  const initDate = acc.initialBalanceDate || '1970-01-01';
-  if (initDate > todayStr) return 0;
-
-  // Hledáme snapshoty s datem <= todayStr
-  const validSnapshots = safeSnapshots
-    .filter(s => s.accountId === acc.id && s.date >= initDate && s.date <= todayStr)
-    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id));
-
-  let baseVal = acc.initialBalanceInHaler || 0;
-  let valDate = initDate;
-  let hasValuation = false;
-
-  if (validSnapshots.length > 0) {
-    baseVal = validSnapshots[0].marketValueInHaler;
-    valDate = validSnapshots[0].date;
-    hasValuation = true;
-  } else if (
-    acc.currentMarketValueInHaler !== undefined &&
-    acc.marketValueUpdatedAt &&
-    acc.marketValueUpdatedAt >= initDate &&
-    acc.marketValueUpdatedAt <= todayStr
-  ) {
-    baseVal = acc.currentMarketValueInHaler;
-    valDate = acc.marketValueUpdatedAt;
-    hasValuation = true;
-  } else if (
-    acc.currentMarketValueInHaler !== undefined &&
-    !acc.marketValueUpdatedAt
-  ) {
-    baseVal = acc.currentMarketValueInHaler;
-    valDate = initDate;
-  }
-
-  // Přičíst/odečíst uskutečněné převody (vklady a výběry) po datu ocenění až do todayStr (včetně)
-  for (const t of safeTxs) {
-    if (t.status !== 'executed') continue;
-    if (hasValuation) {
-      if (t.date <= valDate || t.date > todayStr) continue;
-    } else {
-      if (t.date < initDate || t.date > todayStr) continue;
-    }
-    baseVal = addHaler(baseVal, getAccountFlowInHaler(t, acc.id));
-  }
-
-  return baseVal;
 }
 
 export interface QuickFinancialOverview {
@@ -1069,9 +838,11 @@ export function calculateQuickFinancialOverview(
   let totalNetWorthInHaler = 0;
 
   for (const acc of safeAccounts) {
-    const balance = acc.type === 'investment' || acc.type === 'pension'
-      ? getCurrentAssetValue(acc, safeTxs, safeSnapshots, todayStr)
-      : computeLiquidAccountBalanceAtDate(acc, todayStr, safeTxs, safeCorrections);
+    const balance = getAccountBalanceAtDate(acc, todayStr, {
+      transactions: safeTxs,
+      corrections: safeCorrections,
+      snapshots: safeSnapshots,
+    });
 
     if (acc.type === 'checking' || acc.type === 'cash') {
       checkingAndCashInHaler = addHaler(checkingAndCashInHaler, balance);

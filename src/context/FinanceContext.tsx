@@ -37,10 +37,10 @@ import {
 import {
   calculateForecast,
   generateOccurrenceForPeriod,
-  getAccountBalanceAtDate,
   calculateQuickFinancialOverview,
   QuickFinancialOverview,
 } from '../services/financialEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import {
   createBudgetPeriod,
   generatePeriodsSequence,
@@ -1756,12 +1756,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     const nextSeq = getNextSequenceForDate(checkDate, data.transactions);
     const currentAccBal = getAccountBalanceAtDate(
-      accountId,
+      account,
       checkDate,
-      nextSeq,
-      data.transactions,
-      data.corrections,
-      data.accounts
+      { transactions: data.transactions, corrections: data.corrections },
+      { includePlanned: true, beforeSequence: nextSeq }
     );
 
     const diffInHaler = subHaler(actualBalanceInHaler, currentAccBal);

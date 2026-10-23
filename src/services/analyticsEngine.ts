@@ -22,7 +22,8 @@ import {
   generatePeriodsBetween,
 } from './periodService';
 import { sortAccountsByOrder } from './accountService';
-import { getAccountFlowInHaler, getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
+import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
+import { getAccountBalanceAtDate } from './accountBalance';
 import { getAccountPeriodSummary } from './accountSummaryService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
@@ -500,113 +501,6 @@ export function getFilteredExecutedTransactions(
 }
 
 /**
- * Spočítá stav likvidního účtu k danému dni.
- */
-export function computeLiquidAccountBalanceAtDate(
-  acc: Account,
-  pointDate: string,
-  transactions: Transaction[] = [],
-  corrections: BalanceCorrection[] = []
-): number {
-  const initDate = acc.initialBalanceDate || '1970-01-01';
-  if (initDate > pointDate) return 0;
-
-  let bal = acc.initialBalanceInHaler || 0;
-
-  for (const t of transactions) {
-    if (t.status === 'cancelled') continue;
-    if (t.status !== 'executed' && t.type !== 'balance_adjustment') continue;
-    if (t.date < initDate || t.date > pointDate) continue;
-
-    const amt = getEffectiveAmountInHaler(t);
-
-    if (t.type === 'income' && t.sourceAccountId === acc.id) {
-      bal = addHaler(bal, amt);
-    } else if (t.type === 'expense' && t.sourceAccountId === acc.id) {
-      bal = subHaler(bal, amt);
-    } else if (t.type === 'transfer') {
-      if (t.sourceAccountId === acc.id) bal = subHaler(bal, amt);
-      if (t.targetAccountId === acc.id) bal = addHaler(bal, amt);
-    } else if (t.type === 'balance_adjustment' && t.sourceAccountId === acc.id) {
-      const diff = t.diffInHaler !== undefined ? t.diffInHaler : amt;
-      bal = addHaler(bal, diff);
-    }
-  }
-
-  const relevantCorrections = (corrections || []).filter((c) => {
-    if (c.accountId !== acc.id) return false;
-    if (c.checkDate < initDate || c.checkDate > pointDate) return false;
-    const isAlreadyInTxs = transactions.some(
-      (t) =>
-        t.id === c.id ||
-        (t.type === 'balance_adjustment' &&
-          t.sourceAccountId === c.accountId &&
-          t.date === c.checkDate &&
-          t.diffInHaler === c.diffInHaler)
-    );
-    return !isAlreadyInTxs;
-  });
-
-  for (const c of relevantCorrections) {
-    bal = addHaler(bal, c.diffInHaler);
-  }
-
-  return bal;
-}
-
-/**
- * Spočítá stav investičního / penzijního účtu k danému dni.
- */
-export function computeAssetAccountBalanceAtDate(
-  acc: Account,
-  pointDate: string,
-  transactions: Transaction[] = [],
-  snapshots: MarketValueSnapshot[] = []
-): number {
-  const initDate = acc.initialBalanceDate || '1970-01-01';
-  if (initDate > pointDate) return 0;
-
-  const validSnapshots = (snapshots || [])
-    .filter((s) => s.accountId === acc.id && s.date >= initDate && s.date <= pointDate)
-    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id));
-
-  let baseVal = acc.initialBalanceInHaler || 0;
-  let valDate = initDate;
-  let hasValuation = false;
-
-  if (validSnapshots.length > 0) {
-    baseVal = validSnapshots[0].marketValueInHaler;
-    valDate = validSnapshots[0].date;
-    hasValuation = true;
-  } else if (
-    acc.currentMarketValueInHaler !== undefined &&
-    acc.marketValueUpdatedAt &&
-    acc.marketValueUpdatedAt >= initDate &&
-    acc.marketValueUpdatedAt <= pointDate
-  ) {
-    baseVal = acc.currentMarketValueInHaler;
-    valDate = acc.marketValueUpdatedAt;
-    hasValuation = true;
-  } else if (acc.currentMarketValueInHaler !== undefined && !acc.marketValueUpdatedAt) {
-    baseVal = acc.currentMarketValueInHaler;
-    valDate = initDate;
-  }
-
-  for (const t of transactions) {
-    if (t.status !== 'executed') continue;
-    if (hasValuation) {
-      if (t.date <= valDate || t.date > pointDate) continue;
-    } else {
-      if (t.date < initDate || t.date > pointDate) continue;
-    }
-
-    baseVal = addHaler(baseVal, getAccountFlowInHaler(t, acc.id));
-  }
-
-  return baseVal;
-}
-
-/**
  * Spočítá cash flow podle rozpočtových period pro hlavní sloupcový graf.
  */
 export function calculateMonthlyCashFlow(
@@ -735,9 +629,7 @@ export function calculatePortfolioComposition(
     const rawSegments = eligibleAccounts.map((acc) => {
       const balanceInHaler =
         projected?.accountBalances[acc.id]?.closingBalanceInHaler ??
-        (acc.type === 'investment' || acc.type === 'pension'
-          ? computeAssetAccountBalanceAtDate(acc, pointDate, transactions, snapshots)
-          : computeLiquidAccountBalanceAtDate(acc, pointDate, transactions, corrections));
+        getAccountBalanceAtDate(acc, pointDate, { transactions, corrections, snapshots });
 
       return { key: acc.id, label: acc.name, color: acc.color, balanceInHaler };
     });
