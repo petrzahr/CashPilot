@@ -5,7 +5,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 ## Stack
 - React 18.3 + TypeScript 5.7, entry `main.tsx` -> `App.tsx`
 - State: React Context, mainly `FinanceContext.tsx`
-- Icons: lucide-react; class composition: clsx + tailwind-merge
+- Icons: lucide-react; class composition: template literals with the shared recipes from `index.css`
 - Styles: Tailwind CSS 4 via `@tailwindcss/vite` (no PostCSS config); the closed colour palette is the `@theme inline` block in `src/index.css`, reading the `--c-*` variables from `src/theme.css`
 - Build: Vite 6 + `@vitejs/plugin-react` (`vite.config.ts`), npm
 - Tests: Vitest, tests in `src/__tests__`
@@ -35,7 +35,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 ## Styling Rules
 - Follow `DESIGN.md`. Use existing tokens from `theme.css` / `index.css`, no hardcoded colors or ad-hoc values.
 - Every UI change must work in both light and dark mode (`themeService.ts`).
-- Compose classes with the existing clsx + tailwind-merge helper.
+- Compose conditional classes with template literals; don't add a class-merging library (clsx, tailwind-merge) without approval.
 - Icons only from lucide-react.
 
 ## Data & Sync Rules (high risk - user data)
