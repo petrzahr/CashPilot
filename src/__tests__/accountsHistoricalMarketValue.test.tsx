@@ -7,7 +7,7 @@ import { Account } from '../types/finance';
 import { AppData, getInitialData } from '../services/storageService';
 import { SyncController } from '../services/syncController';
 import { calculateForecast } from '../services/financialEngine';
-import { computeAssetAccountBalanceAtDate } from '../services/analyticsEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { getPeriodForDate } from '../services/periodService';
 import { formatCurrency, formatPercent } from '../services/currencyService';
 
@@ -55,7 +55,7 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
     const balances = [...html.matchAll(/class="text-xl font-extrabold truncate [^"]*">([^<]+)<\/div>/g)]
       .map(match => match[1]);
     expect(balances).toEqual([formatCurrency(value), formatCurrency(index === 0 ? 0 : 2300000)]);
-    expect(computeAssetAccountBalanceAtDate(data.accounts[0], periods[index].endDate, [], data.marketValueSnapshots)).toBe(value);
+    expect(getAccountBalanceAtDate(data.accounts[0], periods[index].endDate, { transactions: [], snapshots: data.marketValueSnapshots })).toBe(value);
     if (index > 0) {
       expect(html).toContain(`Vklady: ${formatCurrency(10000000)}`);
       expect(html).toContain(`${formatPercent((value - 10000000) / 10000000 * 100, { showPlus: true })})`);

@@ -1,10 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, Transaction, RecurringRule } from '../types/finance';
-import { calculateForecast, getAccountBalanceAtDate, generateOccurrenceForPeriod } from '../services/financialEngine';
+import { calculateForecast, generateOccurrenceForPeriod } from '../services/financialEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import {
   createBudgetPeriod,
   formatCzechDate,
 } from '../services/periodService';
+
+// Stav účtu k datu včetně plánovaných položek (stejně jako při korekci)
+const balanceAt = (accountId: string, date: string, beforeSequence: number, transactions: Transaction[], _corrections: unknown[], accounts: Account[]): number => {
+  const account = accounts.find(a => a.id === accountId);
+  return account ? getAccountBalanceAtDate(account, date, { transactions }, { includePlanned: true, beforeSequence }) : 0;
+};
 
 describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dle specifikace)', () => {
   const defaultSettings: AppSettings = {
@@ -91,13 +98,13 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
 
     // Denní zůstatky přes getAccountBalanceAtDate:
     // K 15. 3. = 0 Kč
-    expect(getAccountBalanceAtDate('acc_mid', '2026-03-15', 1, [], [], [midPeriodAccount])).toBe(0);
+    expect(balanceAt('acc_mid', '2026-03-15', 1, [], [], [midPeriodAccount])).toBe(0);
     // K 31. 3. = 0 Kč
-    expect(getAccountBalanceAtDate('acc_mid', '2026-03-31', 1, [], [], [midPeriodAccount])).toBe(0);
+    expect(balanceAt('acc_mid', '2026-03-31', 1, [], [], [midPeriodAccount])).toBe(0);
     // K 1. 4. (den aktivace) = 50 000 Kč
-    expect(getAccountBalanceAtDate('acc_mid', '2026-04-01', 1, [], [], [midPeriodAccount])).toBe(5000000);
+    expect(balanceAt('acc_mid', '2026-04-01', 1, [], [], [midPeriodAccount])).toBe(5000000);
     // K 14. 4. = 50 000 Kč
-    expect(getAccountBalanceAtDate('acc_mid', '2026-04-14', 1, [], [], [midPeriodAccount])).toBe(5000000);
+    expect(balanceAt('acc_mid', '2026-04-14', 1, [], [], [midPeriodAccount])).toBe(5000000);
 
     // Ve forecastu období:
     const forecast = calculateForecast(
@@ -654,9 +661,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     // K datu před aktivací (např. 2026-03-31) je zůstatek 0
-    expect(getAccountBalanceAtDate('acc_pension', '2026-03-31', 1, [], [], [pensionAccount])).toBe(0);
+    expect(balanceAt('acc_pension', '2026-03-31', 1, [], [], [pensionAccount])).toBe(0);
     // K datu aktivace (2026-04-01) je zůstatek 200 000 Kč
-    expect(getAccountBalanceAtDate('acc_pension', '2026-04-01', 1, [], [], [pensionAccount])).toBe(20000000);
+    expect(balanceAt('acc_pension', '2026-04-01', 1, [], [], [pensionAccount])).toBe(20000000);
 
     const forecast = calculateForecast(
       [periodMarch2026, periodApril2026],

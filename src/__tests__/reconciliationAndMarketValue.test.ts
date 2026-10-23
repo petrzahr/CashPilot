@@ -1,9 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, BudgetPeriod, MarketValueSnapshot, RecurringRule, Transaction } from '../types/finance';
-import { calculateForecast, getAccountBalanceAtDate } from '../services/financialEngine';
+import { calculateForecast } from '../services/financialEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { getNextSequenceForDate, normalizeDaySequences } from '../services/sequenceService';
 import { subHaler } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
+
+// Vypočtený stav pro korekci: včetně plánovaných položek, před zadaným pořadím v rámci dne
+const balanceAt = (
+  accountId: string,
+  date: string,
+  beforeSequence: number | undefined,
+  transactions: Transaction[],
+  corrections: BalanceCorrection[],
+  accounts: Account[]
+): number => {
+  const account = accounts.find(a => a.id === accountId);
+  return account
+    ? getAccountBalanceAtDate(account, date, { transactions, corrections }, { includePlanned: true, beforeSequence })
+    : 0;
+};
 
 describe('Reconciliation and Market Value Engine', () => {
   const sampleCheckingAccount: Account = {
@@ -168,7 +184,7 @@ describe('Reconciliation and Market Value Engine', () => {
 
   describe('Standard accounts: getAccountBalanceAtDate and sequence handling', () => {
     it('1. Computes initial balance before any movements', () => {
-      const bal = getAccountBalanceAtDate(
+      const bal = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-15',
         1,
@@ -196,7 +212,7 @@ describe('Reconciliation and Market Value Engine', () => {
         },
       ];
 
-      const bal = getAccountBalanceAtDate(
+      const bal = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-20',
         1,
@@ -238,7 +254,7 @@ describe('Reconciliation and Market Value Engine', () => {
       ];
 
       // Before sequence 1
-      const balBeforeSeq1 = getAccountBalanceAtDate(
+      const balBeforeSeq1 = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-20',
         1,
@@ -249,7 +265,7 @@ describe('Reconciliation and Market Value Engine', () => {
       expect(balBeforeSeq1).toBe(5000000);
 
       // Before sequence 2 (includes seq 1)
-      const balBeforeSeq2 = getAccountBalanceAtDate(
+      const balBeforeSeq2 = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-20',
         2,
@@ -263,7 +279,7 @@ describe('Reconciliation and Market Value Engine', () => {
       const nextSeq = getNextSequenceForDate('2026-09-20', txs);
       expect(nextSeq).toBe(3);
 
-      const balBeforeSeq3 = getAccountBalanceAtDate(
+      const balBeforeSeq3 = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-20',
         nextSeq,
@@ -298,7 +314,7 @@ describe('Reconciliation and Market Value Engine', () => {
         updatedAt: '2026-09-20T12:00:00Z',
       };
 
-      const balanceAfter = getAccountBalanceAtDate(
+      const balanceAfter = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-20',
         4,
@@ -333,7 +349,7 @@ describe('Reconciliation and Market Value Engine', () => {
         updatedAt: '2026-09-20T12:00:00Z',
       };
 
-      const balanceAfter = getAccountBalanceAtDate(
+      const balanceAfter = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-21',
         1,
@@ -403,7 +419,7 @@ describe('Reconciliation and Market Value Engine', () => {
       expect(repaired[1].sequence).toBe(2); // resequenced from 3 to 2
 
       // Zůstatek po smazání korekce
-      const balAfterDel = getAccountBalanceAtDate(
+      const balAfterDel = balanceAt(
         sampleCheckingAccount.id,
         '2026-09-21',
         1,
@@ -472,7 +488,7 @@ describe('Reconciliation and Market Value Engine', () => {
         createdAt: '2026-09-10T00:00:00Z',
       };
 
-      const bal = getAccountBalanceAtDate(
+      const bal = balanceAt(
         sampleInvestmentAccount.id,
         '2026-09-20',
         1,
@@ -480,8 +496,8 @@ describe('Reconciliation and Market Value Engine', () => {
         [legacyCorr],
         [sampleInvestmentAccount]
       );
-      // Ignored! Returns initialBalance
-      expect(bal).toBe(sampleInvestmentAccount.initialBalanceInHaler);
+      // Correction ignored; the account's market value applies
+      expect(bal).toBe(sampleInvestmentAccount.currentMarketValueInHaler);
     });
 
     it('10. Valuation snapshot updates current market value and marketValueUpdatedAt', () => {

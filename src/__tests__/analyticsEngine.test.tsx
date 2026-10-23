@@ -11,10 +11,9 @@ import {
   calculateExpenseMoMTrend,
   getTopExpenses,
   calculateFinancialExtremes,
-  computeLiquidAccountBalanceAtDate,
-  computeAssetAccountBalanceAtDate,
   createBudgetPeriodInfo,
 } from '../services/analyticsEngine';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import {
   getPeriodForDate,
   createBudgetPeriod,
@@ -329,21 +328,11 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       updatedAt: '',
     };
 
-    const chkBal = computeLiquidAccountBalanceAtDate(
-      sampleChecking,
-      '2026-09-10',
-      [transferTx],
-      []
-    );
+    const chkBal = getAccountBalanceAtDate(sampleChecking, '2026-09-10', { transactions: [transferTx] });
     // 100 000 - 10 000 = 90 000 Kč
     expect(chkBal).toBe(9000000);
 
-    const savBal = computeLiquidAccountBalanceAtDate(
-      sampleSavings,
-      '2026-09-10',
-      [transferTx],
-      []
-    );
+    const savBal = getAccountBalanceAtDate(sampleSavings, '2026-09-10', { transactions: [transferTx] });
     // 200 000 + 10 000 = 210 000 Kč
     expect(savBal).toBe(21000000);
   });
@@ -360,14 +349,18 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       createdAt: '',
     };
 
-    const bal = computeLiquidAccountBalanceAtDate(sampleChecking, '2026-09-10', [], [corr]);
+    const bal = getAccountBalanceAtDate(sampleChecking, '2026-09-10', { transactions: [], corrections: [corr] });
     expect(bal).toBe(9500000);
   });
 
   // 12. Ignorování korekcí u investičních a penzijních účtů
   it('12. Ignoruje korekce u investičních a penzijních účtů', () => {
     // Korekce nesmí změnit hodnotu investičního účtu
-    const bal = computeAssetAccountBalanceAtDate(sampleInvestment, '2026-09-10', [], []);
+    const corr: BalanceCorrection = {
+      id: 'c_inv', accountId: sampleInvestment.id, checkDate: '2026-09-05',
+      actualBalanceInHaler: 0, calculatedBalanceInHaler: 0, diffInHaler: -500000, createdAt: '',
+    };
+    const bal = getAccountBalanceAtDate(sampleInvestment, '2026-09-10', { transactions: [], corrections: [corr] });
     expect(bal).toBe(sampleInvestment.initialBalanceInHaler);
   });
 
@@ -380,10 +373,10 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
       initialBalanceDate: '2026-06-01',
     };
 
-    const balBefore = computeLiquidAccountBalanceAtDate(lateAccount, '2026-05-31', [], []);
+    const balBefore = getAccountBalanceAtDate(lateAccount, '2026-05-31', { transactions: [] });
     expect(balBefore).toBe(0);
 
-    const balAfter = computeLiquidAccountBalanceAtDate(lateAccount, '2026-06-01', [], []);
+    const balAfter = getAccountBalanceAtDate(lateAccount, '2026-06-01', { transactions: [] });
     expect(balAfter).toBe(5000000);
   });
 
@@ -396,11 +389,11 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     ];
 
     // Stav k červenci 2026 musí použít snapshot z 1. 6. (520 000 Kč)
-    const balJuly = computeAssetAccountBalanceAtDate(sampleInvestment, '2026-07-31', [], snaps);
+    const balJuly = getAccountBalanceAtDate(sampleInvestment, '2026-07-31', { transactions: [], snapshots: snaps });
     expect(balJuly).toBe(52000000);
 
     // Stav k srpnu 2026 musí použít snapshot z 1. 8. (550 000 Kč)
-    const balAug = computeAssetAccountBalanceAtDate(sampleInvestment, '2026-08-31', [], snaps);
+    const balAug = getAccountBalanceAtDate(sampleInvestment, '2026-08-31', { transactions: [], snapshots: snaps });
     expect(balAug).toBe(55000000);
   });
 

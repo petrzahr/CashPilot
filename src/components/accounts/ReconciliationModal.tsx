@@ -3,7 +3,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { Account } from '../../types/finance';
 import { formatCurrency, parseInputToHaler, subHaler } from '../../services/currencyService';
-import { getAccountBalanceAtDate } from '../../services/financialEngine';
+import { getAccountBalanceAtDate } from '../../services/accountBalance';
 import { getNextSequenceForDate } from '../../services/sequenceService';
 import { getTodayInPrague, formatCzechDate } from '../../services/periodService';
 import { CheckCircle, SlidersHorizontal } from 'lucide-react';
@@ -21,7 +21,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
   account,
 }) => {
   const fieldId = useId();
-  const { transactions, corrections, accounts, reconcileBalance } = useFinance();
+  const { transactions, corrections, reconcileBalance } = useFinance();
   const [actualBalanceStr, setActualBalanceStr] = useState('');
   const [checkDate, setCheckDate] = useState(() => getTodayInPrague());
   const [note, setNote] = useState('');
@@ -32,15 +32,8 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
   const calculatedBalanceInHaler = useMemo(() => {
     if (!account) return 0;
     const nextSeq = getNextSequenceForDate(checkDate, transactions);
-    return getAccountBalanceAtDate(
-      account.id,
-      checkDate,
-      nextSeq,
-      transactions,
-      corrections,
-      accounts
-    );
-  }, [account, checkDate, transactions, corrections, accounts]);
+    return getAccountBalanceAtDate(account, checkDate, { transactions, corrections }, { includePlanned: true, beforeSequence: nextSeq });
+  }, [account, checkDate, transactions, corrections]);
 
   const enteredActualHaler = parseInputToHaler(actualBalanceStr);
   const diffInHaler = subHaler(enteredActualHaler, calculatedBalanceInHaler);
@@ -53,7 +46,7 @@ export const ReconciliationModal: React.FC<ReconciliationModalProps> = ({
         : today;
       setCheckDate(initialDate);
       const nextSeq = getNextSequenceForDate(initialDate, transactions);
-      const bal = getAccountBalanceAtDate(account.id, initialDate, nextSeq, transactions, corrections, accounts);
+      const bal = getAccountBalanceAtDate(account, initialDate, { transactions, corrections }, { includePlanned: true, beforeSequence: nextSeq });
       setActualBalanceStr((bal / 100).toString());
       setNote('');
       setIsSubmitting(false);
