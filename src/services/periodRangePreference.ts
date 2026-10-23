@@ -1,5 +1,5 @@
 import { AppSettings, PeriodRangePresetId, PeriodRangeScreen } from '../types/finance';
-import type { DualPeriodRange } from './analyticsEngine';
+import type { DualPeriodRange } from './periodRange';
 import { formatMonthsCount } from './periodService';
 
 export interface PeriodRangePreset {

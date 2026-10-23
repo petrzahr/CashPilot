@@ -3,7 +3,7 @@ import { AlertCircle, Check, Edit3, Plus, RotateCcw, Trash2, X } from 'lucide-re
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
-import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
+import { formatCzechDate, getTodayInPrague, normalizeStartDay } from '../../services/periodService';
 import { sortAccountsByOrder } from '../../services/accountService';
 import { getDefaultAccount } from '../../services/accountScope';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
@@ -511,7 +511,7 @@ const UpcomingChangesTable: React.FC<{ changes: MandatoryUpcomingChange[] }> = (
 export const MandatoryExpensesScreen: React.FC = () => {
   const { recurringRules, categories, accounts, settings, selectedPeriod } = useFinance();
   const todayStr = getTodayInPrague();
-  const budgetStartDay = settings?.budgetStartDay || 15;
+  const budgetStartDay = normalizeStartDay(settings?.budgetStartDay);
 
   const [simulation, setSimulation] = useState<MandatorySimulation>(loadSimulation);
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);

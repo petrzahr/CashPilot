@@ -60,18 +60,12 @@ export function getPeriodKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-/**
- * Vrátí datum o jeden den předcházející zadanému datu YYYY-MM-DD.
- * Využívá UTC pro eliminaci vlivu časových posunů a DST.
- */
-export function getPreviousDayString(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  date.setUTCDate(date.getUTCDate() - 1);
-  const prevY = date.getUTCFullYear();
-  const prevM = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const prevD = String(date.getUTCDate()).padStart(2, '0');
-  return `${prevY}-${prevM}-${prevD}`;
+/** Výchozí den začátku rozpočtového období, pokud v nastavení chybí. */
+export const DEFAULT_BUDGET_START_DAY = 15;
+
+/** Den začátku období jako celé číslo 1–31; chybějící nebo neplatná hodnota dává výchozí 15. */
+export function normalizeStartDay(startDay?: number | null): number {
+  return Math.max(1, Math.min(31, Math.round(startDay || DEFAULT_BUDGET_START_DAY)));
 }
 
 /**
@@ -80,7 +74,7 @@ export function getPreviousDayString(dateStr: string): string {
  * použije se poslední kalendářní den tohoto měsíce.
  */
 export function getPeriodStartDate(year: number, month: number, startDay: number = 15): string {
-  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
+  const safeStartDay = normalizeStartDay(startDay);
   const daysInMonth = getDaysInMonth(year, month);
   const actualDay = Math.min(safeStartDay, daysInMonth);
   return `${year}-${String(month).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`;
@@ -92,7 +86,7 @@ export function getPeriodStartDate(year: number, month: number, startDay: number
  * čímž je zaručena souvislá časová osa bez mezer a bez překryvů.
  */
 export function createBudgetPeriod(year: number, month: number, startDay: number = 15): BudgetPeriod {
-  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
+  const safeStartDay = normalizeStartDay(startDay);
   const startDate = getPeriodStartDate(year, month, safeStartDay);
 
   let nextMonth = month + 1;
@@ -103,7 +97,7 @@ export function createBudgetPeriod(year: number, month: number, startDay: number
   }
 
   const nextStartDate = getPeriodStartDate(nextYear, nextMonth, safeStartDay);
-  const endDate = getPreviousDayString(nextStartDate);
+  const endDate = getPreviousDay(nextStartDate);
 
   return {
     key: getPeriodKey(year, month),
@@ -122,7 +116,7 @@ export function createBudgetPeriod(year: number, month: number, startDay: number
  * - Pokud je datum < startDate(rok, měsíc), spadá do předchozí periody.
  */
 export function getPeriodForDate(dateStr: string, startDay: number = 15): BudgetPeriod {
-  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
+  const safeStartDay = normalizeStartDay(startDay);
   const parts = dateStr.split('-');
   const y = parseInt(parts[0], 10);
   const m = parseInt(parts[1], 10);

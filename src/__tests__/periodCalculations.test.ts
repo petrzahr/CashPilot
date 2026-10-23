@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   createBudgetPeriod,
   getPeriodForDate,
-  getPreviousDayString,
+  getPreviousDay,
   getDaysInMonth,
   formatPeriodRange,
   generatePeriodsSequence
@@ -20,11 +20,11 @@ describe('PeriodService - Počáteční den rozpočtového měsíce (1–31) a k
       expect(getDaysInMonth(2026, 12)).toBe(31);
     });
 
-    it('getPreviousDayString vrátí přesný předchozí den bez ohledu na DST', () => {
-      expect(getPreviousDayString('2026-03-01')).toBe('2026-02-28');
-      expect(getPreviousDayString('2028-03-01')).toBe('2028-02-29'); // Přestupný rok
-      expect(getPreviousDayString('2026-01-01')).toBe('2025-12-31');
-      expect(getPreviousDayString('2026-10-15')).toBe('2026-10-14');
+    it('getPreviousDay vrátí přesný předchozí den bez ohledu na DST', () => {
+      expect(getPreviousDay('2026-03-01')).toBe('2026-02-28');
+      expect(getPreviousDay('2028-03-01')).toBe('2028-02-29'); // Přestupný rok
+      expect(getPreviousDay('2026-01-01')).toBe('2025-12-31');
+      expect(getPreviousDay('2026-10-15')).toBe('2026-10-14');
     });
   });
 
@@ -204,7 +204,7 @@ describe('PeriodService - Počáteční den rozpočtového měsíce (1–31) a k
             const next = periods[i + 1];
 
             // Konec aktuální periody musí být přesně den před začátkem následující
-            expect(getPreviousDayString(next.startDate)).toBe(current.endDate);
+            expect(getPreviousDay(next.startDate)).toBe(current.endDate);
 
             // Začátek musí být <= konec
             expect(current.startDate <= current.endDate).toBe(true);
