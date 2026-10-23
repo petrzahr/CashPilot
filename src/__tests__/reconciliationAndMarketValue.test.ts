@@ -3,8 +3,11 @@ import { Account, BalanceCorrection, BudgetPeriod, MarketValueSnapshot, Recurrin
 import { calculateForecast } from '../services/financialEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { getNextSequenceForDate, normalizeDaySequences } from '../services/sequenceService';
-import { subHaler } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
+import { AppData } from '../services/storageService';
+import { createEmptyAppData } from '../constants/defaultData';
+import { reconcileBalance } from '../services/accountCommands';
+import { createCommandContext } from '../services/transactionCommands';
 
 // Vypočtený stav pro korekci: včetně plánovaných položek, před zadaným pořadím v rámci dne
 const balanceAt = (
@@ -290,81 +293,57 @@ describe('Reconciliation and Market Value Engine', () => {
       expect(balBeforeSeq3).toBe(4650000); // 50 000 - 1 500 - 2 000
     });
 
+    const reconcileCtx = createCommandContext('2026-09-20', new Date('2026-09-20T12:00:00Z'));
+    const reconcileData = (transactions: Transaction[]): AppData => ({
+      ...createEmptyAppData(),
+      accounts: [sampleCheckingAccount],
+      transactions,
+    });
+    const expense = (id: string, sequence: number, amountInHaler: number): Transaction => ({
+      id, title: 'Výdaj', amountInHaler, actualAmountInHaler: amountInHaler, date: '2026-09-20', sequence,
+      type: 'expense', sourceAccountId: sampleCheckingAccount.id, status: 'executed', createdAt: '', updatedAt: '',
+    });
+
     it('4. Positive balance correction: diff = actual - calculated > 0', () => {
-      const calculated = 4650000; // 46 500 Kč
-      const actual = 5000000;     // 50 000 Kč
-      const diff = subHaler(actual, calculated);
-      expect(diff).toBe(350000); // +3 500 Kč
-
-      const corrTx: Transaction = {
-        id: 'corr_tx_1',
-        title: 'Korekce zůstatku',
-        amountInHaler: Math.abs(diff),
-        date: '2026-09-20',
-        sequence: 3,
-        type: 'balance_adjustment',
-        sourceAccountId: sampleCheckingAccount.id,
-        status: 'executed',
-        actualAmountInHaler: Math.abs(diff),
-        calculatedBalanceInHaler: calculated,
-        actualBalanceInHaler: actual,
-        diffInHaler: diff,
-        note: 'Oprava dle bankovního výpisu',
-        createdAt: '2026-09-20T12:00:00Z',
-        updatedAt: '2026-09-20T12:00:00Z',
-      };
-
-      const balanceAfter = balanceAt(
-        sampleCheckingAccount.id,
-        '2026-09-20',
-        4,
-        [corrTx],
-        [],
-        [sampleCheckingAccount]
+      // Vypočteno 50 000 - 1 500 - 2 000 = 46 500 Kč, v bance je 50 000 Kč
+      const { data, outcome } = reconcileBalance(
+        reconcileData([expense('t1', 1, 150000), expense('t2', 2, 200000)]),
+        { accountId: sampleCheckingAccount.id, actualBalanceInHaler: 5000000, checkDate: '2026-09-20', note: 'Oprava dle bankovního výpisu' },
+        reconcileCtx
       );
-      // 50 000 (initial) + 3 500 (diff) = 53 500
-      expect(balanceAfter).toBe(5350000);
+      expect(outcome).toEqual({ kind: 'corrected', diffInHaler: 350000 }); // +3 500 Kč
+
+      const corrTx = data.transactions.find(t => t.type === 'balance_adjustment')!;
+      expect(corrTx).toMatchObject({
+        sequence: 3, amountInHaler: 350000, diffInHaler: 350000,
+        calculatedBalanceInHaler: 4650000, actualBalanceInHaler: 5000000, note: 'Oprava dle bankovního výpisu',
+      });
+      expect(data.corrections).toEqual([expect.objectContaining({ id: corrTx.id, diffInHaler: 350000, sequence: 3 })]);
+
+      // Po korekci odpovídá zůstatek bance
+      expect(balanceAt(sampleCheckingAccount.id, '2026-09-20', 4, data.transactions, data.corrections, data.accounts)).toBe(5000000);
     });
 
     it('5. Negative balance correction: diff = actual - calculated < 0', () => {
-      const calculated = 5000000;
-      const actual = 4800000; // 48 000 Kč
-      const diff = subHaler(actual, calculated);
-      expect(diff).toBe(-200000); // -2 000 Kč
-
-      const corrTx: Transaction = {
-        id: 'corr_tx_2',
-        title: 'Korekce zůstatku',
-        amountInHaler: Math.abs(diff),
-        date: '2026-09-20',
-        sequence: 1,
-        type: 'balance_adjustment',
-        sourceAccountId: sampleCheckingAccount.id,
-        status: 'executed',
-        actualAmountInHaler: Math.abs(diff),
-        calculatedBalanceInHaler: calculated,
-        actualBalanceInHaler: actual,
-        diffInHaler: diff,
-        createdAt: '2026-09-20T12:00:00Z',
-        updatedAt: '2026-09-20T12:00:00Z',
-      };
-
-      const balanceAfter = balanceAt(
-        sampleCheckingAccount.id,
-        '2026-09-21',
-        1,
-        [corrTx],
-        [],
-        [sampleCheckingAccount]
+      const { data, outcome } = reconcileBalance(
+        reconcileData([]),
+        { accountId: sampleCheckingAccount.id, actualBalanceInHaler: 4800000, checkDate: '2026-09-20' },
+        reconcileCtx
       );
-      expect(balanceAfter).toBe(4800000);
+      expect(outcome).toEqual({ kind: 'corrected', diffInHaler: -200000 }); // -2 000 Kč
+      expect(data.transactions[0]).toMatchObject({ amountInHaler: 200000, diffInHaler: -200000, note: 'Aktualizace skutečného stavu' });
+      expect(balanceAt(sampleCheckingAccount.id, '2026-09-21', 1, data.transactions, data.corrections, data.accounts)).toBe(4800000);
     });
 
     it('6. Zero correction: diff === 0 produces no financial change', () => {
-      const calculated = 5000000;
-      const actual = 5000000;
-      const diff = subHaler(actual, calculated);
-      expect(diff).toBe(0);
+      const before = reconcileData([]);
+      const result = reconcileBalance(
+        before,
+        { accountId: sampleCheckingAccount.id, actualBalanceInHaler: 5000000, checkDate: '2026-09-20' },
+        reconcileCtx
+      );
+      expect(result.outcome).toEqual({ kind: 'unchanged' });
+      expect(result.data).toBe(before);
     });
 
     it('7. Deleting a correction restores original balance and resequences remaining items', () => {
