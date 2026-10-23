@@ -1,4 +1,3 @@
-import { accountStorageKey } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -22,8 +21,6 @@ import {
   exportBackupJSON,
   validateAndParseBackup,
   exportTransactionsCSV,
-  setActiveStorageKey,
-  STORAGE_KEY_PRODUCTION,
   isDemoModeEnabled,
   createOperationRecoveryBackup,
   repairRecurringRuleSplitOverlaps,
@@ -55,21 +52,7 @@ import { applyAccountOrder, sortAccountsByOrder } from '../services/accountServi
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { formatCurrency } from '../services/currencyService';
-import { describeSyncError } from '../services/syncErrorText';
-import {
-  GoogleUser,
-  fetchGoogleUserProfile,
-  getValidAccessToken,
-  isStoredTokenValid,
-  loginToGoogle,
-  logoutFromGoogle,
-} from '../services/googleDriveService';
-import {
-  getLastDriveBackupAt,
-  isDriveBackupEnabled,
-  setDriveBackupEnabled as persistDriveBackupEnabled,
-  tryRunDriveBackup,
-} from '../services/driveBackupService';
+import type { GoogleUser } from '../services/googleDriveService';
 
 
 import {
@@ -123,6 +106,7 @@ import {
   updateCategory as updateCategoryCommand,
 } from '../services/categoryCommands';
 import { importBackup as importBackupCommand } from '../services/dataCommands';
+import { useDriveSession } from '../hooks/useDriveSession';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -298,12 +282,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const [data, publishData] = useState<AppData>(() => syncSession?.data || getInitialData());
   const latestDataRef = useRef<AppData>(data);
-  const controllerRef = useRef<SyncController | null>(syncSession || null);
-  const authGeneration = useRef(0);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const setData = useCallback((action: React.SetStateAction<AppData>) => {
-    controllerRef.current?.change(action);
-  }, []);
 
   // Chyby a varování zůstávají, dokud je uživatel nezavře; potvrzení úspěchu zmizí samo
   const showToast = useCallback((
@@ -320,6 +299,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  // Relace s Google Diskem (SyncController); doména do ní zapisuje jen přes session.change
+  const session = useDriveSession({
+    initialSession: syncSession,
+    onData: (next) => {
+      const shared = reuseUnchangedSlices(latestDataRef.current, next);
+      latestDataRef.current = shared;
+      publishData(shared);
+      setLoadState('ready');
+    },
+    onNoSession: () => setLoadState('ready'),
+    onDisconnected: () => {
+      const fresh = getInitialData();
+      latestDataRef.current = fresh;
+      publishData(fresh);
+    },
+    getData: () => latestDataRef.current,
+    showToast,
+  });
+  const sessionChange = session.change;
+  const setData = useCallback((action: React.SetStateAction<AppData>) => {
+    sessionChange(action);
+  }, [sessionChange]);
 
   const [todayStr, setTodayStr] = useState<string>(() => getTodayInPrague());
 
@@ -1235,7 +1237,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     // 2. Kompletní čistý reset: 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií
     const fresh = createResetAppData();
-    controllerRef.current?.change(fresh, true);
+    sessionChange(fresh, true);
 
     showToast('Všechna data byla smazána. Aplikace začíná od nuly.');
     return true;
@@ -1252,7 +1254,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const resetToFreshData = useCallback(() => {
     const fresh = createEmptyAppData();
-    controllerRef.current?.change(fresh, true);
+    sessionChange(fresh, true);
 
     setLoadState('ready');
     setLoadErrorDetails(null);
@@ -1298,157 +1300,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Položky byly staženy jako CSV.');
   }, [data.transactions, data.accounts, data.categories, showToast]);
 
-  const [driveSyncStatus, setDriveSyncStatus] = useState<DriveSyncStatus>(() => isStoredTokenValid() ? 'loading' : 'disconnected');
-  const [isDriveConnected, setIsDriveConnected] = useState(() => isStoredTokenValid());
-  const [isCloudReady, setIsCloudReady] = useState(syncSession?.isReady || false);
-  const [driveUser, setDriveUser] = useState<GoogleUser | null>(null);
-  const [lastDriveSyncTime, setLastDriveSyncTime] = useState<Date | null>(null);
-  const [driveError, setDriveError] = useState<string | null>(null);
-  const [driveBackupEnabled, setDriveBackupEnabledState] = useState(() => isDriveBackupEnabled());
-  const [lastDriveBackupTime, setLastDriveBackupTime] = useState<Date | null>(null);
-
-  const startCloudSession = useCallback(async (token: string, generation: number) => {
-    setDriveSyncStatus('loading');
-    setIsCloudReady(false);
-    setDriveError(null);
-    try {
-      const user = await fetchGoogleUserProfile(token);
-      if (generation !== authGeneration.current) return;
-      if (!user?.permissionId) throw new Error('Nelze ověřit identitu Google účtu. Data nebyla sloučena.');
-      // Keep the unscoped legacy cache verbatim for explicit recovery; ownership is unknown.
-      const legacy = localStorage.getItem(STORAGE_KEY_PRODUCTION);
-      if (legacy && !localStorage.getItem('cashpilot_legacy_cache_before_sync_v2')) {
-        localStorage.setItem('cashpilot_legacy_cache_before_sync_v2', legacy);
-      }
-      setActiveStorageKey(accountStorageKey(user.permissionId));
-      setDriveUser(user);
-      setIsDriveConnected(true);
-      setLastDriveBackupTime(getLastDriveBackupAt(user.permissionId));
-      const controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
-        if (generation !== authGeneration.current) return;
-        const shared = reuseUnchangedSlices(latestDataRef.current, next);
-        latestDataRef.current = shared;
-        publishData(shared);
-        setDriveSyncStatus(status);
-        setIsCloudReady(ready);
-        setDriveError(error || null);
-        setLoadState('ready');
-        if (status === 'synced') setLastDriveSyncTime(new Date());
-      });
-      controllerRef.current = controller;
-      await controller.sync();
-      if (generation !== authGeneration.current) return;
-      // Zálohy jsou nezávislé na sync frontě a nesmí ji svým selháním ovlivnit; spouští se jednou za relaci (start appky).
-      void tryRunDriveBackup(token, user.permissionId, controller.data).then((result) => {
-        if (generation === authGeneration.current && result.ran) setLastDriveBackupTime(new Date());
-      });
-    } catch (error) {
-      if (generation !== authGeneration.current) return;
-      setDriveSyncStatus('error');
-      setDriveError((error as Error).message);
-    }
-  }, []);
-
-  useEffect(() => {
-    const generation = ++authGeneration.current;
-    const token = getValidAccessToken();
-    if (token) void startCloudSession(token, generation);
-    else setLoadState('ready');
-    const resume = () => { void controllerRef.current?.sync(); };
-    const visible = () => { if (document.visibilityState === 'visible') resume(); };
-    window.addEventListener('online', resume);
-    window.addEventListener('focus', resume);
-    document.addEventListener('visibilitychange', visible);
-    return () => {
-      ++authGeneration.current;
-      controllerRef.current?.stop();
-      controllerRef.current = null;
-      window.removeEventListener('online', resume);
-      window.removeEventListener('focus', resume);
-      document.removeEventListener('visibilitychange', visible);
-    };
-  }, [startCloudSession]);
-
-  const connectGoogleDrive = useCallback(async () => {
-    const generation = ++authGeneration.current;
-    controllerRef.current?.stop();
-    controllerRef.current = null;
-    setIsCloudReady(false);
-    setDriveSyncStatus('loading');
-    try {
-      const token = await loginToGoogle();
-      if (generation === authGeneration.current) await startCloudSession(token, generation);
-    } catch (error) {
-      if (generation !== authGeneration.current) return;
-      setDriveSyncStatus('error');
-      setDriveError((error as Error).message);
-    }
-  }, [startCloudSession]);
-
-  const disconnectGoogleDrive = useCallback(async () => {
-    ++authGeneration.current;
-    controllerRef.current?.stop();
-    controllerRef.current = null;
-    setIsCloudReady(false);
-    setIsDriveConnected(false);
-    setDriveSyncStatus('disconnected');
-    setActiveStorageKey(null);
-    setDriveUser(null);
-    setLastDriveSyncTime(null);
-    setDriveError(null);
-    const fresh = getInitialData();
-    latestDataRef.current = fresh;
-    publishData(fresh);
-    await logoutFromGoogle();
-  }, []);
-
-  const syncWithGoogleDrive = useCallback(async (_forceDirection?: 'upload' | 'download') => {
-    // All entry points reconcile the durable journal; manual directions cannot discard it.
-    if (controllerRef.current) await controllerRef.current.sync();
-    else {
-      const token = getValidAccessToken();
-      if (token) await startCloudSession(token, ++authGeneration.current);
-      else await connectGoogleDrive();
-    }
-  }, [startCloudSession, connectGoogleDrive]);
-
-  // Selhání synchronizace se nesmí ztratit v barevné tečce: při přechodu do chyby nebo konfliktu
-  // zůstane oznámení s možností zkusit to znovu, po obnovení přijde krátké potvrzení.
-  const lastSyncProblemRef = useRef(false);
-  useEffect(() => {
-    const isProblem = driveSyncStatus === 'error' || driveSyncStatus === 'conflict';
-    if (!isCloudReady) return;
-    if (isProblem && !lastSyncProblemRef.current) {
-      lastSyncProblemRef.current = true;
-      const text = driveSyncStatus === 'conflict'
-        ? 'Změny z jiného zařízení se nepodařilo sloučit. Zkuste synchronizaci znovu, vaše data zůstávají v tomto zařízení.'
-        : describeSyncError(driveError);
-      showToast(text, 'error', { label: 'Zkusit znovu', onClick: () => { void syncWithGoogleDrive(); } });
-    } else if (driveSyncStatus === 'synced' && lastSyncProblemRef.current) {
-      lastSyncProblemRef.current = false;
-      showToast('Změny jsou znovu uložené na Google Disku.');
-    }
-  }, [driveSyncStatus, driveError, isCloudReady, showToast, syncWithGoogleDrive]);
-
-  const setDriveBackupEnabled = useCallback((enabled: boolean) => {
-    persistDriveBackupEnabled(enabled);
-    setDriveBackupEnabledState(enabled);
-  }, []);
-
-  const runDriveBackupNow = useCallback(async () => {
-    const token = getValidAccessToken();
-    if (!token || !driveUser?.permissionId) {
-      showToast('Nejdřív připojte Google Disk.', 'error');
-      return;
-    }
-    const result = await tryRunDriveBackup(token, driveUser.permissionId, latestDataRef.current, { force: true });
-    if (result.ran) {
-      setLastDriveBackupTime(new Date());
-      showToast('Záloha byla uložena na Google Disk.');
-    } else {
-      showToast(`Zálohu se nepodařilo vytvořit: ${result.reason || 'neznámá chyba'}`, 'error');
-    }
-  }, [driveUser, showToast]);
 
   const dataConflicts = useMemo(() => {
     const conflicts: { transaction: Transaction; account: Account; reason: string }[] = [];
@@ -1567,19 +1418,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     exportCSV,
 
     // Google Drive
-    driveSyncStatus,
-    isCloudReady,
-    isDriveConnected,
-    driveUser,
-    lastDriveSyncTime,
-    driveError,
-    connectGoogleDrive,
-    disconnectGoogleDrive,
-    syncWithGoogleDrive,
-    driveBackupEnabled,
-    setDriveBackupEnabled,
-    lastDriveBackupTime,
-    runDriveBackupNow,
+    driveSyncStatus: session.driveSyncStatus,
+    isCloudReady: session.isCloudReady,
+    isDriveConnected: session.isDriveConnected,
+    driveUser: session.driveUser,
+    lastDriveSyncTime: session.lastDriveSyncTime,
+    driveError: session.driveError,
+    connectGoogleDrive: session.connectGoogleDrive,
+    disconnectGoogleDrive: session.disconnectGoogleDrive,
+    syncWithGoogleDrive: session.syncWithGoogleDrive,
+    driveBackupEnabled: session.driveBackupEnabled,
+    setDriveBackupEnabled: session.setDriveBackupEnabled,
+    lastDriveBackupTime: session.lastDriveBackupTime,
+    runDriveBackupNow: session.runDriveBackupNow,
   };
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
