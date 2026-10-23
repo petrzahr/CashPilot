@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createBudgetPeriodInfo } from '../services/analyticsEngine';
 import { calculateBudgetCategoryOverview, calculateCategoryBreakdown, NO_SUBCATEGORY_LABEL } from '../services/categoryBreakdownService';
 import { createBudgetPeriod } from '../services/periodService';
+import { calculateDefaultAccountKpis } from '../services/budgetKpiService';
 import { Account, Category, Transaction } from '../types/finance';
 import { CategoryBreakdownTable } from '../components/analytics/CategoryBreakdownTable';
 
@@ -92,7 +93,7 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     expect(html).not.toContain('Nájem');
   });
 
-  it('s accountId bere jen příjmy a výdaje účtu a jen převody z něj odchozí', () => {
+  it('s accountId bere jen příjmy a výdaje účtu a převody čistě podle protiúčtu', () => {
     const scoped = calculateCategoryBreakdown(periods, [
       ...transactions,
       tx({ categoryId: 'auto', amountInHaler: 50000, sourceAccountId: 'sav', date: '2026-08-23' }),
@@ -102,8 +103,9 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
 
     expect(scoped.incomeTotalsInHaler).toEqual([9500000, 9600000]);
     expect(scoped.expenseTotalInHaler).toBe(2200000 + 660000 + 300000);
+    // 12 000 odešlo na spořicí, 4 000 se vrátilo => čistě 8 000
     const transfers = scoped.rows.find((r) => r.group === 'transfer')!;
-    expect(transfers.amountsInHaler).toEqual([0, 1200000]);
+    expect(transfers.amountsInHaler).toEqual([0, 800000]);
     expect(transfers.children.map((c) => c.label)).toEqual(['Spořicí']);
   });
 });
@@ -155,16 +157,24 @@ describe('Přehled rozpočtu podle kategorií (calculateBudgetCategoryOverview)'
     expect(housing.subcategories).toEqual([{ key: 'rent', label: 'Nájem', totalInHaler: 2200000 }]);
   });
 
-  it('převody jsou jen odchozí z výchozího účtu', () => {
+  it('převody výchozího účtu jsou čisté: odchozí +, vrácené −', () => {
     const analyticsTransfers = analytics.rows.find((r) => r.group === 'transfer')!;
     expect(overview.transferTotalInHaler).toBe(analyticsTransfers.totalInHaler);
-    expect(overview.transferTotalInHaler).toBe(1200000);
-    expect(overview.transfers.map((t) => t.sourceAccountId)).toEqual(['chk']);
+    expect(overview.transferTotalInHaler).toBe(1200000 - 400000);
+    expect(overview.transfers.map((t) => [t.transaction.sourceAccountId, t.amountInHaler]).sort()).toEqual([
+      ['chk', 1200000],
+      ['sav', -400000],
+    ]);
+  });
+
+  it('řádek převodů sedí s dlaždicí Uspořeno', () => {
+    const kpis = calculateDefaultAccountKpis(accounts[0], accounts, undefined, transactions);
+    expect(kpis.savedInHaler).toBe(overview.transferTotalInHaler);
   });
 
   it('bez výchozího účtu počítá všechny účty jako Analýza', () => {
     const all = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 15);
     expect(all.cards.find((c) => c.key === 'auto')!.totalInHaler).toBe(50000);
-    expect(all.transfers).toHaveLength(2);
+    expect(all.transfers.map((t) => t.amountInHaler).sort()).toEqual([1200000, 400000].sort());
   });
 });

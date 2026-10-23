@@ -5,6 +5,7 @@ import { formatCzechDate, getTodayInPrague } from '../../services/periodService'
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { calculateDefaultAccountKpis } from '../../services/budgetKpiService';
+import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { 
   Plus, 
@@ -234,7 +235,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   // Výchozí účet a jeho souhrnné údaje
   const defaultAccount = useMemo(() => {
-    return accounts.find(a => a.isDefault && a.status !== 'archived');
+    return getDefaultAccount(accounts);
   }, [accounts]);
 
   // KPI dlaždice počítané z výchozího účtu; Změna investic zůstává za všechny investiční účty
@@ -397,9 +398,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const periodTransactionsSum = useMemo(() => {
     return periodTransactions.reduce((sum, tx) => {
-      const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-        ? tx.actualAmountInHaler
-        : tx.amountInHaler;
+      const effectiveAmount = getEffectiveAmountInHaler(tx);
       if (tx.type === 'balance_adjustment') {
         const diff = tx.diffInHaler ?? (
           tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
@@ -612,9 +611,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const cat = categories.find(c => c.id === tx.categoryId);
     const subCat = categories.find(c => c.id === tx.subcategoryId);
 
-    const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-      ? tx.actualAmountInHaler
-      : tx.amountInHaler;
+    const effectiveAmount = getEffectiveAmountInHaler(tx);
     const isCancelled = tx.status === 'cancelled';
     const isCorrection = tx.type === 'balance_adjustment';
 
@@ -984,10 +981,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
             {categoryOverview.transfers.length > 0 ? (
               <div className="space-y-1 pt-1 border-t border-slate-200">
-                {categoryOverview.transfers.map(tx => (
+                {categoryOverview.transfers.map(({ transaction: tx, amountInHaler }) => (
                   <div key={tx.id} className="flex justify-between gap-3 text-xs text-slate-500">
                     <span className="truncate min-w-0" title={tx.title}>{tx.title}</span>
-                    <span className="font-medium shrink-0">{formatCurrency(tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler)}</span>
+                    <span className="font-medium shrink-0">{formatCurrency(amountInHaler)}</span>
                   </div>
                 ))}
               </div>
@@ -1304,9 +1301,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         const cat = categories.find(c => c.id === tx.categoryId);
                         const subCat = categories.find(c => c.id === tx.subcategoryId);
 
-                        const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-                          ? tx.actualAmountInHaler
-                          : tx.amountInHaler;
+                        const effectiveAmount = getEffectiveAmountInHaler(tx);
 
                         const isCancelled = tx.status === 'cancelled';
                         const isCorrection = tx.type === 'balance_adjustment';

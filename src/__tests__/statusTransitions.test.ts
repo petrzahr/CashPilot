@@ -179,14 +179,14 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [realSepTx], [salaryRule], [], 15);
+    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [realSepTx], [salaryRule], [], 15, '2026-09-10');
     expect(effSepAfter.length).toBe(1);
     expect(effSepAfter[0].id).toBe('tx_real_salary_sep');
     expect(effSepAfter[0].status).toBe('executed');
     expect(effSepAfter[0].actualAmountInHaler).toBe(6500000);
 
     // Period Oct still has virtual occurrence from rule untouched
-    const effOct = getEffectiveTransactionsForPeriod(periodOct, [realSepTx], [salaryRule], [], 15);
+    const effOct = getEffectiveTransactionsForPeriod(periodOct, [realSepTx], [salaryRule], [], 15, '2026-09-10');
     expect(effOct.length).toBe(1);
     expect(effOct[0].id).toBe('virtual_rec_salary_2026-10');
     expect(effOct[0].status).toBe('planned');

@@ -1,6 +1,7 @@
 import { Account, BudgetPeriod, Category, RecurrenceFrequency, RecurringRule } from '../types/finance';
 import { czechStringCompare } from './categoryService';
 import { addHaler } from './currencyService';
+import { getDefaultAccount } from './accountScope';
 import { doesRuleApplyInPeriod, generateOccurrenceForPeriod } from './financialEngine';
 import { generatePeriodsSequence, getPeriodForDate } from './periodService';
 
@@ -219,7 +220,7 @@ export function calculateMandatoryOverview(
   const refDate = currentPeriod.startDate > todayStr ? currentPeriod.startDate : todayStr;
 
   // Přehled je jen o výchozím účtu: platby, které se ho netýkají, se nezobrazují ani nepočítají
-  const defaultAccountId = accounts.find((a) => a.isDefault && a.status !== 'archived')?.id;
+  const defaultAccountId = getDefaultAccount(accounts)?.id;
   const defaultAccountSign = (group: MandatoryGroup, sourceAccountId: string, targetAccountId?: string): 1 | -1 | 0 => {
     if (!defaultAccountId) return 0;
     if (group === 'transfer') {

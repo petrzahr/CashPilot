@@ -5,6 +5,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency, halerToInputValue, parseInputToHaler } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { sortAccountsByOrder } from '../../services/accountService';
+import { getDefaultAccount } from '../../services/accountScope';
 import { sortCategoriesAlphabetically } from '../../services/categoryService';
 import {
   calculateMandatoryOverview,
@@ -528,7 +529,7 @@ export const MandatoryExpensesScreen: React.FC = () => {
   );
 
   const accountOptions = useMemo(() => sortAccountsByOrder(accounts).filter((a) => a.status === 'active'), [accounts]);
-  const defaultAccount = accounts.find((a) => a.isDefault && a.status !== 'archived');
+  const defaultAccount = getDefaultAccount(accounts);
   const categoryOptions = (group: MandatoryGroup) =>
     sortCategoriesAlphabetically(
       categories.filter((c) => !c.parentId && c.status === 'active' && (group === 'income' ? c.type === 'income' : c.type !== 'income'))

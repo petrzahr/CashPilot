@@ -1,5 +1,6 @@
 import { IntraDayStep, IntraDaySummary, Transaction } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
+import { getEffectiveAmountInHaler } from './accountScope';
 
 /**
  * Služba pro správu pořadí transakcí v rámci kalendářního dne.
@@ -317,9 +318,7 @@ export function calculateIntraDayRunningBalances(
       continue;
     }
 
-    const amt = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-      ? tx.actualAmountInHaler
-      : tx.amountInHaler;
+    const amt = getEffectiveAmountInHaler(tx);
 
     if (accountId) {
       if (tx.type === 'income' && tx.sourceAccountId === accountId) {

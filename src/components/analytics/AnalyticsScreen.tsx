@@ -3,6 +3,7 @@ import { AlertCircle } from 'lucide-react';
 import { CashFlowCompositionChart } from './CashFlowCompositionChart';
 import { CategoryBreakdownTable } from './CategoryBreakdownTable';
 import { calculateCategoryBreakdown } from '../../services/categoryBreakdownService';
+import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
@@ -49,7 +50,7 @@ export const AnalyticsScreen: React.FC = () => {
 
   // Celá analýza se počítá jen z výchozího účtu (stejně jako Měsíční rozpočet)
   const defaultAccount = useMemo(
-    () => accounts.find((a) => a.isDefault && a.status !== 'archived'),
+    () => getDefaultAccount(accounts),
     [accounts]
   );
   const accountFilters = useMemo<AnalyticsFilters>(
@@ -391,11 +392,7 @@ export const AnalyticsScreen: React.FC = () => {
                       {item.accountName}
                     </td>
                     <td className="py-2.5 px-4 text-right font-extrabold text-red-600 tabular-nums whitespace-nowrap">
-                      {formatCurrency(
-                        item.transaction.actualAmountInHaler !== undefined
-                          ? item.transaction.actualAmountInHaler
-                          : item.transaction.amountInHaler
-                      )}
+                      {formatCurrency(getEffectiveAmountInHaler(item.transaction))}
                     </td>
                   </tr>
                 ))}

@@ -5,6 +5,7 @@ import { Account, Transaction, MarketValueSnapshot, InvestmentFee } from '../../
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { createBudgetPeriod, formatCzechDate } from '../../services/periodService';
 import { getAccountFees, getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
+import { getEffectiveAmountInHaler } from '../../services/accountScope';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
@@ -243,9 +244,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                 let amountDisplay = '';
                 let amountClass = '';
                 let typeBadge = '';
-                const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-                  ? tx.actualAmountInHaler
-                  : tx.amountInHaler;
+                const effectiveAmount = getEffectiveAmountInHaler(tx);
 
                 if (isCorrection) {
                   const diff = tx.diffInHaler ?? 0;

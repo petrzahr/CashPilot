@@ -15,7 +15,7 @@ import {
 import { addHaler, subHaler } from './currencyService';
 import { computeLiquidAccountBalanceAtDate } from './analyticsEngine';
 import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
-import { getAssetFlowInHaler } from './accountService';
+import { getAccountFlowInHaler, getEffectiveAmountInHaler } from './accountScope';
 import { getPeriodForDate, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
@@ -361,9 +361,7 @@ export function getAccountBalanceAtDate(
   const sorted = sortTransactionsByDateAndSequence(relevantTxs, 'asc');
 
   for (const t of sorted) {
-    const amount = t.status === 'executed' && t.actualAmountInHaler !== undefined
-      ? t.actualAmountInHaler
-      : t.amountInHaler;
+    const amount = getEffectiveAmountInHaler(t);
 
     if (t.type === 'income' && t.sourceAccountId === accountId) {
       balance = addHaler(balance, amount);
@@ -429,9 +427,7 @@ export function getAccountBalanceBeforeDate(
   );
 
   for (const t of priorTxs) {
-    const amount = t.status === 'executed' && t.actualAmountInHaler !== undefined
-      ? t.actualAmountInHaler
-      : t.amountInHaler;
+    const amount = getEffectiveAmountInHaler(t);
 
     if (t.type === 'income' && t.sourceAccountId === accountId) {
       balance = addHaler(balance, amount);
@@ -574,8 +570,7 @@ export function calculateForecast(
           for (const t of safeTxs) {
             if (t.status === 'cancelled') continue;
             if (t.date >= initDate && t.date > valDate && t.date < firstPeriod.startDate) {
-              const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-              netTransfers = addHaler(netTransfers, getAssetFlowInHaler(t, acc.id, amt));
+              netTransfers = addHaler(netTransfers, getAccountFlowInHaler(t, acc.id));
             }
           }
         }
@@ -691,9 +686,7 @@ export function calculateForecast(
         continue;
       }
 
-      const amount = (tx.status === 'executed' && tx.actualAmountInHaler !== undefined)
-        ? tx.actualAmountInHaler
-        : tx.amountInHaler;
+      const amount = getEffectiveAmountInHaler(tx);
 
       const srcAcc = safeAccounts.find(a => a.id === tx.sourceAccountId);
       const isSrcActive = !srcAcc || !srcAcc.initialBalanceDate || tx.date >= srcAcc.initialBalanceDate;
@@ -807,10 +800,7 @@ export function calculateForecast(
           const latestSnapInPeriod = snapshotsInPeriod[0];
           const netTransfersAfterSnap = effectiveTxs
             .filter(t => t.status !== 'cancelled' && t.date > latestSnapInPeriod.date && t.date >= initDate)
-            .reduce((sum, t) => {
-              const amt = t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-              return addHaler(sum, getAssetFlowInHaler(t, acc.id, amt));
-            }, 0);
+            .reduce((sum, t) => addHaler(sum, getAccountFlowInHaler(t, acc.id)), 0);
           closing = addHaler(latestSnapInPeriod.marketValueInHaler, netTransfersAfterSnap);
         } else {
           closing = addHaler(
@@ -918,8 +908,7 @@ export function calculateForecast(
       const original = summary.accountBalances[acc.id];
       let remainingFlow = 0;
       for (const tx of remainingTxs) {
-        const amount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler;
-        remainingFlow = addHaler(remainingFlow, getAssetFlowInHaler(tx, acc.id, amount));
+        remainingFlow = addHaler(remainingFlow, getAccountFlowInHaler(tx, acc.id));
       }
       const opening = summary.period.startDate <= today ? original.openingBalanceInHaler : anchor;
       const closing = addHaler(anchor, remainingFlow);
@@ -1038,8 +1027,7 @@ export function getCurrentAssetValue(
     } else {
       if (t.date < initDate || t.date > todayStr) continue;
     }
-    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    baseVal = addHaler(baseVal, getAssetFlowInHaler(t, acc.id, amt));
+    baseVal = addHaler(baseVal, getAccountFlowInHaler(t, acc.id));
   }
 
   return baseVal;
