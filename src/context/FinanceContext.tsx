@@ -75,7 +75,6 @@ import {
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
-  applyRuleRankOrder,
 } from '../services/sequenceService';
 import {
   CommandResult,
