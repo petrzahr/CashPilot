@@ -60,9 +60,15 @@ export function useDriveSession(options: DriveSessionOptions) {
   const [driveBackupEnabled, setDriveBackupEnabledState] = useState(() => isDriveBackupEnabled());
   const [lastDriveBackupTime, setLastDriveBackupTime] = useState<Date | null>(null);
 
-  /** Zápis domény do relace; bez připraveného controlleru se nic neuloží. */
-  const change = useCallback((action: React.SetStateAction<AppData>, reset?: boolean) => {
-    controllerRef.current?.change(action, reset);
+  /**
+   * Zápis domény do relace. Vrací false, pokud relace ještě nemá načtená data (před první
+   * synchronizací nebo po odpojení) - změna se pak neuloží a volající to musí oznámit.
+   */
+  const change = useCallback((action: React.SetStateAction<AppData>, reset?: boolean): boolean => {
+    const controller = controllerRef.current;
+    if (!controller || !controller.isReady) return false;
+    controller.change(action, reset);
+    return true;
   }, []);
 
   const startCloudSession = useCallback(async (token: string, generation: number) => {
