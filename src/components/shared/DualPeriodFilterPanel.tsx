@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formatMonthsCount, formatCzechDate } from '../../services/periodService';
-import { DualPeriodRange } from '../../services/analyticsEngine';
+import { DualPeriodRange } from '../../services/periodRange';
 import { PeriodRangeSelector } from './PeriodRangeSelector';
 import { Calendar, CircleDot } from 'lucide-react';
 

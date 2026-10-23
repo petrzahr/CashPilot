@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { getOverviewPeriods, OverviewRange } from '../../services/periodService';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
-import { DualPeriodRange, resolveAnalyticsDateRange, calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
+import { calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
 import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
 import { getInitialRange, rememberRange } from '../../services/periodRangePreference';
-import { createBudgetPeriod, generatePeriodsBetween, getTodayInPrague } from '../../services/periodService';
+import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
+import { getTodayInPrague } from '../../services/periodService';
 import { BudgetPeriod } from '../../types/finance';
 import {
   ChevronRight,
@@ -27,16 +27,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     setRangeState(newRange);
     rememberRange(settings, 'overview', newRange);
   };
-  const selectedPeriods = useMemo(() => {
-    if (range.preset === 'custom') {
-      const [fy, fm] = range.from!.split('-').map(Number);
-      const [ty, tm] = range.to!.split('-').map(Number);
-      return generatePeriodsBetween(createBudgetPeriod(fy, fm, settings.budgetStartDay), createBudgetPeriod(ty, tm, settings.budgetStartDay), settings.budgetStartDay);
-    }
-    if (range.preset) return resolveAnalyticsDateRange(range.preset, undefined, undefined,
-      { accounts, transactions, corrections, snapshots: marketValueSnapshots }, getTodayInPrague(), settings.budgetStartDay).range.periods.map(info => info.period);
-    return getOverviewPeriods(forecast.currentPeriod, range as OverviewRange, settings.budgetStartDay);
-  }, [forecast.currentPeriod, range, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
+  const selectedPeriods = useMemo(() => resolvePeriodRange(range, {
+    current: forecast.currentPeriod,
+    startDay: settings.budgetStartDay,
+    data: { accounts, transactions, corrections, snapshots: marketValueSnapshots },
+  }), [range, forecast.currentPeriod, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
   const firstPeriod = selectedPeriods[0];
   const lastPeriod = selectedPeriods[selectedPeriods.length - 1];
   useEffect(() => {

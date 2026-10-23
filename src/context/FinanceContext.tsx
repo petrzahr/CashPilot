@@ -48,7 +48,8 @@ import {
   getPeriodForDate,
   getPreviousPeriod,
   getTodayInPrague,
-  formatCzechDate
+  formatCzechDate,
+  normalizeStartDay,
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
@@ -424,7 +425,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   // Rozsah období podle dat - nezávisí na vybraném období, aby přepnutí měsíce nepřepočítávalo celou předpověď
   const dataPeriodBounds = useMemo(() => {
-    const startDay = data.settings.budgetStartDay || 15;
+    const startDay = normalizeStartDay(data.settings.budgetStartDay);
     const forecastMonths = 12;
 
     const baseForecastPeriods = generatePeriodsSequence(
@@ -483,7 +484,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const rangeStart = selectedPeriod.startDate < dataPeriodBounds.earliestPeriod.startDate ? selectedPeriod : dataPeriodBounds.earliestPeriod;
   const rangeEnd = selectedPeriod.startDate > dataPeriodBounds.latestPeriod.startDate ? selectedPeriod : dataPeriodBounds.latestPeriod;
   const allPeriodsSequence = useMemo(
-    () => generatePeriodsBetween(rangeStart, rangeEnd, data.settings.budgetStartDay || 15),
+    () => generatePeriodsBetween(rangeStart, rangeEnd, normalizeStartDay(data.settings.budgetStartDay)),
     // Období je plně určeno svými hranicemi, proto stačí závislost na datech hranic
     [rangeStart.startDate, rangeStart.endDate, rangeEnd.startDate, rangeEnd.endDate, data.settings.budgetStartDay]
   );

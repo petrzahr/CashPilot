@@ -7,10 +7,9 @@ import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/acc
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
-  AnalyticsDateRange,
   AnalyticsFilters,
-  DualPeriodRange,
-  resolveDualPeriodRange,
+  createBudgetPeriodInfo,
+  toAnalyticsDateRange,
   getFilteredExecutedTransactions,
   calculateMonthlyCashFlow,
   calculateExpenseMoMTrend,
@@ -23,8 +22,9 @@ import {
   formatCzechDate,
   getTodayInPrague,
   getPeriodForDate,
+  normalizeStartDay,
 } from '../../services/periodService';
-
+import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
 import { getInitialRange, rememberRange } from '../../services/periodRangePreference';
 
 /** Čistá bilance nese barvu jen podle znaménka: přebytek zelený, schodek červený. */
@@ -46,7 +46,7 @@ export const AnalyticsScreen: React.FC = () => {
   } = useFinance();
 
   const todayStr = getTodayInPrague();
-  const budgetStartDay = settings?.budgetStartDay || 15;
+  const budgetStartDay = normalizeStartDay(settings?.budgetStartDay);
 
   // Celá analýza se počítá jen z výchozího účtu (stejně jako Měsíční rozpočet)
   const defaultAccount = useMemo(
@@ -58,10 +58,6 @@ export const AnalyticsScreen: React.FC = () => {
     [defaultAccount]
   );
 
-  const currentPeriod = useMemo(() => {
-    return getPeriodForDate(todayStr, budgetStartDay);
-  }, [todayStr, budgetStartDay]);
-
   // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
   const [range, setRange] = useState<DualPeriodRange>(getInitialRange(settings, 'analytics'));
 
@@ -71,20 +67,12 @@ export const AnalyticsScreen: React.FC = () => {
   };
 
   // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Majetek)
-  const periods = useMemo(() => {
-    return resolveDualPeriodRange(
-      range,
-      currentPeriod,
-      {
-        accounts,
-        transactions,
-        corrections,
-        snapshots: marketValueSnapshots,
-      },
-      todayStr,
-      budgetStartDay
-    );
-  }, [range, currentPeriod, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
+  const currentPeriod = useMemo(() => getPeriodForDate(todayStr, budgetStartDay), [todayStr, budgetStartDay]);
+  const periods = useMemo(() => resolvePeriodRange(range, {
+    current: currentPeriod,
+    startDay: budgetStartDay,
+    data: { accounts, transactions, corrections, snapshots: marketValueSnapshots },
+  }).map(period => createBudgetPeriodInfo(period, todayStr)), [range, currentPeriod, accounts, transactions, corrections, marketValueSnapshots, todayStr, budgetStartDay]);
 
   // Forecast musí pokrývat celý vybraný rozsah (stejně jako v sekci Majetek),
   // aby graf Příjmy/Výdaje/Skutečně uspořeno měl souhrny pro všechna období
@@ -96,18 +84,7 @@ export const AnalyticsScreen: React.FC = () => {
   }, [firstPeriodKey, lastPeriodKey, setOverviewPeriodBounds]);
   useEffect(() => () => setOverviewPeriodBounds?.(null), [setOverviewPeriodBounds]);
 
-  const dateRange = useMemo<AnalyticsDateRange>(() => {
-    const first = periods[0];
-    const last = periods[periods.length - 1];
-    return {
-      preset: range.preset === 'custom' || range.preset === 'ytd' || range.preset === 'all' ? range.preset : '12m',
-      startDate: first ? first.startDate : todayStr,
-      endDate: last ? last.analysisEndDate : todayStr,
-      fromPeriodKey: first ? first.key : '',
-      toPeriodKey: last ? last.key : '',
-      periods,
-    };
-  }, [periods, range.preset, todayStr]);
+  const dateRange = useMemo(() => toAnalyticsDateRange(periods, todayStr), [periods, todayStr]);
 
   // Filtrované transakce
   const filteredTxs = useMemo(() => {

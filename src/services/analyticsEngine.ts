@@ -12,21 +12,17 @@ import {
   CZECH_MONTHS,
   CZECH_MONTHS_SHORT,
   createBudgetPeriod,
-  getPeriodForDate,
   getPreviousPeriod,
   getNextPeriod,
   formatCzechDate,
   getTodayInPrague,
   isDateInPeriod,
-  getOverviewPeriods,
-  generatePeriodsBetween,
+  normalizeStartDay,
 } from './periodService';
 import { sortAccountsByOrder } from './accountService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { getAccountBalanceAtDate } from './accountBalance';
 import { getAccountPeriodSummary } from './accountSummaryService';
-
-export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
 
 export interface BudgetPeriodInfo {
   period: BudgetPeriod;
@@ -43,7 +39,6 @@ export interface BudgetPeriodInfo {
 }
 
 export interface AnalyticsDateRange {
-  preset: AnalyticsPeriodPreset;
   startDate: string;      // YYYY-MM-DD
   endDate: string;        // YYYY-MM-DD (až do todayStr u probíhajícího)
   fromPeriodKey: string;  // YYYY-MM
@@ -155,45 +150,6 @@ export function addDaysToDateString(dateStr: string, daysToAdd: number): string 
 }
 
 /**
- * Zjistí datum nejstaršího relevantního historického záznamu v aplikaci.
- */
-export function getEarliestActivityDate(
-  accounts: Account[] = [],
-  transactions: Transaction[] = [],
-  corrections: BalanceCorrection[] = [],
-  snapshots: MarketValueSnapshot[] = [],
-  todayStr: string = getTodayInPrague()
-): string {
-  let earliest = todayStr;
-
-  for (const a of accounts) {
-    if (a.initialBalanceDate && a.initialBalanceDate < earliest) {
-      earliest = a.initialBalanceDate;
-    }
-  }
-
-  for (const t of transactions) {
-    if (t.status === 'executed' && t.date && t.date < earliest) {
-      earliest = t.date;
-    }
-  }
-
-  for (const c of corrections) {
-    if (c.checkDate && c.checkDate < earliest) {
-      earliest = c.checkDate;
-    }
-  }
-
-  for (const s of snapshots) {
-    if (s.date && s.date < earliest) {
-      earliest = s.date;
-    }
-  }
-
-  return earliest;
-}
-
-/**
  * Vytvoří objekt BudgetPeriodInfo pro danou rozpočtovou periodu.
  */
 export function createBudgetPeriodInfo(
@@ -248,215 +204,19 @@ export function generateBudgetPeriodSequence(
 }
 
 /**
- * Vypočítá přesný rozsah rozpočtových period na základě nastavení startovního dne
- * a zvolené rychlé volby nebo vlastního výběru Od–Do.
+ * Rozsah dat pro analytické výpočty z vybraných období: od začátku prvního období po konec
+ * analýzy posledního (u probíhajícího období dnešek).
  */
-export function resolveAnalyticsDateRange(
-  preset: AnalyticsPeriodPreset,
-  customFrom?: string, // klíč YYYY-MM
-  customTo?: string,   // klíč YYYY-MM
-  allData?: {
-    accounts: Account[];
-    transactions: Transaction[];
-    corrections: BalanceCorrection[];
-    snapshots: MarketValueSnapshot[];
-  },
-  todayStr: string = getTodayInPrague(),
-  startDay: number = 15
-): { range: AnalyticsDateRange; error?: string } {
-  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
-  const currentPeriod = getPeriodForDate(todayStr, safeStartDay);
-
-  if (preset === 'custom') {
-    if (!customFrom || !customTo) {
-      return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
-        error: 'Vyberte prosím počáteční i koncový měsíc.',
-      };
-    }
-
-    if (customFrom > customTo) {
-      return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
-        error: 'Počáteční měsíc nesmí být pozdější než koncový měsíc.',
-      };
-    }
-
-    if (customTo > currentPeriod.key) {
-      return {
-        range: resolveAnalyticsDateRange('12m', undefined, undefined, allData, todayStr, safeStartDay).range,
-        error: 'Koncové rozpočtové období nesmí být v budoucnosti.',
-      };
-    }
-
-    const [fromY, fromM] = customFrom.split('-').map(Number);
-    const [toY, toM] = customTo.split('-').map(Number);
-    const startPeriod = createBudgetPeriod(fromY, fromM, safeStartDay);
-    const endPeriod = createBudgetPeriod(toY, toM, safeStartDay);
-
-    const periods = generateBudgetPeriodSequence(startPeriod, endPeriod, safeStartDay, todayStr);
-    const lastInfo = periods[periods.length - 1];
-
-    return {
-      range: {
-        preset: 'custom',
-        startDate: startPeriod.startDate,
-        endDate: lastInfo ? lastInfo.analysisEndDate : endPeriod.endDate,
-        fromPeriodKey: customFrom,
-        toPeriodKey: customTo,
-        periods,
-      },
-    };
-  }
-
-  if (preset === '3m') {
-    let p = currentPeriod;
-    for (let i = 0; i < 2; i++) {
-      p = getPreviousPeriod(p, safeStartDay);
-    }
-    const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
-    const lastInfo = periods[periods.length - 1];
-
-    return {
-      range: {
-        preset: '3m',
-        startDate: p.startDate,
-        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
-        fromPeriodKey: p.key,
-        toPeriodKey: currentPeriod.key,
-        periods,
-      },
-    };
-  }
-
-  if (preset === '6m') {
-    let p = currentPeriod;
-    for (let i = 0; i < 5; i++) {
-      p = getPreviousPeriod(p, safeStartDay);
-    }
-    const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
-    const lastInfo = periods[periods.length - 1];
-
-    return {
-      range: {
-        preset: '6m',
-        startDate: p.startDate,
-        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
-        fromPeriodKey: p.key,
-        toPeriodKey: currentPeriod.key,
-        periods,
-      },
-    };
-  }
-
-  if (preset === 'ytd') {
-    // Začíná prvním rozpočtovým obdobím označeným aktuálním rokem (Leden [currentPeriod.year])
-    // a končí aktuálním rozpočtovým obdobím k aktuálnímu dni
-    const curYear = currentPeriod.year;
-    const startPeriod = createBudgetPeriod(curYear, 1, safeStartDay);
-    const periods = generateBudgetPeriodSequence(startPeriod, currentPeriod, safeStartDay, todayStr);
-    const lastInfo = periods[periods.length - 1];
-
-    return {
-      range: {
-        preset: 'ytd',
-        startDate: startPeriod.startDate,
-        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
-        fromPeriodKey: startPeriod.key,
-        toPeriodKey: currentPeriod.key,
-        periods,
-      },
-    };
-  }
-
-  if (preset === 'all') {
-    const earliestDate = getEarliestActivityDate(
-      allData?.accounts || [],
-      allData?.transactions || [],
-      allData?.corrections || [],
-      allData?.snapshots || [],
-      todayStr
-    );
-    const startPeriod = getPeriodForDate(earliestDate, safeStartDay);
-    const periods = generateBudgetPeriodSequence(startPeriod, currentPeriod, safeStartDay, todayStr);
-    const lastInfo = periods[periods.length - 1];
-
-    return {
-      range: {
-        preset: 'all',
-        startDate: startPeriod.startDate,
-        endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
-        fromPeriodKey: startPeriod.key,
-        toPeriodKey: currentPeriod.key,
-        periods,
-      },
-    };
-  }
-
-  // Výchozí: 12 měsíců (rozpočtových period)
-  let p = currentPeriod;
-  for (let i = 0; i < 11; i++) {
-    p = getPreviousPeriod(p, safeStartDay);
-  }
-  const periods = generateBudgetPeriodSequence(p, currentPeriod, safeStartDay, todayStr);
-  const lastInfo = periods[periods.length - 1];
-
+export function toAnalyticsDateRange(periods: BudgetPeriodInfo[], todayStr: string = getTodayInPrague()): AnalyticsDateRange {
+  const first = periods[0];
+  const last = periods[periods.length - 1];
   return {
-    range: {
-      preset: '12m',
-      startDate: p.startDate,
-      endDate: lastInfo ? lastInfo.analysisEndDate : todayStr,
-      fromPeriodKey: p.key,
-      toPeriodKey: currentPeriod.key,
-      periods,
-    },
+    startDate: first ? first.startDate : todayStr,
+    endDate: last ? last.analysisEndDate : todayStr,
+    fromPeriodKey: first ? first.key : '',
+    toPeriodKey: last ? last.key : '',
+    periods,
   };
-}
-
-/**
- * Stav duálního filtru Budoucnost/Historie sdíleného mezi sekcemi Přehled a Analýza & trendy.
- */
-export type DualPeriodRange = {
-  direction: 'future' | 'past';
-  months?: 3 | 6 | 12 | 18 | 24;
-  preset?: 'ytd' | 'all' | 'custom';
-  from?: string; // klíč YYYY-MM
-  to?: string;   // klíč YYYY-MM
-};
-
-/**
- * Vyhodnotí sekvenci rozpočtových period pro duální filtr Budoucnost/Historie.
- */
-export function resolveDualPeriodRange(
-  range: DualPeriodRange,
-  current: BudgetPeriod,
-  allData: {
-    accounts: Account[];
-    transactions: Transaction[];
-    corrections: BalanceCorrection[];
-    snapshots: MarketValueSnapshot[];
-  },
-  todayStr: string = getTodayInPrague(),
-  startDay: number = 15
-): BudgetPeriodInfo[] {
-  let rawPeriods: BudgetPeriod[];
-
-  if (range.preset === 'custom' && range.from && range.to) {
-    const [fromY, fromM] = range.from.split('-').map(Number);
-    const [toY, toM] = range.to.split('-').map(Number);
-    rawPeriods = generatePeriodsBetween(
-      createBudgetPeriod(fromY, fromM, startDay),
-      createBudgetPeriod(toY, toM, startDay),
-      startDay
-    );
-  } else if (range.preset) {
-    rawPeriods = resolveAnalyticsDateRange(range.preset, undefined, undefined, allData, todayStr, startDay)
-      .range.periods.map((info) => info.period);
-  } else {
-    rawPeriods = getOverviewPeriods(current, { direction: range.direction, months: range.months || 12 }, startDay);
-  }
-
-  return rawPeriods.map((p) => createBudgetPeriodInfo(p, todayStr));
 }
 
 /**
@@ -669,7 +429,7 @@ export function calculateExpenseMoMTrend(
   todayStr: string = getTodayInPrague(),
   startDay: number = 15
 ): ExpenseTrendItem[] {
-  const safeStartDay = Math.max(1, Math.min(31, Math.round(startDay || 15)));
+  const safeStartDay = normalizeStartDay(startDay);
   const result: ExpenseTrendItem[] = [];
 
   const getExpensesInDateRange = (sDate: string, eDate: string): number => {
