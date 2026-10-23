@@ -3,13 +3,17 @@ import { createEmptyAppData } from '../constants/defaultData';
 import { AppData } from '../services/storageService';
 import {
   addRecurringRule,
+  addTransaction,
+  autoExecute,
   createCommandContext,
   deleteRecurringRule,
   deleteTransaction,
   parseVirtualId,
+  reorderDayTransactions,
   restoreDeletedTransaction,
   setTransactionStatus,
   updateRecurringRule,
+  updateTransaction,
 } from '../services/transactionCommands';
 import { Account, BalanceCorrection, RecurringRule, Transaction } from '../types/finance';
 
@@ -233,5 +237,122 @@ describe('deleteRecurringRule', () => {
     expect(after.recurringExceptions).toEqual([]);
     expect(after.transactions.map(t => t.id)).toEqual(['occ_2026-08-20']);
     expect(outcome).toEqual({ ruleTitle: 'Nájem' });
+  });
+});
+
+const lateAccount: Account = { ...account, id: 'late', name: 'Pozdní', initialBalanceDate: '2026-10-01' };
+
+describe('addTransaction', () => {
+  const input = (partial: Partial<Transaction> = {}) => {
+    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = tx({ title: 'Nákup', status: undefined, sequence: undefined, ...partial });
+    return rest;
+  };
+
+  it('bez pořadí jde na konec dne, budoucí položka je plánovaná bez skutečné částky', () => {
+    const data = dataWith({ transactions: [tx({ id: 'a', sequence: 1 })] });
+    const { data: after, outcome } = addTransaction(data, input({ actualAmountInHaler: 1000 }), ctx);
+
+    expect(outcome).toMatchObject({ sequence: 2, transaction: { status: 'planned', actualAmountInHaler: undefined, createdAt: ctx.nowIso } });
+    const added = 'transaction' in outcome ? outcome.transaction : undefined;
+    expect(added?.id).toMatch(/^tx_/);
+    expect(after.transactions.map(t => [t.id, t.sequence])).toEqual([['a', 1], [added!.id, 2]]);
+  });
+
+  it('položka k dnešku je provedená a nese plánovanou částku jako skutečnou', () => {
+    const { outcome } = addTransaction(dataWith({}), input({ date: '2026-09-13', plannedAmountInHaler: 700 }), ctx);
+    expect(outcome).toMatchObject({ transaction: { status: 'executed', actualAmountInHaler: 700 } });
+  });
+
+  it('zadané pořadí vloží položku na dané místo a posune ostatní', () => {
+    const data = dataWith({ transactions: [tx({ id: 'a', sequence: 1 })] });
+    const { data: after } = addTransaction(data, input({ sequence: 1 }), ctx);
+    expect(after.transactions.find(t => t.id === 'a')!.sequence).toBe(2);
+  });
+
+  it('účet aktivní až později: chyba a data beze změny (zdroj i cíl převodu)', () => {
+    const data = dataWith({ accounts: [account, lateAccount] });
+    const error = 'Tento účet je aktivní až od 1. 10. 2026. Zvolte stejné nebo pozdější datum.';
+
+    const fromSource = addTransaction(data, input({ sourceAccountId: 'late' }), ctx);
+    expect(fromSource.data).toBe(data);
+    expect(fromSource.outcome).toEqual({ error });
+
+    const toTarget = addTransaction(data, input({ type: 'transfer', targetAccountId: 'late' }), ctx);
+    expect(toTarget.outcome).toEqual({ error });
+  });
+});
+
+describe('updateTransaction', () => {
+  it('změna data bez jiného pořadí: položka jde na konec nového dne, původní den se přečísluje', () => {
+    const data = dataWith({
+      transactions: [
+        tx({ id: 'a', date: '2026-09-20', sequence: 1 }),
+        tx({ id: 'b', date: '2026-09-20', sequence: 2 }),
+        tx({ id: 'c', date: '2026-09-21', sequence: 1 }),
+      ],
+    });
+    const { data: after, outcome } = updateTransaction(data, { ...data.transactions[0], date: '2026-09-21', title: 'Nová' }, ctx);
+
+    const byId = (id: string) => after.transactions.find(t => t.id === id)!;
+    expect(byId('a')).toMatchObject({ date: '2026-09-21', sequence: 2, title: 'Nová', updatedAt: ctx.nowIso });
+    expect(byId('b').sequence).toBe(1);
+    expect(outcome).toEqual({ title: 'Nová' });
+  });
+
+  it('virtuální výskyt se zhmotní a výjimka jeho období zmizí', () => {
+    const data = dataWith({
+      recurringRules: [rule],
+      recurringExceptions: [{ id: 'ex', ruleId: rule.id, periodKey: '2026-09', overrideAmountInHaler: 1, createdAt: '' }],
+    });
+    const virtual = occurrence('2026-09-20', { id: 'virtual_rule_rent_2026-09', sequence: 0, amountInHaler: 1600000 });
+    const { data: after, outcome } = updateTransaction(data, virtual, ctx);
+
+    expect(after.recurringExceptions).toEqual([]);
+    expect(after.transactions).toEqual([expect.objectContaining({ recurringRuleId: rule.id, amountInHaler: 1600000, sequence: 1, createdAt: ctx.nowIso })]);
+    expect(after.transactions[0].id).toMatch(/^tx_real_/);
+    expect(outcome).toEqual({ title: 'Nájem' });
+  });
+
+  it('aktivitu účtu kontroluje proti aktuálním datům', () => {
+    const data = dataWith({ accounts: [account, lateAccount], transactions: [tx({ id: 'a' })] });
+    const result = updateTransaction(data, { ...data.transactions[0], sourceAccountId: 'late' }, ctx);
+    expect(result.data).toBe(data);
+    expect(result.outcome).toEqual({ error: 'Tento účet je aktivní až od 1. 10. 2026. Zvolte stejné nebo pozdější datum.' });
+  });
+});
+
+describe('reorderDayTransactions', () => {
+  it('přečísluje reálné položky dne a pozici virtuálního výskytu uloží do výjimky období', () => {
+    const data = dataWith({
+      recurringRules: [rule],
+      transactions: [tx({ id: 'a', sequence: 1 }), tx({ id: 'b', sequence: 2 })],
+    });
+    const { data: after } = reorderDayTransactions(data, { date: '2026-09-20', orderedIds: ['b', 'virtual_rule_rent_2026-09', 'a'] }, ctx);
+
+    expect(after.transactions.find(t => t.id === 'b')!.sequence).toBe(1);
+    expect(after.transactions.find(t => t.id === 'a')!.sequence).toBeGreaterThan(1);
+    expect(after.recurringExceptions).toEqual([
+      expect.objectContaining({ ruleId: rule.id, periodKey: '2026-09', overrideSequence: 2, updatedAt: ctx.nowIso }),
+    ]);
+  });
+
+  it('bez virtuálních výskytů nechá výjimky beze změny', () => {
+    const data = dataWith({ transactions: [tx({ id: 'a', sequence: 1 }), tx({ id: 'b', sequence: 2 })] });
+    const { data: after } = reorderDayTransactions(data, { date: '2026-09-20', orderedIds: ['b', 'a'] }, ctx);
+    expect(after.recurringExceptions).toBe(data.recurringExceptions);
+  });
+});
+
+describe('autoExecute', () => {
+  it('splatnou plánovanou položku k ctx.todayStr provede', () => {
+    const data = dataWith({ transactions: [tx({ id: 'due', date: '2026-09-13' }), tx({ id: 'later', date: '2026-09-14' })] });
+    const { data: after, outcome } = autoExecute(data, ctx);
+    expect(after.transactions.map(t => [t.id, t.status])).toEqual([['due', 'executed'], ['later', 'planned']]);
+    expect(outcome.executedCount).toBe(1);
+  });
+
+  it('bez splatných položek vrací původní data', () => {
+    const data = dataWith({ transactions: [tx({ id: 'later', date: '2026-09-14' })] });
+    expect(autoExecute(data, ctx).data).toBe(data);
   });
 });

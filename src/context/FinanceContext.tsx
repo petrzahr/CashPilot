@@ -50,30 +50,26 @@ import {
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
-import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { formatCurrency } from '../services/currencyService';
 import type { GoogleUser } from '../services/googleDriveService';
 
 
 import {
-  getNextSequenceForDate,
-  insertOrUpdateWithSequence,
-  reorderDayTransactions as reorderDayTxsService,
-} from '../services/sequenceService';
-import {
   CommandResult,
   RecurringMode,
   StatusUpdates,
   createCommandContext,
-  parseVirtualId,
-  withSequenceExceptions,
   addRecurringRule as addRecurringRuleCommand,
+  addTransaction as addTransactionCommand,
+  autoExecute as autoExecuteCommand,
   deleteRecurringRule as deleteRecurringRuleCommand,
   deleteTransaction as deleteTransactionCommand,
+  reorderDayTransactions as reorderDayTransactionsCommand,
   reorderRecurringItem as reorderRecurringItemCommand,
   restoreDeletedTransaction as restoreDeletedTransactionCommand,
   setTransactionStatus as setTransactionStatusCommand,
   updateRecurringRule as updateRecurringRuleCommand,
+  updateTransaction as updateTransactionCommand,
 } from '../services/transactionCommands';
 import {
   addAccount as addAccountCommand,
@@ -323,26 +319,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     sessionChange(action);
   }, [sessionChange]);
 
+  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
+  // updater synchronně; bez načtených dat (před první synchronizací) vrací undefined.
+  const runCommand = useCallback(<O,>(command: (prev: AppData) => CommandResult<O>): O | undefined => {
+    let outcome: O | undefined;
+    setData(prev => {
+      const result = command(prev);
+      outcome = result.outcome;
+      return result.data;
+    });
+    return outcome;
+  }, [setData]);
+
   const [todayStr, setTodayStr] = useState<string>(() => getTodayInPrague());
 
   const runAutoExecute = useCallback((customToday?: string) => {
     const currentToday = customToday || getTodayInPrague();
     setTodayStr(currentToday);
-    setData(prev => {
-      const { transactions, hasChanges } = autoExecuteDueTransactions(
-        prev.transactions,
-        prev.recurringRules,
-        prev.recurringExceptions,
-        prev.settings.budgetStartDay,
-        currentToday
-      );
-      if (!hasChanges) return prev;
-      return {
-        ...prev,
-        transactions,
-      };
-    });
-  }, []);
+    runCommand(prev => autoExecuteCommand(prev, createCommandContext(currentToday)));
+  }, [runCommand]);
 
   // 1. Spuštění při startu
   useEffect(() => {
@@ -541,158 +536,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- TRANSAKCE & POŘADÍ -------------------
 
   const addTransaction = useCallback((txData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const srcAcc = data.accounts.find(a => a.id === txData.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && txData.date < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
+    const outcome = runCommand(prev => addTransactionCommand(prev, txData, createCommandContext(todayStr)));
+    if (!outcome) throw new Error('Položku se nepodařilo uložit. Zkuste to prosím znovu.');
+    if ('error' in outcome) {
+      showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
-    if (txData.type === 'transfer' && txData.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === txData.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && txData.date < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
-    }
-
-    const nowIso = new Date().toISOString();
-    let assignedSeq = txData.sequence;
-    if (!assignedSeq || assignedSeq <= 0) {
-      assignedSeq = getNextSequenceForDate(txData.date, data.transactions);
-    }
-
-    const autoStatus = txData.status || getStatusForDate(txData.date);
-    const actualAmountInHaler = autoStatus === 'executed'
-      ? (txData.actualAmountInHaler !== undefined ? txData.actualAmountInHaler : (txData.plannedAmountInHaler ?? txData.amountInHaler))
-      : undefined;
-
-    const newTx: Transaction = {
-      ...txData,
-      sequence: assignedSeq,
-      status: autoStatus,
-      actualAmountInHaler,
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-
-    setData(prev => {
-      const updatedTxs = insertOrUpdateWithSequence(newTx, assignedSeq, prev.transactions);
-      return {
-        ...prev,
-        transactions: updatedTxs,
-      };
-    });
-
-    showToast(`Položka „${newTx.title}“ byla přidána jako ${assignedSeq}. v pořadí dne.`);
-    return newTx;
-  }, [data.transactions, data.accounts, showToast]);
+    showToast(`Položka „${outcome.transaction.title}“ byla přidána jako ${outcome.sequence}. v pořadí dne.`);
+    return outcome.transaction;
+  }, [runCommand, todayStr, showToast]);
 
   const updateTransaction = useCallback((updatedTx: Transaction) => {
-    const srcAcc = data.accounts.find(a => a.id === updatedTx.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && updatedTx.date < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
+    const outcome = runCommand(prev => updateTransactionCommand(prev, updatedTx, createCommandContext(todayStr)));
+    if (!outcome) return;
+    if ('error' in outcome) {
+      showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
-    if (updatedTx.type === 'transfer' && updatedTx.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === updatedTx.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && updatedTx.date < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
-    }
-
-    setData(prev => {
-      if (updatedTx.id.startsWith('virtual_')) {
-        const withoutPrefix = updatedTx.id.slice('virtual_'.length);
-        const lastUnderscore = withoutPrefix.lastIndexOf('_');
-        const ruleId = lastUnderscore !== -1 ? withoutPrefix.slice(0, lastUnderscore) : updatedTx.recurringRuleId;
-        const periodKey = lastUnderscore !== -1 ? withoutPrefix.slice(lastUnderscore + 1) : '';
-        const assignedSeq = updatedTx.sequence || getNextSequenceForDate(updatedTx.date, prev.transactions);
-        const nowIso = new Date().toISOString();
-        const realTx: Transaction = {
-          ...updatedTx,
-          id: `tx_real_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          recurringRuleId: ruleId || updatedTx.recurringRuleId,
-          sequence: assignedSeq,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-        const cleanExceptions = prev.recurringExceptions.filter(
-          e => !(e.ruleId === ruleId && e.periodKey === periodKey)
-        );
-        return {
-          ...prev,
-          recurringExceptions: cleanExceptions,
-          transactions: insertOrUpdateWithSequence(realTx, assignedSeq, prev.transactions)
-        };
-      }
-
-      const oldTx = prev.transactions.find(t => t.id === updatedTx.id);
-      const oldDate = oldTx?.date;
-      let targetSeq = updatedTx.sequence;
-
-      // Pokud se změnilo datum položky a uživatel explicitně nezadal jiné pořadí
-      if (oldTx && oldTx.date !== updatedTx.date && (!updatedTx.sequence || updatedTx.sequence === oldTx.sequence)) {
-        targetSeq = getNextSequenceForDate(updatedTx.date, prev.transactions.filter(t => t.id !== updatedTx.id));
-      }
-
-      const txWithUpdatedTime = {
-        ...updatedTx,
-        sequence: targetSeq,
-        updatedAt: new Date().toISOString()
-      };
-
-      const newTxs = insertOrUpdateWithSequence(txWithUpdatedTime, targetSeq, prev.transactions, oldDate);
-      return {
-        ...prev,
-        transactions: newTxs
-      };
-    });
-    showToast(`Položka „${updatedTx.title}“ byla upravena.`);
-  }, [data.accounts, showToast]);
+    showToast(`Položka „${outcome.title}“ byla upravena.`);
+  }, [runCommand, todayStr, showToast]);
 
   const reorderDayTransactions = useCallback((date: string, orderedIds: string[]) => {
-    setData(prev => {
-      const updated = reorderDayTxsService(date, orderedIds, prev.transactions);
-      // Virtuální (ještě nezhmotněné) opakované výskyty v pořadí si pamatují pozici přes
-      // výjimku periody, jinak by se při dalším výpočtu vždy vrátily na konec dne.
-      const virtualPositions = new Map<string, number>();
-      orderedIds.forEach((id, idx) => {
-        const ruleId = parseVirtualId(id)?.ruleId;
-        if (ruleId && prev.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
-      });
-      const recurringExceptions = virtualPositions.size > 0
-        ? withSequenceExceptions(
-            prev.recurringExceptions,
-            virtualPositions,
-            getPeriodForDate(date, prev.settings.budgetStartDay).key,
-            new Date().toISOString()
-          )
-        : prev.recurringExceptions;
-      return {
-        ...prev,
-        transactions: updated,
-        recurringExceptions,
-      };
-    });
+    const outcome = runCommand(prev => reorderDayTransactionsCommand(prev, { date, orderedIds }, createCommandContext(todayStr)));
+    if (outcome === undefined) return;
     showToast('Pořadí položek bylo uloženo.');
-  }, [showToast]);
-
-  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
-  // updater synchronně; bez načtených dat (před první synchronizací) vrací undefined.
-  const runCommand = useCallback(<O,>(command: (prev: AppData) => CommandResult<O>): O | undefined => {
-    let outcome: O | undefined;
-    setData(prev => {
-      const result = command(prev);
-      outcome = result.outcome;
-      return result.data;
-    });
-    return outcome;
-  }, [setData]);
+  }, [runCommand, todayStr, showToast]);
 
   // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni.
   const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {

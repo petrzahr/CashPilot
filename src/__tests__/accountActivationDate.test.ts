@@ -6,6 +6,8 @@ import {
   createBudgetPeriod,
   formatCzechDate,
 } from '../services/periodService';
+import { addTransaction, createCommandContext } from '../services/transactionCommands';
+import { createEmptyAppData } from '../constants/defaultData';
 
 // Stav účtu k datu včetně plánovaných položek (stejně jako při korekci)
 const balanceAt = (accountId: string, date: string, beforeSequence: number, transactions: Transaction[], _corrections: unknown[], accounts: Account[]): number => {
@@ -280,23 +282,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateTransaction = (tx: Partial<Transaction>, accounts: Account[]) => {
-      const srcAcc = accounts.find(a => a.id === tx.sourceAccountId);
-      if (srcAcc?.initialBalanceDate && tx.date! < srcAcc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      if (tx.type === 'transfer' && tx.targetAccountId) {
-        const tgtAcc = accounts.find(a => a.id === tx.targetAccountId);
-        if (tgtAcc?.initialBalanceDate && tx.date! < tgtAcc.initialBalanceDate) {
-          return {
-            valid: false,
-            error: `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-          };
-        }
-      }
-      return { valid: true };
+      const { outcome } = addTransaction(
+        { ...createEmptyAppData(), accounts },
+        { amountInHaler: 1000, ...tx } as Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
+        createCommandContext('2026-03-01')
+      );
+      return 'error' in outcome ? { valid: false, error: outcome.error } : { valid: true };
     };
 
     // Scénář 6: Příjem před aktivací

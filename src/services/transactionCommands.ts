@@ -2,14 +2,14 @@ import { BalanceCorrection, RecurringException, RecurringRule, Transaction, Tran
 import type { AppData } from './storageService';
 import { generateOccurrenceForPeriod } from './financialEngine';
 import { createBudgetPeriod, formatCzechDate, getDaysInMonth, getPeriodForDate, getPreviousDay } from './periodService';
-import { getStatusForDate } from './statusService';
+import { autoExecuteDueTransactions, getStatusForDate } from './statusService';
 import {
   applyRulePositions,
   deleteTransactionAndReorder,
   deleteTransactionsAndReorder,
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
-  reorderDayTransactions,
+  reorderDayTransactions as reorderDaySequence,
 } from './sequenceService';
 
 /**
@@ -382,6 +382,157 @@ export function restoreDeletedTransaction(
   };
 }
 
+/** Chybová hláška, když zdrojový nebo (u převodu) cílový účet k datu položky ještě není aktivní. */
+function inactiveAccountError(
+  data: AppData,
+  tx: Pick<Transaction, 'date' | 'type' | 'sourceAccountId' | 'targetAccountId'>
+): string | undefined {
+  const inactiveFrom = (accountId?: string) => {
+    const acc = data.accounts.find(a => a.id === accountId);
+    return acc?.initialBalanceDate && tx.date < acc.initialBalanceDate ? acc.initialBalanceDate : undefined;
+  };
+  const inactiveDate = inactiveFrom(tx.sourceAccountId)
+    ?? (tx.type === 'transfer' && tx.targetAccountId ? inactiveFrom(tx.targetAccountId) : undefined);
+  return inactiveDate
+    ? `Tento účet je aktivní až od ${formatCzechDate(inactiveDate)}. Zvolte stejné nebo pozdější datum.`
+    : undefined;
+}
+
+/**
+ * Přidá běžnou položku. Bez zadaného pořadí dostane místo na konci dne; bez stavu
+ * se stav určí podle data. Provedená položka nese skutečnou částku.
+ */
+export function addTransaction(
+  data: AppData,
+  txData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
+  ctx: CommandContext
+): CommandResult<{ transaction: Transaction; sequence: number } | { error: string }> {
+  const error = inactiveAccountError(data, txData);
+  if (error) return { data, outcome: { error } };
+
+  const sequence = txData.sequence && txData.sequence > 0
+    ? txData.sequence
+    : getNextSequenceForDate(txData.date, data.transactions);
+  const status = txData.status || getStatusForDate(txData.date, ctx.todayStr);
+  const actualAmountInHaler = status === 'executed'
+    ? (txData.actualAmountInHaler !== undefined ? txData.actualAmountInHaler : (txData.plannedAmountInHaler ?? txData.amountInHaler))
+    : undefined;
+
+  const transaction: Transaction = {
+    ...txData,
+    sequence,
+    status,
+    actualAmountInHaler,
+    id: ctx.newId('tx'),
+    createdAt: ctx.nowIso,
+    updatedAt: ctx.nowIso,
+  };
+
+  return {
+    data: { ...data, transactions: insertOrUpdateWithSequence(transaction, sequence, data.transactions) },
+    outcome: { transaction, sequence },
+  };
+}
+
+/**
+ * Upraví položku. Virtuální výskyt se zhmotní jako reálná položka a výjimka jeho období
+ * se odstraní. Při změně data bez jiného zadaného pořadí jde položka na konec nového dne.
+ */
+export function updateTransaction(
+  data: AppData,
+  updatedTx: Transaction,
+  ctx: CommandContext
+): CommandResult<{ title: string } | { error: string }> {
+  const error = inactiveAccountError(data, updatedTx);
+  if (error) return { data, outcome: { error } };
+
+  if (updatedTx.id.startsWith('virtual_')) {
+    const parsed = parseVirtualId(updatedTx.id);
+    const ruleId = parsed?.ruleId || updatedTx.recurringRuleId;
+    const periodKey = parsed?.periodKey ?? '';
+    const assignedSeq = updatedTx.sequence || getNextSequenceForDate(updatedTx.date, data.transactions);
+    const realTx: Transaction = {
+      ...updatedTx,
+      id: ctx.newId('tx_real'),
+      recurringRuleId: ruleId,
+      sequence: assignedSeq,
+      createdAt: ctx.nowIso,
+      updatedAt: ctx.nowIso,
+    };
+    return {
+      data: {
+        ...data,
+        recurringExceptions: data.recurringExceptions.filter(e => !(e.ruleId === ruleId && e.periodKey === periodKey)),
+        transactions: insertOrUpdateWithSequence(realTx, assignedSeq, data.transactions),
+      },
+      outcome: { title: updatedTx.title },
+    };
+  }
+
+  const oldTx = data.transactions.find(t => t.id === updatedTx.id);
+  let targetSeq = updatedTx.sequence;
+  if (oldTx && oldTx.date !== updatedTx.date && (!updatedTx.sequence || updatedTx.sequence === oldTx.sequence)) {
+    targetSeq = getNextSequenceForDate(updatedTx.date, data.transactions.filter(t => t.id !== updatedTx.id));
+  }
+
+  return {
+    data: {
+      ...data,
+      transactions: insertOrUpdateWithSequence(
+        { ...updatedTx, sequence: targetSeq, updatedAt: ctx.nowIso },
+        targetSeq,
+        data.transactions,
+        oldTx?.date
+      ),
+    },
+    outcome: { title: updatedTx.title },
+  };
+}
+
+/**
+ * Uloží pořadí položek dne. Virtuální (ještě nezhmotněné) opakované výskyty si pozici
+ * pamatují přes výjimku periody, jinak by se při dalším výpočtu vrátily na konec dne.
+ */
+export function reorderDayTransactions(
+  data: AppData,
+  input: { date: string; orderedIds: string[] },
+  ctx: CommandContext
+): CommandResult<null> {
+  const { date, orderedIds } = input;
+  const virtualPositions = new Map<string, number>();
+  orderedIds.forEach((id, idx) => {
+    const ruleId = parseVirtualId(id)?.ruleId;
+    if (ruleId && data.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
+  });
+  return {
+    data: {
+      ...data,
+      transactions: reorderDaySequence(date, orderedIds, data.transactions),
+      recurringExceptions: virtualPositions.size > 0
+        ? withSequenceExceptions(
+            data.recurringExceptions,
+            virtualPositions,
+            getPeriodForDate(date, data.settings.budgetStartDay).key,
+            ctx.nowIso
+          )
+        : data.recurringExceptions,
+    },
+    outcome: null,
+  };
+}
+
+/** Označí splatné plánované položky a výskyty k ctx.todayStr jako provedené. */
+export function autoExecute(data: AppData, ctx: CommandContext): CommandResult<{ executedCount: number }> {
+  const { transactions, hasChanges, executedCount } = autoExecuteDueTransactions(
+    data.transactions,
+    data.recurringRules,
+    data.recurringExceptions,
+    data.settings.budgetStartDay,
+    ctx.todayStr
+  );
+  return { data: hasChanges ? { ...data, transactions } : data, outcome: { executedCount } };
+}
+
 export interface StatusUpdates {
   actualAmountInHaler?: number;
   date?: string;
@@ -750,7 +901,7 @@ export function reorderRecurringItem(
 
   // Zhmotněné (reálné) transakce toho dne se přeuspořádají i fyzicky - hinty ovlivňují
   // jen generování virtuálních výskytů.
-  const reorderRealToday = (txs: Transaction[]) => reorderDayTransactions(date, orderedIds, txs);
+  const reorderRealToday = (txs: Transaction[]) => reorderDaySequence(date, orderedIds, txs);
 
   if (mode === 'occurrence') {
     return {
