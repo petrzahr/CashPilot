@@ -8,7 +8,7 @@ interface PeriodRangeSelectorProps {
   onSubmit: (event: React.FormEvent) => void;
 }
 
-const inputClass = 'max-md:min-h-11 w-36 max-sm:w-full max-sm:min-w-0 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 tabular-nums focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer';
+const inputClass = 'max-md:min-h-11 w-36 max-sm:w-full max-sm:min-w-0 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-900 tabular-nums focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer';
 
 export const PeriodRangeSelector: React.FC<PeriodRangeSelectorProps> = ({ from, to, onFromChange, onToChange, onSubmit }) => (
   <form onSubmit={onSubmit} className="flex flex-wrap items-center max-sm:items-end gap-2 max-sm:w-full">

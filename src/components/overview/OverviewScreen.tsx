@@ -163,7 +163,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handlePeriodClick(p.period); }}
                         aria-label={`Přejít do rozpočtu: ${p.period.name}`}
-                        className="text-left rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 group-hover:text-sky-700"
+                        className="text-left rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40 group-hover:text-sky-700"
                       >
                         {p.period.name}
                       </button>
@@ -246,7 +246,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     type="button"
                     onClick={() => setExpandedPeriodKey(isExpanded ? null : p.period.key)}
                     aria-expanded={isExpanded}
-                    className="w-full text-left p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 select-none focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
+                    className="w-full text-left p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer hover:bg-slate-50 select-none focus:outline-hidden focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
                   >
                     <span className="flex items-center gap-3">
                       {isExpanded ? (
@@ -361,7 +361,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         onClick={() => handlePeriodClick(p.period)}
                         title={`Přejít do rozpočtu: ${p.period.name}`}
                         aria-label={`Přejít do rozpočtu: ${p.period.name}`}
-                        className="w-full py-2.5 px-3 text-right text-slate-500 font-bold hover:text-sky-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
+                        className="w-full py-2.5 px-3 text-right text-slate-500 font-bold hover:text-sky-700 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40"
                       >
                         {p.period.name.split(' ')[0]} '{p.period.year.toString().slice(-2)}
                       </button>

@@ -41,7 +41,7 @@ export const LoginScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-canvas flex flex-col justify-center items-center p-4 sm:p-6 select-none">
       {/* Minimální vstup: kdo jsem, jedna akce, cesta pro ty, kdo přístup nemají */}
-      <div className="max-w-sm w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-7 sm:p-8 space-y-6">
+      <div className="max-w-sm w-full bg-white rounded-2xl border border-slate-200 shadow-xs p-7 sm:p-8 space-y-6">
 
         {/* Logo a hlavička */}
         <div className="text-center space-y-3">
@@ -75,7 +75,7 @@ export const LoginScreen: React.FC = () => {
             type="button"
             onClick={connectGoogleDrive}
             disabled={isSyncing}
-            className="w-full min-h-12 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-300 shadow-sm hover:border-sky-300 transition-colors active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+            className="w-full min-h-12 flex items-center justify-center gap-3 px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-900 font-bold border border-slate-300 shadow-xs hover:border-sky-300 transition-colors active:scale-[0.99] cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed text-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40"
           >
             {isSyncing ? (
               <>
@@ -101,7 +101,7 @@ export const LoginScreen: React.FC = () => {
               href={buildGmailComposeUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="min-h-11 md:min-h-8 inline-flex items-center gap-1.5 px-2 rounded-lg font-semibold text-sky-700 hover:bg-sky-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+              className="min-h-11 md:min-h-8 inline-flex items-center gap-1.5 px-2 rounded-lg font-semibold text-sky-700 hover:bg-sky-50 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40"
             >
               <Mail className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span>Požádat o přístup přes Gmail</span>
@@ -116,7 +116,7 @@ export const LoginScreen: React.FC = () => {
                 type="button"
                 onClick={handleCopyEmail}
                 title={`Zkopírovat adresu ${ACCESS_REQUEST_EMAIL}`}
-                className="min-h-11 md:min-h-8 inline-flex items-center px-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 underline underline-offset-2 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+                className="min-h-11 md:min-h-8 inline-flex items-center px-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50 underline underline-offset-2 transition-colors cursor-pointer focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40"
               >
                 Zkopírovat kontaktní e-mail
               </button>

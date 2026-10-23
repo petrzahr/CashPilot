@@ -143,7 +143,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             value={name}
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
             {...fieldErrorProps(`${fieldId}-1`, nameError)}
-            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(nameError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
+            className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(nameError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
           />
           <FieldError inputId={`${fieldId}-1`} message={nameError} />
         </div>
@@ -156,7 +156,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             <select id={`${fieldId}-2`}
               value={type}
               onChange={(e) => handleTypeChange(e.target.value as AccountType)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             >
               <option value="checking">Běžný účet</option>
               <option value="cash">Hotovost</option>
@@ -176,7 +176,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               placeholder="např. Česká spořitelna, Air Bank"
               value={institution}
               onChange={(e) => setInstitution(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
           </div>
         </div>
@@ -194,7 +194,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 placeholder="0"
                 value={balanceStr}
                 onChange={(e) => setBalanceStr(e.target.value)}
-                className="w-full pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
+                className="w-full pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
               />
               <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
             </div>
@@ -209,7 +209,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               required
               value={initialBalanceDate}
               onChange={(e) => setInitialBalanceDate(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
           </div>
         </div>
@@ -221,7 +221,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               type="checkbox"
               checked={isDefault}
               onChange={(e) => setIsDefault(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
               Výchozí účet <span className="font-normal text-slate-500">– předvyplní se u nových položek a počítá se z něj souhrn rozpočtu</span>
@@ -232,7 +232,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               type="checkbox"
               checked={isUsableCash}
               onChange={(e) => setIsUsableCash(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
               Započítat do použitelných peněz <span className="font-normal text-slate-500">– peníze k běžnému utrácení</span>
@@ -243,7 +243,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               type="checkbox"
               checked={isNetWorth}
               onChange={(e) => setIsNetWorth(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
             />
             <span className="text-sm font-medium text-slate-900">
               Započítat do celkového majetku

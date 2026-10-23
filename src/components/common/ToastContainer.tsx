@@ -57,7 +57,7 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: (id: string) => void 
         focusedRef.current = false;
         resume();
       }}
-      className={`pointer-events-auto flex items-center justify-between p-4 rounded-xl border shadow-lg backdrop-blur-sm transition-all duration-200 ${bgClass}`}
+      className={`pointer-events-auto flex items-center justify-between p-4 rounded-xl border shadow-lg backdrop-blur-xs transition-all duration-200 ${bgClass}`}
     >
       <div className="flex items-start gap-3 min-w-0">
         <span className="shrink-0 mt-0.5" aria-hidden="true">{icon}</span>

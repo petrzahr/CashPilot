@@ -112,7 +112,7 @@ export const DeleteTransactionModal: React.FC<DeleteTransactionModalProps> = ({
                     checked={deleteHistoricalExecuted}
                     onChange={(e) => setDeleteHistoricalExecuted(e.target.checked)}
                     disabled={isDeleting}
-                    className="rounded text-red-600 focus:ring-red-500"
+                    className="rounded-sm text-red-600 focus:ring-red-500"
                   />
                   <span>Smazat i uskutečněné položky</span>
                 </label>

@@ -97,7 +97,7 @@ export const Modal: React.FC<ModalProps> = ({
   const dialog = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
-        className="fixed inset-0 bg-scrim/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-scrim/40 backdrop-blur-xs transition-opacity"
         onClick={dismiss}
       />
       {/* Hlavička a patička stojí, posouvá se jen obsah; dialog se vždy vejde do viditelné výšky */}
@@ -109,7 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
         aria-describedby={subtitle ? subtitleId : undefined}
         tabIndex={-1}
         onKeyDown={handleTrapKeyDown}
-        className={`relative flex flex-col w-full ${maxWidth} max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-2xl bg-white text-left shadow-xl border border-slate-200 focus:outline-none`}
+        className={`relative flex flex-col w-full ${maxWidth} max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] overflow-hidden rounded-2xl bg-white text-left shadow-xl border border-slate-200 focus:outline-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between gap-3 border-b border-slate-100 px-5 sm:px-6 py-4">
