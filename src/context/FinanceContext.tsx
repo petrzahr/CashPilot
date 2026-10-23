@@ -54,7 +54,6 @@ import { applyAccountOrder, sortAccountsByOrder } from '../services/accountServi
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { formatCurrency } from '../services/currencyService';
-import { getCategoryUsage, isInUse } from '../services/usageService';
 import { describeSyncError } from '../services/syncErrorText';
 import {
   GoogleUser,
@@ -113,6 +112,17 @@ import {
   updateAccount as updateAccountCommand,
   updateCorrectionNote as updateCorrectionNoteCommand,
 } from '../services/accountCommands';
+import {
+  addCategory as addCategoryCommand,
+  addMainCategory as addMainCategoryCommand,
+  archiveCategory as archiveCategoryCommand,
+  deleteCategory as deleteCategoryCommand,
+  moveSubcategory as moveSubcategoryCommand,
+  restoreCategory as restoreCategoryCommand,
+  restoreDeletedCategories as restoreDeletedCategoriesCommand,
+  undoArchiveCategory as undoArchiveCategoryCommand,
+  updateCategory as updateCategoryCommand,
+} from '../services/categoryCommands';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -217,8 +227,8 @@ interface FinanceContextType {
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
 
   // Kategorie
-  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category;
-  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category;
+  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
+  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
   updateCategory: (cat: Category) => void;
   moveSubcategory: (subcategoryId: string, newParentId: string, updateHistorical: boolean) => void;
   archiveCategory: (id: string) => void;
@@ -1018,133 +1028,76 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- SPRÁVA KATEGORIÍ -------------------
 
   const addCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const nowIso = new Date().toISOString();
-    const newCat: Category = {
-      ...catData,
-      id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-    setData(prev => ({
-      ...prev,
-      categories: [...prev.categories, newCat]
-    }));
-    showToast(`Kategorie „${newCat.name}“ byla vytvořena.`);
-    return newCat;
-  }, [showToast]);
+    const outcome = runCommand(prev => addCategoryCommand(prev, catData, createCommandContext(todayStr)));
+    if (!outcome) {
+      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
+      return undefined;
+    }
+    showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
+    return outcome.category;
+  }, [runCommand, todayStr, showToast]);
 
   const addMainCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // Striktní pravidlo: Nová hlavní kategorie má VŽDY parentId = null.
-    // Ani ručně upravený požadavek nesmí přes tuto funkci vytvořit podkategorii.
-    return addCategory({
-      ...catData,
-      parentId: null
-    });
-  }, [addCategory]);
+    const outcome = runCommand(prev => addMainCategoryCommand(prev, catData, createCommandContext(todayStr)));
+    if (!outcome) {
+      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
+      return undefined;
+    }
+    showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
+    return outcome.category;
+  }, [runCommand, todayStr, showToast]);
 
   const updateCategory = useCallback((cat: Category) => {
-    setData(prev => {
-      const nowIso = new Date().toISOString();
-      const original = prev.categories.find(c => c.id === cat.id);
-      const isMainCategory = !cat.parentId;
-      const colorChanged = !!original && original.color !== cat.color;
-      const shouldPropagateColor = isMainCategory && colorChanged;
-
-      return {
-        ...prev,
-        categories: prev.categories.map(c => {
-          if (c.id === cat.id) return { ...cat, updatedAt: nowIso };
-          if (shouldPropagateColor && c.parentId === cat.id) {
-            return { ...c, color: cat.color, updatedAt: nowIso };
-          }
-          return c;
-        })
-      };
-    });
+    runCommand(prev => updateCategoryCommand(prev, cat, createCommandContext(todayStr)));
     showToast(`Kategorie „${cat.name}“ byla upravena.`);
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const moveSubcategory = useCallback((subcategoryId: string, newParentId: string, updateHistorical: boolean) => {
-    setData(prev => {
-      const updatedCategories = prev.categories.map(c => c.id === subcategoryId ? { ...c, parentId: newParentId, updatedAt: new Date().toISOString() } : c);
-      let updatedTxs = prev.transactions;
-      if (updateHistorical) {
-        updatedTxs = prev.transactions.map(t => t.subcategoryId === subcategoryId ? { ...t, categoryId: newParentId, updatedAt: new Date().toISOString() } : t);
-      }
-      return {
-        ...prev,
-        categories: updatedCategories,
-        transactions: updatedTxs
-      };
-    });
-    const subName = data.categories.find(c => c.id === subcategoryId)?.name;
-    const parentName = data.categories.find(c => c.id === newParentId)?.name;
-    showToast(subName && parentName
-      ? `Podkategorie „${subName}“ byla přesunuta do kategorie „${parentName}“.`
+    const outcome = runCommand(prev => moveSubcategoryCommand(
+      prev,
+      { subcategoryId, newParentId, updateHistorical },
+      createCommandContext(todayStr)
+    ));
+    showToast(outcome?.subName && outcome.parentName
+      ? `Podkategorie „${outcome.subName}“ byla přesunuta do kategorie „${outcome.parentName}“.`
       : 'Podkategorie byla přesunuta do jiné kategorie.');
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const archiveCategory = useCallback((id: string) => {
-    // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení. Vrátí jen ty,
-    // které archivace skutečně skryla – dřív archivované podkategorie zůstanou archivované.
-    const affectedIds = new Set(
-      data.categories.filter(c => (c.id === id || c.parentId === id) && c.status !== 'archived').map(c => c.id)
-    );
-    const name = data.categories.find(c => c.id === id)?.name;
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'archived', updatedAt: new Date().toISOString() } : c)
-    }));
+    const outcome = runCommand(prev => archiveCategoryCommand(prev, id, createCommandContext(todayStr)));
+    const name = outcome?.name;
+    const affectedIds = outcome?.affectedIds ?? [];
+    // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení
     showToast(name ? `Kategorie „${name}“ byla archivována.` : 'Kategorie byla archivována.', 'success', {
       label: 'Vrátit',
       onClick: () => {
-        setData(prev => ({
-          ...prev,
-          categories: prev.categories.map(c => affectedIds.has(c.id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
-        }));
+        runCommand(prev => undoArchiveCategoryCommand(prev, affectedIds, createCommandContext(getTodayInPrague())));
         showToast(name ? `Archivace kategorie „${name}“ byla vrácena.` : 'Archivace kategorie byla vrácena.');
       },
     });
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const restoreCategory = useCallback((id: string) => {
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
-    }));
-    const name = data.categories.find(c => c.id === id)?.name;
+    const name = runCommand(prev => restoreCategoryCommand(prev, id, createCommandContext(todayStr)))?.name;
     showToast(name ? `Kategorie „${name}“ byla obnovena z archivu.` : 'Kategorie byla obnovena z archivu.');
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteCategory = useCallback((id: string) => {
-    // Smazání hlavní kategorie odstraní i podkategorie, proto se počítá i jejich použití
-    if (isInUse(getCategoryUsage(id, data.categories, data.transactions, data.recurringRules))) {
-      return {
-        success: false,
-        message: 'Kategorii používají položky nebo pravidelné položky, a proto ji nejde smazat. Můžete ji archivovat – zmizí z nabídek, ale historie zůstane.'
-      };
-    }
+    const outcome = runCommand(prev => deleteCategoryCommand(prev, id));
+    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
 
-    const removed = data.categories.filter(c => c.id === id || c.parentId === id);
-    const name = removed.find(c => c.id === id)?.name;
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.filter(c => c.id !== id && c.parentId !== id)
-    }));
+    const name = outcome?.name;
+    const removed = outcome?.removed ?? [];
     // „Vrátit“ obnoví kategorii i její podkategorie
     showToast(name ? `Kategorie „${name}“ byla smazána.` : 'Kategorie byla smazána.', 'success', removed.length ? {
       label: 'Vrátit',
       onClick: () => {
-        const nowIso = new Date().toISOString();
-        setData(prev => prev.categories.some(c => c.id === id) ? prev : {
-          ...prev,
-          categories: [...prev.categories, ...removed.map(c => ({ ...c, updatedAt: nowIso }))],
-        });
+        runCommand(prev => restoreDeletedCategoriesCommand(prev, removed, createCommandContext(getTodayInPrague())));
         showToast(name ? `Kategorie „${name}“ byla obnovena.` : 'Kategorie byla obnovena.');
       },
     } : undefined);
     return { success: true };
-  }, [data.categories, data.transactions, data.recurringRules, showToast]);
+  }, [runCommand, showToast]);
 
   // ------------------- NASTAVENÍ A DATA -------------------
 
