@@ -2,6 +2,7 @@ import { Account, BudgetPeriod, Category, RecurringException, RecurringRule, Tra
 import { BudgetPeriodInfo } from './analyticsEngine';
 import { czechStringCompare, sortCategoriesAlphabetically } from './categoryService';
 import { addHaler } from './currencyService';
+import { getEffectiveAmountInHaler } from './accountScope';
 import { getEffectiveTransactionsForPeriod } from './financialEngine';
 
 export type CategoryBreakdownGroup = 'income' | 'expense' | 'transfer';
@@ -34,9 +35,6 @@ export interface CategoryBreakdownResult {
 export const NO_SUBCATEGORY_LABEL = '(bez podkategorie)';
 const UNCATEGORIZED_KEY = '__uncategorized';
 const TRANSFERS_KEY = '__transfers';
-
-const effectiveAmount = (t: Transaction) =>
-  t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
 
 const sum = (values: number[]) => values.reduce((s, v) => addHaler(s, v), 0);
 
@@ -95,7 +93,7 @@ export function calculateCategoryBreakdown(
     for (const t of txs) {
       if (t.status === 'cancelled' || t.type === 'balance_adjustment') continue;
       if (accountId && t.sourceAccountId !== accountId) continue;
-      const amount = effectiveAmount(t);
+      const amount = getEffectiveAmountInHaler(t);
 
       if (t.type === 'transfer') {
         add(transferAmounts, t.targetAccountId || '', idx, amount);

@@ -21,7 +21,8 @@ import {
   getOverviewPeriods,
   generatePeriodsBetween,
 } from './periodService';
-import { getAssetFlowInHaler, sortAccountsByOrder } from './accountService';
+import { sortAccountsByOrder } from './accountService';
+import { getAccountFlowInHaler, getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { getAccountPeriodSummary } from './accountSummaryService';
 
 export type AnalyticsPeriodPreset = '3m' | '6m' | '12m' | 'ytd' | 'all' | 'custom';
@@ -517,10 +518,7 @@ export function computeLiquidAccountBalanceAtDate(
     if (t.status !== 'executed' && t.type !== 'balance_adjustment') continue;
     if (t.date < initDate || t.date > pointDate) continue;
 
-    const amt =
-      t.status === 'executed' && t.actualAmountInHaler !== undefined
-        ? t.actualAmountInHaler
-        : t.amountInHaler;
+    const amt = getEffectiveAmountInHaler(t);
 
     if (t.type === 'income' && t.sourceAccountId === acc.id) {
       bal = addHaler(bal, amt);
@@ -602,8 +600,7 @@ export function computeAssetAccountBalanceAtDate(
       if (t.date < initDate || t.date > pointDate) continue;
     }
 
-    const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-    baseVal = addHaler(baseVal, getAssetFlowInHaler(t, acc.id, amt));
+    baseVal = addHaler(baseVal, getAccountFlowInHaler(t, acc.id));
   }
 
   return baseVal;
@@ -624,7 +621,7 @@ export function calculateMonthlyCashFlow(
       if (t.type === 'transfer' || t.type === 'balance_adjustment') continue;
       // Ověříme, zda transakce patří do této rozpočtové periody
       if (isDateInPeriod(t.date, p.period) && t.date <= p.analysisEndDate) {
-        const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
+        const amt = getEffectiveAmountInHaler(t);
         if (t.type === 'income') incomeInHaler = addHaler(incomeInHaler, amt);
         if (t.type === 'expense') expenseInHaler = addHaler(expenseInHaler, amt);
       }
@@ -677,7 +674,7 @@ export function calculateCashFlowComposition(
   forecast: ForecastResult,
   accounts: Account[]
 ): CashFlowCompositionPoint[] {
-  const defaultAccount = accounts.find((a) => a.isDefault && a.status !== 'archived');
+  const defaultAccount = getDefaultAccount(accounts);
 
   return periods.map((p) => {
     const summary = getAccountPeriodSummary(forecast, p.key);
@@ -801,8 +798,7 @@ export function calculateExpenseMoMTrend(
           continue;
         }
 
-        const amt = t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler;
-        sum = addHaler(sum, amt);
+        sum = addHaler(sum, getEffectiveAmountInHaler(t));
       }
     }
     return sum;
@@ -845,11 +841,7 @@ export function getTopExpenses(
 ): TopExpenseItem[] {
   const expenseTxs = filteredTxs.filter((t) => t.type === 'expense');
 
-  const sorted = [...expenseTxs].sort((a, b) => {
-    const amtA = a.actualAmountInHaler !== undefined ? a.actualAmountInHaler : a.amountInHaler;
-    const amtB = b.actualAmountInHaler !== undefined ? b.actualAmountInHaler : b.amountInHaler;
-    return amtB - amtA;
-  });
+  const sorted = [...expenseTxs].sort((a, b) => getEffectiveAmountInHaler(b) - getEffectiveAmountInHaler(a));
 
   const top10 = sorted.slice(0, 10);
 

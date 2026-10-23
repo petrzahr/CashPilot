@@ -1,5 +1,5 @@
 import { Account, BudgetPeriod, InvestmentFee, MarketValueSnapshot, Transaction } from '../types/finance';
-import { getAssetFlowInHaler } from './accountService';
+import { getAccountFlowInHaler } from './accountScope';
 import { addHaler, subHaler } from './currencyService';
 import { getPeriodForDate, getPreviousPeriod, getTodayInPrague } from './periodService';
 
@@ -36,7 +36,7 @@ export function getInvestedAmountAtValuation(account: Account, transactions: Tra
   let principal = account.initialBalanceInHaler;
   for (const tx of transactions) {
     if (tx.status !== 'executed' || tx.date < account.initialBalanceDate || tx.date > date) continue;
-    principal = addHaler(principal, getAssetFlowInHaler(tx, account.id, tx.actualAmountInHaler ?? tx.amountInHaler));
+    principal = addHaler(principal, getAccountFlowInHaler(tx, account.id));
   }
   return Math.max(0, principal);
 }

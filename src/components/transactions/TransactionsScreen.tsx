@@ -22,6 +22,7 @@ import {
 import { } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
 import { czechStringCompare } from '../../services/categoryService';
+import { getEffectiveAmountInHaler } from '../../services/accountScope';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
@@ -332,9 +333,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
   const filteredTransactionsSum = useMemo(() => {
     return filteredTransactions.reduce((sum, tx) => {
-      const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-        ? tx.actualAmountInHaler
-        : tx.amountInHaler;
+      const effectiveAmount = getEffectiveAmountInHaler(tx);
       if (tx.type === 'balance_adjustment') {
         const diff = tx.diffInHaler ?? (
           tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
@@ -355,9 +354,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     const cat = categories.find(c => c.id === tx.categoryId);
     const subCat = categories.find(c => c.id === tx.subcategoryId);
 
-    const effectiveAmount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined
-      ? tx.actualAmountInHaler
-      : tx.amountInHaler;
+    const effectiveAmount = getEffectiveAmountInHaler(tx);
     const isCancelled = tx.status === 'cancelled';
     const isCorrection = tx.type === 'balance_adjustment';
 

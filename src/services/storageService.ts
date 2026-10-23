@@ -16,6 +16,7 @@ import {
   createEmptyAppData,
 } from '../constants/defaultData';
 import { halerToCzk } from './currencyService';
+import { getEffectiveAmountInHaler } from './accountScope';
 import { formatCzechDate, getPreviousDay } from './periodService';
 
 export interface AppData {
@@ -310,7 +311,7 @@ export function exportTransactionsCSV(
   const rows = transactions.map(t => {
     const typeLabel = t.type === 'income' ? 'Příjem' : t.type === 'expense' ? 'Výdaj' : 'Převod';
     const statusLabel = t.status === 'executed' ? 'Uskutečněná' : t.status === 'planned' ? 'Plánovaná' : 'Zrušená';
-    const czk = halerToCzk(t.status === 'executed' && t.actualAmountInHaler !== undefined ? t.actualAmountInHaler : t.amountInHaler);
+    const czk = halerToCzk(getEffectiveAmountInHaler(t));
     const sourceName = accMap.get(t.sourceAccountId) || '';
     const targetName = t.targetAccountId ? (accMap.get(t.targetAccountId) || '') : '';
     const catName = t.categoryId ? (catMap.get(t.categoryId) || '') : '';

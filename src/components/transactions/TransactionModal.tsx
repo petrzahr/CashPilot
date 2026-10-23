@@ -9,6 +9,7 @@ import { getEffectiveTransactionsForPeriod } from '../../services/financialEngin
 import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { getStatusForDate } from '../../services/statusService';
 import { czechStringCompare } from '../../services/categoryService';
+import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
 import { Hash, Loader2 } from 'lucide-react';
 import { RecurrenceScopePicker } from '../shared/RecurrenceScopePicker';
 import { FieldError, FieldErrors, FormError, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
@@ -22,9 +23,7 @@ type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
 export function getDuplicateDraft(source: Transaction, accounts: Account[], categories: Category[]) {
   const isActiveAcc = (id?: string | null) => !!id && accounts.some(a => a.id === id && a.status === 'active');
   const isActiveCat = (id?: string | null) => !!id && categories.some(c => c.id === id && c.status === 'active');
-  const haler = source.status === 'executed' && source.actualAmountInHaler !== undefined
-    ? source.actualAmountInHaler
-    : source.amountInHaler;
+  const haler = getEffectiveAmountInHaler(source);
   const categoryId = isActiveCat(source.categoryId) ? source.categoryId! : '';
   return {
     title: source.title,
@@ -167,9 +166,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     snapshotPendingRef.current = true;
     if (transactionToEdit) {
       setTitle(transactionToEdit.title);
-      const haler = transactionToEdit.status === 'executed' && transactionToEdit.actualAmountInHaler !== undefined
-        ? transactionToEdit.actualAmountInHaler
-        : transactionToEdit.amountInHaler;
+      const haler = getEffectiveAmountInHaler(transactionToEdit);
       setAmountStr(halerToInputValue(haler));
       setDate(transactionToEdit.date);
       setSequenceStr(transactionToEdit.sequence?.toString() || '1');
@@ -207,7 +204,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         setType(initialType);
 
         // Default account: preselect only if an active account is marked as default and valid for defaultDate
-        const defaultAcc = accounts.find(a => a.status === 'active' && a.isDefault);
+        const defaultAcc = getDefaultAccount(accounts);
         const isDefaultValid = defaultAcc && (!defaultAcc.initialBalanceDate || defaultAcc.initialBalanceDate <= defaultDate);
         setSourceAccountId(isDefaultValid ? defaultAcc.id : '');
         setTargetAccountId('');

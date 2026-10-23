@@ -1,5 +1,6 @@
 import { Account, AccountPeriodBalance, Transaction } from '../types/finance';
 import { addHaler, subHaler } from './currencyService';
+import { getAccountFlowInHaler } from './accountScope';
 
 export interface DefaultAccountKpis {
   actuallySavedInHaler: number;
@@ -34,18 +35,10 @@ export function calculateDefaultAccountKpis(
     const typeById = new Map(accounts.filter(a => a.status === 'active').map(a => [a.id, a.type]));
     for (const tx of periodTransactions) {
       if (tx.type !== 'transfer' || tx.status === 'cancelled') continue;
-      const amount = tx.status === 'executed' && tx.actualAmountInHaler !== undefined ? tx.actualAmountInHaler : tx.amountInHaler;
-      let counterpartyId: string | undefined;
-      let signed = 0;
-      if (tx.sourceAccountId === defaultAccount.id) {
-        counterpartyId = tx.targetAccountId;
-        signed = amount;
-      } else if (tx.targetAccountId === defaultAccount.id) {
-        counterpartyId = tx.sourceAccountId;
-        signed = -amount;
-      } else {
-        continue;
-      }
+      // Z výchozího účtu odteklo = uspořeno (+), vráceno na něj = (−)
+      const signed = -getAccountFlowInHaler(tx, defaultAccount.id);
+      if (signed === 0) continue;
+      const counterpartyId = tx.sourceAccountId === defaultAccount.id ? tx.targetAccountId : tx.sourceAccountId;
       const type = counterpartyId ? typeById.get(counterpartyId) : undefined;
       if (type === 'savings') savedInHaler = addHaler(savedInHaler, signed);
       else if (type === 'investment' || type === 'pension') investedInHaler = addHaler(investedInHaler, signed);
