@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, Transaction, RecurringRule } from '../types/finance';
 import { calculateForecast, generateOccurrenceForPeriod } from '../services/financialEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
-import {
-  createBudgetPeriod,
-  formatCzechDate,
-} from '../services/periodService';
+import { createBudgetPeriod } from '../services/periodService';
+import { addTransaction, createCommandContext } from '../services/transactionCommands';
+import { addMarketValue, reconcileBalance, updateAccount } from '../services/accountCommands';
+import { createEmptyAppData } from '../constants/defaultData';
 
 // Stav účtu k datu včetně plánovaných položek (stejně jako při korekci)
 const balanceAt = (accountId: string, date: string, beforeSequence: number, transactions: Transaction[], _corrections: unknown[], accounts: Account[]): number => {
@@ -280,23 +280,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateTransaction = (tx: Partial<Transaction>, accounts: Account[]) => {
-      const srcAcc = accounts.find(a => a.id === tx.sourceAccountId);
-      if (srcAcc?.initialBalanceDate && tx.date! < srcAcc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      if (tx.type === 'transfer' && tx.targetAccountId) {
-        const tgtAcc = accounts.find(a => a.id === tx.targetAccountId);
-        if (tgtAcc?.initialBalanceDate && tx.date! < tgtAcc.initialBalanceDate) {
-          return {
-            valid: false,
-            error: `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-          };
-        }
-      }
-      return { valid: true };
+      const { outcome } = addTransaction(
+        { ...createEmptyAppData(), accounts },
+        { amountInHaler: 1000, ...tx } as Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
+        createCommandContext('2026-03-01')
+      );
+      return 'error' in outcome ? { valid: false, error: outcome.error } : { valid: true };
     };
 
     // Scénář 6: Příjem před aktivací
@@ -361,13 +350,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateReconciliation = (acc: Account, checkDate: string) => {
-      if (acc.initialBalanceDate && checkDate < acc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(acc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      return { valid: true };
+      const { outcome } = reconcileBalance(
+        { ...createEmptyAppData(), accounts: [acc] },
+        { accountId: acc.id, actualBalanceInHaler: 0, checkDate },
+        createCommandContext('2026-03-01')
+      );
+      return outcome.kind === 'warning' ? { valid: false, error: outcome.message } : { valid: true };
     };
 
     const res = validateReconciliation(account, '2026-03-15');
@@ -394,13 +382,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const validateMarketValuation = (acc: Account, valuationDate: string) => {
-      if (acc.initialBalanceDate && valuationDate < acc.initialBalanceDate) {
-        return {
-          valid: false,
-          error: `Tento účet je aktivní až od ${formatCzechDate(acc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-        };
-      }
-      return { valid: true };
+      const { outcome } = addMarketValue(
+        { ...createEmptyAppData(), accounts: [acc] },
+        { accountId: acc.id, marketValueInHaler: 0, date: valuationDate },
+        createCommandContext('2026-03-01')
+      );
+      return outcome.kind === 'warning' ? { valid: false, error: outcome.message } : { valid: true };
     };
 
     const res = validateMarketValuation(investAcc, '2026-04-30');
@@ -522,21 +509,12 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
       updatedAccount: Account,
       txs: Transaction[]
     ) => {
-      let earliestDate: string | null = null;
-      for (const t of txs) {
-        if (t.sourceAccountId === updatedAccount.id || t.targetAccountId === updatedAccount.id) {
-          if (!earliestDate || t.date < earliestDate) {
-            earliestDate = t.date;
-          }
-        }
-      }
-      if (earliestDate && updatedAccount.initialBalanceDate > earliestDate) {
-        return {
-          success: false,
-          message: `Datum počátečního stavu nelze posunout za existující pohyb ze dne ${formatCzechDate(earliestDate)}. Nejdříve upravte nebo odstraňte starší položky.`
-        };
-      }
-      return { success: true };
+      const { outcome } = updateAccount(
+        { ...createEmptyAppData(), accounts: [acc], transactions: txs },
+        updatedAccount,
+        createCommandContext('2026-03-01')
+      );
+      return 'error' in outcome ? { success: false, message: outcome.error } : { success: true };
     };
 
     // Posun na dřívější termín (např. 2026-01-01) je povolen
@@ -552,7 +530,7 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
       initialBalanceDate: '2026-03-01'
     }, [tx]);
     expect(resBlocked.success).toBe(false);
-    expect(resBlocked.message).toBe('Datum počátečního stavu nelze posunout za existující pohyb ze dne 15. 2. 2026. Nejdříve upravte nebo odstraňte starší položky.');
+    expect(resBlocked.message).toBe('Počáteční zůstatek nemůže začínat později než první položka účtu (15. 2. 2026). Zvolte dřívější datum, nebo nejdřív posuňte či smažte starší položky.');
   });
 
   // Scénář 15: Více účtů s různými daty založení

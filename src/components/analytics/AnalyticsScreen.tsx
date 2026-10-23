@@ -21,7 +21,6 @@ import { formatCurrency, formatPercent } from '../../services/currencyService';
 import {
   formatCzechDate,
   getTodayInPrague,
-  getPeriodForDate,
   normalizeStartDay,
 } from '../../services/periodService';
 import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
@@ -66,8 +65,9 @@ export const AnalyticsScreen: React.FC = () => {
     rememberRange(settings, 'analytics', newRange);
   };
 
-  // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Majetek)
-  const currentPeriod = useMemo(() => getPeriodForDate(todayStr, budgetStartDay), [todayStr, budgetStartDay]);
+  // Vyhodnocení rozsahu období pomocí hlavního filtru Budoucnost/Historie (shodného se sekcí Majetek);
+  // aktuální období bere z předpovědi stejně jako Majetek, aby se obě sekce vždy shodly
+  const currentPeriod = forecast.currentPeriod;
   const periods = useMemo(() => resolvePeriodRange(range, {
     current: currentPeriod,
     startDay: budgetStartDay,

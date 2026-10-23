@@ -24,6 +24,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 - `src/services/transactionCommands.ts`, `accountCommands.ts`, `categoryCommands.ts`, `dataCommands.ts` - all data mutations as pure commands `(data, input, ctx) -> { data, outcome }`
 - `src/services/accountScope.ts` - default account, effective amount, account flow
 - `src/services/accountBalance.ts` - account balance at a date (liquid and asset accounts)
+- `src/services/budgetBalances.ts` - budget screen balances: default account period totals and overdraft, day-group and per-source-account running balances
 - `src/services/itemFilter.ts` + `src/hooks/useItemFilters.ts` - item list filtering shared by the budget and transactions screens
 - `src/services/periodRange.ts` - period ranges for the Majetek and Analytics filters
 - `src/services/storageService.ts` - local browser storage
@@ -62,11 +63,17 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 - Add or update a Vitest test reproducing the bug when practical.
 - Verify with `npm run build` (and tests) before reporting the bug as fixed.
 
+## Task Sessions
+- One task = one session. When work turns up several independent tasks (e.g. three bugs found in a review), don't fix them in the current session: propose one session per task (a start-session card, `own_initiative`, context `fresh`), each with a self-contained brief: affected files, root cause or symptom, what done looks like.
+- Only propose; never start sessions on your own. I start each one.
+- Each task session runs in its own worktree (`use_worktree: true`) on a branch cut from `develop`, and follows the normal Plan First / approval flow inside that session.
+- Quick follow-ups that only finish the current task stay in the current session.
+
 ## Git Workflow
-- Work exclusively on the `develop` branch.
+- The base branch is `develop`. The main session works on `develop`; task sessions work on their own worktree branch cut from `develop` and commit there. Merge a task branch into `develop` only when I ask.
 - After an approved task is implemented and `npm run build` passes, automatically:
   - Check changed files with `git status`.
-  - Stage the changes and create a local commit (Conventional Commits).
+  - Stage the changes and create a local commit on the current branch (Conventional Commits).
 - Never run or ask about the git-release workflow.
 
 ## Context Preservation & File Exclusions

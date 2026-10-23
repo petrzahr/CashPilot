@@ -2,7 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
+import {
+  getDefaultAccountPeriodTotals,
+  getOverdraftLimitInHaler,
+  getSourceAccountBalanceByTxId,
+  groupDaysWithRunningBalance,
+} from '../../services/budgetBalances';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { calculateDefaultAccountKpis } from '../../services/budgetKpiService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
@@ -321,59 +326,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     (target as HTMLElement | null)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
 
-  const dayGroups = useMemo(() => {
-    const dateMap = new Map<string, Transaction[]>();
+  const dayGroups = useMemo(
+    () => groupDaysWithRunningBalance(periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds),
+    [periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds]
+  );
 
-    periodTransactions.forEach(tx => {
-      const existing = dateMap.get(tx.date) || [];
-      existing.push(tx);
-      dateMap.set(tx.date, existing);
-    });
-
-    const sortedDates = Array.from(dateMap.keys()).sort();
-    let runningBalance = currentSummary.usableOpeningInHaler;
-
-    return sortedDates.map(date => {
-      const dayTxs = dateMap.get(date)!;
-      const intraDay = calculateIntraDayRunningBalances(runningBalance, dayTxs, undefined, usableAccountIds);
-      runningBalance = intraDay.endOfDayBalanceInHaler;
-
-      return {
-        date,
-        txs: dayTxs,
-        intraDay,
-      };
-    });
-  }, [periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds]);
-
-  // Zůstatek zdrojového účtu po každé položce (z nefiltrovaných položek období, aby filtr neovlivnil výsledek)
+  // Zůstatek zdrojového účtu po každé položce (z nefiltrovaných položek období, aby filtr neovlivnil výsledek);
+  // počáteční stavy z historického souhrnu období, bez projekce investic
   const sourceAccountBalanceByTxId = useMemo(() => {
     const balances = (forecast.periods.find(p => p.period.key === selectedPeriod.key) ?? currentSummary).accountBalances;
-    const txsByAccount = new Map<string, Transaction[]>();
-    allPeriodTransactions.forEach(tx => {
-      [tx.sourceAccountId, tx.targetAccountId].forEach(id => {
-        if (!id) return;
-        const list = txsByAccount.get(id) || [];
-        if (!list.includes(tx)) list.push(tx);
-        txsByAccount.set(id, list);
-      });
-    });
-
-    const result = new Map<string, number>();
-    txsByAccount.forEach((accTxs, accountId) => {
-      let running = balances[accountId]?.openingBalanceInHaler ?? 0;
-      const dates = Array.from(new Set(accTxs.map(t => t.date))).sort();
-      for (const date of dates) {
-        const intraDay = calculateIntraDayRunningBalances(running, accTxs.filter(t => t.date === date), accountId);
-        intraDay.steps.forEach(step => {
-          if (step.transaction.sourceAccountId === accountId) {
-            result.set(step.transaction.id, step.runningBalanceInHaler);
-          }
-        });
-        running = intraDay.endOfDayBalanceInHaler;
-      }
-    });
-    return result;
+    return getSourceAccountBalanceByTxId(allPeriodTransactions, balances);
   }, [allPeriodTransactions, forecast.periods, currentSummary, selectedPeriod.key]);
 
   // Drag-and-drop obsluha
@@ -451,22 +413,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     return currentSummary.accountBalances[defaultAccount.id] || null;
   }, [defaultAccount, currentSummary]);
 
-  const defaultOpeningBalance = defaultAccountBalance?.openingBalanceInHaler ?? 0;
-  const defaultIncomeBalance = defaultAccountBalance?.incomeInHaler ?? 0;
-  const defaultExpenseBalance = defaultAccountBalance?.expenseInHaler ?? 0;
-  const defaultTransfersIn = defaultAccountBalance?.transfersInInHaler ?? 0;
-  const defaultTransfersOut = defaultAccountBalance?.transfersOutInHaler ?? 0;
-  const defaultNetTransfers = defaultTransfersIn - defaultTransfersOut;
-  const defaultCorrections = defaultAccountBalance?.correctionsInHaler ?? 0;
-  const defaultInitDate = defaultAccount?.initialBalanceDate || '1970-01-01';
-  const defaultBaseInitialToAdd = (defaultInitDate > selectedPeriod.startDate && defaultInitDate <= selectedPeriod.endDate)
-    ? (defaultAccount?.initialBalanceInHaler || 0)
-    : 0;
-  const defaultNetChange = defaultIncomeBalance - defaultExpenseBalance + defaultNetTransfers + defaultCorrections + defaultBaseInitialToAdd;
-  const defaultClosingBalance = defaultAccountBalance?.closingBalanceInHaler ?? (defaultOpeningBalance + defaultNetChange);
-  const overdraftLimit = settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
-  const defaultWithOverdraft = defaultClosingBalance + overdraftLimit;
-  const isOverdraftExceeded = defaultWithOverdraft < 0;
+  const {
+    openingInHaler: defaultOpeningBalance,
+    incomeInHaler: defaultIncomeBalance,
+    expenseInHaler: defaultExpenseBalance,
+    netTransfersInHaler: defaultNetTransfers,
+    netChangeInHaler: defaultNetChange,
+    closingInHaler: defaultClosingBalance,
+    withOverdraftInHaler: defaultWithOverdraft,
+    isOverdraftExceeded,
+  } = getDefaultAccountPeriodTotals(defaultAccount, defaultAccountBalance, selectedPeriod, getOverdraftLimitInHaler(settings));
 
   // Části řádku seznamu sdílí tabulka (od lg) i řádky-karty na mobilu, stejně jako ve Všech položkách
   const getListRowParts = (

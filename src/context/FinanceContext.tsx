@@ -50,30 +50,26 @@ import {
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
-import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
 import { formatCurrency } from '../services/currencyService';
 import type { GoogleUser } from '../services/googleDriveService';
 
 
 import {
-  getNextSequenceForDate,
-  insertOrUpdateWithSequence,
-  reorderDayTransactions as reorderDayTxsService,
-} from '../services/sequenceService';
-import {
   CommandResult,
   RecurringMode,
   StatusUpdates,
   createCommandContext,
-  parseVirtualId,
-  withSequenceExceptions,
   addRecurringRule as addRecurringRuleCommand,
+  addTransaction as addTransactionCommand,
+  autoExecute as autoExecuteCommand,
   deleteRecurringRule as deleteRecurringRuleCommand,
   deleteTransaction as deleteTransactionCommand,
+  reorderDayTransactions as reorderDayTransactionsCommand,
   reorderRecurringItem as reorderRecurringItemCommand,
   restoreDeletedTransaction as restoreDeletedTransactionCommand,
   setTransactionStatus as setTransactionStatusCommand,
   updateRecurringRule as updateRecurringRuleCommand,
+  updateTransaction as updateTransactionCommand,
 } from '../services/transactionCommands';
 import {
   addAccount as addAccountCommand,
@@ -255,6 +251,8 @@ interface FinanceContextType {
 
 export type AppLoadState = 'loading' | 'ready' | 'loadError';
 
+export const NOT_SAVED_MESSAGE = 'Data se ještě načítají, změna nebyla uložena. Zkuste to prosím za chvíli znovu.';
+
 /**
  * Synchronizace data po nahrání znovu parsuje, takže obsahově stejné části mají nové reference
  * a zbytečně by přepočítaly předpověď. Nezměněné části proto převezme z předchozích dat.
@@ -319,30 +317,47 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast,
   });
   const sessionChange = session.change;
-  const setData = useCallback((action: React.SetStateAction<AppData>) => {
-    sessionChange(action);
+  /** Tichý zápis (automatické provedení, oprava dat); vrací false, pokud se neuložil. */
+  const setData = useCallback((action: React.SetStateAction<AppData>): boolean => {
+    return sessionChange(action);
   }, [sessionChange]);
+
+  // Zápis, o který požádal uživatel: když se neuloží (data se ještě načítají), řekne to.
+  const notifyNotSaved = useCallback(() => {
+    showToast(NOT_SAVED_MESSAGE, 'error');
+  }, [showToast]);
+  const saveData = useCallback((action: React.SetStateAction<AppData>, reset?: boolean): boolean => {
+    const saved = sessionChange(action, reset);
+    if (!saved) notifyNotSaved();
+    return saved;
+  }, [sessionChange, notifyNotSaved]);
+
+  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
+  // updater synchronně. Když se změna neuloží, vrací undefined a (mimo tichý režim) to oznámí.
+  const runCommand = useCallback(<O,>(
+    command: (prev: AppData) => CommandResult<O>,
+    options: { silent?: boolean } = {}
+  ): O | undefined => {
+    let outcome: O | undefined;
+    const saved = sessionChange(prev => {
+      const result = command(prev);
+      outcome = result.outcome;
+      return result.data;
+    });
+    if (!saved) {
+      if (!options.silent) notifyNotSaved();
+      return undefined;
+    }
+    return outcome;
+  }, [sessionChange, notifyNotSaved]);
 
   const [todayStr, setTodayStr] = useState<string>(() => getTodayInPrague());
 
   const runAutoExecute = useCallback((customToday?: string) => {
     const currentToday = customToday || getTodayInPrague();
     setTodayStr(currentToday);
-    setData(prev => {
-      const { transactions, hasChanges } = autoExecuteDueTransactions(
-        prev.transactions,
-        prev.recurringRules,
-        prev.recurringExceptions,
-        prev.settings.budgetStartDay,
-        currentToday
-      );
-      if (!hasChanges) return prev;
-      return {
-        ...prev,
-        transactions,
-      };
-    });
-  }, []);
+    runCommand(prev => autoExecuteCommand(prev, createCommandContext(currentToday)), { silent: true });
+  }, [runCommand]);
 
   // 1. Spuštění při startu
   useEffect(() => {
@@ -541,162 +556,35 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- TRANSAKCE & POŘADÍ -------------------
 
   const addTransaction = useCallback((txData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const srcAcc = data.accounts.find(a => a.id === txData.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && txData.date < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
+    const outcome = runCommand(prev => addTransactionCommand(prev, txData, createCommandContext(todayStr)));
+    if (!outcome) throw new Error(NOT_SAVED_MESSAGE);
+    if ('error' in outcome) {
+      showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
-    if (txData.type === 'transfer' && txData.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === txData.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && txData.date < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
-    }
-
-    const nowIso = new Date().toISOString();
-    let assignedSeq = txData.sequence;
-    if (!assignedSeq || assignedSeq <= 0) {
-      assignedSeq = getNextSequenceForDate(txData.date, data.transactions);
-    }
-
-    const autoStatus = txData.status || getStatusForDate(txData.date);
-    const actualAmountInHaler = autoStatus === 'executed'
-      ? (txData.actualAmountInHaler !== undefined ? txData.actualAmountInHaler : (txData.plannedAmountInHaler ?? txData.amountInHaler))
-      : undefined;
-
-    const newTx: Transaction = {
-      ...txData,
-      sequence: assignedSeq,
-      status: autoStatus,
-      actualAmountInHaler,
-      id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-
-    setData(prev => {
-      const updatedTxs = insertOrUpdateWithSequence(newTx, assignedSeq, prev.transactions);
-      return {
-        ...prev,
-        transactions: updatedTxs,
-      };
-    });
-
-    showToast(`Položka „${newTx.title}“ byla přidána jako ${assignedSeq}. v pořadí dne.`);
-    return newTx;
-  }, [data.transactions, data.accounts, showToast]);
+    showToast(`Položka „${outcome.transaction.title}“ byla přidána jako ${outcome.sequence}. v pořadí dne.`);
+    return outcome.transaction;
+  }, [runCommand, todayStr, showToast]);
 
   const updateTransaction = useCallback((updatedTx: Transaction) => {
-    const srcAcc = data.accounts.find(a => a.id === updatedTx.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && updatedTx.date < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
+    const outcome = runCommand(prev => updateTransactionCommand(prev, updatedTx, createCommandContext(todayStr)));
+    if (!outcome) return;
+    if ('error' in outcome) {
+      showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
-    if (updatedTx.type === 'transfer' && updatedTx.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === updatedTx.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && updatedTx.date < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
-    }
-
-    setData(prev => {
-      if (updatedTx.id.startsWith('virtual_')) {
-        const withoutPrefix = updatedTx.id.slice('virtual_'.length);
-        const lastUnderscore = withoutPrefix.lastIndexOf('_');
-        const ruleId = lastUnderscore !== -1 ? withoutPrefix.slice(0, lastUnderscore) : updatedTx.recurringRuleId;
-        const periodKey = lastUnderscore !== -1 ? withoutPrefix.slice(lastUnderscore + 1) : '';
-        const assignedSeq = updatedTx.sequence || getNextSequenceForDate(updatedTx.date, prev.transactions);
-        const nowIso = new Date().toISOString();
-        const realTx: Transaction = {
-          ...updatedTx,
-          id: `tx_real_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          recurringRuleId: ruleId || updatedTx.recurringRuleId,
-          sequence: assignedSeq,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-        const cleanExceptions = prev.recurringExceptions.filter(
-          e => !(e.ruleId === ruleId && e.periodKey === periodKey)
-        );
-        return {
-          ...prev,
-          recurringExceptions: cleanExceptions,
-          transactions: insertOrUpdateWithSequence(realTx, assignedSeq, prev.transactions)
-        };
-      }
-
-      const oldTx = prev.transactions.find(t => t.id === updatedTx.id);
-      const oldDate = oldTx?.date;
-      let targetSeq = updatedTx.sequence;
-
-      // Pokud se změnilo datum položky a uživatel explicitně nezadal jiné pořadí
-      if (oldTx && oldTx.date !== updatedTx.date && (!updatedTx.sequence || updatedTx.sequence === oldTx.sequence)) {
-        targetSeq = getNextSequenceForDate(updatedTx.date, prev.transactions.filter(t => t.id !== updatedTx.id));
-      }
-
-      const txWithUpdatedTime = {
-        ...updatedTx,
-        sequence: targetSeq,
-        updatedAt: new Date().toISOString()
-      };
-
-      const newTxs = insertOrUpdateWithSequence(txWithUpdatedTime, targetSeq, prev.transactions, oldDate);
-      return {
-        ...prev,
-        transactions: newTxs
-      };
-    });
-    showToast(`Položka „${updatedTx.title}“ byla upravena.`);
-  }, [data.accounts, showToast]);
+    showToast(`Položka „${outcome.title}“ byla upravena.`);
+  }, [runCommand, todayStr, showToast]);
 
   const reorderDayTransactions = useCallback((date: string, orderedIds: string[]) => {
-    setData(prev => {
-      const updated = reorderDayTxsService(date, orderedIds, prev.transactions);
-      // Virtuální (ještě nezhmotněné) opakované výskyty v pořadí si pamatují pozici přes
-      // výjimku periody, jinak by se při dalším výpočtu vždy vrátily na konec dne.
-      const virtualPositions = new Map<string, number>();
-      orderedIds.forEach((id, idx) => {
-        const ruleId = parseVirtualId(id)?.ruleId;
-        if (ruleId && prev.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
-      });
-      const recurringExceptions = virtualPositions.size > 0
-        ? withSequenceExceptions(
-            prev.recurringExceptions,
-            virtualPositions,
-            getPeriodForDate(date, prev.settings.budgetStartDay).key,
-            new Date().toISOString()
-          )
-        : prev.recurringExceptions;
-      return {
-        ...prev,
-        transactions: updated,
-        recurringExceptions,
-      };
-    });
+    const outcome = runCommand(prev => reorderDayTransactionsCommand(prev, { date, orderedIds }, createCommandContext(todayStr)));
+    if (outcome === undefined) return;
     showToast('Pořadí položek bylo uloženo.');
-  }, [showToast]);
-
-  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
-  // updater synchronně; bez načtených dat (před první synchronizací) vrací undefined.
-  const runCommand = useCallback(<O,>(command: (prev: AppData) => CommandResult<O>): O | undefined => {
-    let outcome: O | undefined;
-    setData(prev => {
-      const result = command(prev);
-      outcome = result.outcome;
-      return result.data;
-    });
-    return outcome;
-  }, [setData]);
+  }, [runCommand, todayStr, showToast]);
 
   // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni.
   const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
-    runCommand(prev => restoreDeletedTransactionCommand(prev, { transaction: tx, correction }, createCommandContext(todayStr)));
+    if (runCommand(prev => restoreDeletedTransactionCommand(prev, { transaction: tx, correction }, createCommandContext(todayStr))) === undefined) return;
     showToast(correction ? 'Korekce zůstatku byla obnovena.' : 'Položka byla obnovena.');
   }, [runCommand, todayStr, showToast]);
 
@@ -792,7 +680,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       { ruleData, initialSequence, initialStatus, existingTransactionId },
       createCommandContext(getTodayInPrague())
     ));
-    if (!outcome) throw new Error('Data ještě nejsou načtená. Zkuste to prosím za chvíli znovu.');
+    if (!outcome) throw new Error(NOT_SAVED_MESSAGE);
     if ('error' in outcome) {
       if (outcome.kind === 'inactiveAccount') showToast(outcome.error, 'error');
       throw new Error(outcome.error);
@@ -817,8 +705,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       { ruleId, mode, periodKey, overrideData, originalTransactionId, futureRuleId },
       ctx
     ));
+    if (!outcome) return undefined;
 
-    const ruleTitle = outcome?.ruleTitle;
+    const ruleTitle = outcome.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla upravena.` : 'Pravidelná položka byla upravena.');
     return futureRuleId;
   }, [runCommand, todayStr, showToast]);
@@ -831,17 +720,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     orderedIds: string[],
     movedTransactionId: string
   ) => {
-    runCommand(prev => reorderRecurringItemCommand(
+    const outcome = runCommand(prev => reorderRecurringItemCommand(
       prev,
       { ruleId, mode, date, periodKey, orderedIds, movedTransactionId },
       createCommandContext(todayStr)
     ));
+    if (!outcome) return;
     showToast('Pořadí pravidelné položky bylo uloženo.');
   }, [runCommand, todayStr, showToast]);
 
   const deleteRecurringRule = useCallback((id: string) => {
     const outcome = runCommand(prev => deleteRecurringRuleCommand(prev, id));
-    const ruleTitle = outcome?.ruleTitle;
+    if (!outcome) return;
+    const ruleTitle = outcome.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla smazána.` : 'Pravidelná položka byla smazána.');
   }, [runCommand, showToast]);
 
@@ -849,17 +740,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const addAccount = useCallback((accData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => {
     const outcome = runCommand(prev => addAccountCommand(prev, accData, createCommandContext(todayStr)));
-    if (!outcome) {
-      showToast('Data ještě nejsou načtená, účet nebyl vytvořen. Zkuste to prosím za chvíli znovu.', 'error');
-      return undefined;
-    }
+    if (!outcome) return undefined;
     showToast(`Účet „${outcome.account.name}“ byl vytvořen.`);
     return outcome.account;
   }, [runCommand, todayStr, showToast]);
 
   const updateAccount = useCallback((acc: Account) => {
     const outcome = runCommand(prev => updateAccountCommand(prev, acc, createCommandContext(todayStr)));
-    if (outcome && 'error' in outcome) {
+    if (!outcome) return { success: false, message: NOT_SAVED_MESSAGE };
+    if ('error' in outcome) {
       showToast(outcome.error, 'error');
       return { success: false, message: outcome.error };
     }
@@ -869,14 +758,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const archiveAccount = useCallback((id: string) => {
     const outcome = runCommand(prev => archiveAccountCommand(prev, id, createCommandContext(todayStr)));
-    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
+    if (!outcome) return { success: false, message: NOT_SAVED_MESSAGE };
+    if ('error' in outcome) return { success: false, message: outcome.error };
 
     // „Vrátit“ vrátí účet do původního stavu včetně příznaku výchozího účtu
-    const before = outcome?.before;
+    const before = outcome.before;
     showToast(before ? `Účet „${before.name}“ byl archivován.` : 'Účet byl archivován.', 'success', before ? {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => undoArchiveAccountCommand(prev, before, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => undoArchiveAccountCommand(prev, before, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast(`Archivace účtu „${before.name}“ byla vrácena.`);
       },
     } : undefined);
@@ -884,20 +774,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [runCommand, todayStr, showToast]);
 
   const restoreAccount = useCallback((id: string) => {
-    const name = runCommand(prev => restoreAccountCommand(prev, id, createCommandContext(todayStr)))?.name;
+    const outcome = runCommand(prev => restoreAccountCommand(prev, id, createCommandContext(todayStr)));
+    if (!outcome) return;
+    const { name } = outcome;
     showToast(name ? `Účet „${name}“ byl obnoven z archivu.` : 'Účet byl obnoven z archivu.');
   }, [runCommand, todayStr, showToast]);
 
   const deleteAccount = useCallback((id: string) => {
     const outcome = runCommand(prev => deleteAccountCommand(prev, id));
-    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
+    if (!outcome) return { success: false, message: NOT_SAVED_MESSAGE };
+    if ('error' in outcome) return { success: false, message: outcome.error };
 
-    const removed = outcome?.removed;
+    const removed = outcome.removed;
     if (!removed) return { success: true };
     showToast(`Účet „${removed.account.name}“ byl smazán.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => restoreDeletedAccountCommand(prev, removed, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => restoreDeletedAccountCommand(prev, removed, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast(`Účet „${removed.account.name}“ byl obnoven.`);
       },
     });
@@ -905,11 +798,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [runCommand, showToast]);
 
   const reorderAccounts = useCallback((orderedIds: string[]) => {
-    setData(prev => ({
+    saveData(prev => ({
       ...prev,
       accounts: applyAccountOrder(orderedIds, prev.accounts)
     }));
-  }, []);
+  }, [saveData]);
 
   const reconcileBalance = useCallback((
     accountId: string,
@@ -954,12 +847,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [runCommand, showToast]);
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
-    setData(prev => mutateMarketValueHistory(prev, id, edit));
+    if (!saveData(prev => mutateMarketValueHistory(prev, id, edit))) return;
     showToast(`Tržní hodnota z ${formatCzechDate(edit.date)} byla upravena.`);
-  }, [setData, showToast]);
+  }, [saveData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
-    const deleted = runCommand(prev => deleteMarketValueCommand(prev, id))?.deleted;
+    const outcome = runCommand(prev => deleteMarketValueCommand(prev, id));
+    if (!outcome) return;
+    const { deleted } = outcome;
     if (!deleted) {
       showToast('Tržní hodnota byla smazána.');
       return;
@@ -968,7 +863,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast(`Tržní hodnota z ${formatCzechDate(deleted.date)} byla smazána.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => restoreMarketValueCommand(prev, deleted, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => restoreMarketValueCommand(prev, deleted, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast('Tržní hodnota byla obnovena.');
       },
     });
@@ -980,7 +875,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       { accountId, periodKey, amountInHaler, note },
       createCommandContext(todayStr)
     ));
-    if (outcome && 'error' in outcome) {
+    if (!outcome) return;
+    if ('error' in outcome) {
       showToast(outcome.error, 'warning');
       return;
     }
@@ -989,24 +885,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const deleteInvestmentFee = useCallback((id: string) => {
     const outcome = runCommand(prev => deleteInvestmentFeeCommand(prev, id));
-    const target = outcome?.target;
-    if (!outcome || !target) {
+    if (!outcome) return;
+    const { target, deleted } = outcome;
+    if (!target) {
       showToast('Poplatek byl smazán.');
       return;
     }
-    const { deleted } = outcome;
     // „Vrátit“ jen pokud mezitím pro stejné období nevznikl nový poplatek (nejvýše jeden za období)
     showToast(`Poplatek ${formatCurrency(target.amountInHaler)} byl smazán.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => restoreInvestmentFeesCommand(prev, deleted, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => restoreInvestmentFeesCommand(prev, deleted, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast('Poplatek byl obnoven.');
       },
     });
   }, [runCommand, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
-    runCommand(prev => updateCorrectionNoteCommand(prev, { id, note }, createCommandContext(todayStr)));
+    if (runCommand(prev => updateCorrectionNoteCommand(prev, { id, note }, createCommandContext(todayStr))) === undefined) return;
     showToast('Poznámka ke korekci byla uložena.');
   }, [runCommand, todayStr, showToast]);
 
@@ -1015,12 +911,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     if (latestDataRef.current.transactions.some(t => t.id === id)) {
       return deleteTransaction(id);
     }
-    const deleted = runCommand(prev => deleteStandaloneCorrectionCommand(prev, id))?.deleted;
+    const outcome = runCommand(prev => deleteStandaloneCorrectionCommand(prev, id));
+    if (!outcome) return false;
+    const { deleted } = outcome;
     // Samostatná korekce (bez položky v seznamu) se vrací jen do korekcí
     showToast('Korekce zůstatku byla smazána.', 'success', deleted ? {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => restoreCorrectionCommand(prev, deleted, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => restoreCorrectionCommand(prev, deleted, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast('Korekce zůstatku byla obnovena.');
       },
     } : undefined);
@@ -1031,26 +929,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
   const addCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
     const outcome = runCommand(prev => addCategoryCommand(prev, catData, createCommandContext(todayStr)));
-    if (!outcome) {
-      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
-      return undefined;
-    }
+    if (!outcome) return undefined;
     showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
     return outcome.category;
   }, [runCommand, todayStr, showToast]);
 
   const addMainCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
     const outcome = runCommand(prev => addMainCategoryCommand(prev, catData, createCommandContext(todayStr)));
-    if (!outcome) {
-      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
-      return undefined;
-    }
+    if (!outcome) return undefined;
     showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
     return outcome.category;
   }, [runCommand, todayStr, showToast]);
 
   const updateCategory = useCallback((cat: Category) => {
-    runCommand(prev => updateCategoryCommand(prev, cat, createCommandContext(todayStr)));
+    if (runCommand(prev => updateCategoryCommand(prev, cat, createCommandContext(todayStr))) === undefined) return;
     showToast(`Kategorie „${cat.name}“ byla upravena.`);
   }, [runCommand, todayStr, showToast]);
 
@@ -1060,41 +952,44 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       { subcategoryId, newParentId, updateHistorical },
       createCommandContext(todayStr)
     ));
-    showToast(outcome?.subName && outcome.parentName
+    if (!outcome) return;
+    showToast(outcome.subName && outcome.parentName
       ? `Podkategorie „${outcome.subName}“ byla přesunuta do kategorie „${outcome.parentName}“.`
       : 'Podkategorie byla přesunuta do jiné kategorie.');
   }, [runCommand, todayStr, showToast]);
 
   const archiveCategory = useCallback((id: string) => {
     const outcome = runCommand(prev => archiveCategoryCommand(prev, id, createCommandContext(todayStr)));
-    const name = outcome?.name;
-    const affectedIds = outcome?.affectedIds ?? [];
+    if (!outcome) return;
+    const { name, affectedIds } = outcome;
     // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení
     showToast(name ? `Kategorie „${name}“ byla archivována.` : 'Kategorie byla archivována.', 'success', {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => undoArchiveCategoryCommand(prev, affectedIds, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => undoArchiveCategoryCommand(prev, affectedIds, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast(name ? `Archivace kategorie „${name}“ byla vrácena.` : 'Archivace kategorie byla vrácena.');
       },
     });
   }, [runCommand, todayStr, showToast]);
 
   const restoreCategory = useCallback((id: string) => {
-    const name = runCommand(prev => restoreCategoryCommand(prev, id, createCommandContext(todayStr)))?.name;
+    const outcome = runCommand(prev => restoreCategoryCommand(prev, id, createCommandContext(todayStr)));
+    if (!outcome) return;
+    const { name } = outcome;
     showToast(name ? `Kategorie „${name}“ byla obnovena z archivu.` : 'Kategorie byla obnovena z archivu.');
   }, [runCommand, todayStr, showToast]);
 
   const deleteCategory = useCallback((id: string) => {
     const outcome = runCommand(prev => deleteCategoryCommand(prev, id));
-    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
+    if (!outcome) return { success: false, message: NOT_SAVED_MESSAGE };
+    if ('error' in outcome) return { success: false, message: outcome.error };
 
-    const name = outcome?.name;
-    const removed = outcome?.removed ?? [];
+    const { name, removed } = outcome;
     // „Vrátit“ obnoví kategorii i její podkategorie
     showToast(name ? `Kategorie „${name}“ byla smazána.` : 'Kategorie byla smazána.', 'success', removed.length ? {
       label: 'Vrátit',
       onClick: () => {
-        runCommand(prev => restoreDeletedCategoriesCommand(prev, removed, createCommandContext(getTodayInPrague())));
+        if (runCommand(prev => restoreDeletedCategoriesCommand(prev, removed, createCommandContext(getTodayInPrague()))) === undefined) return;
         showToast(name ? `Kategorie „${name}“ byla obnovena.` : 'Kategorie byla obnovena.');
       },
     } : undefined);
@@ -1104,12 +999,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- NASTAVENÍ A DATA -------------------
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
-    setData(prev => ({
+    const saved = saveData(prev => ({
       ...prev,
       settings: { ...prev.settings, ...newSettings }
     }));
+    if (!saved) return;
     showToast('Nastavení bylo uloženo.');
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const loadDemoData = useCallback(async () => {
     if (!isDemoModeEnabled()) {
@@ -1117,7 +1013,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       return;
     }
     const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
-    setData({
+    const saved = saveData({
       version: 2,
       deletions: [],
       sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
@@ -1131,8 +1027,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       marketValueSnapshots: [],
       investmentFees: [],
     });
+    if (!saved) return;
     showToast('Ukázková data byla načtena.');
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const clearAllTransactions = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -1151,11 +1048,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       corrections: [],
     };
 
-    setData(updated);
+    if (!saveData(updated)) return false;
 
     showToast('Všechny položky, pravidelné položky a korekce byly smazány.');
     return true;
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const clearAllAccounts = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -1180,11 +1077,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       },
     };
 
-    setData(updated);
+    if (!saveData(updated)) return false;
 
     showToast('Všechny účty a data k nim byly smazány.');
     return true;
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const clearAllCategories = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -1221,11 +1118,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       recurringExceptions: updatedExceptions,
     };
 
-    setData(updated);
+    if (!saveData(updated)) return false;
 
     showToast('Všechny kategorie byly smazány. Položky zůstaly bez kategorie.');
     return true;
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const resetAllData = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -1237,29 +1134,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     // 2. Kompletní čistý reset: 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií
     const fresh = createResetAppData();
-    sessionChange(fresh, true);
+    if (!saveData(fresh, true)) return false;
 
     showToast('Všechna data byla smazána. Aplikace začíná od nuly.');
     return true;
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const restoreFromBackupFile = useCallback((jsonStr: string) => {
     const parsed = validateAndParseBackup(jsonStr);
-    setData(parsed);
+    if (!saveData(parsed)) return;
 
     setLoadState('ready');
     setLoadErrorDetails(null);
     showToast('Data byla obnovena ze zálohy.');
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const resetToFreshData = useCallback(() => {
     const fresh = createEmptyAppData();
-    sessionChange(fresh, true);
+    if (!saveData(fresh, true)) return;
 
     setLoadState('ready');
     setLoadErrorDetails(null);
     showToast('Aplikace začíná s prázdnými daty.');
-  }, [showToast]);
+  }, [saveData, showToast]);
 
   const retryLoadData = useCallback(() => {
     const res = loadStoredDataResult();
@@ -1286,7 +1183,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     try {
       const parsed = validateAndParseBackup(jsonStr);
       // Slučuje se s aktuálními daty v controlleru, nikdy se starší kopií z tohoto renderu
-      runCommand(prev => importBackupCommand(prev, parsed));
+      if (runCommand(prev => importBackupCommand(prev, parsed)) === undefined) return false;
       showToast('Záloha byla sloučena s aktuálními daty.');
       return true;
     } catch (err: any) {
