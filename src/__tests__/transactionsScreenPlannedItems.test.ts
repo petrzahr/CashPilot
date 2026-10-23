@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, BudgetPeriod, RecurringException, RecurringRule, Transaction } from '../types/finance';
 import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
+import { EMPTY_ITEM_FILTERS, ItemFilters, filterItems } from '../services/itemFilter';
 
 describe('TransactionsScreen Planned Items & Effective Period Filtering', () => {
   const settings: AppSettings = {
@@ -465,24 +466,25 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
 
     const all = [txExpense, txIncome, txTransfer];
 
+    const filterBy = (partial: Partial<ItemFilters>) => filterItems(all, { ...EMPTY_ITEM_FILTERS, ...partial }, []);
+
     // Filter by type: transfer
-    const onlyTransfers = all.filter(t => t.type === 'transfer');
+    const onlyTransfers = filterBy({ types: ['transfer'] });
     expect(onlyTransfers).toHaveLength(1);
     expect(onlyTransfers[0].id).toBe('tx_trf');
 
     // Filter by account: acc_savings (matches targetAccountId)
-    const onlySavings = all.filter(t => t.sourceAccountId === 'acc_savings' || t.targetAccountId === 'acc_savings');
+    const onlySavings = filterBy({ accounts: ['acc_savings'] });
     expect(onlySavings).toHaveLength(1);
     expect(onlySavings[0].id).toBe('tx_trf');
 
     // Filter by status: planned (matches txExpense and txTransfer)
-    const onlyPlanned = all.filter(t => t.status === 'planned');
+    const onlyPlanned = filterBy({ statuses: ['planned'] });
     expect(onlyPlanned).toHaveLength(2);
     expect(onlyPlanned.map(t => t.id)).toEqual(['tx_exp', 'tx_trf']);
 
-    // Filter by regularity: single vs recurring
-    const onlySingle = all.filter(t => !t.recurringRuleId);
-    expect(onlySingle).toHaveLength(3);
+    // Jednorázové a pravidelné položky se zobrazují společně, filtr pravidelnosti neexistuje
+    expect(filterBy({})).toHaveLength(3);
   });
 
   it('9. Initial balance date: no virtual recurring occurrences before account activation', () => {

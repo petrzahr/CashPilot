@@ -1,11 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { addHaler, formatCurrency, subHaler } from '../../services/currencyService';
+import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
 import { calculateIntraDayRunningBalances } from '../../services/sequenceService';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
 import { calculateDefaultAccountKpis } from '../../services/budgetKpiService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
+import { useItemFilters } from '../../hooks/useItemFilters';
+import { getCorrectionDiffInHaler } from '../../services/itemFilter';
+import { parseVirtualId } from '../../services/transactionCommands';
 import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { 
   Plus, 
@@ -140,14 +143,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
   const deletingTxHasExecutedHistorical = useMemo(() => {
     if (!deletingTx) return false;
-    let ruleId = deletingTx.recurringRuleId;
-    if (!ruleId && deletingTx.id.startsWith('virtual_')) {
-      const withoutPrefix = deletingTx.id.slice('virtual_'.length);
-      const lastUnderscore = withoutPrefix.lastIndexOf('_');
-      if (lastUnderscore !== -1) {
-        ruleId = withoutPrefix.slice(0, lastUnderscore);
-      }
-    }
+    const ruleId = deletingTx.recurringRuleId ?? parseVirtualId(deletingTx.id)?.ruleId;
     if (!ruleId) return false;
     return transactions.some(t => t.recurringRuleId === ruleId && t.status === 'executed');
   }, [deletingTx, transactions]);
@@ -177,19 +173,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       openUp={openUp}
     />
   );
-
-  // Filtry v rámci období (multi-select - prázdný výběr = bez omezení)
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterAccounts, setFilterAccounts] = useState<string[]>([]);
-  const [filterMainCategories, setFilterMainCategories] = useState<string[]>([]);
-  const [filterSubCategories, setFilterSubCategories] = useState<string[]>([]);
-  const [filterTypes, setFilterTypes] = useState<string[]>([]);
-  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
-
-  const handleMainCategoriesChange = (newMainIds: string[]) => {
-    setFilterMainCategories(newMainIds);
-    setFilterSubCategories([]);
-  };
 
   // Souhrn pro vybranou periodu z forecastu
   const currentSummary = useMemo(() => {
@@ -259,158 +242,43 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     };
   }, [defaultAccount, accounts, currentSummary, allPeriodTransactions, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
 
-  // Seznam účtů seřazený abecedně A–Z (včetně archivovaných, pokud mají záznam v tomto období)
-  const sortedAccounts = useMemo(() => {
-    return [...accounts]
-      .filter(a => a.status === 'active' || allPeriodTransactions.some(t => t.sourceAccountId === a.id || t.targetAccountId === a.id))
-      .sort((a, b) => czechStringCompare(a.name, b.name));
-  }, [accounts, allPeriodTransactions]);
-
-  // Množina ID kategorií použitých v tomto období
-  const usedCategoryIdsInPeriod = useMemo(() => {
-    const ids = new Set<string>();
-    for (const tx of allPeriodTransactions) {
-      if (tx.categoryId) ids.add(tx.categoryId);
-      if (tx.subcategoryId) ids.add(tx.subcategoryId);
-    }
-    return ids;
-  }, [allPeriodTransactions]);
-
-  // Hlavní kategorie (příjmové i výdajové dohromady), seřazené abecedně A–Z
-  const availableMainCategories = useMemo(() => {
-    return categories
-      .filter(c => {
-        if (c.parentId) return false;
-        if (c.status === 'active') return true;
-        if (usedCategoryIdsInPeriod.has(c.id)) return true;
-        return categories.some(sub => sub.parentId === c.id && usedCategoryIdsInPeriod.has(sub.id));
-      })
-      .sort((a, b) => czechStringCompare(a.name, b.name));
-  }, [categories, usedCategoryIdsInPeriod]);
-
-  // Podkategorie pro vybrané hlavní kategorie, seřazené abecedně A–Z
-  const availableSubCategories = useMemo(() => {
-    if (filterMainCategories.length === 0) return [];
-    return categories
-      .filter(c => {
-        if (!c.parentId || !filterMainCategories.includes(c.parentId)) return false;
-        if (c.status === 'active') return true;
-        return usedCategoryIdsInPeriod.has(c.id);
-      })
-      .sort((a, b) => czechStringCompare(a.name, b.name));
-  }, [categories, filterMainCategories, usedCategoryIdsInPeriod]);
-
-  // ID všech podkategorií patřících pod aktuálně vybrané hlavní kategorie
-  const childSubCategoryIds = useMemo(() => {
-    if (filterMainCategories.length === 0) return new Set<string>();
-    return new Set(categories.filter(c => c.parentId && filterMainCategories.includes(c.parentId)).map(c => c.id));
-  }, [categories, filterMainCategories]);
-
-  // Bezpečný reset filtrů, pokud se vybraná hodnota stane neplatnou
-  useEffect(() => {
-    const valid = filterAccounts.filter(id => sortedAccounts.some(a => a.id === id));
-    if (valid.length !== filterAccounts.length) {
-      setFilterAccounts(valid);
-    }
-  }, [sortedAccounts, filterAccounts]);
-
-  useEffect(() => {
-    const valid = filterMainCategories.filter(id => availableMainCategories.some(c => c.id === id));
-    if (valid.length !== filterMainCategories.length) {
-      setFilterMainCategories(valid);
-      setFilterSubCategories([]);
-    }
-  }, [availableMainCategories, filterMainCategories]);
-
-  useEffect(() => {
-    const valid = filterSubCategories.filter(id => availableSubCategories.some(c => c.id === id));
-    if (valid.length !== filterSubCategories.length) {
-      setFilterSubCategories(valid);
-    }
-  }, [availableSubCategories, filterSubCategories]);
+  // Filtry seznamu položek v rámci období (sdílené se sekcí Všechny položky, viz useItemFilters)
+  const itemFilters = useItemFilters(allPeriodTransactions, accounts, categories);
+  const {
+    search: searchQuery,
+    accounts: filterAccounts,
+    mainCategories: filterMainCategories,
+    subCategories: filterSubCategories,
+    types: filterTypes,
+    statuses: filterStatuses,
+  } = itemFilters.filters;
+  const {
+    setSearch: setSearchQuery,
+    setAccounts: setFilterAccounts,
+    setMainCategories: handleMainCategoriesChange,
+    setSubCategories: setFilterSubCategories,
+    setTypes: setFilterTypes,
+    setStatuses: setFilterStatuses,
+    clear: clearFilters,
+    activeCount: activeFilterCount,
+    sumInHaler: periodTransactionsSum,
+  } = itemFilters;
+  const { accounts: sortedAccounts, mainCategories: availableMainCategories, subCategories: availableSubCategories } = itemFilters.options;
 
   // Filtrované položky v tomto období (pro tabulku a denní seskupení)
-  const periodTransactions = useMemo(() => {
-    return allPeriodTransactions.filter(tx => {
-      if (searchQuery.trim()) {
-        const s = searchQuery.toLowerCase();
-        const matchTitle = tx.title.toLowerCase().includes(s);
-        const matchNote = tx.note?.toLowerCase().includes(s);
-        if (!matchTitle && !matchNote) return false;
-      }
-      if (filterAccounts.length > 0) {
-        const matchesAccount = filterAccounts.includes(tx.sourceAccountId) ||
-                                (!!tx.targetAccountId && filterAccounts.includes(tx.targetAccountId));
-        if (!matchesAccount) return false;
-      }
-      if (filterMainCategories.length > 0) {
-        if (filterSubCategories.length > 0) {
-          const matchesSub = (!!tx.subcategoryId && filterSubCategories.includes(tx.subcategoryId)) ||
-                              (!!tx.categoryId && filterSubCategories.includes(tx.categoryId));
-          if (!matchesSub) return false;
-        } else {
-          const matchesMain = !!tx.categoryId && filterMainCategories.includes(tx.categoryId);
-          const matchesChildSub = (tx.subcategoryId && childSubCategoryIds.has(tx.subcategoryId)) ||
-                                  (tx.categoryId && childSubCategoryIds.has(tx.categoryId));
-          if (!matchesMain && !matchesChildSub) return false;
-        }
-      }
-      if (filterTypes.length > 0 && !filterTypes.includes(tx.type)) {
-        return false;
-      }
-      if (filterStatuses.length > 0 && !filterStatuses.includes(tx.status)) {
-        return false;
-      }
-      return true;
-    }).sort((a, b) => a.date.localeCompare(b.date));
-  }, [
-    allPeriodTransactions,
-    searchQuery,
-    filterAccounts,
-    filterMainCategories,
-    filterSubCategories,
-    childSubCategoryIds,
-    filterTypes,
-    filterStatuses
-  ]);
+  const periodTransactions = useMemo(
+    () => [...itemFilters.filtered].sort((a, b) => a.date.localeCompare(b.date)),
+    [itemFilters.filtered]
+  );
 
-  // Počet aktivních filtrů pro tlačítko „Zrušit filtry“
-  const activeFilterCount = [
-    searchQuery.trim(), filterAccounts, filterMainCategories, filterSubCategories, filterTypes, filterStatuses,
-  ].filter(f => f.length > 0).length;
   // Na mobilu jsou filtry kromě hledání schované; počet ukazuje, kolik jich je za tlačítkem aktivních
   const [filtersOpen, setFiltersOpen] = useState(false);
   const hiddenFilterCount = activeFilterCount - (searchQuery.trim() ? 1 : 0);
-  const clearFilters = () => {
-    setSearchQuery('');
-    setFilterAccounts([]);
-    setFilterMainCategories([]);
-    setFilterSubCategories([]);
-    setFilterTypes([]);
-    setFilterStatuses([]);
-  };
 
   // Prázdný seznam: odliší období bez položek od filtrů, které nic nenašly
   const emptyListMessage = allPeriodTransactions.length === 0
     ? 'V tomto období zatím nejsou žádné položky. Přidejte první tlačítkem Nová položka.'
     : 'Filtrům neodpovídá žádná položka. Upravte filtry, nebo je zrušte tlačítkem Zrušit filtry.';
-
-  // Suma vyfiltrovaných položek (příjem +, výdaj −, převod a korekce dle znaménka jako ve výpisu)
-  const periodTransactionsSum = useMemo(() => {
-    return periodTransactions.reduce((sum, tx) => {
-      const effectiveAmount = getEffectiveAmountInHaler(tx);
-      if (tx.type === 'balance_adjustment') {
-        const diff = tx.diffInHaler ?? (
-          tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
-            ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
-            : tx.amountInHaler
-        );
-        return addHaler(sum, diff);
-      }
-      if (tx.type === 'expense') return subHaler(sum, effectiveAmount);
-      return addHaler(sum, effectiveAmount);
-    }, 0);
-  }, [periodTransactions]);
 
   // Řazení pro klasický seznam podle data a pořadí (stejné jako v sekci Položky);
   // režim po dnech má vlastní pevné řazení kvůli přetahování, proto samostatné pole
@@ -615,11 +483,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     const isCancelled = tx.status === 'cancelled';
     const isCorrection = tx.type === 'balance_adjustment';
 
-    const diff = tx.diffInHaler ?? (
-      tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
-        ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
-        : tx.amountInHaler
-    );
+    const diff = getCorrectionDiffInHaler(tx);
 
     const rowTone = isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : '';
 
@@ -1306,11 +1170,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                         const isCancelled = tx.status === 'cancelled';
                         const isCorrection = tx.type === 'balance_adjustment';
 
-                        const diff = tx.diffInHaler ?? (
-                          tx.actualBalanceInHaler !== undefined && tx.calculatedBalanceInHaler !== undefined
-                            ? tx.actualBalanceInHaler - tx.calculatedBalanceInHaler
-                            : tx.amountInHaler
-                        );
+                        const diff = getCorrectionDiffInHaler(tx);
 
                         const balanceAfterInHaler = sourceAccountBalanceByTxId.get(tx.id) ?? runningBalanceInHaler;
 

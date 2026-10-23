@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BudgetPeriod, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
-import { } from '../services/financialEngine';
+import { EMPTY_ITEM_FILTERS, filterItems, getFilterOptions } from '../services/itemFilter';
 import { createBudgetPeriod } from '../services/periodService';
 
 describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
@@ -86,27 +86,19 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
   });
 
   it('2. Main categories dropdown: contains all income and expense main categories together sorted A–Z', () => {
-    const activeMainCats = testCategories
-      .filter(c => !c.parentId && c.status === 'active')
-      .sort((a, b) => czechStringCompare(a.name, b.name));
-
-    const names = activeMainCats.map(c => c.name);
+    const names = getFilterOptions([], testAccounts, testCategories, []).mainCategories.map(c => c.name);
     // Auto, Domácnost, Mzda, Ostatní příjmy
     expect(names).toEqual(['Auto', 'Domácnost', 'Mzda', 'Ostatní příjmy']);
   });
 
   it('3. Subcategories dropdown: dependent on selected main category, sorted A–Z', () => {
     // For 'cat_dom' (Domácnost):
-    const subsDom = testCategories
-      .filter(c => c.parentId === 'cat_dom' && c.status === 'active')
-      .sort((a, b) => czechStringCompare(a.name, b.name));
+    const subsDom = getFilterOptions([], testAccounts, testCategories, ['cat_dom']).subCategories;
 
     expect(subsDom.map(s => s.name)).toEqual(['Drogerie', 'Stravování']);
 
     // For 'cat_aut' (Auto): has NO subcategories
-    const subsAut = testCategories
-      .filter(c => c.parentId === 'cat_aut' && c.status === 'active')
-      .sort((a, b) => czechStringCompare(a.name, b.name));
+    const subsAut = getFilterOptions([], testAccounts, testCategories, ['cat_aut']).subCategories;
 
     expect(subsAut).toHaveLength(0);
   });
@@ -172,25 +164,18 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
 
     const txs = [txDomDirect, txDomStravovani, txDomDrogerie, txAuto];
 
-    const childSubCategoryIds = new Set(
-      testCategories.filter(c => c.parentId === 'cat_dom').map(c => c.id)
-    );
-
     // Filter by main category 'cat_dom' without subcategory:
-    const filteredByDom = txs.filter(tx => {
-      const matchesMain = tx.categoryId === 'cat_dom';
-      const matchesChildSub = (tx.subcategoryId && childSubCategoryIds.has(tx.subcategoryId)) ||
-                              (tx.categoryId && childSubCategoryIds.has(tx.categoryId));
-      return matchesMain || matchesChildSub;
-    });
+    const filteredByDom = filterItems(txs, { ...EMPTY_ITEM_FILTERS, mainCategories: ['cat_dom'] }, testCategories);
 
     expect(filteredByDom).toHaveLength(3);
     expect(filteredByDom.map(t => t.id)).toEqual(['tx_dom_direct', 'tx_dom_strav', 'tx_dom_drog']);
 
     // Filter by specific subcategory 'sub_str' (Stravování):
-    const filteredByStrav = txs.filter(tx => {
-      return tx.subcategoryId === 'sub_str' || tx.categoryId === 'sub_str';
-    });
+    const filteredByStrav = filterItems(
+      txs,
+      { ...EMPTY_ITEM_FILTERS, mainCategories: ['cat_dom'], subCategories: ['sub_str'] },
+      testCategories
+    );
     expect(filteredByStrav).toHaveLength(1);
     expect(filteredByStrav[0].id).toBe('tx_dom_strav');
   });
@@ -211,21 +196,7 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
       updatedAt: '',
     };
 
-    const baseTransactions = [historicalTx];
-    const usedCategoryIdsInBase = new Set<string>();
-    for (const tx of baseTransactions) {
-      if (tx.categoryId) usedCategoryIdsInBase.add(tx.categoryId);
-      if (tx.subcategoryId) usedCategoryIdsInBase.add(tx.subcategoryId);
-    }
-
-    const availableMain = testCategories
-      .filter(c => {
-        if (c.parentId) return false;
-        if (c.status === 'active') return true;
-        if (usedCategoryIdsInBase.has(c.id)) return true;
-        return testCategories.some(sub => sub.parentId === c.id && usedCategoryIdsInBase.has(sub.id));
-      })
-      .sort((a, b) => czechStringCompare(a.name, b.name));
+    const availableMain = getFilterOptions([historicalTx], testAccounts, testCategories, []).mainCategories;
 
     // Bydlení is archived, but present in data -> must be included
     const archBydleni = availableMain.find(c => c.id === 'cat_arch_bydleni');
@@ -233,13 +204,7 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
     expect(archBydleni?.status).toBe('archived');
 
     // And subcategory Energie under Bydlení:
-    const availableSubs = testCategories
-      .filter(c => {
-        if (c.parentId !== 'cat_arch_bydleni') return false;
-        if (c.status === 'active') return true;
-        return usedCategoryIdsInBase.has(c.id);
-      })
-      .sort((a, b) => czechStringCompare(a.name, b.name));
+    const availableSubs = getFilterOptions([historicalTx], testAccounts, testCategories, ['cat_arch_bydleni']).subCategories;
 
     const archEnergie = availableSubs.find(s => s.id === 'sub_arch_energie');
     expect(archEnergie).toBeDefined();
@@ -281,7 +246,7 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
   });
 
   it('7. Accounts dropdown options: sorted alphabetically A–Z', () => {
-    const sorted = [...testAccounts].sort((a, b) => czechStringCompare(a.name, b.name));
+    const sorted = getFilterOptions([], testAccounts, testCategories, []).accounts;
     // Běžný účet, ČSOB Penze, Spořicí účet
     expect(sorted.map(a => a.name)).toEqual([
       'Běžný účet',
@@ -339,26 +304,17 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
 
     const all = [targetTx, wrongStatus, wrongAccount, wrongSubcategory, wrongPeriod];
 
-    const mainFilter = 'cat_dom';
-    const subFilter = 'sub_str';
-    const accFilter = 'acc_bez';
-    const statFilter = 'planned';
+    const filters = {
+      ...EMPTY_ITEM_FILTERS,
+      accounts: ['acc_bez'],
+      mainCategories: ['cat_dom'],
+      subCategories: ['sub_str'],
+      statuses: ['planned'],
+    };
 
-    const result = all.filter(tx => {
-      // Period
-      if (tx.date < periodSep.startDate || tx.date > periodSep.endDate) return false;
-      // Account
-      if (accFilter && tx.sourceAccountId !== accFilter && tx.targetAccountId !== accFilter) return false;
-      // Category & Subcategory
-      if (mainFilter) {
-        if (subFilter) {
-          if (tx.subcategoryId !== subFilter && tx.categoryId !== subFilter) return false;
-        }
-      }
-      // Status
-      if (statFilter && tx.status !== statFilter) return false;
-      return true;
-    });
+    // Období omezuje obrazovka sama (aktuální období), filtry pak platí současně (AND)
+    const result = filterItems(all, filters, testCategories)
+      .filter(tx => tx.date >= periodSep.startDate && tx.date <= periodSep.endDate);
 
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('tx_target');
@@ -395,10 +351,7 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
     const both = [oneOffTx, recurringTx];
 
     // In the new implementation, no recurringFilter is applied, so both items show up
-    const filtered = both.filter(tx => {
-      if (tx.sourceAccountId !== 'acc_bez') return false;
-      return true;
-    });
+    const filtered = filterItems(both, { ...EMPTY_ITEM_FILTERS, accounts: ['acc_bez'] }, testCategories);
 
     expect(filtered).toHaveLength(2);
     expect(filtered.map(t => t.id)).toEqual(['tx_oneoff', 'tx_recurring']);

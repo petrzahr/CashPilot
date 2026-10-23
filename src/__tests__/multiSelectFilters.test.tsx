@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { MultiSelectDropdown } from '../components/shared/MultiSelectDropdown';
 import { Account, AccountType, Category, Transaction } from '../types/finance';
+import { EMPTY_ITEM_FILTERS, filterItems } from '../services/itemFilter';
 
 describe('MultiSelectDropdown - popisek tlačítka podle výběru', () => {
   const options = [
@@ -48,29 +49,19 @@ describe('MultiSelectDropdown - popisek tlačítka podle výběru', () => {
   });
 });
 
-/** Replikuje predikát filtru účtu z MonthlyBudgetScreen/TransactionsScreen (prázdný výběr = bez omezení, OR přes zdrojový i cílový účet). */
+/** Filtr účtu přes sdílený filterItems (prázdný výběr = bez omezení, OR přes zdrojový i cílový účet). */
 function matchesAccountFilter(tx: Transaction, filterAccounts: string[]): boolean {
-  if (filterAccounts.length === 0) return true;
-  return filterAccounts.includes(tx.sourceAccountId) ||
-         (!!tx.targetAccountId && filterAccounts.includes(tx.targetAccountId));
+  return filterItems([tx], { ...EMPTY_ITEM_FILTERS, accounts: filterAccounts }, []).length === 1;
 }
 
-/** Replikuje predikát filtru kategorie/podkategorie (multi-select hlavní kategorie i podkategorie). */
+/** Filtr kategorie/podkategorie přes sdílený filterItems (multi-select hlavní kategorie i podkategorie). */
 function matchesCategoryFilter(
   tx: Transaction,
   filterMainCategories: string[],
   filterSubCategories: string[],
-  childSubCategoryIds: Set<string>,
+  categories: Category[],
 ): boolean {
-  if (filterMainCategories.length === 0) return true;
-  if (filterSubCategories.length > 0) {
-    return (!!tx.subcategoryId && filterSubCategories.includes(tx.subcategoryId)) ||
-           (!!tx.categoryId && filterSubCategories.includes(tx.categoryId));
-  }
-  const matchesMain = !!tx.categoryId && filterMainCategories.includes(tx.categoryId);
-  const matchesChildSub = (!!tx.subcategoryId && childSubCategoryIds.has(tx.subcategoryId)) ||
-                          (!!tx.categoryId && childSubCategoryIds.has(tx.categoryId));
-  return matchesMain || matchesChildSub;
+  return filterItems([tx], { ...EMPTY_ITEM_FILTERS, mainCategories: filterMainCategories, subCategories: filterSubCategories }, categories).length === 1;
 }
 
 let txSeq = 0;
@@ -109,12 +100,10 @@ describe('Filtr kategorie/podkategorie - multi-select', () => {
   const sub2a: Category = { id: 'sub2a', name: 'Palivo', type: 'expense', parentId: 'main2', color: '', icon: '', sortOrder: 1, status: 'active', createdAt: '', updatedAt: '' };
   const categories = [mainCat1, mainCat2, mainCat3, sub1a, sub2a];
 
-  const childSubCategoryIds = (mainIds: string[]) =>
-    new Set(categories.filter(c => c.parentId && mainIds.includes(c.parentId)).map(c => c.id));
 
   it('bez výběru hlavní kategorie procházejí všechny položky', () => {
     const tx = makeTx({ sourceAccountId: 'acc', categoryId: 'main3' });
-    expect(matchesCategoryFilter(tx, [], [], new Set())).toBe(true);
+    expect(matchesCategoryFilter(tx, [], [], categories)).toBe(true);
   });
 
   it('výběr dvou hlavních kategorií zahrne přímé položky i položky jejich podkategorií (sjednocení)', () => {
@@ -124,12 +113,11 @@ describe('Filtr kategorie/podkategorie - multi-select', () => {
     const txOtherMain = makeTx({ sourceAccountId: 'acc', categoryId: 'main3' });
 
     const selectedMains = ['main1', 'main2'];
-    const childIds = childSubCategoryIds(selectedMains);
 
-    expect(matchesCategoryFilter(txDirectMain1, selectedMains, [], childIds)).toBe(true);
-    expect(matchesCategoryFilter(txSub1a, selectedMains, [], childIds)).toBe(true);
-    expect(matchesCategoryFilter(txSub2a, selectedMains, [], childIds)).toBe(true);
-    expect(matchesCategoryFilter(txOtherMain, selectedMains, [], childIds)).toBe(false);
+    expect(matchesCategoryFilter(txDirectMain1, selectedMains, [], categories)).toBe(true);
+    expect(matchesCategoryFilter(txSub1a, selectedMains, [], categories)).toBe(true);
+    expect(matchesCategoryFilter(txSub2a, selectedMains, [], categories)).toBe(true);
+    expect(matchesCategoryFilter(txOtherMain, selectedMains, [], categories)).toBe(false);
   });
 
   it('výběr konkrétních podkategorií zúží výsledek jen na ně, i když je vybráno více hlavních kategorií', () => {
@@ -139,42 +127,37 @@ describe('Filtr kategorie/podkategorie - multi-select', () => {
 
     const selectedMains = ['main1', 'main2'];
     const selectedSubs = ['sub1a'];
-    const childIds = childSubCategoryIds(selectedMains);
 
-    expect(matchesCategoryFilter(txSub1a, selectedMains, selectedSubs, childIds)).toBe(true);
-    expect(matchesCategoryFilter(txSub2a, selectedMains, selectedSubs, childIds)).toBe(false);
+    expect(matchesCategoryFilter(txSub1a, selectedMains, selectedSubs, categories)).toBe(true);
+    expect(matchesCategoryFilter(txSub2a, selectedMains, selectedSubs, categories)).toBe(false);
     // Přímá položka hlavní kategorie bez podkategorie neodpovídá vybrané konkrétní podkategorii.
-    expect(matchesCategoryFilter(txDirectMain1, selectedMains, selectedSubs, childIds)).toBe(false);
+    expect(matchesCategoryFilter(txDirectMain1, selectedMains, selectedSubs, categories)).toBe(false);
   });
 });
 
 describe('Filtr typu a stavu - multi-select (OR přes vybrané hodnoty)', () => {
+  const ids = (items: Transaction[], types: string[], statuses: string[]) =>
+    filterItems(items, { ...EMPTY_ITEM_FILTERS, types, statuses }, []).map(t => t.id);
+
   it('bez výběru procházejí všechny typy/stavy', () => {
-    const filterTypes: string[] = [];
     const tx = makeTx({ sourceAccountId: 'acc', type: 'expense' });
-    expect(filterTypes.length === 0 || filterTypes.includes(tx.type)).toBe(true);
+    expect(ids([tx], [], [])).toEqual([tx.id]);
   });
 
   it('výběr více typů zahrne položky odpovídající kterémukoli z nich', () => {
-    const filterTypes = ['income', 'transfer'];
     const txIncome = makeTx({ sourceAccountId: 'acc', type: 'income' });
     const txTransfer = makeTx({ sourceAccountId: 'acc', type: 'transfer' });
     const txExpense = makeTx({ sourceAccountId: 'acc', type: 'expense' });
 
-    expect(filterTypes.includes(txIncome.type)).toBe(true);
-    expect(filterTypes.includes(txTransfer.type)).toBe(true);
-    expect(filterTypes.includes(txExpense.type)).toBe(false);
+    expect(ids([txIncome, txTransfer, txExpense], ['income', 'transfer'], [])).toEqual([txIncome.id, txTransfer.id]);
   });
 
   it('výběr více stavů zahrne položky odpovídající kterémukoli z nich', () => {
-    const filterStatuses = ['planned', 'cancelled'];
     const txPlanned = makeTx({ sourceAccountId: 'acc', status: 'planned' });
     const txCancelled = makeTx({ sourceAccountId: 'acc', status: 'cancelled' });
     const txExecuted = makeTx({ sourceAccountId: 'acc', status: 'executed' });
 
-    expect(filterStatuses.includes(txPlanned.status)).toBe(true);
-    expect(filterStatuses.includes(txCancelled.status)).toBe(true);
-    expect(filterStatuses.includes(txExecuted.status)).toBe(false);
+    expect(ids([txPlanned, txCancelled, txExecuted], [], ['planned', 'cancelled'])).toEqual([txPlanned.id, txCancelled.id]);
   });
 });
 
