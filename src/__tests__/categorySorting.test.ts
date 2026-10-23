@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { czechStringCompare, sortCategoriesAlphabetically } from '../services/categoryService';
 import { Category } from '../types/finance';
+import { createEmptyAppData } from '../constants/defaultData';
+import { addMainCategory } from '../services/categoryCommands';
+import { createCommandContext } from '../services/transactionCommands';
 
 describe('Czech Alphabetical Sorting for Categories', () => {
   describe('czechStringCompare', () => {
@@ -155,24 +158,17 @@ describe('Czech Alphabetical Sorting for Categories', () => {
   });
 
   describe('New Main Category Creation & Constraints', () => {
-    // Simulace API funkce addMainCategory z FinanceContext
+    // Volá skutečný příkaz addMainCategory
     function addMainCategoryAPI(
-      catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'> & { parentId?: any },
+      catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'parentId'> & { parentId?: string | null },
       existingCategories: Category[]
     ): { newCat: Category; updatedCategories: Category[] } {
-      const nowIso = new Date().toISOString();
-      const newCat: Category = {
-        ...catData,
-        // Pravidlo API: Nová hlavní kategorie má VŽDY parentId = null bez ohledu na vstup
-        parentId: null,
-        id: `cat_${Date.now()}`,
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      };
-      return {
-        newCat,
-        updatedCategories: [...existingCategories, newCat]
-      };
+      const { data, outcome } = addMainCategory(
+        { ...createEmptyAppData(), categories: existingCategories },
+        { parentId: null, ...catData },
+        createCommandContext('2026-09-20')
+      );
+      return { newCat: outcome.category, updatedCategories: data.categories };
     }
 
     it('enforces parentId = null when creating a new main category', () => {
