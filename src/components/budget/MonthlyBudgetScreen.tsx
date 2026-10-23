@@ -981,10 +981,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             </div>
             {categoryOverview.transfers.length > 0 ? (
               <div className="space-y-1 pt-1 border-t border-slate-200">
-                {categoryOverview.transfers.map(tx => (
+                {categoryOverview.transfers.map(({ transaction: tx, amountInHaler }) => (
                   <div key={tx.id} className="flex justify-between gap-3 text-xs text-slate-500">
                     <span className="truncate min-w-0" title={tx.title}>{tx.title}</span>
-                    <span className="font-medium shrink-0">{formatCurrency(getEffectiveAmountInHaler(tx))}</span>
+                    <span className="font-medium shrink-0">{formatCurrency(amountInHaler)}</span>
                   </div>
                 ))}
               </div>

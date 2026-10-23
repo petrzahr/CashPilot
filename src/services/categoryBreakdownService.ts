@@ -2,7 +2,7 @@ import { Account, BudgetPeriod, Category, RecurringException, RecurringRule, Tra
 import { BudgetPeriodInfo } from './analyticsEngine';
 import { czechStringCompare, sortCategoriesAlphabetically } from './categoryService';
 import { addHaler } from './currencyService';
-import { getEffectiveAmountInHaler } from './accountScope';
+import { getAccountFlowInHaler, getEffectiveAmountInHaler } from './accountScope';
 import { getEffectiveTransactionsForPeriod } from './financialEngine';
 
 export type CategoryBreakdownGroup = 'income' | 'expense' | 'transfer';
@@ -39,13 +39,26 @@ const TRANSFERS_KEY = '__transfers';
 const sum = (values: number[]) => values.reduce((s, v) => addHaler(s, v), 0);
 
 /**
+ * Převod z pohledu účtu: čistě podle protiúčtu, odchozí +, příchozí −. Bez účtu hrubě
+ * podle cílového účtu. Převod, který se účtu netýká, vrací null.
+ */
+function scopedTransfer(t: Transaction, accountId?: string): { counterpartyId: string; amountInHaler: number } | null {
+  if (!accountId) return { counterpartyId: t.targetAccountId || '', amountInHaler: getEffectiveAmountInHaler(t) };
+  const amountInHaler = -getAccountFlowInHaler(t, accountId);
+  if (amountInHaler === 0) return null;
+  const counterpartyId = (t.sourceAccountId === accountId ? t.targetAccountId : t.sourceAccountId) || '';
+  return { counterpartyId, amountInHaler };
+}
+
+/**
  * Souhrn podle kategorií a podkategorií za každé rozpočtové období vybraného rozsahu.
  * Položky období se berou stejně jako v "Přehledu rozpočtu podle kategorií" v Měsíčním
  * rozpočtu (efektivní položky celého období včetně plánovaných a opakovaných, bez zrušených).
  * Kategorie i podkategorie jsou řazené abecedně (nejdřív příjmové, pak výdajové), prázdné
  * řádky se vynechávají. Převody jsou v samostatném řádku "Spoření & Převody" rozpadlém
  * podle cílového účtu. Provedené položky se počítají se skutečnou částkou, plánované s plánovanou.
- * S `accountId` se berou jen příjmy a výdaje tohoto účtu a jen převody z něj odchozí.
+ * S `accountId` se berou jen příjmy a výdaje tohoto účtu a převody čistě podle protiúčtu
+ * (odchozí +, vrácené zpět −), stejně jako dlaždice Uspořeno / Investováno.
  */
 export function calculateCategoryBreakdown(
   periods: Pick<BudgetPeriodInfo, 'period'>[],
@@ -92,13 +105,15 @@ export function calculateCategoryBreakdown(
 
     for (const t of txs) {
       if (t.status === 'cancelled' || t.type === 'balance_adjustment') continue;
-      if (accountId && t.sourceAccountId !== accountId) continue;
-      const amount = getEffectiveAmountInHaler(t);
 
       if (t.type === 'transfer') {
-        add(transferAmounts, t.targetAccountId || '', idx, amount);
+        const net = scopedTransfer(t, accountId);
+        if (net) add(transferAmounts, net.counterpartyId, idx, net.amountInHaler);
         continue;
       }
+
+      if (accountId && t.sourceAccountId !== accountId) continue;
+      const amount = getEffectiveAmountInHaler(t);
 
       // Položka může mít v categoryId rovnou podkategorii - dohledáme její hlavní kategorii
       const cat = t.categoryId ? catMap.get(t.categoryId) : undefined;
@@ -223,14 +238,15 @@ export interface BudgetCategoryCard {
 export interface BudgetCategoryOverview {
   cards: BudgetCategoryCard[];
   transferTotalInHaler: number;
-  transfers: Transaction[];
+  transfers: { transaction: Transaction; amountInHaler: number }[];
 }
 
 /**
  * "Přehled rozpočtu podle kategorií" v Měsíčním rozpočtu za jedno období. Částky se berou
  * z calculateCategoryBreakdown se stejným `accountId`, takže sedí s Analýzou a trendy.
  * Aktivní hlavní kategorie se zobrazují vždy (i s nulou), archivované a "Bez kategorie"
- * jen s nenulovou částkou. Převody jsou jednotlivé položky (s `accountId` jen odchozí).
+ * jen s nenulovou částkou. Převody jsou jednotlivé položky se znaménkovou částkou
+ * (s `accountId` odchozí +, příchozí −).
  */
 export function calculateBudgetCategoryOverview(
   period: BudgetPeriod,
@@ -289,9 +305,11 @@ export function calculateBudgetCategoryOverview(
     undefined,
     accounts
   );
-  const transfers = periodTxs.filter(
-    (t) => t.type === 'transfer' && t.status !== 'cancelled' && (!accountId || t.sourceAccountId === accountId)
-  );
+  const transfers = periodTxs.flatMap((t) => {
+    if (t.type !== 'transfer' || t.status === 'cancelled') return [];
+    const net = scopedTransfer(t, accountId);
+    return net ? [{ transaction: t, amountInHaler: net.amountInHaler }] : [];
+  });
 
   return {
     cards: [...cardsFor('income'), ...cardsFor('expense')],
