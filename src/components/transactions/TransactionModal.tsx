@@ -566,7 +566,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 value={amountStr}
                 onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
                 {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
-                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
+                className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
               />
               <span className="absolute right-3.5 inset-y-0 flex items-center text-xs font-semibold text-slate-500 pointer-events-none">
                 Kč
@@ -586,7 +586,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               value={title}
               onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.title)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.title, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.title, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             />
             <FieldError inputId={`${fieldId}-1`} message={errors.title} />
           </div>
@@ -603,7 +603,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               required
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
           </div>
 
@@ -614,7 +614,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <select id={`${fieldId}-5`}
               value={status}
               onChange={(e) => setStatus(e.target.value as TransactionStatus)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             >
               <option value="planned" disabled={isPastOrToday && status !== 'planned'}>Plánovaná</option>
               <option value="executed">Uskutečněná</option>
@@ -637,7 +637,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               value={sourceAccountId}
               onChange={(e) => { setSourceAccountId(e.target.value); clearError('source'); }}
               {...fieldErrorProps(`${fieldId}-6`, errors.source || sourceAccError)}
-              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.source || sourceAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
+              className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.source || sourceAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             >
               <option value="">Vyberte účet</option>
               {activeAccounts.map((acc) => {
@@ -662,7 +662,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 value={targetAccountId}
                 onChange={(e) => { setTargetAccountId(e.target.value); clearError('target'); }}
                 {...fieldErrorProps(`${fieldId}-7`, errors.target || targetAccError)}
-                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.target || targetAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
+                className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.target || targetAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
               >
                 <option value="">Vyberte účet</option>
                 {activeAccounts
@@ -687,7 +687,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 <select id={`${fieldId}-8`}
                   value={categoryId}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 >
                   <option value="">Bez kategorie</option>
                   {relevantCategories.map((cat) => (
@@ -706,7 +706,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                   disabled={!categoryId || subcategories.length === 0}
-                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-50 disabled:text-slate-400"
+                  className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-50 disabled:text-slate-400"
                 >
                   <option value="">Bez podkategorie</option>
                   {subcategories.map((sub) => (
@@ -722,7 +722,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Pořadí v rámci dne: doplní se samo (na konec dne), ruční změna je jen pro výjimky */}
         <details className="group rounded-xl border border-slate-200">
-          <summary className="flex items-center justify-between gap-3 px-3.5 min-h-10 max-md:min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-xl hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40">
+          <summary className="flex items-center justify-between gap-3 px-3.5 min-h-10 max-md:min-h-11 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-xl hover:bg-slate-50 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40">
             <span className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
               <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">
@@ -743,7 +743,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               step="1"
               value={sequenceStr}
               onChange={(e) => setSequenceStr(e.target.value)}
-              className="w-full sm:w-32 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
+              className="w-full sm:w-32 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
               aria-describedby={`${fieldId}-4-hint`}
             />
             <p id={`${fieldId}-4-hint`} className="text-xs text-slate-500">
@@ -769,7 +769,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     }
                   }
                 }}
-                className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
               />
               <span className="text-sm font-medium text-slate-900">
                 Opakovat v dalších obdobích
@@ -786,7 +786,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     <select id={`${fieldId}-10`}
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     >
                       <option value="monthly">Každý měsíc</option>
                       <option value="bi_monthly">Každé 2 měsíce</option>
@@ -809,7 +809,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           const val = parseInt(e.target.value, 10);
                           setDayOfMonth(isNaN(val) ? 0 : val);
                         }}
-                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -824,7 +824,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     min={date}
                     onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
-                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-none ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
+                    className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
                   />
                   <FieldError inputId={`${fieldId}-12`} message={errors.endDate} />
                   <p className="text-xs text-slate-500 mt-1">
@@ -849,7 +849,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             placeholder="např. Faktura č. 2026-04, účel platby…"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
 

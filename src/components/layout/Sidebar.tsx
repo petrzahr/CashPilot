@@ -125,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobilní backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-scrim/40 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-scrim/40 backdrop-blur-xs z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}

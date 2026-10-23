@@ -188,7 +188,7 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                 role="button"
                 aria-label={`${item.periodLabel}: zobrazit podrobnosti`}
                 aria-expanded={isHovered}
-                className="cursor-pointer focus:outline-none group/bar"
+                className="cursor-pointer focus:outline-hidden group/bar"
                 onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoveredIdx(idx); }}
                 onFocus={() => { openedByFocusRef.current = true; setHoveredIdx(idx); setRovingIdx(idx); }}
                 onBlur={(e) => {

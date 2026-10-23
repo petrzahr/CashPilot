@@ -51,7 +51,7 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
   return (
     <div className="min-h-screen bg-canvas text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6">
       {/* Stejná plocha a karta jako přihlášení: chyba je hlášená obsahem, ne jiným vzhledem aplikace */}
-      <div className="max-w-xl w-full bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="max-w-xl w-full bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex items-start gap-3">
           <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
             <AlertTriangle className="w-6 h-6" aria-hidden="true" />

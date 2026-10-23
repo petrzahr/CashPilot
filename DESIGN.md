@@ -154,7 +154,7 @@ Klidná šedomodrá základna s jedinou modrou pro akci a čtyřmi významovými
 ### Named Rules
 **The Meaning-Only Rule.** Barva v rozhraní vždy znamená peníze nebo stav: zelená přichází, červená odchází, jantar čeká, fialová roste, modrá jedná. Kategorie mají vlastní uživatelské barvy jen jako tečky a pruhy grafů.
 
-**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple, white) nebo tokeny `scrim`, `canvas` a `table-*`. Paleta v `tailwind.config.js` je uzavřená, jiné rodiny (rose, blue, gray…) neexistují. Linky a podklady jsou plné (`border-slate-200`, `bg-slate-50`); průhlednost jen tam, kde leží nad barvou. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
+**The Token Rule.** Barvy se píší výhradně Tailwind třídami palety (slate, sky, red, amber, emerald, purple, white) nebo tokeny `scrim`, `canvas` a `table-*`. Paleta v bloku `@theme inline` v `src/index.css` je uzavřená, jiné rodiny (rose, blue, gray…) neexistují. Linky a podklady jsou plné (`border-slate-200`, `bg-slate-50`); průhlednost jen tam, kde leží nad barvou. Ty čtou proměnné ze `src/theme.css`, takže fungují v obou vzhledech. Hex hodnota v komponentě je chyba, s výjimkou dat (barvy kategorií a sérií grafů) a loga Google.
 
 **The AA Rule.** Každá dvojice text/pozadí má v obou vzhledech kontrast alespoň 4,5:1 (ikony a ovládací prvky 3:1). Proto jsou světlé odstíny slate-500, sky-500 (fokus) a sky/emerald/amber/red-600 oproti výchozímu Tailwindu mírně ztmavené. V tmavém vzhledu jsou jantarové podklady teplé hnědé, aby se plánované a upozornění nepletly s chybami.
 

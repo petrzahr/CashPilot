@@ -114,7 +114,7 @@ export const CategoriesScreen: React.FC = () => {
               type="checkbox"
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
             />
             <span>Zobrazit archivované</span>
           </label>
@@ -160,7 +160,7 @@ export const CategoriesScreen: React.FC = () => {
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-3.5 h-3.5 rounded-md shrink-0 shadow-sm"
+                    className="w-3.5 h-3.5 rounded-md shrink-0 shadow-xs"
                     style={{ backgroundColor: mainCat.color }}
                   />
                   <div>

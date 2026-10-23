@@ -58,7 +58,7 @@ const SyncErrorDetails: React.FC<{ message: string }> = ({ message }) => {
 
   return (
     <details className="group pl-6 text-xs">
-      <summary className="max-md:min-h-11 flex items-center cursor-pointer font-semibold text-red-700 hover:text-red-800 select-none rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30">
+      <summary className="max-md:min-h-11 flex items-center cursor-pointer font-semibold text-red-700 hover:text-red-800 select-none rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500/30">
         Technické podrobnosti
       </summary>
       <div className="mt-2 space-y-2">
@@ -88,7 +88,7 @@ const SETTINGS_SECTIONS = [
 
 type SettingsSectionId = typeof SETTINGS_SECTIONS[number]['id'];
 
-const SECTION_CLASS = 'scroll-mt-6 focus:outline-none';
+const SECTION_CLASS = 'scroll-mt-6 focus:outline-hidden';
 
 // Najde nejbližšího předka, který se posouvá (obsah aplikace neroluje celé okno).
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
@@ -356,7 +356,7 @@ export const SettingsScreen: React.FC = () => {
                   <select id={`${fieldId}-1`}
                     value={budgetStartDay}
                     onChange={(e) => handleStartDayChange(parseInt(e.target.value, 10))}
-                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
+                    className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
                   >
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                       <option key={day} value={day}>
@@ -385,7 +385,7 @@ export const SettingsScreen: React.FC = () => {
                       onChange={(e) => setOverdraftLimitStr(e.target.value)}
                       onBlur={saveOverdraft}
                       aria-describedby={`${fieldId}-2-hint`}
-                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold"
+                      className="w-full max-md:min-h-11 pl-3.5 pr-10 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-xs font-semibold text-slate-500">Kč</span>
                   </div>
@@ -414,7 +414,7 @@ export const SettingsScreen: React.FC = () => {
                     <select id={`${fieldId}-${suffix}`}
                       value={getDefaultRangeId(settings, screen)}
                       onChange={(e) => handleDefaultRangeChange(screen, e.target.value as PeriodRangePresetId)}
-                      className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
+                      className="w-full max-md:min-h-11 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-semibold text-slate-900"
                     >
                       {PERIOD_RANGE_PRESETS.map((preset) => (
                         <option key={preset.id} value={preset.id}>{preset.label}</option>
@@ -460,7 +460,7 @@ export const SettingsScreen: React.FC = () => {
                         type="checkbox"
                         checked={acc.isUsableCash}
                         onChange={(e) => updateAccount({ ...acc, isUsableCash: e.target.checked })}
-                        className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                        className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
                       />
                       <span className="font-medium text-slate-500">Použitelné peníze</span>
                     </label>
@@ -470,7 +470,7 @@ export const SettingsScreen: React.FC = () => {
                         type="checkbox"
                         checked={acc.isNetWorth}
                         onChange={(e) => updateAccount({ ...acc, isNetWorth: e.target.checked })}
-                        className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500"
+                        className="w-4 h-4 text-purple-600 rounded-sm border-slate-300 focus:ring-purple-500"
                       />
                       <span className="font-medium text-slate-500">Celkový majetek</span>
                     </label>
@@ -642,7 +642,7 @@ export const SettingsScreen: React.FC = () => {
                         type="checkbox"
                         checked={driveBackupEnabled}
                         onChange={(e) => setDriveBackupEnabled(e.target.checked)}
-                        className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                        className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
                       />
                       <span className="text-xs font-medium text-slate-500">Zálohovat automaticky</span>
                     </label>

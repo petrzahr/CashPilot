@@ -197,7 +197,7 @@ export const AccountsScreen: React.FC = () => {
               type="checkbox"
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
-              className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+              className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
             />
             <span>Zobrazit archivované účty</span>
           </label>
@@ -281,7 +281,7 @@ export const AccountsScreen: React.FC = () => {
                     <GripVertical className="w-4 h-4" />
                   </button>
                   <div
-                    className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                    className="w-4 h-4 rounded-full shrink-0 shadow-xs"
                     style={{ backgroundColor: acc.color }}
                   />
                   <div className="min-w-0">

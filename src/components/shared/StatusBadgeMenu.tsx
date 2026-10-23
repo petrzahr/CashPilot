@@ -87,7 +87,7 @@ export const StatusBadgeMenu: React.FC<StatusBadgeMenuProps> = ({ tx, todayIso, 
         aria-label={`Stav položky ${tx.title}: ${current.label}. Změnit stav`}
         title="Změnit stav položky (Plánovaná, Uskutečněná, Zrušená)"
         onClick={() => setIsOpen(prev => !prev)}
-        className={`relative max-md:after:absolute max-md:after:-inset-x-3 max-md:after:-inset-y-3.5 max-md:after:content-[''] inline-flex items-center gap-0.5 pl-1 pr-1.5 py-px rounded-md text-xs font-medium leading-4 transition-colors cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 ${current.badgeClass} ${
+        className={`relative max-md:after:absolute max-md:after:-inset-x-3 max-md:after:-inset-y-3.5 max-md:after:content-[''] inline-flex items-center gap-0.5 pl-1 pr-1.5 py-px rounded-md text-xs font-medium leading-4 transition-colors cursor-pointer select-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40 ${current.badgeClass} ${
           isUpdating ? 'opacity-70 cursor-wait' : ''
         }`}
       >
@@ -122,7 +122,7 @@ export const StatusBadgeMenu: React.FC<StatusBadgeMenuProps> = ({ tx, todayIso, 
                   close(true);
                   if (!isCurrent) onChange(value);
                 }}
-                className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 disabled:opacity-50 disabled:hover:bg-transparent transition-colors ${
+                className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-hidden focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 disabled:opacity-50 disabled:hover:bg-transparent transition-colors ${
                   isCurrent ? `font-bold ${activeClass}` : 'text-slate-500'
                 }`}
               >

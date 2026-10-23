@@ -31,7 +31,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentScreen, onSelectScr
   const moreActive = !PRIMARY_ITEMS.some((item) => item.id === currentScreen);
 
   // flex-auto: šířka podle popisku, aby se vše vešlo i na 320px bez zkracování
-  const cellClass = 'flex-auto min-w-0 flex flex-col items-center justify-center gap-1 h-14 px-0.5 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40';
+  const cellClass = 'flex-auto min-w-0 flex flex-col items-center justify-center gap-1 h-14 px-0.5 select-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500/40';
 
   return (
     <nav

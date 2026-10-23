@@ -126,7 +126,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         aria-controls={isOpen ? panelId : undefined}
         onClick={() => setIsOpen(prev => !prev)}
         onKeyDown={handleTriggerKeyDown}
-        className={`max-md:min-h-11 w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-left truncate transition-colors ${
+        className={`max-md:min-h-11 w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-left truncate transition-colors ${
           disabled ? 'opacity-50 cursor-not-allowed text-slate-500' : 'text-slate-500 hover:bg-slate-100'
         } ${selected.length > 0 ? 'font-semibold text-slate-900' : ''}`}
       >
@@ -151,7 +151,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               <button
                 type="button"
                 onClick={() => onChange(allSelected ? [] : options.map(o => o.value))}
-                className="w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 transition-colors font-semibold text-sky-700 border-b border-slate-100"
+                className="w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-hidden focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 transition-colors font-semibold text-sky-700 border-b border-slate-100"
               >
                 {allSelected ? 'Zrušit výběr' : 'Vybrat vše'}
               </button>
@@ -164,11 +164,11 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     role="checkbox"
                     aria-checked={checked}
                     onClick={() => toggleValue(opt.value)}
-                    className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 transition-colors ${
+                    className={`w-full text-left px-3 py-1.5 max-md:min-h-11 flex items-center gap-2 hover:bg-slate-50 focus:outline-hidden focus-visible:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 transition-colors ${
                       checked ? 'text-slate-900 font-medium' : 'text-slate-500'
                     }`}
                   >
-                    <span aria-hidden="true" className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                    <span aria-hidden="true" className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
                       checked ? 'bg-sky-600 border-sky-600' : 'border-slate-500'
                     }`}>
                       {checked && <Check className="w-2.5 h-2.5 text-white" />}

@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={connectGoogleDrive}
             disabled={driveSyncStatus === 'syncing'}
             title="Připojit Google Disk pro automatické zálohování a synchronizaci"
-            className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-sm transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
+            className="max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 shadow-xs transition-all hover:border-sky-300 active:scale-[0.98] cursor-pointer"
           >
             <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Stav synchronizace s Google Diskem"
               aria-label={`Google Disk: ${SYNC_LABELS[driveSyncStatus]}`}
               aria-expanded={menuOpen}
-              className={`max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border shadow-sm transition-all active:scale-[0.98] cursor-pointer ${
+              className={`max-md:min-h-11 flex items-center gap-1.5 px-2.5 max-[359px]:px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border shadow-xs transition-all active:scale-[0.98] cursor-pointer ${
                 isSyncProblem
                   ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
                   : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:border-sky-300'
@@ -207,7 +207,7 @@ export const Header: React.FC<HeaderProps> = ({
           className={`flex items-center justify-center gap-1.5 max-md:min-w-11 max-md:min-h-11 md:px-2.5 md:py-1.5 lg:px-3 text-xs font-semibold rounded-xl border transition-all select-none shrink-0 ${
             isCurrentPeriodSelected
               ? 'bg-slate-50 text-slate-500 border-slate-200 cursor-not-allowed opacity-60'
-              : 'bg-white text-slate-500 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-sm hover:border-sky-300 active:scale-[0.98] cursor-pointer'
+              : 'bg-white text-slate-500 hover:text-sky-700 hover:bg-sky-50/70 border-slate-200 shadow-xs hover:border-sky-300 active:scale-[0.98] cursor-pointer'
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-sky-600 shrink-0" />

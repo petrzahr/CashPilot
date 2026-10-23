@@ -150,7 +150,7 @@ export const DataActionConfirmationModal: React.FC<DataActionConfirmationModalPr
               autoComplete="off"
               value={confirmationInput}
               onChange={(e) => setConfirmationInput(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-mono"
+              className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-mono"
             />
           </div>
         )}

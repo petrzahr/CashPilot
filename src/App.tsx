@@ -223,7 +223,7 @@ const MainLayout: React.FC = () => {
         <button
           type="button"
           onClick={() => handleOpenNewTx()}
-          className="md:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 h-14 pl-4 pr-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
+          className="md:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 h-14 pl-4 pr-5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow-lg transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40 focus-visible:ring-offset-2"
         >
           <Plus className="w-5 h-5" aria-hidden="true" />
           <span>Nová položka</span>

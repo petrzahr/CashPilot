@@ -48,8 +48,8 @@ export const RecurrenceScopePicker: React.FC<RecurrenceScopePickerProps> = ({
           className={`flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
             checked
               ? destructive
-                ? 'border-red-500 bg-red-50/50 shadow-sm'
-                : 'border-sky-500 bg-sky-50/60 shadow-sm'
+                ? 'border-red-500 bg-red-50/50 shadow-xs'
+                : 'border-sky-500 bg-sky-50/60 shadow-xs'
               : 'border-slate-200 bg-white hover:bg-slate-50'
           }`}
         >

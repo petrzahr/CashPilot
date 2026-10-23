@@ -6,7 +6,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 - React 18.3 + TypeScript 5.7, entry `main.tsx` -> `App.tsx`
 - State: React Context, mainly `FinanceContext.tsx`
 - Icons: lucide-react; class composition: clsx + tailwind-merge
-- Styles: Tailwind CSS 3.4 + PostCSS + Autoprefixer (`tailwind.config.js`)
+- Styles: Tailwind CSS 4 via `@tailwindcss/vite` (no PostCSS config); the closed colour palette is the `@theme inline` block in `src/index.css`, reading the `--c-*` variables from `src/theme.css`
 - Build: Vite 6 + `@vitejs/plugin-react` (`vite.config.ts`), npm
 - Tests: Vitest, tests in `src/__tests__`
 - Deploy: Vercel, `cashpilot.byzahr.app` (old `*.vercel.app` redirects there)

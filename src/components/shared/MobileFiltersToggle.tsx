@@ -19,7 +19,7 @@ export const MobileFiltersToggle: React.FC<MobileFiltersToggleProps> = ({ isOpen
     onClick={onToggle}
     aria-expanded={isOpen}
     aria-controls={controlsId}
-    className="md:hidden sm:col-span-2 min-h-11 w-full flex items-center justify-between gap-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40"
+    className="md:hidden sm:col-span-2 min-h-11 w-full flex items-center justify-between gap-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-500 hover:text-slate-900 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40"
   >
     <span className="flex items-center gap-1.5">
       <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
