@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Account, AppSettings, BudgetPeriod, RecurringException, RecurringRule, Transaction } from '../types/finance';
+import { Account, AppSettings, BudgetPeriod, RecurringRule, Transaction } from '../types/finance';
 import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { deleteTransactionAndReorder } from '../services/sequenceService';
 import { createBudgetPeriod, generatePeriodsSequence, getPreviousDay } from '../services/periodService';
 import { AppData } from '../services/storageService';
 import { loadStoredData, saveStoredData } from './testStorageHelpers';
+import { createEmptyAppData } from '../constants/defaultData';
+import { createCommandContext, deleteTransaction } from '../services/transactionCommands';
+
+const ctx = createCommandContext('2026-09-13', new Date('2026-09-13T10:00:00Z'));
+const dataWith = (partial: Partial<AppData>): AppData => ({
+  ...createEmptyAppData(),
+  settings: { ...createEmptyAppData().settings, budgetStartDay: 15 },
+  ...partial,
+});
 
 describe('CashPilot - Testy mazání finančních položek (Klasický seznam a Měsíční rozpočet)', () => {
   const defaultSettings: AppSettings = {
@@ -303,16 +312,17 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     expect(effOctBefore.length).toBe(1);
 
     // Smazat pouze zářijový výskyt (vytvoří se výjimka pro periodKey = 2026-09)
-    const exception: RecurringException = {
-      id: 'ex_1',
-      ruleId: 'rec_rent',
-      periodKey: periodSep.key,
-      isCancelled: true,
-      createdAt: new Date().toISOString()
-    };
+    const { data: after } = deleteTransaction(
+      dataWith({ recurringRules: [rule] }),
+      { id: `virtual_${rule.id}_${periodSep.key}`, mode: 'occurrence', deleteHistoricalExecuted: false },
+      ctx
+    );
+    expect(after.recurringExceptions).toEqual([
+      expect.objectContaining({ ruleId: 'rec_rent', periodKey: periodSep.key, isCancelled: true }),
+    ]);
 
-    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [], [rule], [exception], 15);
-    const effOctAfter = getEffectiveTransactionsForPeriod(periodOct, [], [rule], [exception], 15);
+    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [], after.recurringRules, after.recurringExceptions, 15);
+    const effOctAfter = getEffectiveTransactionsForPeriod(periodOct, [], after.recurringRules, after.recurringExceptions, 15);
 
     // V září je smazán (vrací null)
     expect(effSepAfter.length).toBe(0);
@@ -337,12 +347,19 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       updatedAt: ''
     };
 
-    const occDate = '2026-09-20';
-    const cutOff = getPreviousDay(occDate); // 2026-09-19
-    const updatedRule: RecurringRule = {
-      ...rule,
-      endDate: cutOff
-    };
+    // Zhmotněné výskyty od července do října; po smazání od září zůstanou 2, takže série trvá
+    const occurrence = (date: string, id: string): Transaction => ({
+      id, title: rule.title, amountInHaler: rule.amountInHaler, date, sequence: 1, type: 'expense',
+      sourceAccountId: 'acc_checking', status: 'planned', recurringRuleId: rule.id, createdAt: '', updatedAt: '',
+    });
+    const { data: after } = deleteTransaction(
+      dataWith({ recurringRules: [rule], transactions: [occurrence('2026-07-20', 'tx_jul'), occurrence('2026-08-20', 'tx_aug'), occurrence('2026-09-20', 'tx_sep'), occurrence('2026-10-20', 'tx_oct')] }),
+      { id: 'tx_sep', mode: 'future', deleteHistoricalExecuted: false },
+      ctx
+    );
+    const updatedRule = after.recurringRules.find(r => r.id === rule.id)!;
+    expect(updatedRule.endDate).toBe(getPreviousDay('2026-09-20')); // 2026-09-19
+    expect(after.transactions.map(t => t.id)).toEqual(['tx_jul', 'tx_aug']);
 
     // Zářijové období (15. 9. – 14. 10.): výskyt je 20. 9. > 19. 9. -> v září se už nevygeneruje!
     const effSep = getEffectiveTransactionsForPeriod(periodSep, [], [updatedRule], [], 15);

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, MarketValueSnapshot, RecurringException, RecurringRule, Transaction } from '../types/finance';
+import { createEmptyAppData } from '../constants/defaultData';
+import { ACCOUNT_IN_USE_MESSAGE, deleteAccount } from '../services/accountCommands';
 
 describe('Account Deletion and Orphaned Corrections Sanitization', () => {
   const emptyAccount: Account = {
@@ -103,6 +105,7 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
   };
 
   describe('deleteAccount referential integrity logic', () => {
+    // Volá skutečný příkaz deleteAccount a výsledek převede na tvar, který testy kontrolují
     function simulateDeleteAccount(
       id: string,
       accounts: Account[],
@@ -121,32 +124,26 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
       newExceptions?: RecurringException[];
       newOverrides?: Record<string, boolean>;
     } {
-      const hasTransactions = transactions.some(t => t.sourceAccountId === id || t.targetAccountId === id);
-      const hasRules = recurringRules.some(r => r.sourceAccountId === id || r.targetAccountId === id);
-      const hasActiveCorrections = corrections.some(c =>
-        c.accountId === id && (
-          hasTransactions ||
-          transactions.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === id))
-        )
-      );
+      const base = createEmptyAppData();
+      const { data, outcome } = deleteAccount({
+        ...base,
+        accounts,
+        transactions,
+        recurringRules,
+        corrections,
+        marketValueSnapshots: snapshots,
+        recurringExceptions: exceptions,
+        settings: { ...base.settings, accountUsableOverrides: usableOverrides },
+      }, id);
 
-      if (hasTransactions || hasRules || hasActiveCorrections) {
-        return {
-          success: false,
-          message: 'Účet s existující historií (transakce, trvalé příkazy nebo korekce) nelze fyzicky smazat. Můžete jej bezpečně archivovat.'
-        };
-      }
-
-      const newOverrides = { ...usableOverrides };
-      delete newOverrides[id];
-
+      if ('error' in outcome) return { success: false, message: outcome.error };
       return {
         success: true,
-        newAccounts: accounts.filter(a => a.id !== id),
-        newCorrections: corrections.filter(c => c.accountId !== id),
-        newSnapshots: snapshots.filter(s => s.accountId !== id),
-        newExceptions: exceptions.filter(e => e.overrideSourceAccountId !== id && e.overrideTargetAccountId !== id),
-        newOverrides,
+        newAccounts: data.accounts,
+        newCorrections: data.corrections,
+        newSnapshots: data.marketValueSnapshots,
+        newExceptions: data.recurringExceptions,
+        newOverrides: data.settings.accountUsableOverrides,
       };
     }
 
@@ -180,7 +177,7 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
       );
 
       expect(res.success).toBe(false);
-      expect(res.message).toContain('nelze fyzicky smazat');
+      expect(res.message).toBe(ACCOUNT_IN_USE_MESSAGE);
     });
 
     it('blocks deleting an account that is part of a recurring rule', () => {
@@ -193,7 +190,7 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
       );
 
       expect(res.success).toBe(false);
-      expect(res.message).toContain('nelze fyzicky smazat');
+      expect(res.message).toBe(ACCOUNT_IN_USE_MESSAGE);
     });
 
     it('blocks deleting an account that has an active balance adjustment transaction', () => {
@@ -220,7 +217,7 @@ describe('Account Deletion and Orphaned Corrections Sanitization', () => {
       );
 
       expect(res.success).toBe(false);
-      expect(res.message).toContain('nelze fyzicky smazat');
+      expect(res.message).toBe(ACCOUNT_IN_USE_MESSAGE);
     });
   });
 });

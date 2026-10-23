@@ -1,4 +1,4 @@
-import { accountStorageKey, mergeBackupData } from '../services/syncModel';
+import { accountStorageKey } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -36,11 +36,9 @@ import {
 } from '../constants/defaultData';
 import {
   calculateForecast,
-  generateOccurrenceForPeriod,
   calculateQuickFinancialOverview,
   QuickFinancialOverview,
 } from '../services/financialEngine';
-import { getAccountBalanceAtDate } from '../services/accountBalance';
 import {
   createBudgetPeriod,
   generatePeriodsSequence,
@@ -48,18 +46,14 @@ import {
   getOverviewPeriods,
   getNextPeriod,
   getPeriodForDate,
-  getDaysInMonth,
   getPreviousPeriod,
-  getPreviousDay,
   getTodayInPrague,
   formatCzechDate
 } from '../services/periodService';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
-import { mutateMarketValueHistory, reconcileMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
-import { getAccountFees } from '../services/investmentPerformanceService';
+import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { autoExecuteDueTransactions, getStatusForDate } from '../services/statusService';
-import { addHaler, subHaler, formatCurrency } from '../services/currencyService';
-import { getCategoryUsage, isInUse } from '../services/usageService';
+import { formatCurrency } from '../services/currencyService';
 import { describeSyncError } from '../services/syncErrorText';
 import {
   GoogleUser,
@@ -78,172 +72,57 @@ import {
 
 
 import {
-  deleteTransactionAndReorder,
-  deleteTransactionsAndReorder,
   getNextSequenceForDate,
   insertOrUpdateWithSequence,
   reorderDayTransactions as reorderDayTxsService,
   applyRuleRankOrder,
-  applyRulePositions,
-  sortTransactionsByDateAndSequence
 } from '../services/sequenceService';
-
-/** ID pravidla z ID virtuálního výskytu (virtual_<ruleId>_<periodKey>); periodKey neobsahuje podtržítko. */
-function ruleIdFromVirtualId(id: string): string | null {
-  if (!id.startsWith('virtual_')) return null;
-  const rest = id.slice('virtual_'.length);
-  const cut = rest.lastIndexOf('_');
-  return cut > 0 ? rest.slice(0, cut) : null;
-}
-
-/**
- * Zruší pevné pozice (overrideSequence) jednotlivých period u daných pravidel, aby pořadí
- * série platilo všude. Výjimky, které po tom nenesou žádnou jinou změnu, se odstraní.
- */
-function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<string>): RecurringException[] {
-  return exceptions.flatMap(e => {
-    if (!ruleIds.has(e.ruleId) || e.overrideSequence === undefined) return [e];
-    const { overrideSequence: _removed, ...rest } = e;
-    const carriesOtherChange = rest.isCancelled || rest.overrideDate !== undefined ||
-      rest.overrideAmountInHaler !== undefined || rest.overrideSourceAccountId !== undefined ||
-      rest.overrideTargetAccountId !== undefined || rest.overrideCategoryId !== undefined ||
-      rest.overrideSubcategoryId !== undefined;
-    return carriesOtherChange ? [{ ...rest, updatedAt: new Date().toISOString() }] : [];
-  });
-}
-
-/**
- * Pro každou opakující se položku dne: absolutní pozice ve dni (positions, pro jednu periodu)
- * a pořadí mezi opakovanými platbami (ranks, platné napříč obdobími). Klíčem je ID pravidla.
- */
-function ruleOrderFromOrderedIds(
-  orderedIds: string[],
-  transactions: Transaction[],
-  rules: RecurringRule[]
-): { positions: Map<string, number>; ranks: Map<string, number> } {
-  const positions = new Map<string, number>();
-  const ranks = new Map<string, number>();
-  orderedIds.forEach((id, idx) => {
-    const ruleId = ruleIdFromVirtualId(id) ?? transactions.find(t => t.id === id)?.recurringRuleId;
-    if (ruleId && !positions.has(ruleId) && rules.some(r => r.id === ruleId)) {
-      positions.set(ruleId, idx + 1);
-      ranks.set(ruleId, ranks.size + 1);
-    }
-  });
-  return { positions, ranks };
-}
-
-/** Spojí rank a pozici série podle ID pravidla (vstup pro applyRulePositions). */
-function toRuleOrder(
-  ranks: Map<string, number>,
-  positions: Map<string, number>
-): Map<string, { position: number; rank: number }> {
-  const order = new Map<string, { position: number; rank: number }>();
-  ranks.forEach((rank, ruleId) => order.set(ruleId, { rank, position: positions.get(ruleId) ?? rank }));
-  return order;
-}
-
-/** Zapíše požadovanou pozici do výjimek dané periody (vytvoří je, pokud chybí). */
-function withSequenceExceptions(
-  exceptions: RecurringException[],
-  positions: Map<string, number>,
-  periodKey: string,
-  nowIso: string
-): RecurringException[] {
-  let result = exceptions;
-  positions.forEach((seq, ruleId) => {
-    const idx = result.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
-    result = idx >= 0
-      ? result.map((e, i) => i === idx ? { ...e, overrideSequence: seq, updatedAt: nowIso } : e)
-      : [...result, { id: `ex_${Date.now()}_${ruleId}`, ruleId, periodKey, overrideSequence: seq, createdAt: nowIso, updatedAt: nowIso }];
-  });
-  return result;
-}
-
-/**
- * Rozštěpí opakující se pravidlo na "starou" větev (končící den před effectiveDate)
- * a novou větev od effectiveDate dál, a přepojí na ni už materializované budoucí
- * transakce a výjimky. Sdíleno mezi editací obsahu (updateRecurringRule, mode 'future')
- * a přeuspořádáním pořadí (reorderRecurringItem, mode 'future').
- */
-function splitRecurringRuleForFuture(
-  rule: RecurringRule,
-  effectiveDate: string,
-  overrideData: Partial<Transaction>,
-  originalTransactionId: string | undefined,
-  prevTransactions: Transaction[],
-  prevExceptions: RecurringException[],
-  budgetStartDay: number,
-  nowIso: string,
-  idSuffix: string = '',
-  newRuleId?: string
-): {
-  updatedOldRule: RecurringRule;
-  newFutureRule: RecurringRule;
-  updatedTransactions: Transaction[];
-  updatedExceptions: RecurringException[];
-} {
-  const cutOffDate = getPreviousDay(effectiveDate);
-  const willBeActive = cutOffDate >= rule.startDate;
-
-  const updatedOldRule: RecurringRule = {
-    ...rule,
-    endDate: cutOffDate,
-    isActive: willBeActive ? rule.isActive : false,
-    updatedAt: nowIso
-  };
-
-  const newDayOfMonth = parseInt(effectiveDate.split('-')[2], 10) || rule.dayOfMonth;
-  const newFutureRule: RecurringRule = {
-    ...rule,
-    id: newRuleId ?? `rec_${Date.now()}${idSuffix}_split`,
-    title: overrideData.title || rule.title,
-    amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
-    dayOfMonth: newDayOfMonth,
-    startDate: effectiveDate,
-    sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
-    targetAccountId: overrideData.targetAccountId || rule.targetAccountId,
-    categoryId: overrideData.categoryId || rule.categoryId,
-    subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
-    note: overrideData.note !== undefined ? overrideData.note : rule.note,
-    updatedAt: nowIso,
-    createdAt: nowIso
-  };
-
-  // Přepsat již materializované reálné transakce od editovaného výskytu dále,
-  // ať se změna projeví okamžitě i u položek, které už nejsou pouze virtuální.
-  const updatedTransactions = prevTransactions.map(t => {
-    if (t.recurringRuleId !== rule.id || t.date < effectiveDate) return t;
-    const isEditedOccurrence = originalTransactionId
-      ? t.id === originalTransactionId
-      : t.date === effectiveDate;
-    return {
-      ...t,
-      recurringRuleId: newFutureRule.id,
-      title: newFutureRule.title,
-      amountInHaler: newFutureRule.amountInHaler,
-      actualAmountInHaler: t.status === 'executed' ? newFutureRule.amountInHaler : t.actualAmountInHaler,
-      sourceAccountId: newFutureRule.sourceAccountId,
-      targetAccountId: newFutureRule.targetAccountId,
-      categoryId: newFutureRule.categoryId,
-      subcategoryId: newFutureRule.subcategoryId,
-      note: newFutureRule.note,
-      date: isEditedOccurrence ? effectiveDate : t.date,
-      updatedAt: nowIso,
-    };
-  });
-
-  // Výjimky pro periody od rozštěpení dál patří nově pod nové pravidlo -
-  // jinak by se hledaly pod starým (už useknutým) ruleId a nikdy by se nenašly.
-  const cutoffPeriodKey = getPeriodForDate(effectiveDate, budgetStartDay).key;
-  const updatedExceptions = prevExceptions.map(e =>
-    e.ruleId === rule.id && e.periodKey >= cutoffPeriodKey
-      ? { ...e, ruleId: newFutureRule.id }
-      : e
-  );
-
-  return { updatedOldRule, newFutureRule, updatedTransactions, updatedExceptions };
-}
+import {
+  CommandResult,
+  RecurringMode,
+  StatusUpdates,
+  createCommandContext,
+  parseVirtualId,
+  withSequenceExceptions,
+  addRecurringRule as addRecurringRuleCommand,
+  deleteRecurringRule as deleteRecurringRuleCommand,
+  deleteTransaction as deleteTransactionCommand,
+  reorderRecurringItem as reorderRecurringItemCommand,
+  restoreDeletedTransaction as restoreDeletedTransactionCommand,
+  setTransactionStatus as setTransactionStatusCommand,
+  updateRecurringRule as updateRecurringRuleCommand,
+} from '../services/transactionCommands';
+import {
+  addAccount as addAccountCommand,
+  addMarketValue as addMarketValueCommand,
+  archiveAccount as archiveAccountCommand,
+  deleteAccount as deleteAccountCommand,
+  deleteInvestmentFee as deleteInvestmentFeeCommand,
+  deleteMarketValue as deleteMarketValueCommand,
+  deleteStandaloneCorrection as deleteStandaloneCorrectionCommand,
+  reconcileBalance as reconcileBalanceCommand,
+  restoreAccount as restoreAccountCommand,
+  restoreCorrection as restoreCorrectionCommand,
+  restoreDeletedAccount as restoreDeletedAccountCommand,
+  restoreInvestmentFees as restoreInvestmentFeesCommand,
+  restoreMarketValue as restoreMarketValueCommand,
+  saveInvestmentFee as saveInvestmentFeeCommand,
+  undoArchiveAccount as undoArchiveAccountCommand,
+  updateAccount as updateAccountCommand,
+  updateCorrectionNote as updateCorrectionNoteCommand,
+} from '../services/accountCommands';
+import {
+  addCategory as addCategoryCommand,
+  addMainCategory as addMainCategoryCommand,
+  archiveCategory as archiveCategoryCommand,
+  deleteCategory as deleteCategoryCommand,
+  moveSubcategory as moveSubcategoryCommand,
+  restoreCategory as restoreCategoryCommand,
+  restoreDeletedCategories as restoreDeletedCategoriesCommand,
+  undoArchiveCategory as undoArchiveCategoryCommand,
+  updateCategory as updateCategoryCommand,
+} from '../services/categoryCommands';
+import { importBackup as importBackupCommand } from '../services/dataCommands';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -331,7 +210,7 @@ interface FinanceContextType {
   ) => void;
 
   // Účty
-  addAccount: (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => Account;
+  addAccount: (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => Account | undefined;
   updateAccount: (account: Account) => { success: boolean; message?: string };
   archiveAccount: (id: string) => { success: boolean; message?: string };
   restoreAccount: (id: string) => void;
@@ -348,8 +227,8 @@ interface FinanceContextType {
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
 
   // Kategorie
-  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category;
-  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category;
+  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
+  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
   updateCategory: (cat: Category) => void;
   moveSubcategory: (subcategoryId: string, newParentId: string, updateHistorical: boolean) => void;
   archiveCategory: (id: string) => void;
@@ -781,7 +660,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       // výjimku periody, jinak by se při dalším výpočtu vždy vrátily na konec dne.
       const virtualPositions = new Map<string, number>();
       orderedIds.forEach((id, idx) => {
-        const ruleId = ruleIdFromVirtualId(id);
+        const ruleId = parseVirtualId(id)?.ruleId;
         if (ruleId && prev.recurringRules.some(r => r.id === ruleId)) virtualPositions.set(ruleId, idx + 1);
       });
       const recurringExceptions = virtualPositions.size > 0
@@ -801,32 +680,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Pořadí položek bylo uloženo.');
   }, [showToast]);
 
-  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni. Nové updatedAt
-  // je pozdější než záznam o smazání, takže synchronizace položku zase přijme.
-  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
-    const nowIso = new Date().toISOString();
+  // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
+  // updater synchronně; bez načtených dat (před první synchronizací) vrací undefined.
+  const runCommand = useCallback(<O,>(command: (prev: AppData) => CommandResult<O>): O | undefined => {
+    let outcome: O | undefined;
     setData(prev => {
-      if (prev.transactions.some(t => t.id === tx.id)) return prev;
-      return {
-        ...prev,
-        transactions: insertOrUpdateWithSequence({ ...tx, updatedAt: nowIso }, tx.sequence ?? 1, prev.transactions),
-        corrections: correction && !prev.corrections.some(c => c.id === correction.id)
-          ? [...prev.corrections, { ...correction, updatedAt: nowIso }]
-          : prev.corrections,
-      };
+      const result = command(prev);
+      outcome = result.outcome;
+      return result.data;
     });
+    return outcome;
+  }, [setData]);
+
+  // „Vrátit“ po smazání běžné položky: vrátí ji na původní místo v dni.
+  const restoreDeletedTransaction = useCallback((tx: Transaction, correction?: BalanceCorrection) => {
+    runCommand(prev => restoreDeletedTransactionCommand(prev, { transaction: tx, correction }, createCommandContext(todayStr)));
     showToast(correction ? 'Korekce zůstatku byla obnovena.' : 'Položka byla obnovena.');
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteTransaction = useCallback(async (
     id: string,
-    recurringMode: 'occurrence' | 'future' | 'series' = 'occurrence',
+    recurringMode: RecurringMode = 'occurrence',
     deleteHistoricalExecuted: boolean = false
   ): Promise<boolean> => {
-    let success = false;
-    let deletedPlainTx: Transaction | undefined;
-    const deletedSeries: { title?: string } = {};
-    let deletedCorrection: BalanceCorrection | undefined;
     try {
       // Ověření dostupnosti úložiště (pokud selže, vyvolá chybu)
       try {
@@ -836,327 +712,63 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
         throw new Error('Úložiště není dostupné.');
       }
 
-      setData(prev => {
-        const isVirtual = id.startsWith('virtual_');
-        let ruleId: string | undefined;
-        let periodKey: string | undefined;
-        let txDate: string | undefined;
+      const outcome = runCommand(prev => deleteTransactionCommand(
+        prev,
+        { id, mode: recurringMode, deleteHistoricalExecuted },
+        createCommandContext(todayStr)
+      ));
+      if (!outcome || outcome.kind === 'none') return false;
 
-        if (isVirtual) {
-          const withoutPrefix = id.slice('virtual_'.length);
-          const lastUnderscore = withoutPrefix.lastIndexOf('_');
-          if (lastUnderscore !== -1) {
-            ruleId = withoutPrefix.slice(0, lastUnderscore);
-            periodKey = withoutPrefix.slice(lastUnderscore + 1);
-          }
-        } else {
-          const realTx = prev.transactions.find(t => t.id === id);
-          if (realTx) {
-            txDate = realTx.date;
-            ruleId = realTx.recurringRuleId;
-            periodKey = getPeriodForDate(realTx.date, prev.settings.budgetStartDay).key;
-          } else {
-            // ID nenalezeno v transakcích a není virtuální
-            return prev;
-          }
-        }
-
-        const rule = ruleId ? prev.recurringRules.find(r => r.id === ruleId) : undefined;
-        deletedSeries.title = rule?.title;
-        const isRecurring = Boolean(rule);
-
-        // 1. BĚŽNÁ POLOŽKA (příjem, výdaj, převod) nebo položka bez aktivního pravidla
-        if (!isRecurring) {
-          if (isVirtual) {
-            return prev;
-          }
-          const updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
-          success = true;
-          deletedPlainTx = prev.transactions.find(t => t.id === id);
-          deletedCorrection = prev.corrections.find(c => c.id === id);
-          return {
-            ...prev,
-            transactions: updatedTxs,
-            corrections: prev.corrections.filter(c => c.id !== id),
-          };
-        }
-
-        // 2. PRAVIDELNÁ POLOŽKA
-        // 2A: POUZE TATO POLOŽKA (výjimka v sérii)
-        if (recurringMode === 'occurrence') {
-          let updatedTxs = prev.transactions;
-          if (!isVirtual) {
-            updatedTxs = deleteTransactionAndReorder(id, prev.transactions);
-          }
-
-          const targetPeriodKey = periodKey || selectedPeriod.key;
-          const existingExIndex = prev.recurringExceptions.findIndex(
-            e => e.ruleId === ruleId && e.periodKey === targetPeriodKey
-          );
-
-          const cancelledEx: RecurringException = {
-            id: existingExIndex >= 0 ? prev.recurringExceptions[existingExIndex].id : `ex_${Date.now()}`,
-            ruleId: ruleId!,
-            periodKey: targetPeriodKey,
-            isCancelled: true,
-            createdAt: new Date().toISOString()
-          };
-
-          const newExceptions = existingExIndex >= 0
-            ? prev.recurringExceptions.map((item, idx) => idx === existingExIndex ? cancelledEx : item)
-            : [...prev.recurringExceptions, cancelledEx];
-
-          success = true;
-          return {
-            ...prev,
-            recurringExceptions: newExceptions,
-            transactions: updatedTxs,
-          };
-        }
-
-        // 2B: TATO A VŠECHNY BUDOUCÍ POLOŽKY (ukončení pravidla)
-        if (recurringMode === 'future') {
-          let occDate = txDate;
-          if (!occDate && isVirtual && periodKey && rule) {
-            const [yStr, mStr] = periodKey.split('-');
-            const period = createBudgetPeriod(parseInt(yStr, 10), parseInt(mStr, 10), prev.settings.budgetStartDay);
-            const occ = generateOccurrenceForPeriod(rule, period, prev.recurringExceptions, prev.settings.budgetStartDay);
-            occDate = occ?.date || period.startDate;
-          }
-          if (!occDate) {
-            occDate = new Date().toISOString().slice(0, 10);
-          }
-
-          const cutOffDate = getPreviousDay(occDate);
-          const nowIso = new Date().toISOString();
-
-          // Nastavit endDate na den před výskytem
-          const updatedRules = prev.recurringRules.map(r => {
-            if (r.id !== ruleId) return r;
-            const willBeActive = cutOffDate >= r.startDate;
-            return {
-              ...r,
-              endDate: cutOffDate,
-              isActive: willBeActive ? r.isActive : false,
-              updatedAt: nowIso
-            };
-          });
-
-          // Z reálných transakcí smazat položky tohoto pravidla od data occDate
-          const idsToDelete = new Set<string>();
-          for (const t of prev.transactions) {
-            if (t.recurringRuleId === ruleId && t.date >= occDate) {
-              if (deleteHistoricalExecuted || t.status !== 'executed') {
-                idsToDelete.add(t.id);
-              }
-            }
-          }
-          if (!isVirtual) {
-            idsToDelete.add(id);
-          }
-
-          let updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
-
-          // Pokud po smazání budoucích výskytů zůstává v sérii nejvýše jedna položka,
-          // pravidlo už nemá smysl udržovat jako opakující se - převést zbylou položku
-          // na běžnou (nepravidelnou) a pravidlo odstranit.
-          const remainingInRule = updatedTxs.filter(t => t.recurringRuleId === ruleId);
-          if (remainingInRule.length <= 1) {
-            updatedTxs = updatedTxs.map(t =>
-              t.recurringRuleId === ruleId
-                ? { ...t, recurringRuleId: undefined, isException: false, updatedAt: nowIso }
-                : t
-            );
-            success = true;
-            return {
-              ...prev,
-              recurringRules: prev.recurringRules.filter(r => r.id !== ruleId),
-              recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== ruleId),
-              transactions: updatedTxs,
-            };
-          }
-
-          success = true;
-          return {
-            ...prev,
-            recurringRules: updatedRules,
-            transactions: updatedTxs,
-          };
-        }
-
-        // 2C: CELÁ SÉRIE (smazání pravidla a všech neuskutečněných výskytů)
-        if (recurringMode === 'series') {
-          const updatedRules = prev.recurringRules.filter(r => r.id !== ruleId);
-          const updatedExceptions = prev.recurringExceptions.filter(e => e.ruleId !== ruleId);
-
-          const idsToDelete = new Set<string>();
-          for (const t of prev.transactions) {
-            if (t.recurringRuleId === ruleId) {
-              if (deleteHistoricalExecuted || t.status !== 'executed') {
-                idsToDelete.add(t.id);
-              }
-            }
-          }
-          if (!isVirtual) {
-            idsToDelete.add(id);
-          }
-
-          const updatedTxs = deleteTransactionsAndReorder(idsToDelete, prev.transactions);
-
-          success = true;
-          return {
-            ...prev,
-            recurringRules: updatedRules,
-            recurringExceptions: updatedExceptions,
-            transactions: updatedTxs,
-          };
-        }
-
-        return prev;
-      });
-
-      if (success) {
-        const restoredTx = deletedPlainTx;
-        const restoredCorrection = deletedCorrection;
-        if (restoredTx) {
-          const text = restoredCorrection
-            ? 'Korekce zůstatku byla smazána.'
-            : `Položka „${restoredTx.title}“ byla smazána.`;
-          showToast(text, 'success', {
-            label: 'Vrátit',
-            onClick: () => restoreDeletedTransaction(restoredTx, restoredCorrection),
-          });
-        } else {
-          const name = deletedSeries.title ? ` „${deletedSeries.title}“` : '';
-          showToast(
-            recurringMode === 'series' ? `Pravidelná položka${name} byla smazána.`
-              : recurringMode === 'future' ? `Budoucí výskyty pravidelné položky${name} byly smazány.`
-              : `Výskyt pravidelné položky${name} byl smazán.`
-          );
-        }
-        return true;
+      if (outcome.kind === 'plain') {
+        const { transaction, correction } = outcome;
+        const text = correction
+          ? 'Korekce zůstatku byla smazána.'
+          : `Položka „${transaction.title}“ byla smazána.`;
+        showToast(text, 'success', {
+          label: 'Vrátit',
+          onClick: () => restoreDeletedTransaction(transaction, correction),
+        });
       } else {
-        return false;
+        const name = outcome.ruleTitle ? ` „${outcome.ruleTitle}“` : '';
+        showToast(
+          recurringMode === 'series' ? `Pravidelná položka${name} byla smazána.`
+            : recurringMode === 'future' ? `Budoucí výskyty pravidelné položky${name} byly smazány.`
+            : `Výskyt pravidelné položky${name} byl smazán.`
+        );
       }
+      return true;
     } catch (err) {
       console.error('Chyba při mazání položky:', err);
       showToast('Položku se nepodařilo smazat. Zkuste to prosím znovu.', 'error');
       return false;
     }
-  }, [selectedPeriod.key, showToast, restoreDeletedTransaction]);
+  }, [runCommand, todayStr, showToast, restoreDeletedTransaction]);
 
   const setTransactionStatus = useCallback((
     id: string,
     newStatus: TransactionStatus,
-    updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
+    updates?: StatusUpdates
   ) => {
-    let success = false;
-    let itemTitle = '';
+    const outcome = runCommand(prev => setTransactionStatusCommand(
+      prev,
+      { id, status: newStatus, updates },
+      createCommandContext(todayStr)
+    ));
+    if (!outcome) return;
 
-    setData(prev => {
-      const nowIso = new Date().toISOString();
-
-      if (id.startsWith('virtual_')) {
-        const withoutPrefix = id.slice('virtual_'.length);
-        const lastUnderscore = withoutPrefix.lastIndexOf('_');
-        if (lastUnderscore === -1) return prev;
-        const ruleId = withoutPrefix.slice(0, lastUnderscore);
-        const periodKey = withoutPrefix.slice(lastUnderscore + 1);
-
-        const rule = prev.recurringRules.find(r => r.id === ruleId);
-        if (!rule) return prev;
-
-        const [yStr, mStr] = periodKey.split('-');
-        const period = createBudgetPeriod(parseInt(yStr, 10), parseInt(mStr, 10), prev.settings.budgetStartDay);
-        const occurrence = generateOccurrenceForPeriod(rule, period, prev.recurringExceptions, prev.settings.budgetStartDay);
-
-        const effectiveDate = updates?.date || occurrence?.date || todayStr;
-        const baseAmount = occurrence?.amountInHaler ?? rule.amountInHaler;
-        const effectiveActualAmount = newStatus === 'executed'
-          ? (updates?.actualAmountInHaler !== undefined ? updates.actualAmountInHaler : (occurrence?.actualAmountInHaler || baseAmount))
-          : undefined;
-
-        const assignedSeq = getNextSequenceForDate(effectiveDate, prev.transactions);
-
-        const realTx: Transaction = {
-          id: `tx_real_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          title: rule.title,
-          amountInHaler: baseAmount,
-          plannedAmountInHaler: baseAmount,
-          actualAmountInHaler: effectiveActualAmount,
-          date: effectiveDate,
-          sequence: assignedSeq,
-          type: rule.type,
-          sourceAccountId: updates?.sourceAccountId || occurrence?.sourceAccountId || rule.sourceAccountId,
-          targetAccountId: occurrence?.targetAccountId || rule.targetAccountId,
-          categoryId: updates?.categoryId || occurrence?.categoryId || rule.categoryId,
-          subcategoryId: occurrence?.subcategoryId || rule.subcategoryId,
-          status: newStatus,
-          recurringRuleId: rule.id,
-          note: rule.note,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        };
-
-        success = true;
-        itemTitle = rule.title;
-
-        const cleanExceptions = prev.recurringExceptions.filter(
-          e => !(e.ruleId === ruleId && e.periodKey === periodKey)
-        );
-
-        return {
-          ...prev,
-          recurringExceptions: cleanExceptions,
-          transactions: insertOrUpdateWithSequence(realTx, assignedSeq, prev.transactions)
-        };
-      }
-
-      const tx = prev.transactions.find(t => t.id === id);
-      if (!tx) return prev;
-
-      let effectiveActualAmount = tx.actualAmountInHaler;
-      if (newStatus === 'executed') {
-        effectiveActualAmount = updates?.actualAmountInHaler !== undefined
-          ? updates.actualAmountInHaler
-          : (tx.actualAmountInHaler || tx.amountInHaler);
-      } else if (newStatus === 'planned') {
-        effectiveActualAmount = undefined;
-      }
-
-      const updated: Transaction = {
-        ...tx,
-        status: newStatus,
-        actualAmountInHaler: effectiveActualAmount,
-        date: updates?.date || tx.date,
-        sourceAccountId: updates?.sourceAccountId || tx.sourceAccountId,
-        categoryId: updates?.categoryId || tx.categoryId,
-        updatedAt: nowIso
-      };
-
-      success = true;
-      itemTitle = tx.title;
-
-      return {
-        ...prev,
-        transactions: prev.transactions.map(t => t.id === id ? updated : t)
-      };
-    });
-
-    if (success) {
-      if (newStatus === 'executed') {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako uskutečněná.` : 'Položka byla označena jako uskutečněná.', 'success');
-      } else if (newStatus === 'cancelled') {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako zrušená.` : 'Položka byla označena jako zrušená.', 'info');
-      } else {
-        showToast(itemTitle ? `Položka „${itemTitle}“ byla nastavena jako plánovaná.` : 'Položka byla nastavena jako plánovaná.', 'info');
-      }
+    const itemTitle = outcome.title;
+    if (newStatus === 'executed') {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako uskutečněná.` : 'Položka byla označena jako uskutečněná.', 'success');
+    } else if (newStatus === 'cancelled') {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla označena jako zrušená.` : 'Položka byla označena jako zrušená.', 'info');
+    } else {
+      showToast(itemTitle ? `Položka „${itemTitle}“ byla nastavena jako plánovaná.` : 'Položka byla nastavena jako plánovaná.', 'info');
     }
-  }, [todayStr, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const markTransactionExecuted = useCallback((
     id: string,
-    updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
+    updates?: StatusUpdates
   ) => {
     setTransactionStatus(id, 'executed', updates);
   }, [setTransactionStatus]);
@@ -1173,560 +785,122 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     initialStatus?: TransactionStatus,
     existingTransactionId?: string
   ) => {
-    const srcAcc = data.accounts.find(a => a.id === ruleData.sourceAccountId);
-    if (srcAcc?.initialBalanceDate && ruleData.startDate < srcAcc.initialBalanceDate) {
-      const msg = `Tento účet je aktivní až od ${formatCzechDate(srcAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-      showToast(msg, 'error');
-      throw new Error(msg);
-    }
-    if (ruleData.type === 'transfer' && ruleData.targetAccountId) {
-      const tgtAcc = data.accounts.find(a => a.id === ruleData.targetAccountId);
-      if (tgtAcc?.initialBalanceDate && ruleData.startDate < tgtAcc.initialBalanceDate) {
-        const msg = `Tento účet je aktivní až od ${formatCzechDate(tgtAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`;
-        showToast(msg, 'error');
-        throw new Error(msg);
-      }
+    const outcome = runCommand(prev => addRecurringRuleCommand(
+      prev,
+      { ruleData, initialSequence, initialStatus, existingTransactionId },
+      createCommandContext(getTodayInPrague())
+    ));
+    if (!outcome) throw new Error('Data ještě nejsou načtená. Zkuste to prosím za chvíli znovu.');
+    if ('error' in outcome) {
+      if (outcome.kind === 'inactiveAccount') showToast(outcome.error, 'error');
+      throw new Error(outcome.error);
     }
 
-    const nowIso = new Date().toISOString();
-    const newRule: RecurringRule = {
-      ...ruleData,
-      id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-
-    const effectiveStatus: TransactionStatus = initialStatus || getStatusForDate(newRule.startDate);
-
-    setData(prev => {
-      const existingTx = existingTransactionId
-        ? prev.transactions.find(t => t.id === existingTransactionId)
-        : undefined;
-      if (existingTransactionId && (!existingTx || existingTx.recurringRuleId)) {
-        throw new Error('Položka již patří do pravidelné série nebo neexistuje.');
-      }
-
-      let targetSeq = initialSequence && initialSequence > 0
-        ? Math.round(initialSequence)
-        : getNextSequenceForDate(newRule.startDate, prev.transactions);
-
-      const firstOccurrenceTx: Transaction = {
-        ...existingTx,
-        id: existingTx?.id || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        title: newRule.title,
-        amountInHaler: newRule.amountInHaler,
-        plannedAmountInHaler: existingTx ? existingTx.plannedAmountInHaler : newRule.amountInHaler,
-        actualAmountInHaler: effectiveStatus === 'executed' ? newRule.amountInHaler : (effectiveStatus === 'planned' ? undefined : existingTx?.actualAmountInHaler),
-        date: newRule.startDate,
-        sequence: targetSeq,
-        type: newRule.type,
-        sourceAccountId: newRule.sourceAccountId,
-        targetAccountId: newRule.targetAccountId,
-        categoryId: newRule.categoryId,
-        subcategoryId: newRule.subcategoryId,
-        status: effectiveStatus,
-        recurringRuleId: newRule.id,
-        note: newRule.note,
-        createdAt: existingTx?.createdAt || nowIso,
-        updatedAt: nowIso,
-      };
-
-      const updatedTxs = insertOrUpdateWithSequence(firstOccurrenceTx, targetSeq, prev.transactions, existingTx?.date);
-
-      return {
-        ...prev,
-        recurringRules: [...prev.recurringRules, newRule],
-        transactions: updatedTxs,
-      };
-    });
-
-    showToast(`Pravidelná položka „${newRule.title}“ byla vytvořena.`);
-    return newRule;
-  }, [data.accounts, showToast]);
+    showToast(`Pravidelná položka „${outcome.rule.title}“ byla vytvořena.`);
+    return outcome.rule;
+  }, [runCommand, showToast]);
 
   const updateRecurringRule = useCallback((
     ruleId: string,
-    mode: 'occurrence' | 'future' | 'series',
+    mode: RecurringMode,
     periodKey: string,
     overrideData: Partial<Transaction>,
     originalTransactionId?: string
   ): string | undefined => {
-    // ID nové větve se určí předem (mimo updater), aby ho volající znal - např. pro
-    // následné nastavení pořadí - a aby bylo stejné i při opakovaném spuštění updateru.
-    const futureRuleId = mode === 'future' ? `rec_${Date.now()}_split` : undefined;
-    setData(prev => {
-      const rule = prev.recurringRules.find(r => r.id === ruleId);
-      if (!rule) return prev;
+    const ctx = createCommandContext(todayStr);
+    // ID nové větve se určí předem, aby ho volající znal - např. pro následné nastavení pořadí.
+    const futureRuleId = mode === 'future' ? ctx.newId('rec', '_split') : undefined;
+    const outcome = runCommand(prev => updateRecurringRuleCommand(
+      prev,
+      { ruleId, mode, periodKey, overrideData, originalTransactionId, futureRuleId },
+      ctx
+    ));
 
-      if (mode === 'occurrence') {
-        const existingExIndex = prev.recurringExceptions.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
-        const ex: RecurringException = {
-          id: existingExIndex >= 0 ? prev.recurringExceptions[existingExIndex].id : `ex_${Date.now()}`,
-          ruleId,
-          periodKey,
-          overrideAmountInHaler: overrideData.amountInHaler,
-          overrideDate: overrideData.date,
-          overrideSourceAccountId: overrideData.sourceAccountId,
-          overrideTargetAccountId: overrideData.targetAccountId,
-          overrideCategoryId: overrideData.categoryId,
-          overrideSubcategoryId: overrideData.subcategoryId,
-          createdAt: new Date().toISOString()
-        };
-
-        const newExceptions = existingExIndex >= 0
-          ? prev.recurringExceptions.map((item, idx) => idx === existingExIndex ? ex : item)
-          : [...prev.recurringExceptions, ex];
-
-        return { ...prev, recurringExceptions: newExceptions };
-      }
-
-      const nowIso = new Date().toISOString();
-
-      if (mode === 'future') {
-        const originalTx = originalTransactionId
-          ? prev.transactions.find(t => t.id === originalTransactionId)
-          : undefined;
-        const effectiveDate = overrideData.date || originalTx?.date || periodKey + '-15';
-        const { updatedOldRule, newFutureRule, updatedTransactions, updatedExceptions } = splitRecurringRuleForFuture(
-          rule,
-          effectiveDate,
-          overrideData,
-          originalTransactionId,
-          prev.transactions,
-          prev.recurringExceptions,
-          prev.settings.budgetStartDay,
-          nowIso,
-          '',
-          futureRuleId
-        );
-
-        return {
-          ...prev,
-          recurringRules: [...prev.recurringRules.map(r => r.id === ruleId ? updatedOldRule : r), newFutureRule],
-          recurringExceptions: updatedExceptions,
-          transactions: updatedTransactions,
-        };
-      }
-
-      // Změna data u celé série = nový den v měsíci pro všechny výskyty. Začátek pravidla
-      // se posune na nový den ve stejném měsíci, aby první výskyt nevypadl (occDate < startDate).
-      const newDay = overrideData.date ? parseInt(overrideData.date.split('-')[2], 10) : NaN;
-      const dayChanged = !isNaN(newDay) && newDay >= 1 && newDay <= 31;
-      const withDay = (dateStr: string): string => {
-        const [y, m] = dateStr.split('-').map(Number);
-        const day = Math.min(newDay, getDaysInMonth(y, m));
-        return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      };
-
-      const updatedSeries: RecurringRule = {
-        ...rule,
-        dayOfMonth: dayChanged ? newDay : rule.dayOfMonth,
-        startDate: dayChanged ? withDay(rule.startDate) : rule.startDate,
-        title: overrideData.title || rule.title,
-        amountInHaler: overrideData.amountInHaler !== undefined ? overrideData.amountInHaler : rule.amountInHaler,
-        sourceAccountId: overrideData.sourceAccountId || rule.sourceAccountId,
-        targetAccountId: overrideData.targetAccountId || rule.targetAccountId,
-        categoryId: overrideData.categoryId || rule.categoryId,
-        subcategoryId: overrideData.subcategoryId || rule.subcategoryId,
-        note: overrideData.note !== undefined ? overrideData.note : rule.note,
-        updatedAt: nowIso
-      };
-
-      // "Včetně minulých" - promítnout změnu i do už materializovaných transakcí série.
-      let updatedTxs = prev.transactions.map(t => {
-        if (t.recurringRuleId !== ruleId) return t;
-        return {
-          ...t,
-          title: updatedSeries.title,
-          amountInHaler: updatedSeries.amountInHaler,
-          actualAmountInHaler: t.status === 'executed' ? updatedSeries.amountInHaler : t.actualAmountInHaler,
-          sourceAccountId: updatedSeries.sourceAccountId,
-          targetAccountId: updatedSeries.targetAccountId,
-          categoryId: updatedSeries.categoryId,
-          subcategoryId: updatedSeries.subcategoryId,
-          note: updatedSeries.note,
-          date: !dayChanged ? t.date : (t.id === originalTransactionId ? overrideData.date! : withDay(t.date)),
-          updatedAt: nowIso,
-        };
-      });
-
-      // Přesunuté výskyty dostanou pořadí v novém dni (na jeho konec) a ve starém dni
-      // se zbylé položky přečíslují - jinak by si nesly původní pořadí (např. #13 v prázdném dni).
-      if (dayChanged) {
-        for (const oldTx of prev.transactions) {
-          if (oldTx.recurringRuleId !== ruleId) continue;
-          const moved = updatedTxs.find(t => t.id === oldTx.id);
-          if (!moved || moved.date === oldTx.date) continue;
-          const seq = getNextSequenceForDate(moved.date, updatedTxs.filter(t => t.id !== moved.id));
-          updatedTxs = insertOrUpdateWithSequence(moved, seq, updatedTxs, oldTx.date);
-        }
-        if (updatedSeries.orderPosition !== undefined) {
-          updatedTxs = applyRulePositions(updatedTxs, new Map([[ruleId, {
-            position: updatedSeries.orderPosition,
-            rank: updatedSeries.orderRank ?? updatedSeries.orderPosition,
-          }]]));
-        }
-      }
-
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.map(r => r.id === ruleId ? updatedSeries : r),
-        transactions: updatedTxs,
-      };
-    });
-
-    const ruleTitle = overrideData.title ?? data.recurringRules.find(r => r.id === ruleId)?.title;
+    const ruleTitle = outcome?.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla upravena.` : 'Pravidelná položka byla upravena.');
     return futureRuleId;
-  }, [data.recurringRules, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const reorderRecurringItem = useCallback((
     ruleId: string,
-    mode: 'occurrence' | 'future' | 'series',
+    mode: RecurringMode,
     date: string,
     periodKey: string,
     orderedIds: string[],
     movedTransactionId: string
   ) => {
-    setData(prev => {
-      const rule = prev.recurringRules.find(r => r.id === ruleId);
-      if (!rule) return prev;
-
-      const nowIso = new Date().toISOString();
-
-      // Pozice VŠECH opakujících se položek toho dne (ne jen přetažené). Kdyby měla pozici jen
-      // přetažená, při posunu dolů pod jinou opakovanou platbu by se její index zkrátil na
-      // začátek dne a původní pořadí by se vrátilo.
-      const { positions, ranks } = ruleOrderFromOrderedIds(orderedIds, prev.transactions, prev.recurringRules);
-      if (!ranks.has(ruleId)) {
-        positions.set(ruleId, Math.max(1, orderedIds.indexOf(movedTransactionId) + 1));
-        ranks.set(ruleId, ranks.size + 1);
-      }
-      const involvedRuleIds = Array.from(ranks.keys());
-
-      // Zhmotněné (reálné) transakce toho dne se přeuspořádají i fyzicky - hinty ovlivňují
-      // jen generování virtuálních výskytů.
-      const reorderRealToday = (txs: Transaction[]) => reorderDayTxsService(date, orderedIds, txs);
-
-      if (mode === 'occurrence') {
-        return {
-          ...prev,
-          recurringExceptions: withSequenceExceptions(prev.recurringExceptions, positions, periodKey, nowIso),
-          transactions: reorderRealToday(prev.transactions),
-        };
-      }
-
-      if (mode === 'future') {
-        let rules = prev.recurringRules;
-        let txs = prev.transactions;
-        let exceptions = prev.recurringExceptions;
-        const newRanks = new Map<string, number>();
-        const newPositions = new Map<string, number>();
-        involvedRuleIds.forEach((rid, i) => {
-          const current = rules.find(r => r.id === rid);
-          if (!current) return;
-          // Pravidlo, které začíná až tímto dnem (např. právě odštěpená větev), nemá žádnou
-          // minulost k zachování - pořadí se nastaví přímo, bez dalšího štěpení.
-          if (current.startDate >= date) {
-            rules = rules.map(r => r.id === rid
-              ? { ...r, orderRank: ranks.get(rid), orderPosition: positions.get(rid), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
-              : r);
-            newRanks.set(rid, ranks.get(rid) as number);
-            if (positions.has(rid)) newPositions.set(rid, positions.get(rid) as number);
-            return;
-          }
-          const split = splitRecurringRuleForFuture(
-            current, date, {}, undefined, txs, exceptions, prev.settings.budgetStartDay, nowIso, `_${i}`
-          );
-          const hinted: RecurringRule = {
-            ...split.newFutureRule,
-            orderRank: ranks.get(rid),
-            orderPosition: positions.get(rid),
-            orderRankUpdatedAt: nowIso,
-          };
-          rules = [...rules.map(r => r.id === rid ? split.updatedOldRule : r), hinted];
-          txs = split.updatedTransactions;
-          exceptions = split.updatedExceptions;
-          newRanks.set(hinted.id, ranks.get(rid) as number);
-          if (positions.has(rid)) newPositions.set(hinted.id, positions.get(rid) as number);
-        });
-
-        // Už zhmotněné výskyty od tohoto dne dál (provedené i plánované) dostanou nové pořadí hned.
-        // Přetažený den si navíc drží přesné pozice (i vůči ručním položkám) - samotný rank
-        // řadí jen opakované platby mezi sebou a virtuální výskyt by jinak skočil zpět za ruční.
-        return {
-          ...prev,
-          recurringRules: rules,
-          recurringExceptions: withSequenceExceptions(
-            clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
-          ),
-          transactions: applyRulePositions(reorderRealToday(txs), toRuleOrder(newRanks, newPositions), date),
-        };
-      }
-
-      // mode === 'series' - pořadí se uloží do pravidel a propíše i do všech už zhmotněných výskytů.
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.map(r => ranks.has(r.id)
-          ? { ...r, orderRank: ranks.get(r.id), orderPosition: positions.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
-          : r),
-        recurringExceptions: withSequenceExceptions(
-          clearSequenceOverrides(prev.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
-        ),
-        transactions: applyRulePositions(reorderRealToday(prev.transactions), toRuleOrder(ranks, positions)),
-      };
-    });
-
+    runCommand(prev => reorderRecurringItemCommand(
+      prev,
+      { ruleId, mode, date, periodKey, orderedIds, movedTransactionId },
+      createCommandContext(todayStr)
+    ));
     showToast('Pořadí pravidelné položky bylo uloženo.');
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteRecurringRule = useCallback((id: string) => {
-    setData(prev => {
-      const idsToDelete = new Set<string>();
-      for (const t of prev.transactions) {
-        if (t.recurringRuleId === id && t.status !== 'executed') {
-          idsToDelete.add(t.id);
-        }
-      }
-      const updatedTxs = idsToDelete.size > 0
-        ? deleteTransactionsAndReorder(idsToDelete, prev.transactions)
-        : prev.transactions;
-
-      return {
-        ...prev,
-        recurringRules: prev.recurringRules.filter(r => r.id !== id),
-        recurringExceptions: prev.recurringExceptions.filter(e => e.ruleId !== id),
-        transactions: updatedTxs,
-      };
-    });
-    const ruleTitle = data.recurringRules.find(r => r.id === id)?.title;
+    const outcome = runCommand(prev => deleteRecurringRuleCommand(prev, id));
+    const ruleTitle = outcome?.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla smazána.` : 'Pravidelná položka byla smazána.');
-  }, [data.recurringRules, showToast]);
+  }, [runCommand, showToast]);
 
   // ------------------- SPRÁVA ÚČTŮ -------------------
 
   const addAccount = useCallback((accData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const nowIso = new Date().toISOString();
-    const isDefault = Boolean(accData.isDefault);
-    const newAcc: Account = {
-      ...accData,
-      isDefault,
-      id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-    setData(prev => {
-      let accounts = prev.accounts;
-      if (isDefault) {
-        accounts = accounts.map(a => a.isDefault ? { ...a, isDefault: false, updatedAt: nowIso } : a);
-      }
-      // Nový účet se vždy zařadí na konec uživatelského pořadí.
-      const maxSortOrder = accounts.reduce((max, a) => Math.max(max, a.sortOrder ?? 0), 0);
-      return {
-        ...prev,
-        accounts: [...accounts, { ...newAcc, sortOrder: maxSortOrder + 1 }]
-      };
-    });
-    showToast(`Účet „${newAcc.name}“ byl vytvořen.`);
-    return newAcc;
-  }, [showToast]);
+    const outcome = runCommand(prev => addAccountCommand(prev, accData, createCommandContext(todayStr)));
+    if (!outcome) {
+      showToast('Data ještě nejsou načtená, účet nebyl vytvořen. Zkuste to prosím za chvíli znovu.', 'error');
+      return undefined;
+    }
+    showToast(`Účet „${outcome.account.name}“ byl vytvořen.`);
+    return outcome.account;
+  }, [runCommand, todayStr, showToast]);
 
   const updateAccount = useCallback((acc: Account) => {
-    const accountId = acc.id;
-    const newInitDate = acc.initialBalanceDate;
-    if (newInitDate) {
-      let earliestMovementDate: string | null = null;
-
-      for (const t of data.transactions) {
-        if (t.status === 'cancelled') continue;
-        if (t.sourceAccountId === accountId || t.targetAccountId === accountId) {
-          if (!earliestMovementDate || t.date < earliestMovementDate) {
-            earliestMovementDate = t.date;
-          }
-        }
-      }
-
-      for (const c of data.corrections) {
-        if (c.accountId === accountId) {
-          if (!earliestMovementDate || c.checkDate < earliestMovementDate) {
-            earliestMovementDate = c.checkDate;
-          }
-        }
-      }
-
-      for (const s of data.marketValueSnapshots || []) {
-        if (s.accountId === accountId) {
-          if (!earliestMovementDate || s.date < earliestMovementDate) {
-            earliestMovementDate = s.date;
-          }
-        }
-      }
-
-      for (const r of data.recurringRules || []) {
-        if (r.isActive && (r.sourceAccountId === accountId || r.targetAccountId === accountId)) {
-          if (!earliestMovementDate || r.startDate < earliestMovementDate) {
-            earliestMovementDate = r.startDate;
-          }
-        }
-      }
-
-      if (earliestMovementDate && newInitDate > earliestMovementDate) {
-        const msg = `Počáteční zůstatek nemůže začínat později než první položka účtu (${formatCzechDate(earliestMovementDate)}). Zvolte dřívější datum, nebo nejdřív posuňte či smažte starší položky.`;
-        showToast(msg, 'error');
-        return { success: false, message: msg };
-      }
+    const outcome = runCommand(prev => updateAccountCommand(prev, acc, createCommandContext(todayStr)));
+    if (outcome && 'error' in outcome) {
+      showToast(outcome.error, 'error');
+      return { success: false, message: outcome.error };
     }
-
-    const nowIso = new Date().toISOString();
-    const isDefault = Boolean(acc.isDefault);
-
-    setData(prev => {
-      const accounts = prev.accounts.map(a => {
-        if (a.id === acc.id) {
-          return { ...acc, isDefault, updatedAt: nowIso };
-        }
-        if (isDefault && a.isDefault) {
-          return { ...a, isDefault: false, updatedAt: nowIso };
-        }
-        return a;
-      });
-      return {
-        ...prev,
-        accounts
-      };
-    });
     showToast(`Účet „${acc.name}“ byl upraven.`);
     return { success: true };
-  }, [data.accounts, data.transactions, data.corrections, data.marketValueSnapshots, data.recurringRules, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const archiveAccount = useCallback((id: string) => {
-    const activeRules = data.recurringRules.filter(r => r.isActive && (r.sourceAccountId === id || r.targetAccountId === id));
-    if (activeRules.length > 0) {
-      return {
-        success: false,
-        message: `Účet nelze archivovat, protože je navázán na ${activeRules.length} aktivní pravidelné položky (např. ${activeRules[0].title}). Nejdřív u nich změňte účet nebo opakování ukončete.`
-      };
-    }
+    const outcome = runCommand(prev => archiveAccountCommand(prev, id, createCommandContext(todayStr)));
+    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
 
-    const nowIso = new Date().toISOString();
-    const before = data.accounts.find(a => a.id === id);
-    setData(prev => ({
-      ...prev,
-      accounts: prev.accounts.map(a => a.id === id ? { ...a, status: 'archived', isDefault: false, updatedAt: nowIso } : a)
-    }));
     // „Vrátit“ vrátí účet do původního stavu včetně příznaku výchozího účtu
+    const before = outcome?.before;
     showToast(before ? `Účet „${before.name}“ byl archivován.` : 'Účet byl archivován.', 'success', before ? {
       label: 'Vrátit',
       onClick: () => {
-        setData(prev => ({
-          ...prev,
-          accounts: prev.accounts.map(a => {
-            if (a.id === id) return { ...a, status: before.status, isDefault: before.isDefault, updatedAt: new Date().toISOString() };
-            return before.isDefault && a.isDefault ? { ...a, isDefault: false, updatedAt: new Date().toISOString() } : a;
-          }),
-        }));
+        runCommand(prev => undoArchiveAccountCommand(prev, before, createCommandContext(getTodayInPrague())));
         showToast(`Archivace účtu „${before.name}“ byla vrácena.`);
       },
     } : undefined);
     return { success: true };
-  }, [data.accounts, data.recurringRules, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const restoreAccount = useCallback((id: string) => {
-    const nowIso = new Date().toISOString();
-    setData(prev => ({
-      ...prev,
-      accounts: prev.accounts.map(a => a.id === id ? { ...a, status: 'active', isDefault: false, updatedAt: nowIso } : a)
-    }));
-    const name = data.accounts.find(a => a.id === id)?.name;
+    const name = runCommand(prev => restoreAccountCommand(prev, id, createCommandContext(todayStr)))?.name;
     showToast(name ? `Účet „${name}“ byl obnoven z archivu.` : 'Účet byl obnoven z archivu.');
-  }, [data.accounts, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteAccount = useCallback((id: string) => {
-    const hasTransactions = data.transactions.some(t => t.sourceAccountId === id || t.targetAccountId === id);
-    const hasRules = data.recurringRules.some(r => r.sourceAccountId === id || r.targetAccountId === id);
-    // Platná korekce je ta, která má odpovídající transakci typu balance_adjustment nebo účet má reálné transakce.
-    // Osiřelý / neplatný záznam bez transakce na prázdném účtu nesmí bránit smazání.
-    const hasActiveCorrections = data.corrections.some(c => 
-      c.accountId === id && (
-        hasTransactions || 
-        data.transactions.some(t => t.id === c.id || (t.type === 'balance_adjustment' && t.sourceAccountId === id))
-      )
-    );
+    const outcome = runCommand(prev => deleteAccountCommand(prev, id));
+    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
 
-    if (hasTransactions || hasRules || hasActiveCorrections) {
-      return {
-        success: false,
-        message: 'Účet má položky, pravidelné položky nebo korekce, a proto ho nejde smazat. Můžete ho archivovat – zmizí z nabídek, ale historie zůstane.'
-      };
-    }
-
-    // Odložené části pro „Vrátit“: účet i vše, co se smazalo s ním
-    type RemovedAccount = {
-      account: Account;
-      corrections: BalanceCorrection[];
-      snapshots: MarketValueSnapshot[];
-      fees: InvestmentFee[];
-      exceptions: RecurringException[];
-      usableOverride: boolean | undefined;
-    };
-    const removedRef: { current: RemovedAccount | null } = { current: null };
-
-    setData(prev => {
-      const account = prev.accounts.find(a => a.id === id);
-      if (!account) return prev;
-      const isRemovedException = (e: RecurringException) => e.overrideSourceAccountId === id || e.overrideTargetAccountId === id;
-      removedRef.current = {
-        account,
-        corrections: prev.corrections.filter(c => c.accountId === id),
-        snapshots: (prev.marketValueSnapshots || []).filter(s => s.accountId === id),
-        fees: (prev.investmentFees || []).filter(f => f.accountId === id),
-        exceptions: (prev.recurringExceptions || []).filter(isRemovedException),
-        usableOverride: prev.settings?.accountUsableOverrides?.[id],
-      };
-      const newOverrides = { ...(prev.settings?.accountUsableOverrides || {}) };
-      delete newOverrides[id];
-
-      return {
-        ...prev,
-        accounts: prev.accounts.filter(a => a.id !== id),
-        corrections: prev.corrections.filter(c => c.accountId !== id),
-        marketValueSnapshots: (prev.marketValueSnapshots || []).filter(s => s.accountId !== id),
-        investmentFees: (prev.investmentFees || []).filter(f => f.accountId !== id),
-        recurringExceptions: (prev.recurringExceptions || []).filter(e => !isRemovedException(e)),
-        settings: {
-          ...prev.settings,
-          accountUsableOverrides: newOverrides
-        }
-      };
-    });
-
-    const saved = removedRef.current;
-    if (!saved) return { success: true };
-    showToast(`Účet „${saved.account.name}“ byl smazán.`, 'success', {
+    const removed = outcome?.removed;
+    if (!removed) return { success: true };
+    showToast(`Účet „${removed.account.name}“ byl smazán.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        // Nové updatedAt je pozdější než záznam o smazání, takže synchronizace obnovu přijme
-        const nowIso = new Date().toISOString();
-        const touch = <T,>(items: T[]): T[] => items.map(item => ({ ...item, updatedAt: nowIso }));
-        setData(prev => {
-          if (prev.accounts.some(a => a.id === id)) return prev;
-          const overrides = { ...(prev.settings?.accountUsableOverrides || {}) };
-          if (saved.usableOverride !== undefined) overrides[id] = saved.usableOverride;
-          return reconcileMarketValueHistory({
-            ...prev,
-            accounts: [...prev.accounts, { ...saved.account, updatedAt: nowIso }],
-            corrections: [...prev.corrections, ...touch(saved.corrections)],
-            marketValueSnapshots: [...(prev.marketValueSnapshots || []), ...touch(saved.snapshots)],
-            investmentFees: [...(prev.investmentFees || []), ...touch(saved.fees)],
-            recurringExceptions: [...(prev.recurringExceptions || []), ...touch(saved.exceptions)],
-            settings: { ...prev.settings, accountUsableOverrides: overrides },
-          });
-        });
-        showToast(`Účet „${saved.account.name}“ byl obnoven.`);
+        runCommand(prev => restoreDeletedAccountCommand(prev, removed, createCommandContext(getTodayInPrague())));
+        showToast(`Účet „${removed.account.name}“ byl obnoven.`);
       },
     });
     return { success: true };
-  }, [data.transactions, data.corrections, data.recurringRules, showToast]);
+  }, [runCommand, showToast]);
 
   const reorderAccounts = useCallback((orderedIds: string[]) => {
     setData(prev => ({
@@ -1741,80 +915,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     checkDate: string,
     note?: string
   ) => {
-    const account = data.accounts.find(a => a.id === accountId);
-    if (!account) return;
-
-    if (account.initialBalanceDate && checkDate < account.initialBalanceDate) {
-      showToast(`Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`, 'warning');
-      return;
-    }
-
-    if (account.type === 'investment' || account.type === 'pension') {
-      showToast('U investičních a penzijních účtů se místo korekce zadává tržní hodnota.', 'warning');
-      return;
-    }
-
-    const nextSeq = getNextSequenceForDate(checkDate, data.transactions);
-    const currentAccBal = getAccountBalanceAtDate(
-      account,
-      checkDate,
-      { transactions: data.transactions, corrections: data.corrections },
-      { includePlanned: true, beforeSequence: nextSeq }
-    );
-
-    const diffInHaler = subHaler(actualBalanceInHaler, currentAccBal);
-
-    if (diffInHaler === 0) {
+    const outcome = runCommand(prev => reconcileBalanceCommand(
+      prev,
+      { accountId, actualBalanceInHaler, checkDate, note },
+      createCommandContext(todayStr)
+    ));
+    if (!outcome || outcome.kind === 'none') return;
+    if (outcome.kind === 'warning') {
+      showToast(outcome.message, 'warning');
+    } else if (outcome.kind === 'unchanged') {
       showToast('Zůstatek sedí s bankou, korekce nebyla potřeba.', 'info');
-      return;
+    } else {
+      const { diffInHaler } = outcome;
+      showToast(`Zůstatek srovnán s bankou. Uložena korekce ${diffInHaler >= 0 ? '+' : ''}${(diffInHaler / 100).toLocaleString('cs-CZ')} Kč.`);
     }
-
-    const nowIso = new Date().toISOString();
-    const corrId = `corr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
-    const newCorrection: BalanceCorrection = {
-      id: corrId,
-      accountId,
-      checkDate,
-      sequence: nextSeq,
-      type: 'balance_adjustment',
-      calculatedBalanceInHaler: currentAccBal,
-      actualBalanceInHaler,
-      diffInHaler,
-      note: note && note.trim() ? note.trim() : 'Aktualizace skutečného stavu',
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-
-    const corrTx: Transaction = {
-      id: corrId,
-      title: 'Korekce zůstatku',
-      amountInHaler: Math.abs(diffInHaler),
-      date: checkDate,
-      sequence: nextSeq,
-      type: 'balance_adjustment',
-      sourceAccountId: accountId,
-      status: 'executed',
-      actualAmountInHaler: Math.abs(diffInHaler),
-      calculatedBalanceInHaler: currentAccBal,
-      actualBalanceInHaler,
-      diffInHaler,
-      note: note && note.trim() ? note.trim() : 'Aktualizace skutečného stavu',
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-
-    setData(prev => {
-      const updatedTxs = insertOrUpdateWithSequence(corrTx, nextSeq, prev.transactions);
-      return {
-        ...prev,
-        corrections: [...prev.corrections, newCorrection],
-        transactions: updatedTxs
-      };
-    });
-
-    showToast(`Zůstatek srovnán s bankou. Uložena korekce ${diffInHaler >= 0 ? '+' : ''}${(diffInHaler / 100).toLocaleString('cs-CZ')} Kč.`);
-  }, [data.accounts, data.transactions, data.corrections, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const updateMarketValue = useCallback((
     accountId: string,
@@ -1822,55 +937,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     date?: string,
     note?: string
   ) => {
-    const account = data.accounts.find(a => a.id === accountId);
-    if (!account) return;
-
-    if (account.type !== 'investment' && account.type !== 'pension') {
-      showToast('Tržní hodnota jde zadat jen u investičních a penzijních účtů.', 'warning');
+    const outcome = runCommand(prev => addMarketValueCommand(
+      prev,
+      { accountId, marketValueInHaler, date, note },
+      createCommandContext(getTodayInPrague())
+    ));
+    if (!outcome || outcome.kind === 'none') return;
+    if (outcome.kind === 'warning') {
+      showToast(outcome.message, 'warning');
       return;
     }
-
-    const valuationDate = date && date.trim() ? date.trim() : getTodayInPrague();
-
-    if (account.initialBalanceDate && valuationDate < account.initialBalanceDate) {
-      showToast(`Tento účet je aktivní až od ${formatCzechDate(account.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`, 'warning');
-      return;
-    }
-
-    const nowIso = new Date().toISOString();
-
-    const snapshot: MarketValueSnapshot = {
-      id: `mvs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      accountId,
-      date: valuationDate,
-      marketValueInHaler,
-      note: note && note.trim() ? note.trim() : undefined,
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-
-    setData(prev => {
-      const currentAccount = prev.accounts.find(a => a.id === accountId)!;
-      const isLatest = !currentAccount.marketValueUpdatedAt || valuationDate >= currentAccount.marketValueUpdatedAt;
-      return reconcileMarketValueHistory({
-        ...prev,
-        marketValueSnapshots: [...prev.marketValueSnapshots, {
-          ...snapshot,
-          createdAt: new Date(prev.marketValueSnapshots.filter(s => s.accountId === accountId)
-            .reduce((time, s) => Math.max(time, (Date.parse(s.createdAt) || 0) + 1), Date.parse(nowIso))).toISOString(),
-        }],
-        accounts: prev.accounts.map(a => a.id === accountId ? {
-          ...a,
-          currentMarketValueInHaler: isLatest ? marketValueInHaler : a.currentMarketValueInHaler,
-          marketValueUpdatedAt: isLatest ? valuationDate : a.marketValueUpdatedAt,
-          updatedAt: nowIso
-        } : a)
-      });
-    });
-
-    const accountTypeLabel = account.type === 'pension' ? 'penzijního' : 'investičního';
+    const accountTypeLabel = outcome.accountType === 'pension' ? 'penzijního' : 'investičního';
     showToast(`Tržní hodnota ${accountTypeLabel} účtu byla aktualizována.`);
-  }, [data.accounts, showToast]);
+  }, [runCommand, showToast]);
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
     setData(prev => mutateMarketValueHistory(prev, id, edit));
@@ -1878,8 +957,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [setData, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
-    const deleted = data.marketValueSnapshots.find(s => s.id === id);
-    setData(prev => mutateMarketValueHistory(prev, id));
+    const deleted = runCommand(prev => deleteMarketValueCommand(prev, id))?.deleted;
     if (!deleted) {
       showToast('Tržní hodnota byla smazána.');
       return;
@@ -1888,226 +966,138 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast(`Tržní hodnota z ${formatCzechDate(deleted.date)} byla smazána.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        setData(prev => prev.marketValueSnapshots.some(s => s.id === deleted.id) ? prev : reconcileMarketValueHistory({
-          ...prev,
-          marketValueSnapshots: [...prev.marketValueSnapshots, { ...deleted, updatedAt: new Date().toISOString() }],
-        }));
+        runCommand(prev => restoreMarketValueCommand(prev, deleted, createCommandContext(getTodayInPrague())));
         showToast('Tržní hodnota byla obnovena.');
       },
     });
-  }, [data.marketValueSnapshots, setData, showToast]);
+  }, [runCommand, showToast]);
 
   const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
-    if (!/^\d{4}-\d{2}$/.test(periodKey) || !Number.isSafeInteger(amountInHaler) || amountInHaler < 0) {
-      showToast('Zadejte částku poplatku (0 nebo více).', 'warning');
+    const outcome = runCommand(prev => saveInvestmentFeeCommand(
+      prev,
+      { accountId, periodKey, amountInHaler, note },
+      createCommandContext(todayStr)
+    ));
+    if (outcome && 'error' in outcome) {
+      showToast(outcome.error, 'warning');
       return;
     }
-    const nowIso = new Date().toISOString();
-    const cleanNote = note && note.trim() ? note.trim() : undefined;
-    setData(prev => {
-      // Nejvýše jeden poplatek za období: existující záznam se přepíše.
-      const fees = prev.investmentFees || [];
-      const existing = getAccountFees(fees, accountId).find(f => f.periodKey === periodKey);
-      const others = fees.filter(f => !(f.accountId === accountId && f.periodKey === periodKey));
-      const fee: InvestmentFee = existing
-        ? { ...existing, amountInHaler, note: cleanNote, updatedAt: nowIso }
-        : { id: `fee_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, accountId, periodKey,
-            amountInHaler, note: cleanNote, createdAt: nowIso, updatedAt: nowIso };
-      return { ...prev, investmentFees: [...others, fee] };
-    });
     showToast('Poplatek byl uložen.');
-  }, [setData, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteInvestmentFee = useCallback((id: string) => {
-    const target = (data.investmentFees || []).find(f => f.id === id);
-    const samePeriod = (f: InvestmentFee) => !!target && f.accountId === target.accountId && f.periodKey === target.periodKey;
-    const deleted = (data.investmentFees || []).filter(samePeriod);
-    setData(prev => {
-      if (!target || !(prev.investmentFees || []).some(f => f.id === id)) return prev;
-      return { ...prev, investmentFees: prev.investmentFees.filter(f => !samePeriod(f)) };
-    });
-    if (!target) {
+    const outcome = runCommand(prev => deleteInvestmentFeeCommand(prev, id));
+    const target = outcome?.target;
+    if (!outcome || !target) {
       showToast('Poplatek byl smazán.');
       return;
     }
+    const { deleted } = outcome;
     // „Vrátit“ jen pokud mezitím pro stejné období nevznikl nový poplatek (nejvýše jeden za období)
     showToast(`Poplatek ${formatCurrency(target.amountInHaler)} byl smazán.`, 'success', {
       label: 'Vrátit',
       onClick: () => {
-        const nowIso = new Date().toISOString();
-        setData(prev => (prev.investmentFees || []).some(samePeriod) ? prev : {
-          ...prev,
-          investmentFees: [...(prev.investmentFees || []), ...deleted.map(f => ({ ...f, updatedAt: nowIso }))],
-        });
+        runCommand(prev => restoreInvestmentFeesCommand(prev, deleted, createCommandContext(getTodayInPrague())));
         showToast('Poplatek byl obnoven.');
       },
     });
-  }, [data.investmentFees, setData, showToast]);
+  }, [runCommand, showToast]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
-    const nowIso = new Date().toISOString();
-    setData(prev => ({
-      ...prev,
-      transactions: prev.transactions.map(t => t.id === id ? { ...t, note, updatedAt: nowIso } : t),
-      corrections: prev.corrections.map(c => c.id === id ? { ...c, note, updatedAt: nowIso } : c)
-    }));
+    runCommand(prev => updateCorrectionNoteCommand(prev, { id, note }, createCommandContext(todayStr)));
     showToast('Poznámka ke korekci byla uložena.');
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteCorrection = useCallback(async (id: string) => {
-    const inTxs = data.transactions.some(t => t.id === id);
-    if (inTxs) {
+    // Korekce uložená i jako položka seznamu se maže jako položka (s „Vrátit“ pro obojí)
+    if (latestDataRef.current.transactions.some(t => t.id === id)) {
       return deleteTransaction(id);
     }
-    const deleted = data.corrections.find(c => c.id === id);
-    setData(prev => ({
-      ...prev,
-      corrections: prev.corrections.filter(c => c.id !== id)
-    }));
+    const deleted = runCommand(prev => deleteStandaloneCorrectionCommand(prev, id))?.deleted;
     // Samostatná korekce (bez položky v seznamu) se vrací jen do korekcí
     showToast('Korekce zůstatku byla smazána.', 'success', deleted ? {
       label: 'Vrátit',
       onClick: () => {
-        setData(prev => prev.corrections.some(c => c.id === deleted.id) ? prev : {
-          ...prev,
-          corrections: [...prev.corrections, { ...deleted, updatedAt: new Date().toISOString() }],
-        });
+        runCommand(prev => restoreCorrectionCommand(prev, deleted, createCommandContext(getTodayInPrague())));
         showToast('Korekce zůstatku byla obnovena.');
       },
     } : undefined);
     return true;
-  }, [data.transactions, data.corrections, deleteTransaction, showToast]);
+  }, [runCommand, deleteTransaction, showToast]);
 
   // ------------------- SPRÁVA KATEGORIÍ -------------------
 
   const addCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const nowIso = new Date().toISOString();
-    const newCat: Category = {
-      ...catData,
-      id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      createdAt: nowIso,
-      updatedAt: nowIso
-    };
-    setData(prev => ({
-      ...prev,
-      categories: [...prev.categories, newCat]
-    }));
-    showToast(`Kategorie „${newCat.name}“ byla vytvořena.`);
-    return newCat;
-  }, [showToast]);
+    const outcome = runCommand(prev => addCategoryCommand(prev, catData, createCommandContext(todayStr)));
+    if (!outcome) {
+      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
+      return undefined;
+    }
+    showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
+    return outcome.category;
+  }, [runCommand, todayStr, showToast]);
 
   const addMainCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    // Striktní pravidlo: Nová hlavní kategorie má VŽDY parentId = null.
-    // Ani ručně upravený požadavek nesmí přes tuto funkci vytvořit podkategorii.
-    return addCategory({
-      ...catData,
-      parentId: null
-    });
-  }, [addCategory]);
+    const outcome = runCommand(prev => addMainCategoryCommand(prev, catData, createCommandContext(todayStr)));
+    if (!outcome) {
+      showToast('Data ještě nejsou načtená, kategorie nebyla vytvořena. Zkuste to prosím za chvíli znovu.', 'error');
+      return undefined;
+    }
+    showToast(`Kategorie „${outcome.category.name}“ byla vytvořena.`);
+    return outcome.category;
+  }, [runCommand, todayStr, showToast]);
 
   const updateCategory = useCallback((cat: Category) => {
-    setData(prev => {
-      const nowIso = new Date().toISOString();
-      const original = prev.categories.find(c => c.id === cat.id);
-      const isMainCategory = !cat.parentId;
-      const colorChanged = !!original && original.color !== cat.color;
-      const shouldPropagateColor = isMainCategory && colorChanged;
-
-      return {
-        ...prev,
-        categories: prev.categories.map(c => {
-          if (c.id === cat.id) return { ...cat, updatedAt: nowIso };
-          if (shouldPropagateColor && c.parentId === cat.id) {
-            return { ...c, color: cat.color, updatedAt: nowIso };
-          }
-          return c;
-        })
-      };
-    });
+    runCommand(prev => updateCategoryCommand(prev, cat, createCommandContext(todayStr)));
     showToast(`Kategorie „${cat.name}“ byla upravena.`);
-  }, [showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const moveSubcategory = useCallback((subcategoryId: string, newParentId: string, updateHistorical: boolean) => {
-    setData(prev => {
-      const updatedCategories = prev.categories.map(c => c.id === subcategoryId ? { ...c, parentId: newParentId, updatedAt: new Date().toISOString() } : c);
-      let updatedTxs = prev.transactions;
-      if (updateHistorical) {
-        updatedTxs = prev.transactions.map(t => t.subcategoryId === subcategoryId ? { ...t, categoryId: newParentId, updatedAt: new Date().toISOString() } : t);
-      }
-      return {
-        ...prev,
-        categories: updatedCategories,
-        transactions: updatedTxs
-      };
-    });
-    const subName = data.categories.find(c => c.id === subcategoryId)?.name;
-    const parentName = data.categories.find(c => c.id === newParentId)?.name;
-    showToast(subName && parentName
-      ? `Podkategorie „${subName}“ byla přesunuta do kategorie „${parentName}“.`
+    const outcome = runCommand(prev => moveSubcategoryCommand(
+      prev,
+      { subcategoryId, newParentId, updateHistorical },
+      createCommandContext(todayStr)
+    ));
+    showToast(outcome?.subName && outcome.parentName
+      ? `Podkategorie „${outcome.subName}“ byla přesunuta do kategorie „${outcome.parentName}“.`
       : 'Podkategorie byla přesunuta do jiné kategorie.');
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const archiveCategory = useCallback((id: string) => {
-    // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení. Vrátí jen ty,
-    // které archivace skutečně skryla – dřív archivované podkategorie zůstanou archivované.
-    const affectedIds = new Set(
-      data.categories.filter(c => (c.id === id || c.parentId === id) && c.status !== 'archived').map(c => c.id)
-    );
-    const name = data.categories.find(c => c.id === id)?.name;
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'archived', updatedAt: new Date().toISOString() } : c)
-    }));
+    const outcome = runCommand(prev => archiveCategoryCommand(prev, id, createCommandContext(todayStr)));
+    const name = outcome?.name;
+    const affectedIds = outcome?.affectedIds ?? [];
+    // Archivovaná kategorie ze seznamu zmizí, proto oznámení nabídne vrácení
     showToast(name ? `Kategorie „${name}“ byla archivována.` : 'Kategorie byla archivována.', 'success', {
       label: 'Vrátit',
       onClick: () => {
-        setData(prev => ({
-          ...prev,
-          categories: prev.categories.map(c => affectedIds.has(c.id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
-        }));
+        runCommand(prev => undoArchiveCategoryCommand(prev, affectedIds, createCommandContext(getTodayInPrague())));
         showToast(name ? `Archivace kategorie „${name}“ byla vrácena.` : 'Archivace kategorie byla vrácena.');
       },
     });
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const restoreCategory = useCallback((id: string) => {
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c => (c.id === id || c.parentId === id) ? { ...c, status: 'active', updatedAt: new Date().toISOString() } : c)
-    }));
-    const name = data.categories.find(c => c.id === id)?.name;
+    const name = runCommand(prev => restoreCategoryCommand(prev, id, createCommandContext(todayStr)))?.name;
     showToast(name ? `Kategorie „${name}“ byla obnovena z archivu.` : 'Kategorie byla obnovena z archivu.');
-  }, [data.categories, showToast]);
+  }, [runCommand, todayStr, showToast]);
 
   const deleteCategory = useCallback((id: string) => {
-    // Smazání hlavní kategorie odstraní i podkategorie, proto se počítá i jejich použití
-    if (isInUse(getCategoryUsage(id, data.categories, data.transactions, data.recurringRules))) {
-      return {
-        success: false,
-        message: 'Kategorii používají položky nebo pravidelné položky, a proto ji nejde smazat. Můžete ji archivovat – zmizí z nabídek, ale historie zůstane.'
-      };
-    }
+    const outcome = runCommand(prev => deleteCategoryCommand(prev, id));
+    if (outcome && 'error' in outcome) return { success: false, message: outcome.error };
 
-    const removed = data.categories.filter(c => c.id === id || c.parentId === id);
-    const name = removed.find(c => c.id === id)?.name;
-    setData(prev => ({
-      ...prev,
-      categories: prev.categories.filter(c => c.id !== id && c.parentId !== id)
-    }));
+    const name = outcome?.name;
+    const removed = outcome?.removed ?? [];
     // „Vrátit“ obnoví kategorii i její podkategorie
     showToast(name ? `Kategorie „${name}“ byla smazána.` : 'Kategorie byla smazána.', 'success', removed.length ? {
       label: 'Vrátit',
       onClick: () => {
-        const nowIso = new Date().toISOString();
-        setData(prev => prev.categories.some(c => c.id === id) ? prev : {
-          ...prev,
-          categories: [...prev.categories, ...removed.map(c => ({ ...c, updatedAt: nowIso }))],
-        });
+        runCommand(prev => restoreDeletedCategoriesCommand(prev, removed, createCommandContext(getTodayInPrague())));
         showToast(name ? `Kategorie „${name}“ byla obnovena.` : 'Kategorie byla obnovena.');
       },
     } : undefined);
     return { success: true };
-  }, [data.categories, data.transactions, data.recurringRules, showToast]);
+  }, [runCommand, showToast]);
 
   // ------------------- NASTAVENÍ A DATA -------------------
 
@@ -2293,43 +1283,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const importJSON = useCallback((jsonStr: string): boolean => {
     try {
       const parsed = validateAndParseBackup(jsonStr);
-      // Merges against the live controller state (via the functional setData form), never a
-      // possibly-stale `data` snapshot from this closure's render.
-      setData(prev => {
-        const merged = mergeBackupData(prev, parsed);
-        const prevIds = new Set(prev.transactions.map(t => t.id));
-        // Pořadí (sequence) v zálože je jen lokální v rámci importovaného souboru. Existující
-        // transakce daného dne se nesmí přeřazovat - nově přidané se do řady připojí až za ně,
-        // ve stejném vzájemném pořadí, v jakém byly v souboru.
-        const addedByDate = new Map<string, Transaction[]>();
-        for (const t of merged.transactions) {
-          if (prevIds.has(t.id)) continue;
-          const list = addedByDate.get(t.date) || [];
-          list.push(t);
-          addedByDate.set(t.date, list);
-        }
-        const transactions = merged.transactions.filter(t => prevIds.has(t.id));
-        for (const added of addedByDate.values()) {
-          const ordered = [...added].sort((a, b) =>
-            (a.sequence ?? 1) - (b.sequence ?? 1) ||
-            (a.createdAt || '').localeCompare(b.createdAt || '') ||
-            (a.id || '').localeCompare(b.id || ''));
-          for (const t of ordered) {
-            transactions.push({ ...t, sequence: getNextSequenceForDate(t.date, transactions) });
-          }
-        }
-        return {
-          ...merged,
-          transactions: sortTransactionsByDateAndSequence(transactions)
-        };
-      });
+      // Slučuje se s aktuálními daty v controlleru, nikdy se starší kopií z tohoto renderu
+      runCommand(prev => importBackupCommand(prev, parsed));
       showToast('Záloha byla sloučena s aktuálními daty.');
       return true;
     } catch (err: any) {
       showToast(`Zálohu se nepodařilo obnovit: ${err.message}`, 'error');
       return false;
     }
-  }, [showToast]);
+  }, [runCommand, showToast]);
 
   const exportCSV = useCallback(() => {
     exportTransactionsCSV(data.transactions, data.accounts, data.categories);
