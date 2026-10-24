@@ -620,7 +620,7 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
 
     // Březen (před aktivací): hodnota 0 Kč
     expect(forecast.periods[0].accountBalances['acc_pension'].closingBalanceInHaler).toBe(0);
-    // Duben (po aktivaci): hodnota je evidována
-    expect(forecast.periods[1].accountBalances['acc_pension'].closingBalanceInHaler).toBe(20000000);
+    // Duben (po aktivaci): hodnota odpovídá ocenění z 15. 4.
+    expect(forecast.periods[1].accountBalances['acc_pension'].closingBalanceInHaler).toBe(22000000);
   });
 });

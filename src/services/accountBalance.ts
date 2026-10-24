@@ -83,6 +83,43 @@ function liquidBalance(
   return balance;
 }
 
+export interface AssetValuation {
+  valueInHaler: number;
+  /** Den ocenění; toky v tento den už jsou v hodnotě. Bez data platí hodnota od aktivace a toky se počítají od data aktivace včetně. */
+  date?: string;
+}
+
+/**
+ * Poslední ocenění investičního nebo penzijního účtu k datu: snapshot, jinak tržní hodnota na účtu.
+ * Bez ocenění vrací undefined (platí počáteční zůstatek).
+ */
+export function getLatestAssetValuation(
+  account: Account,
+  date: string,
+  snapshots: MarketValueSnapshot[] | undefined
+): AssetValuation | undefined {
+  const initDate = account.initialBalanceDate || '1970-01-01';
+  const latestSnapshot = (Array.isArray(snapshots) ? snapshots : [])
+    .filter(s => s.accountId === account.id && s.date >= initDate && s.date <= date)
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id))[0];
+
+  if (latestSnapshot) {
+    return { valueInHaler: latestSnapshot.marketValueInHaler, date: latestSnapshot.date };
+  }
+  if (
+    account.currentMarketValueInHaler !== undefined &&
+    account.marketValueUpdatedAt &&
+    account.marketValueUpdatedAt >= initDate &&
+    account.marketValueUpdatedAt <= date
+  ) {
+    return { valueInHaler: account.currentMarketValueInHaler, date: account.marketValueUpdatedAt };
+  }
+  if (account.currentMarketValueInHaler !== undefined && !account.marketValueUpdatedAt) {
+    return { valueInHaler: account.currentMarketValueInHaler };
+  }
+  return undefined;
+}
+
 function assetBalance(
   account: Account,
   initDate: string,
@@ -91,28 +128,10 @@ function assetBalance(
   snapshots: MarketValueSnapshot[] | undefined,
   { includePlanned = false }: BalanceOptions
 ): number {
-  const latestSnapshot = (Array.isArray(snapshots) ? snapshots : [])
-    .filter(s => s.accountId === account.id && s.date >= initDate && s.date <= date)
-    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || '') || b.id.localeCompare(a.id))[0];
-
-  let value = account.initialBalanceInHaler || 0;
+  const valuation = getLatestAssetValuation(account, date, snapshots);
+  let value = valuation ? valuation.valueInHaler : account.initialBalanceInHaler || 0;
   // Toky se počítají po datu ocenění; bez ocenění od data aktivace včetně
-  let flowsAfter: string | null = null;
-
-  if (latestSnapshot) {
-    value = latestSnapshot.marketValueInHaler;
-    flowsAfter = latestSnapshot.date;
-  } else if (
-    account.currentMarketValueInHaler !== undefined &&
-    account.marketValueUpdatedAt &&
-    account.marketValueUpdatedAt >= initDate &&
-    account.marketValueUpdatedAt <= date
-  ) {
-    value = account.currentMarketValueInHaler;
-    flowsAfter = account.marketValueUpdatedAt;
-  } else if (account.currentMarketValueInHaler !== undefined && !account.marketValueUpdatedAt) {
-    value = account.currentMarketValueInHaler;
-  }
+  const flowsAfter = valuation?.date ?? null;
 
   for (const t of transactions) {
     if (t.status === 'cancelled') continue;

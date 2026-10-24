@@ -16,7 +16,7 @@ import {
 } from '../types/finance';
 import type { AppData } from './storageService';
 import { addHaler, subHaler } from './currencyService';
-import { getAccountBalanceAtDate } from './accountBalance';
+import { getAccountBalanceAtDate, getLatestAssetValuation } from './accountBalance';
 import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getAccountFlowInHaler, getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { DualPeriodRange, resolvePeriodRange } from './periodRange';
@@ -782,16 +782,15 @@ export function summarizePeriods(
           );
         }
 
-        const snapshotsInPeriod = safeSnapshots
-          .filter(s => s.accountId === acc.id && s.date >= period.startDate && s.date <= period.endDate && s.date >= initDate)
-          .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+        // Ocenění uvnitř období nahrazuje řetězení; ocenění bez data platí od aktivace
+        const valuation = getLatestAssetValuation(acc, period.endDate, safeSnapshots);
+        const valuedOn = valuation && (valuation.date ?? initDate);
 
-        if (snapshotsInPeriod.length > 0) {
-          const latestSnapInPeriod = snapshotsInPeriod[0];
-          const netTransfersAfterSnap = effectiveTxs
-            .filter(t => t.status !== 'cancelled' && t.date > latestSnapInPeriod.date && t.date >= initDate)
+        if (valuation && valuedOn && valuedOn >= period.startDate) {
+          const netTransfersAfterValuation = effectiveTxs
+            .filter(t => t.status !== 'cancelled' && t.date >= initDate && (valuation.date === undefined || t.date > valuation.date))
             .reduce((sum, t) => addHaler(sum, getAccountFlowInHaler(t, acc.id)), 0);
-          closing = addHaler(latestSnapInPeriod.marketValueInHaler, netTransfersAfterSnap);
+          closing = addHaler(valuation.valueInHaler, netTransfersAfterValuation);
         } else {
           closing = addHaler(
             accBal.openingBalanceInHaler,

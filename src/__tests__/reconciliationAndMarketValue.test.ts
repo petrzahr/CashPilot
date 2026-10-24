@@ -97,6 +97,35 @@ describe('Reconciliation and Market Value Engine', () => {
     startDay: 15,
   };
 
+  describe('Recorded asset closing', () => {
+    const periodAug2026: BudgetPeriod = {
+      key: '2026-08', name: 'Srpen 2026', year: 2026, month: 8,
+      startDate: '2026-08-15', endDate: '2026-09-14', startDay: 15,
+    };
+
+    it.each([
+      ['dated market value', { marketValueUpdatedAt: '2026-08-20' }],
+      ['undated market value', { marketValueUpdatedAt: undefined }],
+    ])('matches the account balance at period end with a %s and no snapshot', (_, valuation) => {
+      const checking = { ...sampleCheckingAccount, initialBalanceDate: '2026-08-15' };
+      const investment: Account = { ...sampleInvestmentAccount, initialBalanceDate: '2026-08-15',
+        initialBalanceInHaler: 10000000, currentMarketValueInHaler: 12000000, ...valuation };
+      const transactions: Transaction[] = [{ id: 'buy', title: 'buy', date: '2026-08-25', sequence: 1,
+        type: 'transfer', status: 'executed', amountInHaler: 100000, sourceAccountId: checking.id,
+        targetAccountId: investment.id, createdAt: '', updatedAt: '' }];
+      const result = summarizePeriods(
+        [periodAug2026, periodSep2026, periodOct2026],
+        { accounts: [checking, investment], transactions },
+        { currentPeriodKey: periodOct2026.key, today: '2026-10-20' }
+      );
+      for (const summary of result.periods) {
+        expect(summary.accountBalances[investment.id].closingBalanceInHaler)
+          .toBe(getAccountBalanceAtDate(investment, summary.period.endDate, { transactions }, { includePlanned: true }));
+      }
+      expect(result.periods[0].accountBalances[investment.id].closingBalanceInHaler).toBe(12100000);
+    });
+  });
+
   describe('Current market value forecast', () => {
     it.each([35000000, 25000000, 0])('anchors assets at %i without predicting returns', marketValue => {
       const investment = { ...sampleInvestmentAccount, initialBalanceInHaler: 30000000,
