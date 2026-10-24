@@ -67,7 +67,6 @@ export function calculateCategoryBreakdown(
   recurringExceptions: RecurringException[],
   categories: Category[],
   accounts: Account[],
-  startDay: number,
   accountId?: string
 ): CategoryBreakdownResult {
   const periodCount = periods.length;
@@ -98,7 +97,6 @@ export function calculateCategoryBreakdown(
       transactions,
       recurringRules,
       recurringExceptions,
-      startDay,
       undefined,
       accounts
     );
@@ -255,7 +253,6 @@ export function calculateBudgetCategoryOverview(
   recurringExceptions: RecurringException[],
   categories: Category[],
   accounts: Account[],
-  startDay: number,
   accountId?: string
 ): BudgetCategoryOverview {
   const breakdown = calculateCategoryBreakdown(
@@ -265,7 +262,6 @@ export function calculateBudgetCategoryOverview(
     recurringExceptions,
     categories,
     accounts,
-    startDay,
     accountId
   );
   const rowMap = new Map(breakdown.rows.map((r) => [r.key, r]));
@@ -301,7 +297,6 @@ export function calculateBudgetCategoryOverview(
     transactions,
     recurringRules,
     recurringExceptions,
-    startDay,
     undefined,
     accounts
   );

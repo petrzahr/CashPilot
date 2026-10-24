@@ -26,14 +26,13 @@ import { sortTransactionsByDateAndSequence } from './sequenceService';
 
 export function doesRuleApplyInPeriod(
   rule: RecurringRule,
-  period: BudgetPeriod,
-  startDay: number = 15
+  period: BudgetPeriod
 ): boolean {
   if (!rule.isActive) return false;
   if (rule.startDate > period.endDate) return false;
   if (rule.endDate && rule.endDate < period.startDate) return false;
 
-  const ruleStartPeriod = getPeriodForDate(rule.startDate, startDay);
+  const ruleStartPeriod = getPeriodForDate(rule.startDate, period.startDay);
   
   const monthDiff = (period.year - ruleStartPeriod.year) * 12 + (period.month - ruleStartPeriod.month);
   if (monthDiff < 0) return false;
@@ -72,11 +71,11 @@ export function generateOccurrenceForPeriod(
   rule: RecurringRule,
   period: BudgetPeriod,
   exceptions: RecurringException[] = [],
-  startDay: number = 15,
   sequence: number = 1,
   todayStr?: string,
   accounts?: Account[]
 ): Transaction | null {
+  const startDay = period.startDay;
   const safeExceptions = Array.isArray(exceptions) ? exceptions : [];
   const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
   if (ex && ex.isCancelled) {
@@ -174,7 +173,6 @@ export function getEffectiveTransactionsForPeriod(
   transactions: Transaction[] = [],
   rules: RecurringRule[] = [],
   exceptions: RecurringException[] = [],
-  startDay: number = 15,
   todayStr?: string,
   accounts?: Account[]
 ): Transaction[] {
@@ -213,8 +211,8 @@ export function getEffectiveTransactionsForPeriod(
   type PendingOccurrence = { virtual: Transaction; override?: number; rank?: number; rankUpdatedAt?: string; position?: number };
   const pendingByDate = new Map<string, PendingOccurrence[]>();
   for (const rule of sortedRules) {
-    if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
-    const virtual = generateOccurrenceForPeriod(rule, period, safeExceptions, startDay, 1, today, accounts);
+    if (!doesRuleApplyInPeriod(rule, period)) continue;
+    const virtual = generateOccurrenceForPeriod(rule, period, safeExceptions, 1, today, accounts);
     if (!virtual) continue;
 
     const txsForRule = periodManual.filter(t => t.recurringRuleId === rule.id);
@@ -427,7 +425,6 @@ export function calculateForecast(
         txsByPeriod ? txsByPeriod.get(period) || [] : safeTxs,
         safeRules,
         safeExceptions,
-        settings.budgetStartDay,
         todayStr,
         safeAccounts
       );

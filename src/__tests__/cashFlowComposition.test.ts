@@ -37,7 +37,7 @@ const buildForecast = (summary: Partial<PeriodSummary>): ForecastResult =>
 
 describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowComposition)', () => {
   const period = createBudgetPeriod(2026, 8, 15);
-  const periods = generateBudgetPeriodSequence(period, period, 15, today);
+  const periods = generateBudgetPeriodSequence(period, period, today);
   const accounts = [{ ...account('chk', 'checking'), isDefault: true }, account('cash', 'cash'), account('sav', 'savings')];
 
   it('bere jen výchozí účet a Skutečně uspořeno = příjmy − výdaje + korekce', () => {

@@ -60,7 +60,7 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
     tx({ type: 'transfer', targetAccountId: 'sav', amountInHaler: 1000000, actualAmountInHaler: 1200000, date: '2026-08-25' }),
   ];
 
-  const result = calculateCategoryBreakdown(periods, transactions, [], [], categories, accounts, 15);
+  const result = calculateCategoryBreakdown(periods, transactions, [], [], categories, accounts);
 
   it('řadí příjmové a pak výdajové kategorie abecedně, prázdné vynechá, převody na konec', () => {
     expect(result.rows.map((r) => r.label)).toEqual(['Mzda', 'Auto', 'Bydlení', 'Spoření & Převody']);
@@ -99,7 +99,7 @@ describe('Přehled podle kategorií (calculateCategoryBreakdown)', () => {
       tx({ categoryId: 'auto', amountInHaler: 50000, sourceAccountId: 'sav', date: '2026-08-23' }),
       tx({ type: 'income', categoryId: 'salary', amountInHaler: 70000, sourceAccountId: 'sav', date: '2026-08-23' }),
       tx({ type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 400000, date: '2026-08-24' }),
-    ], [], [], categories, accounts, 15, 'chk');
+    ], [], [], categories, accounts, 'chk');
 
     expect(scoped.incomeTotalsInHaler).toEqual([9500000, 9600000]);
     expect(scoped.expenseTotalInHaler).toBe(2200000 + 660000 + 300000);
@@ -134,8 +134,8 @@ describe('Přehled rozpočtu podle kategorií (calculateBudgetCategoryOverview)'
     tx({ type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 400000, date: '2026-08-24' }),
   ];
 
-  const overview = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 15, 'chk');
-  const analytics = calculateCategoryBreakdown([periodInfo], transactions, [], [], categories, accounts, 15, 'chk');
+  const overview = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 'chk');
+  const analytics = calculateCategoryBreakdown([periodInfo], transactions, [], [], categories, accounts, 'chk');
 
   it('ukazuje aktivní kategorie vždy, archivované a Bez kategorie jen s částkou', () => {
     expect(overview.cards.map((c) => c.label)).toEqual(['Mzda', 'Auto', 'Bydlení', 'Stará', 'Bez kategorie']);
@@ -173,7 +173,7 @@ describe('Přehled rozpočtu podle kategorií (calculateBudgetCategoryOverview)'
   });
 
   it('bez výchozího účtu počítá všechny účty jako Analýza', () => {
-    const all = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts, 15);
+    const all = calculateBudgetCategoryOverview(periodInfo.period, transactions, [], [], categories, accounts);
     expect(all.cards.find((c) => c.key === 'auto')!.totalInHaler).toBe(50000);
     expect(all.transfers.map((t) => t.amountInHaler).sort()).toEqual([1200000, 400000].sort());
   });

@@ -106,7 +106,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const before = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15);
+    const before = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], []);
     const virtual = before.find(t => t.recurringRuleId === gymRule.id)!;
     expect(virtual.sequence).toBe(2); // výchozí chování: virtuál až za manuální položkou
 
@@ -117,7 +117,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ex = stored.recurringExceptions.find(e => e.ruleId === gymRule.id && e.periodKey === period.key);
     expect(ex?.overrideSequence).toBe(1);
 
-    const after = getEffectiveTransactionsForPeriod(period, [octManual], stored.recurringRules, stored.recurringExceptions, 15);
+    const after = getEffectiveTransactionsForPeriod(period, [octManual], stored.recurringRules, stored.recurringExceptions);
     const dayAfter = after.filter(t => t.date === '2026-10-15');
     expect(dayAfter.map(t => t.recurringRuleId || t.id)).toEqual([gymRule.id, octManual.id]);
 
@@ -127,7 +127,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
       id: 'tx_nov', title: 'Nákup', amountInHaler: 2000, date: '2026-11-15', sequence: 1,
       type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
     };
-    const nov = getEffectiveTransactionsForPeriod(novPeriod, [novManual], stored.recurringRules, stored.recurringExceptions, 15);
+    const nov = getEffectiveTransactionsForPeriod(novPeriod, [novManual], stored.recurringRules, stored.recurringExceptions);
     const dayNov = nov.filter(t => t.date === '2026-11-15');
     expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([novManual.id, gymRule.id]);
   });
@@ -141,7 +141,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const before = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15);
+    const before = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], []);
     const virtual = before.find(t => t.recurringRuleId === gymRule.id)!;
 
     ctx.reorderRecurringItem(gymRule.id, 'future', '2026-10-15', period.key, [virtual.id, octManual.id], virtual.id);
@@ -158,7 +158,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
 
     // Minulý výskyt starého (useknutého) pravidla zůstává beze změny pořadí
     const septPeriod = getPeriodForDate('2026-09-15', 15);
-    const septEffective = getEffectiveTransactionsForPeriod(septPeriod, [], [oldRule], [], 15);
+    const septEffective = getEffectiveTransactionsForPeriod(septPeriod, [], [oldRule], []);
     expect(septEffective.find(t => t.recurringRuleId === gymRule.id)?.sequence).toBe(1);
 
     // Budoucí perioda používá nové pravidlo (s pozicí série) - virtuál drží 1. místo i před ruční položkou
@@ -167,7 +167,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
       id: 'tx_nov', title: 'Nákup', amountInHaler: 2000, date: '2026-11-15', sequence: 1,
       type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '',
     };
-    const novEffective = getEffectiveTransactionsForPeriod(novPeriod, [novManual], [oldRule, newRule], [], 15);
+    const novEffective = getEffectiveTransactionsForPeriod(novPeriod, [novManual], [oldRule, newRule], []);
     const dayNov = novEffective.filter(t => t.date === '2026-11-15');
     expect(dayNov.map(t => t.recurringRuleId || t.id)).toEqual([newRule.id, novManual.id]);
   });
@@ -186,7 +186,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const before = getEffectiveTransactionsForPeriod(period, [octManual, pastMaterialized], [gymRule], [], 15);
+    const before = getEffectiveTransactionsForPeriod(period, [octManual, pastMaterialized], [gymRule], []);
     const virtual = before.find(t => t.recurringRuleId === gymRule.id && t.id.startsWith('virtual_'))!;
 
     ctx.reorderRecurringItem(gymRule.id, 'series', '2026-10-15', period.key, [virtual.id, octManual.id], virtual.id);
@@ -217,13 +217,13 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const virtual = getEffectiveTransactionsForPeriod(period, txs, [rule], [], 15)
+    const virtual = getEffectiveTransactionsForPeriod(period, txs, [rule], [])
       .find(t => t.recurringRuleId === rule.id)!;
     expect(virtual.sequence).toBe(3);
     ctx.reorderRecurringItem(rule.id, 'series', '2026-10-15', period.key, [virtual.id, 'oct_m1', 'oct_m2'], virtual.id);
 
     const stored = loadStoredDataResult().data;
-    const nov = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-11-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+    const nov = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-11-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-11-15');
     expect(nov.map(t => t.recurringRuleId || t.id)).toEqual([rule.id, 'nov_m1']);
 
@@ -238,7 +238,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const before = getEffectiveTransactionsForPeriod(period, [], [rentRule, gymRule], [], 15)
+    const before = getEffectiveTransactionsForPeriod(period, [], [rentRule, gymRule], [])
       .filter(t => t.date === '2026-10-15');
     expect(before.map(t => t.recurringRuleId)).toEqual(['rule_rent', 'rule_gym']);
     const rentV = before[0].id;
@@ -248,7 +248,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
 
     const stored = loadStoredDataResult().data;
     const novPeriod = getPeriodForDate('2026-11-15', 15);
-    const nov = getEffectiveTransactionsForPeriod(novPeriod, [], stored.recurringRules, stored.recurringExceptions, 15)
+    const nov = getEffectiveTransactionsForPeriod(novPeriod, [], stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-11-15');
     expect(nov.map(t => t.recurringRuleId)).toEqual(['rule_gym', 'rule_rent']);
   });
@@ -283,7 +283,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
       expect(dayOrder('08')).toEqual(mode === 'series' ? ['rule_a', 'rule_c', 'rule_b'] : ['rule_a', 'rule_b', 'rule_c']);
 
       // Budoucí (virtuální) říjen - pořadí A, C, B
-      const oct = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-10-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      const oct = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-10-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions)
         .filter(t => t.date === '2026-10-15');
       expect(oct.map(t => t.title)).toEqual(['rule_a', 'rule_c', 'rule_b']);
     });
@@ -315,7 +315,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
         ['tx_rule_m_09', 'tx_rule_a_09', 'tx_rule_b_09'], 'tx_rule_m_09');
 
       const stored = loadStoredDataResult().data;
-      const oct = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-10-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+      const oct = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-10-15', 15), stored.transactions, stored.recurringRules, stored.recurringExceptions)
         .filter(t => t.date === '2026-10-15');
       expect(oct.map(t => t.title)).toEqual(['rule_m', 'rule_a', 'rule_b']);
     });
@@ -330,13 +330,13 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const virtual = getEffectiveTransactionsForPeriod(period, [manual], [gymRule], [], 15)
+    const virtual = getEffectiveTransactionsForPeriod(period, [manual], [gymRule], [])
       .find(t => t.recurringRuleId === 'rule_gym')!;
     // Ruční položka byla první, virtuál druhý; přetáhneme ruční pod virtuál.
     ctx.reorderDayTransactions('2026-10-15', [virtual.id, 'tx_m']);
 
     const stored = loadStoredDataResult().data;
-    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-10-15');
     expect(day.map(t => t.recurringRuleId || t.id)).toEqual(['rule_gym', 'tx_m']);
   });
@@ -350,12 +350,12 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15)
+    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [])
       .find(t => t.recurringRuleId === gymRule.id)!;
     ctx.reorderRecurringItem(gymRule.id, 'series', '2026-10-15', period.key, [virtual.id, octManual.id], virtual.id);
 
     const stored = loadStoredDataResult().data;
-    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-10-15');
     expect(day.map(t => t.recurringRuleId || t.id)).toEqual([gymRule.id, octManual.id]);
   });
@@ -369,7 +369,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const ctx = await getContextHandle();
 
     const period = getPeriodForDate('2026-10-15', 15);
-    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [], 15)
+    const virtual = getEffectiveTransactionsForPeriod(period, [octManual], [gymRule], [])
       .find(t => t.recurringRuleId === gymRule.id)!;
     expect(virtual.sequence).toBe(2);
 
@@ -382,7 +382,7 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
     const stored = loadStoredDataResult().data;
     expect(stored.recurringRules).toHaveLength(2);
     expect(stored.recurringRules.find(r => r.id === newRuleId)?.orderRank).toBe(1);
-    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions, 15)
+    const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-10-15');
     expect(day.map(t => t.recurringRuleId || t.id)).toEqual([newRuleId, octManual.id]);
   });

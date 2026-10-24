@@ -162,6 +162,7 @@ export interface BudgetPeriod {
   month: number;     // 1-12
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
+  startDay: number;  // normalised budget start day (1-31) the period was built with; runtime only, never stored
 }
 
 export interface AppSettings {

@@ -30,7 +30,7 @@ export const InvestmentFeeModal: React.FC<InvestmentFeeModalProps> = ({ isOpen, 
     if (!account) return [];
     const first = getPeriodForDate(account.initialBalanceDate, settings.budgetStartDay);
     const last = first.key > currentPeriod.key ? first : currentPeriod;
-    return generatePeriodsBetween(first, last, settings.budgetStartDay).reverse();
+    return generatePeriodsBetween(first, last).reverse();
   }, [account, currentPeriod, settings.budgetStartDay]);
 
   // Existující poplatek období se upravuje; jinak se předvyplní poslední předchozí poplatek.

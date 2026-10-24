@@ -112,8 +112,7 @@ export const AnalyticsScreen: React.FC = () => {
       allExecutedTxs,
       accountFilters,
       categories,
-      todayStr,
-      budgetStartDay
+      todayStr
     );
   }, [dateRange.periods, allExecutedTxs, accountFilters, categories, todayStr, budgetStartDay]);
 
@@ -137,7 +136,6 @@ export const AnalyticsScreen: React.FC = () => {
       recurringExceptions,
       categories,
       accounts,
-      budgetStartDay,
       defaultAccount?.id
     );
   }, [dateRange.periods, transactions, recurringRules, recurringExceptions, categories, accounts, budgetStartDay, defaultAccount]);

@@ -303,7 +303,7 @@ export function deleteTransaction(
     let occDate = txDate;
     if (!occDate && isVirtual && periodKey) {
       const period = periodFromKey(periodKey, data.settings.budgetStartDay);
-      const occ = generateOccurrenceForPeriod(rule, period, data.recurringExceptions, data.settings.budgetStartDay);
+      const occ = generateOccurrenceForPeriod(rule, period, data.recurringExceptions);
       occDate = occ?.date || period.startDate;
     }
     if (!occDate) occDate = ctx.nowIso.slice(0, 10);
@@ -560,7 +560,7 @@ export function setTransactionStatus(
     if (!rule) return { data, outcome: null };
 
     const period = periodFromKey(periodKey, data.settings.budgetStartDay);
-    const occurrence = generateOccurrenceForPeriod(rule, period, data.recurringExceptions, data.settings.budgetStartDay);
+    const occurrence = generateOccurrenceForPeriod(rule, period, data.recurringExceptions);
 
     const effectiveDate = updates?.date || occurrence?.date || ctx.todayStr;
     const baseAmount = occurrence?.amountInHaler ?? rule.amountInHaler;

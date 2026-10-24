@@ -129,7 +129,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         transactions,
         recurringRules,
         recurringExceptions,
-        settings.budgetStartDay,
         undefined,
         accounts
       );

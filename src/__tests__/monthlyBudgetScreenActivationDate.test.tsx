@@ -13,7 +13,7 @@ describe('MonthlyBudgetScreen respects account activation date for recurring rul
   it('excludes a recurring occurrence dated before the source account existed, matching the KPI totals', () => {
     const period: BudgetPeriod = {
       key: '2026-09', name: 'Září 2026', year: 2026, month: 9,
-      startDate: '2026-09-15', endDate: '2026-10-14',
+      startDate: '2026-09-15', endDate: '2026-10-14', startDay: 15,
     };
     const checking: Account = {
       id: 'chk', name: 'Běžný účet', type: 'checking', currency: 'CZK',

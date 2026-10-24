@@ -68,16 +68,16 @@ export function resolvePeriodRange(
   };
 
   if (range.preset === 'custom') {
-    if (range.from && range.to) return generatePeriodsBetween(fromKey(range.from), fromKey(range.to), startDay);
+    if (range.from && range.to) return generatePeriodsBetween(fromKey(range.from), fromKey(range.to));
     return getOverviewPeriods(current, { direction: 'past', months: 12 }, startDay);
   }
   if (range.preset === 'ytd') {
-    return generatePeriodsBetween(createBudgetPeriod(current.year, 1, startDay), current, startDay);
+    return generatePeriodsBetween(createBudgetPeriod(current.year, 1, startDay), current);
   }
   if (range.preset === 'all') {
     // Bez starších záznamů začíná historie aktuálním obdobím
     const earliest = getPeriodForDate(getEarliestActivityDate(options.data ?? {}, current.startDate), startDay);
-    return generatePeriodsBetween(earliest, current, startDay);
+    return generatePeriodsBetween(earliest, current);
   }
   return getOverviewPeriods(current, { direction: range.direction, months: range.months || 12 }, startDay);
 }

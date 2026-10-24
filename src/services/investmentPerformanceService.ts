@@ -50,7 +50,7 @@ export function calculatePeriodInvestmentChange(
   accounts: Account[], snapshots: MarketValueSnapshot[], period: BudgetPeriod,
   startDay: number, today = getTodayInPrague(), transactions: Transaction[] = [],
 ): number | null {
-  const previous = getPreviousPeriod(period, startDay);
+  const previous = getPreviousPeriod(period);
   const included = accounts.filter(a => a.status === 'active' && a.isNetWorth &&
     (a.type === 'investment' || a.type === 'pension') && a.initialBalanceDate <= period.endDate);
   if (!included.length || period.startDate > today) return null;

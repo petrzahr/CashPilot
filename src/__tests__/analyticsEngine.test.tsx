@@ -766,7 +766,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       { id: 'tx_cur', title: '', amountInHaler: 120000, date: '2026-08-25', sequence: 3, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
     ];
 
-    const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13', 15);
+    const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13');
     const aug = trends.find((t) => t.monthKey === '2026-08')!;
     expect(aug.expenseInHaler).toBe(120000);
     expect(aug.prevMonthExpenseInHaler).toBe(1000000); // Celé předchozí období

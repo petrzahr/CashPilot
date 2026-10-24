@@ -306,8 +306,8 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     };
 
     // V září i říjnu se výskyt běžně generuje
-    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [rule], [], 15);
-    const effOctBefore = getEffectiveTransactionsForPeriod(periodOct, [], [rule], [], 15);
+    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [rule], []);
+    const effOctBefore = getEffectiveTransactionsForPeriod(periodOct, [], [rule], []);
     expect(effSepBefore.length).toBe(1);
     expect(effOctBefore.length).toBe(1);
 
@@ -321,8 +321,8 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       expect.objectContaining({ ruleId: 'rec_rent', periodKey: periodSep.key, isCancelled: true }),
     ]);
 
-    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [], after.recurringRules, after.recurringExceptions, 15);
-    const effOctAfter = getEffectiveTransactionsForPeriod(periodOct, [], after.recurringRules, after.recurringExceptions, 15);
+    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [], after.recurringRules, after.recurringExceptions);
+    const effOctAfter = getEffectiveTransactionsForPeriod(periodOct, [], after.recurringRules, after.recurringExceptions);
 
     // V září je smazán (vrací null)
     expect(effSepAfter.length).toBe(0);
@@ -362,16 +362,16 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     expect(after.transactions.map(t => t.id)).toEqual(['tx_jul', 'tx_aug']);
 
     // Zářijové období (15. 9. – 14. 10.): výskyt je 20. 9. > 19. 9. -> v září se už nevygeneruje!
-    const effSep = getEffectiveTransactionsForPeriod(periodSep, [], [updatedRule], [], 15);
+    const effSep = getEffectiveTransactionsForPeriod(periodSep, [], [updatedRule], []);
     expect(effSep.length).toBe(0);
 
     // Říjnové období (15. 10. – 14. 11.): endDate < period.startDate -> nevygeneruje se
-    const effOct = getEffectiveTransactionsForPeriod(periodOct, [], [updatedRule], [], 15);
+    const effOct = getEffectiveTransactionsForPeriod(periodOct, [], [updatedRule], []);
     expect(effOct.length).toBe(0);
 
     // Srpnové minulé období (15. 8. – 14. 9.): výskyt byl 20. 8. <= 19. 9. -> vygeneruje se!
     const periodAug = createBudgetPeriod(2026, 8, 15);
-    const effAug = getEffectiveTransactionsForPeriod(periodAug, [], [updatedRule], [], 15);
+    const effAug = getEffectiveTransactionsForPeriod(periodAug, [], [updatedRule], []);
     expect(effAug.length).toBe(1);
   });
 
@@ -489,11 +489,11 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       updatedAt: ''
     };
 
-    const effBefore = getEffectiveTransactionsForPeriod(periodSep, [tx], [], [], 15);
+    const effBefore = getEffectiveTransactionsForPeriod(periodSep, [tx], [], []);
     expect(effBefore.some(t => t.id === 'tx_sync')).toBe(true);
 
     const txsAfter = deleteTransactionAndReorder('tx_sync', [tx]);
-    const effAfter = getEffectiveTransactionsForPeriod(periodSep, txsAfter, [], [], 15);
+    const effAfter = getEffectiveTransactionsForPeriod(periodSep, txsAfter, [], []);
     expect(effAfter.some(t => t.id === 'tx_sync')).toBe(false);
   });
 

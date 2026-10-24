@@ -129,7 +129,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     };
 
     // V daném období nejsou žádné jiné položky
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rule], [], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rule], []);
     expect(effectiveTxs.length).toBe(1);
     expect(effectiveTxs[0].sequence).toBe(1);
     expect(effectiveTxs[0].sequence).not.toBe(10);
@@ -156,7 +156,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       updatedAt: '2026-09-01T10:00:00.000Z',
     };
 
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [rule], [], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [rule], []);
     const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
 
     expect(dayTxs.length).toBe(3);
@@ -214,7 +214,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     };
 
     // Pravidla předána v náhodném pořadí (B, C, A)
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [ruleB, ruleC, ruleA], [], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [ruleB, ruleC, ruleA], []);
     const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
 
     expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
@@ -243,11 +243,11 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       updatedAt: '2026-09-01T10:00:00.000Z',
     };
 
-    const singleOcc = generateOccurrenceForPeriod(rule, period, [], 15, 1);
+    const singleOcc = generateOccurrenceForPeriod(rule, period, [], 1);
     expect(singleOcc?.sequence).toBe(1);
     expect(singleOcc?.sequence).not.toBe(10);
 
-    const effTxs = getEffectiveTransactionsForPeriod(period, [], [rule], [], 15);
+    const effTxs = getEffectiveTransactionsForPeriod(period, [], [rule], []);
     expect(effTxs[0].sequence).toBe(1);
     expect(effTxs[0].sequence).not.toBe(10);
   });
@@ -258,8 +258,8 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const rule1: RecurringRule = { id: 'r1', title: 'R1', amountInHaler: 100, type: 'expense', frequency: 'monthly', dayOfMonth: 18, startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true, createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '' };
     const rule2: RecurringRule = { id: 'r2', title: 'R2', amountInHaler: 200, type: 'expense', frequency: 'monthly', dayOfMonth: 18, startDate: '2026-09-18', sourceAccountId: 'acc_main', isActive: true, createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '' };
 
-    const run1 = getEffectiveTransactionsForPeriod(period, [], [rule1, rule2], [], 15);
-    const run2 = getEffectiveTransactionsForPeriod(period, [], [rule2, rule1], [], 15);
+    const run1 = getEffectiveTransactionsForPeriod(period, [], [rule1, rule2], []);
+    const run2 = getEffectiveTransactionsForPeriod(period, [], [rule2, rule1], []);
 
     expect(run1.map(t => ({ id: t.id, seq: t.sequence }))).toEqual(run2.map(t => ({ id: t.id, seq: t.sequence })));
   });
@@ -296,7 +296,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       createdAt: '2026-10-01T10:00:00.000Z'
     };
 
-    const effTxs = getEffectiveTransactionsForPeriod(period, [txA, txB, txC], [rule], [exception], 15);
+    const effTxs = getEffectiveTransactionsForPeriod(period, [txA, txB, txC], [rule], [exception]);
     const day20Txs = effTxs.filter(t => t.date === '2026-10-20');
 
     expect(day20Txs.length).toBe(4);
@@ -375,7 +375,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     expect(forecast.periods[1].openingBalanceInHaler).toBe(12000000);
     expect(forecast.periods[1].closingBalanceInHaler).toBe(14000000);
 
-    const period0Txs = getEffectiveTransactionsForPeriod(periods[0], [], [salaryRule, rentRule], [], 15);
+    const period0Txs = getEffectiveTransactionsForPeriod(periods[0], [], [salaryRule, rentRule], []);
     expect(period0Txs.every(t => t.sequence !== 10)).toBe(true);
     expect(period0Txs.find(t => t.recurringRuleId === 'rule_sal')?.sequence).toBe(1);
     expect(period0Txs.find(t => t.recurringRuleId === 'rule_rent')?.sequence).toBe(1);
@@ -400,7 +400,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '2026-09-01T11:00:00.000Z',
     };
 
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [plainRule, hintedRule], [], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1, tx2], [plainRule, hintedRule], []);
     const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
 
     expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
@@ -428,7 +428,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       createdAt: '2026-10-01T10:00:00.000Z',
     };
 
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1], [rule], [exception], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [tx1], [rule], [exception]);
     const dayTxs = effectiveTxs.filter(t => t.date === targetDay);
     expect(dayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
       { id: 'rule_ex', seq: 1 },
@@ -438,7 +438,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     // Jiná perioda nemá výjimku - virtuál se řadí až za manuální položky (výchozí chování)
     const otherDay = '2026-11-15';
     const otherTx: Transaction = { id: 'other1', title: 'Manuální', amountInHaler: 50, date: otherDay, sequence: 1, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
-    const otherEffectiveTxs = getEffectiveTransactionsForPeriod(otherPeriod, [otherTx], [rule], [exception], 15);
+    const otherEffectiveTxs = getEffectiveTransactionsForPeriod(otherPeriod, [otherTx], [rule], [exception]);
     const otherDayTxs = otherEffectiveTxs.filter(t => t.date === otherDay);
     expect(otherDayTxs.map(t => ({ id: t.recurringRuleId || t.id, seq: t.sequence }))).toEqual([
       { id: 'other1', seq: 1 },
@@ -480,7 +480,7 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
     const air = mk('air', '2026-07-01T02:00:00.000Z');
     const bonus = { ...mk('bonus', '2026-07-01T03:00:00.000Z'), orderHint: 2 } as RecurringRule;
 
-    const day = getEffectiveTransactionsForPeriod(period, [], [air, bonus, mzda], [], 15).filter(t => t.date === '2026-10-15');
+    const day = getEffectiveTransactionsForPeriod(period, [], [air, bonus, mzda], []).filter(t => t.date === '2026-10-15');
     expect(day.map(t => t.recurringRuleId)).toEqual(['mzda', 'air', 'bonus']);
   });
 
@@ -500,8 +500,8 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       createdAt: '2026-09-01T11:00:00.000Z', updatedAt: '',
     };
 
-    const run1 = getEffectiveTransactionsForPeriod(period, [], [rule1, rule2], [], 15);
-    const run2 = getEffectiveTransactionsForPeriod(period, [], [rule2, rule1], [], 15);
+    const run1 = getEffectiveTransactionsForPeriod(period, [], [rule1, rule2], []);
+    const run2 = getEffectiveTransactionsForPeriod(period, [], [rule2, rule1], []);
 
     expect(run1.map(t => ({ id: t.id, seq: t.sequence }))).toEqual(run2.map(t => ({ id: t.id, seq: t.sequence })));
     expect(run1.find(t => t.recurringRuleId === 'r2')?.sequence).toBe(1);

@@ -82,7 +82,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       baseTxs,
       recurringRules,
       recurringExceptions,
-      settings.budgetStartDay,
       undefined,
       accounts
     );
@@ -423,7 +422,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 transactions,
                 recurringRules,
                 recurringExceptions,
-                settings.budgetStartDay,
                 undefined,
                 accounts
               )

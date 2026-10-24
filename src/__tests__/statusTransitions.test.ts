@@ -158,7 +158,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     };
 
     // Virtual occurrence in periodSep
-    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [salaryRule], [], 15, '2026-09-10');
+    const effSepBefore = getEffectiveTransactionsForPeriod(periodSep, [], [salaryRule], [], '2026-09-10');
     expect(effSepBefore.length).toBe(1);
     expect(effSepBefore[0].id).toBe('virtual_rec_salary_2026-09');
     expect(effSepBefore[0].status).toBe('planned');
@@ -179,14 +179,14 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [realSepTx], [salaryRule], [], 15, '2026-09-10');
+    const effSepAfter = getEffectiveTransactionsForPeriod(periodSep, [realSepTx], [salaryRule], [], '2026-09-10');
     expect(effSepAfter.length).toBe(1);
     expect(effSepAfter[0].id).toBe('tx_real_salary_sep');
     expect(effSepAfter[0].status).toBe('executed');
     expect(effSepAfter[0].actualAmountInHaler).toBe(6500000);
 
     // Period Oct still has virtual occurrence from rule untouched
-    const effOct = getEffectiveTransactionsForPeriod(periodOct, [realSepTx], [salaryRule], [], 15, '2026-09-10');
+    const effOct = getEffectiveTransactionsForPeriod(periodOct, [realSepTx], [salaryRule], [], '2026-09-10');
     expect(effOct.length).toBe(1);
     expect(effOct[0].id).toBe('virtual_rec_salary_2026-10');
     expect(effOct[0].status).toBe('planned');
@@ -224,7 +224,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     };
 
     // It remains visible in effective transactions of periodSep!
-    const effSep = getEffectiveTransactionsForPeriod(periodSep, [realCancelledRent], [rentRule], [], 15);
+    const effSep = getEffectiveTransactionsForPeriod(periodSep, [realCancelledRent], [rentRule], []);
     expect(effSep.length).toBe(1);
     expect(effSep[0].id).toBe('tx_real_rent_sep_cancelled');
     expect(effSep[0].status).toBe('cancelled');

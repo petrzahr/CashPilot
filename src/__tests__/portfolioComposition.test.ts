@@ -121,7 +121,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
 
   const buildPeriods = () => {
     const p = createBudgetPeriod(2026, 8, 15); // Srpen 2026, obsahuje dnešek 13.9. jako probíhající při 15
-    const seq = generateBudgetPeriodSequence(p, p, 15, today);
+    const seq = generateBudgetPeriodSequence(p, p, today);
     return seq;
   };
 
@@ -325,7 +325,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
   it('10c. Probíhající a budoucí období berou projektovaný konečný stav z forecastu, minulá skutečný stav', () => {
     const past = createBudgetPeriod(2026, 7, 15);
     const future = createBudgetPeriod(2026, 9, 15);
-    const periods = generateBudgetPeriodSequence(past, future, 15, today);
+    const periods = generateBudgetPeriodSequence(past, future, today);
     const summary = (key: string, chk: number, sav: number) =>
       ({
         period: { key },

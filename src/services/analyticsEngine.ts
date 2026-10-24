@@ -17,7 +17,6 @@ import {
   formatCzechDate,
   getTodayInPrague,
   isDateInPeriod,
-  normalizeStartDay,
 } from './periodService';
 import { sortAccountsByOrder } from './accountService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
@@ -188,7 +187,6 @@ export function createBudgetPeriodInfo(
 export function generateBudgetPeriodSequence(
   startPeriod: BudgetPeriod,
   endPeriod: BudgetPeriod,
-  startDay: number = 15,
   todayStr: string = getTodayInPrague()
 ): BudgetPeriodInfo[] {
   const result: BudgetPeriodInfo[] = [];
@@ -197,7 +195,7 @@ export function generateBudgetPeriodSequence(
   while (cur.key <= endPeriod.key) {
     result.push(createBudgetPeriodInfo(cur, todayStr));
     if (cur.key === endPeriod.key) break;
-    cur = getNextPeriod(cur, startDay);
+    cur = getNextPeriod(cur);
   }
 
   return result;
@@ -426,10 +424,8 @@ export function calculateExpenseMoMTrend(
   allExecutedTxs: Transaction[],
   filters: AnalyticsFilters = {},
   categories: Category[] = [],
-  todayStr: string = getTodayInPrague(),
-  startDay: number = 15
+  todayStr: string = getTodayInPrague()
 ): ExpenseTrendItem[] {
-  const safeStartDay = normalizeStartDay(startDay);
   const result: ExpenseTrendItem[] = [];
 
   const getExpensesInDateRange = (sDate: string, eDate: string): number => {
@@ -461,7 +457,7 @@ export function calculateExpenseMoMTrend(
     const curExpenses = getExpensesInDateRange(curP.startDate, curP.analysisEndDate);
 
     // Celé předchozí rozpočtové období
-    const prevPeriod = getPreviousPeriod(curP.period, safeStartDay);
+    const prevPeriod = getPreviousPeriod(curP.period);
     const prevExpenses = getExpensesInDateRange(prevPeriod.startDate, prevPeriod.endDate);
 
     let changePercent: number | null = null;

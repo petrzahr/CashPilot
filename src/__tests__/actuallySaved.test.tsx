@@ -12,7 +12,7 @@ vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 
 const period: BudgetPeriod = {
   key: '2026-09', name: 'Září 2026', year: 2026, month: 9,
-  startDate: '2026-09-15', endDate: '2026-10-14',
+  startDate: '2026-09-15', endDate: '2026-10-14', startDay: 15,
 };
 
 const makeAccount = (id: string, type: AccountType, overrides: Partial<Account> = {}): Account => ({

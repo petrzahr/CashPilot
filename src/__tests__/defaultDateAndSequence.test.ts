@@ -242,7 +242,7 @@ describe('CashPilot - Testy automatického výchozího data a pořadí nové pol
 
     // Efektivní výpočet (reálné + virtuální transakce) musí zohlednit už zobrazený
     // virtuální výskyt a novou položku zařadit až za něj.
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rentRule], [], 15);
+    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rentRule], []);
     const correctSeq = getNextSequenceForDate(targetDay, effectiveTxs);
     expect(correctSeq).toBe(2);
   });

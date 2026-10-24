@@ -154,8 +154,8 @@ function getOccurrenceDates(
   const periods = generatePeriodsSequence(fromPeriod.year, fromPeriod.month, count, startDay);
   const dates: string[] = [];
   for (const period of periods) {
-    if (!doesRuleApplyInPeriod(rule, period, startDay)) continue;
-    const occ = generateOccurrenceForPeriod(rule, period, [], startDay, 1, todayStr, accounts);
+    if (!doesRuleApplyInPeriod(rule, period)) continue;
+    const occ = generateOccurrenceForPeriod(rule, period, [], 1, todayStr, accounts);
     if (occ) dates.push(occ.date);
   }
   return dates.sort();

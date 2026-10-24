@@ -73,7 +73,7 @@ export function normalizeStartDay(startDay?: number | null): number {
  * Pokud vybraný den v daném měsíci neexistuje (např. 31. únor),
  * použije se poslední kalendářní den tohoto měsíce.
  */
-export function getPeriodStartDate(year: number, month: number, startDay: number = 15): string {
+export function getPeriodStartDate(year: number, month: number, startDay: number): string {
   const safeStartDay = normalizeStartDay(startDay);
   const daysInMonth = getDaysInMonth(year, month);
   const actualDay = Math.min(safeStartDay, daysInMonth);
@@ -85,7 +85,7 @@ export function getPeriodStartDate(year: number, month: number, startDay: number
  * Konec období je vždy přesně kalendářní den před začátkem následujícího období,
  * čímž je zaručena souvislá časová osa bez mezer a bez překryvů.
  */
-export function createBudgetPeriod(year: number, month: number, startDay: number = 15): BudgetPeriod {
+export function createBudgetPeriod(year: number, month: number, startDay: number): BudgetPeriod {
   const safeStartDay = normalizeStartDay(startDay);
   const startDate = getPeriodStartDate(year, month, safeStartDay);
 
@@ -105,7 +105,8 @@ export function createBudgetPeriod(year: number, month: number, startDay: number
     year,
     month,
     startDate,
-    endDate
+    endDate,
+    startDay: safeStartDay
   };
 }
 
@@ -115,7 +116,7 @@ export function createBudgetPeriod(year: number, month: number, startDay: number
  * - Pokud je datum >= startDate(rok, měsíc), spadá do periody tohoto měsíce.
  * - Pokud je datum < startDate(rok, měsíc), spadá do předchozí periody.
  */
-export function getPeriodForDate(dateStr: string, startDay: number = 15): BudgetPeriod {
+export function getPeriodForDate(dateStr: string, startDay: number): BudgetPeriod {
   const safeStartDay = normalizeStartDay(startDay);
   const parts = dateStr.split('-');
   const y = parseInt(parts[0], 10);
@@ -151,8 +152,8 @@ export function isDateInPeriod(dateStr: string, period: BudgetPeriod): boolean {
 export function generatePeriodsSequence(
   startYear: number, 
   startMonth: number, 
-  count: number = 12, 
-  startDay: number = 15
+  count: number,
+  startDay: number
 ): BudgetPeriod[] {
   const periods: BudgetPeriod[] = [];
   let curYear = startYear;
@@ -172,12 +173,11 @@ export function generatePeriodsSequence(
 
 /**
  * Vygeneruje souvislou sekvenci rozpočtových period mezi dvěma periodami (včetně obou).
- * Zaručuje nepřetržitou časovou osu bez mezer a překryvů.
+ * Zaručuje nepřetržitou časovou osu bez mezer a překryvů. Den začátku bere z první periody.
  */
 export function generatePeriodsBetween(
   startPeriod: BudgetPeriod,
-  endPeriod: BudgetPeriod,
-  startDay: number = 15
+  endPeriod: BudgetPeriod
 ): BudgetPeriod[] {
   let first = startPeriod;
   let last = endPeriod;
@@ -187,30 +187,30 @@ export function generatePeriodsBetween(
   }
 
   const count = (last.year - first.year) * 12 + (last.month - first.month) + 1;
-  return generatePeriodsSequence(first.year, first.month, count, startDay);
+  return generatePeriodsSequence(first.year, first.month, count, startPeriod.startDay);
 }
 
 /**
  * Získá následující nebo předchozí periodu
  */
-export function getNextPeriod(period: BudgetPeriod, startDay: number = 15): BudgetPeriod {
+export function getNextPeriod(period: BudgetPeriod): BudgetPeriod {
   let nextMonth = period.month + 1;
   let nextYear = period.year;
   if (nextMonth > 12) {
     nextMonth = 1;
     nextYear++;
   }
-  return createBudgetPeriod(nextYear, nextMonth, startDay);
+  return createBudgetPeriod(nextYear, nextMonth, period.startDay);
 }
 
-export function getPreviousPeriod(period: BudgetPeriod, startDay: number = 15): BudgetPeriod {
+export function getPreviousPeriod(period: BudgetPeriod): BudgetPeriod {
   let prevMonth = period.month - 1;
   let prevYear = period.year;
   if (prevMonth < 1) {
     prevMonth = 12;
     prevYear--;
   }
-  return createBudgetPeriod(prevYear, prevMonth, startDay);
+  return createBudgetPeriod(prevYear, prevMonth, period.startDay);
 }
 
 export interface OverviewRange {
@@ -222,7 +222,7 @@ export interface OverviewRange {
 export function getOverviewPeriods(current: BudgetPeriod, range: OverviewRange, startDay: number): BudgetPeriod[] {
   let first = current;
   if (range.direction === 'past') {
-    for (let i = 1; i < range.months; i++) first = getPreviousPeriod(first, startDay);
+    for (let i = 1; i < range.months; i++) first = getPreviousPeriod(first);
   }
   return generatePeriodsSequence(first.year, first.month, range.months, startDay);
 }

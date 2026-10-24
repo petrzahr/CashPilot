@@ -215,7 +215,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
       transactions,
       recurringRules,
       recurringExceptions,
-      settings.budgetStartDay,
       undefined,
       accounts
     );
@@ -404,7 +403,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     recurringExceptions,
     categories,
     accounts,
-    settings.budgetStartDay,
     defaultAccount?.id
   ), [selectedPeriod, transactions, recurringRules, recurringExceptions, categories, accounts, settings.budgetStartDay, defaultAccount]);
 

@@ -99,7 +99,7 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
 
     // Období 15. 9. 2026 – 14. 10. 2026 (startDay 15)
     const periodSept = createBudgetPeriod(2026, 9, 15);
-    const txsSept = getEffectiveTransactionsForPeriod(periodSept, [firstTx], [rule], [], 15, todayRef);
+    const txsSept = getEffectiveTransactionsForPeriod(periodSept, [firstTx], [rule], [], todayRef);
 
     // V tomto období musí být OBĚ položky: 27. 9. a 5. 10.
     expect(txsSept.length).toBe(2);
@@ -108,7 +108,7 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
 
     // Následující období 15. 10. 2026 – 14. 11. 2026 má výskyt 5. 11. 2026
     const periodOct = createBudgetPeriod(2026, 10, 15);
-    const txsOct = getEffectiveTransactionsForPeriod(periodOct, [], [rule], [], 15, todayRef);
+    const txsOct = getEffectiveTransactionsForPeriod(periodOct, [], [rule], [], todayRef);
     expect(txsOct.length).toBe(1);
     expect(txsOct[0].date).toBe('2026-11-05');
   });
@@ -165,10 +165,10 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
 
     // Období 15. 8. 2026 – 14. 9. 2026
     const periodAug = createBudgetPeriod(2026, 8, 15);
-    const occAug = generateOccurrenceForPeriod(rule, periodAug, [], 15, 1, todayRef);
+    const occAug = generateOccurrenceForPeriod(rule, periodAug, [], 1, todayRef);
     expect(occAug).toBeNull();
 
-    const txsAug = getEffectiveTransactionsForPeriod(periodAug, [], [rule], [], 15, todayRef);
+    const txsAug = getEffectiveTransactionsForPeriod(periodAug, [], [rule], [], todayRef);
     expect(txsAug.filter(t => t.recurringRuleId === rule.id).length).toBe(0);
   });
 
@@ -191,17 +191,17 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
     // Kalendářní měsíce (startDay 1)
     // Leden (31 dní) -> 2027-01-31
     const pJan = createBudgetPeriod(2027, 1, 1);
-    const occJan = generateOccurrenceForPeriod(rule31, pJan, [], 1, 1, todayRef);
+    const occJan = generateOccurrenceForPeriod(rule31, pJan, [], 1, todayRef);
     expect(occJan?.date).toBe('2027-01-31');
 
     // Únor 2027 (28 dní) -> 2027-02-28
     const pFeb = createBudgetPeriod(2027, 2, 1);
-    const occFeb = generateOccurrenceForPeriod(rule31, pFeb, [], 1, 1, todayRef);
+    const occFeb = generateOccurrenceForPeriod(rule31, pFeb, [], 1, todayRef);
     expect(occFeb?.date).toBe('2027-02-28');
 
     // Duben (30 dní) -> 2027-04-30
     const pApr = createBudgetPeriod(2027, 4, 1);
-    const occApr = generateOccurrenceForPeriod(rule31, pApr, [], 1, 1, todayRef);
+    const occApr = generateOccurrenceForPeriod(rule31, pApr, [], 1, todayRef);
     expect(occApr?.date).toBe('2027-04-30');
   });
 
@@ -223,7 +223,7 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
 
     // Únor -> 2027-02-28
     const pFeb = createBudgetPeriod(2027, 2, 1);
-    const occFeb = generateOccurrenceForPeriod(rule31, pFeb, [], 1, 1, todayRef);
+    const occFeb = generateOccurrenceForPeriod(rule31, pFeb, [], 1, todayRef);
     expect(occFeb?.date).toBe('2027-02-28');
 
     // Pravidlo má stále trvale den 31 (nezměněno na 28)
@@ -231,7 +231,7 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
 
     // Březen -> 2027-03-31
     const pMar = createBudgetPeriod(2027, 3, 1);
-    const occMar = generateOccurrenceForPeriod(rule31, pMar, [], 1, 1, todayRef);
+    const occMar = generateOccurrenceForPeriod(rule31, pMar, [], 1, todayRef);
     expect(occMar?.date).toBe('2027-03-31');
   });
 
@@ -256,7 +256,7 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
     const existingTx2: Transaction = { id: 't2', title: 'P2', amountInHaler: 200, date: '2026-10-20', sequence: 2, type: 'expense', sourceAccountId: 'acc_main', status: 'planned', createdAt: '', updatedAt: '' };
 
     const periodOct = createBudgetPeriod(2026, 10, 15);
-    const txs = getEffectiveTransactionsForPeriod(periodOct, [existingTx1, existingTx2], [rule], [], 15, todayRef);
+    const txs = getEffectiveTransactionsForPeriod(periodOct, [existingTx1, existingTx2], [rule], [], todayRef);
 
     const generated = txs.find(t => t.recurringRuleId === rule.id && t.date === '2026-10-20');
     expect(generated).toBeDefined();
@@ -283,13 +283,13 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
     // Dnes je 2026-09-20
     // Výskyt 5. 9. 2026 je v minulosti -> executed
     const periodSept = createBudgetPeriod(2026, 8, 15); // 15. 8. – 14. 9.
-    const occPast = generateOccurrenceForPeriod(rule, periodSept, [], 15, 1, '2026-09-20');
+    const occPast = generateOccurrenceForPeriod(rule, periodSept, [], 1, '2026-09-20');
     expect(occPast?.date).toBe('2026-09-05');
     expect(occPast?.status).toBe('executed');
 
     // Výskyt 5. 10. 2026 je v budoucnosti -> planned
     const periodOct = createBudgetPeriod(2026, 9, 15); // 15. 9. – 14. 10.
-    const occFuture = generateOccurrenceForPeriod(rule, periodOct, [], 15, 1, '2026-09-20');
+    const occFuture = generateOccurrenceForPeriod(rule, periodOct, [], 1, '2026-09-20');
     expect(occFuture?.date).toBe('2026-10-05');
     expect(occFuture?.status).toBe('planned');
   });

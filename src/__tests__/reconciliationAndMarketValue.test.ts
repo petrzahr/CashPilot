@@ -84,6 +84,7 @@ describe('Reconciliation and Market Value Engine', () => {
     month: 9,
     startDate: '2026-09-15',
     endDate: '2026-10-14',
+    startDay: 15,
   };
 
   const periodOct2026: BudgetPeriod = {
@@ -93,6 +94,7 @@ describe('Reconciliation and Market Value Engine', () => {
     month: 10,
     startDate: '2026-10-15',
     endDate: '2026-11-14',
+    startDay: 15,
   };
 
   describe('Current market value forecast', () => {

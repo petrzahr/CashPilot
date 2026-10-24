@@ -736,7 +736,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     const pStart = createBudgetPeriod(2024, 6, 15);
     const pEnd = createBudgetPeriod(2025, 2, 15);
 
-    const sequence = generatePeriodsBetween(pStart, pEnd, 15);
+    const sequence = generatePeriodsBetween(pStart, pEnd);
     expect(sequence.length).toBe(9);
     expect(sequence[0].key).toBe('2024-06');
     expect(sequence[sequence.length - 1].key).toBe('2025-02');

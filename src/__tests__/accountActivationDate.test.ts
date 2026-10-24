@@ -428,11 +428,11 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     // V březnu 2026 (před aktivací 1. 4.) nesmí být výskyt vygenerován
-    const marchOcc = generateOccurrenceForPeriod(rule, periodMarch2026, [], 1, 1, undefined, [acc]);
+    const marchOcc = generateOccurrenceForPeriod(rule, periodMarch2026, [], 1, undefined, [acc]);
     expect(marchOcc).toBeNull();
 
     // V dubnu 2026 (po aktivaci 1. 4.) výskyt k 10. 4. normálně vznikne
-    const aprilOcc = generateOccurrenceForPeriod(rule, periodApril2026, [], 1, 1, undefined, [acc]);
+    const aprilOcc = generateOccurrenceForPeriod(rule, periodApril2026, [], 1, undefined, [acc]);
     expect(aprilOcc).not.toBeNull();
     expect(aprilOcc?.date).toBe('2026-04-10');
   });

@@ -123,12 +123,12 @@ export function autoExecuteDueTransactions(
     );
 
     for (const period of periodsToCheck) {
-      if (!doesRuleApplyInPeriod(rule, period, budgetStartDay)) continue;
+      if (!doesRuleApplyInPeriod(rule, period)) continue;
 
       const ex = safeExceptions.find(e => e.ruleId === rule.id && e.periodKey === period.key);
       if (ex && ex.isCancelled) continue;
 
-      const occ = generateOccurrenceForPeriod(rule, period, safeExceptions, budgetStartDay, 1, today);
+      const occ = generateOccurrenceForPeriod(rule, period, safeExceptions, 1, today);
       if (!occ || occ.date > today) continue;
 
       const txsForRule = currentTxs.filter(t => t.recurringRuleId === rule.id && isDateInPeriod(t.date, period));

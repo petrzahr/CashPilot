@@ -175,7 +175,7 @@ describe('CashPilot - Automatické určování a aktualizace stavu položek podl
 
     // Budoucí perioda (říjen 2026: 15.10. – 14.11.)
     const periodOct = createBudgetPeriod(2026, 10, 15);
-    const effOct = getEffectiveTransactionsForPeriod(periodOct, createdTxs, [rule], [], 15, todayRef);
+    const effOct = getEffectiveTransactionsForPeriod(periodOct, createdTxs, [rule], [], todayRef);
     expect(effOct.length).toBe(1);
     expect(effOct[0].date).toBe('2026-10-15');
     expect(effOct[0].status).toBe('planned');
@@ -227,7 +227,7 @@ describe('CashPilot - Automatické určování a aktualizace stavu položek podl
     };
 
     const synced = autoExecuteDueTransactions([plannedSalary], [], [], 15, todayRef);
-    const eff = getEffectiveTransactionsForPeriod(periodSep, synced.transactions, [], [], 15, todayRef);
+    const eff = getEffectiveTransactionsForPeriod(periodSep, synced.transactions, [], [], todayRef);
 
     expect(eff[0].status).toBe('executed');
     expect(eff[0].actualAmountInHaler).toBe(5000000);
@@ -254,12 +254,12 @@ describe('CashPilot - Automatické určování a aktualizace stavu položek podl
     };
 
     // Před automatickým uskutečněním (virtuální výskyt v periodě)
-    const effBefore = getEffectiveTransactionsForPeriod(periodSep, [], [rentRule], [], 15, todayRef);
+    const effBefore = getEffectiveTransactionsForPeriod(periodSep, [], [rentRule], [], todayRef);
     expect(effBefore.length).toBe(1);
 
     // Po automatickém uskutečnění (reálný výskyt v transactions)
     const autoRes = autoExecuteDueTransactions([], [rentRule], [], 15, todayRef);
-    const effAfter = getEffectiveTransactionsForPeriod(periodSep, autoRes.transactions, [rentRule], [], 15, todayRef);
+    const effAfter = getEffectiveTransactionsForPeriod(periodSep, autoRes.transactions, [rentRule], [], todayRef);
 
     expect(effAfter.length).toBe(1);
     expect(effAfter[0].id).toBe('tx_rec_rule_rent_check_2026-09');

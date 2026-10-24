@@ -102,7 +102,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       txs,
       [],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -164,7 +163,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [],
       rules,
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -227,7 +225,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [txInPeriod, txInOct],
       [],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -239,7 +236,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [txInPeriod, txInOct],
       [],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -283,7 +279,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       storedTxs,
       [rule],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -331,7 +326,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [realExecutedRent],
       [rentRule],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -369,7 +363,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [],
       [rentRule],
       [exception],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -410,7 +403,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [existingTx],
       [rentRule],
       [],
-      settings.budgetStartDay,
       todayRef,
       accounts
     );
@@ -523,7 +515,6 @@ describe('TransactionsScreen Planned Items & Effective Period Filtering', () => 
       [],
       [ruleOnLateAccount],
       [],
-      settings.budgetStartDay,
       todayRef,
       [lateAccount]
     );

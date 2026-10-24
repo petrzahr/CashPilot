@@ -11,7 +11,7 @@ vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 it('denní pohled nabízí posun položek tlačítky s názvem položky, na okrajích dne neaktivní', () => {
   const period: BudgetPeriod = {
     key: '2026-09', name: 'Září 2026', year: 2026, month: 9,
-    startDate: '2026-09-15', endDate: '2026-10-14',
+    startDate: '2026-09-15', endDate: '2026-10-14', startDay: 15,
   };
   const checking: Account = {
     id: 'chk', name: 'Běžný účet', type: 'checking', currency: 'CZK',

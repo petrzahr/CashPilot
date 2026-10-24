@@ -283,7 +283,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(read().transactions.find(t => t.id === original.id)).toEqual(converted);
     expect(read().recurringRules).toEqual(persistedRules);
     const effective = (date: string) => getEffectiveTransactionsForPeriod(
-      getPeriodForDate(date, 1), read().transactions, read().recurringRules, [], 1, '2026-09-01'
+      getPeriodForDate(date, 1), read().transactions, read().recurringRules, [], '2026-09-01'
     ).filter(t => t.recurringRuleId === rule.id);
     expect(effective('2026-09-20')).toHaveLength(1);
     expect(effective('2026-10-20')).toHaveLength(0);
@@ -291,7 +291,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     const createdRule = ctx.addRecurringRule(ruleData, 1, status);
     expect(read().transactions).toHaveLength(sampleTransactions.length + 1);
-    const future = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-12-20', 1), read().transactions, read().recurringRules, [], 1, '2026-09-01');
+    const future = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-12-20', 1), read().transactions, read().recurringRules, [], '2026-09-01');
     const createdFuture = future.find(t => t.recurringRuleId === createdRule.id)!;
     const convertedFuture = future.find(t => t.recurringRuleId === rule.id)!;
     expect(createdFuture).toMatchObject({ title: convertedFuture.title, date: convertedFuture.date, amountInHaler: convertedFuture.amountInHaler, status: convertedFuture.status });
@@ -315,7 +315,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(reopened.transactions.filter((t: Transaction) => t.id === sampleTransactions[0].id))
       .toMatchObject([{ recurringRuleId: rule.id }]);
     const future = getEffectiveTransactionsForPeriod(
-      getPeriodForDate(nextDate, 1), reopened.transactions, reopened.recurringRules, [], 1, '2026-09-01'
+      getPeriodForDate(nextDate, 1), reopened.transactions, reopened.recurringRules, [], '2026-09-01'
     ).filter(t => t.recurringRuleId === rule.id);
     expect(future).toMatchObject([{ date: nextDate, amountInHaler: rule.amountInHaler }]);
   });

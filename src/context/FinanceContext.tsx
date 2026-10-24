@@ -425,11 +425,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [data.settings.budgetStartDay]);
 
   const goToNextPeriod = useCallback(() => {
-    setSelectedPeriod(prev => getNextPeriod(prev, data.settings.budgetStartDay));
+    setSelectedPeriod(prev => getNextPeriod(prev));
   }, [data.settings.budgetStartDay]);
 
   const goToPreviousPeriod = useCallback(() => {
-    setSelectedPeriod(prev => getPreviousPeriod(prev, data.settings.budgetStartDay));
+    setSelectedPeriod(prev => getPreviousPeriod(prev));
   }, [data.settings.budgetStartDay]);
 
   const goToCurrentPeriod = useCallback(() => {
@@ -504,7 +504,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const rangeStart = selectedPeriod.startDate < dataPeriodBounds.earliestPeriod.startDate ? selectedPeriod : dataPeriodBounds.earliestPeriod;
   const rangeEnd = selectedPeriod.startDate > dataPeriodBounds.latestPeriod.startDate ? selectedPeriod : dataPeriodBounds.latestPeriod;
   const allPeriodsSequence = useMemo(
-    () => generatePeriodsBetween(rangeStart, rangeEnd, normalizeStartDay(data.settings.budgetStartDay)),
+    () => generatePeriodsBetween(rangeStart, rangeEnd),
     // Období je plně určeno svými hranicemi, proto stačí závislost na datech hranic
     [rangeStart.startDate, rangeStart.endDate, rangeEnd.startDate, rangeEnd.endDate, data.settings.budgetStartDay]
   );
