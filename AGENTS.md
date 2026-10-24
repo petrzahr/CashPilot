@@ -24,7 +24,8 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 - `src/services/transactionCommands.ts`, `accountCommands.ts`, `categoryCommands.ts`, `dataCommands.ts` - all data mutations as pure commands `(data, input, ctx) -> { data, outcome }`
 - `src/services/accountScope.ts` - default account, effective amount, account flow
 - `src/services/accountBalance.ts` - account balance at a date (liquid and asset accounts)
-- `src/services/budgetBalances.ts` - budget screen balances: default account period totals and overdraft, day-group and per-source-account running balances
+- `src/services/budgetBalances.ts` - budget screen day-group and per-source-account running balances from a period view
+- `forecast.getPeriod(key)` (`financialEngine.ts`) - period view: projected and recorded summary plus the default account tiles and KPIs (see GLOSSARY.md)
 - `src/services/itemFilter.ts` + `src/hooks/useItemFilters.ts` - item list filtering shared by the budget and transactions screens
 - `src/services/periodRange.ts` - period ranges for the Majetek and Analytics filters
 - `src/services/storageService.ts` - local browser storage
