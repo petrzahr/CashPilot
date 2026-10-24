@@ -1,9 +1,12 @@
 import {
   Account,
   BalanceCorrection,
+  AppSettings,
   BudgetPeriod,
+  DefaultAccountPeriod,
   ForecastResult,
   PeriodRangeScreen,
+  PeriodView,
   PeriodSummary,
   AccountPeriodBalance,
   RecurringException,
@@ -15,7 +18,7 @@ import type { AppData } from './storageService';
 import { addHaler, subHaler } from './currencyService';
 import { getAccountBalanceAtDate } from './accountBalance';
 import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
-import { getAccountFlowInHaler, getEffectiveAmountInHaler } from './accountScope';
+import { getAccountFlowInHaler, getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { DualPeriodRange, resolvePeriodRange } from './periodRange';
 import {
   createBudgetPeriod,
@@ -445,16 +448,102 @@ export function buildForecastPeriods(data: ForecastData, options: ForecastOption
 export function calculateForecast(data: ForecastData, options: ForecastOptions): ForecastResult {
   const periods = buildForecastPeriods(data, options);
   const currentPeriodKey = getPeriodForDate(options.today, normalizeStartDay(data.settings?.budgetStartDay)).key;
-  return summarizePeriods(periods, data, { today: options.today, currentPeriodKey });
+  const overdraftLimitInHaler = data.settings ? getOverdraftLimitInHaler(data.settings) : 0;
+  return summarizePeriods(periods, data, { today: options.today, currentPeriodKey, overdraftLimitInHaler });
+}
+
+/** Limit kontokorentu z nastavení; starší data mají jen minimální rezervu. */
+export function getOverdraftLimitInHaler(settings: Pick<AppSettings, 'overdraftLimitInHaler' | 'minReserveInHaler'>): number {
+  return settings.overdraftLimitInHaler ?? settings.minReserveInHaler ?? 0;
+}
+
+/**
+ * Účet aktivovaný uvnitř období po jeho prvním dni (nejpozději k `until`): počáteční stav
+ * období je 0 a počáteční zůstatek účtu vstupuje do období jako změna.
+ */
+function getActivationAmountInPeriod(
+  acc: Account,
+  period: Pick<BudgetPeriod, 'startDate' | 'endDate'>,
+  until: string = period.endDate
+): number {
+  const initDate = acc.initialBalanceDate || '1970-01-01';
+  return initDate > period.startDate && initDate <= until ? acc.initialBalanceInHaler || 0 : 0;
+}
+
+/** Skutečně uspořeno = příjmy − výdaje + korekce účtu (bez převodů). */
+function getActuallySavedInHaler(balance: AccountPeriodBalance | undefined): number {
+  return balance ? addHaler(subHaler(balance.incomeInHaler, balance.expenseInHaler), balance.correctionsInHaler) : 0;
+}
+
+/**
+ * Výchozí účet za období (dlaždice a KPI rozpočtu):
+ * - změna za období přičítá počáteční zůstatek účtu aktivovaného uvnitř období,
+ * - konečný stav ze souhrnu; dopočítá se jen, když účet v souhrnu chybí,
+ * - Uspořeno / Investováno = čisté převody mezi výchozím účtem a spořicími, resp. investičními
+ *   a penzijními účty (z výchozího účtu +, zpět na něj −),
+ * - procenta se počítají z příjmů výchozího účtu.
+ */
+function summarizeDefaultAccount(
+  summary: PeriodSummary,
+  accounts: Account[],
+  periodTransactions: Transaction[],
+  overdraftLimitInHaler: number
+): DefaultAccountPeriod {
+  const defaultAccount = getDefaultAccount(accounts);
+  const balance = defaultAccount ? summary.accountBalances[defaultAccount.id] : undefined;
+  const opening = balance?.openingBalanceInHaler ?? 0;
+  const income = balance?.incomeInHaler ?? 0;
+  const expense = balance?.expenseInHaler ?? 0;
+  const netTransfers = (balance?.transfersInInHaler ?? 0) - (balance?.transfersOutInHaler ?? 0);
+  const corrections = balance?.correctionsInHaler ?? 0;
+  const activation = defaultAccount ? getActivationAmountInPeriod(defaultAccount, summary.period) : 0;
+  const netChange = income - expense + netTransfers + corrections + activation;
+  const closing = balance?.closingBalanceInHaler ?? (opening + netChange);
+  const withOverdraft = closing + overdraftLimitInHaler;
+
+  let savedInHaler = 0;
+  let investedInHaler = 0;
+  if (defaultAccount) {
+    const typeById = new Map(accounts.filter(a => a.status === 'active').map(a => [a.id, a.type]));
+    for (const tx of periodTransactions) {
+      if (tx.type !== 'transfer' || tx.status === 'cancelled') continue;
+      // Z výchozího účtu odteklo = uspořeno (+), vráceno na něj = (−)
+      const signed = -getAccountFlowInHaler(tx, defaultAccount.id);
+      if (signed === 0) continue;
+      const counterpartyId = tx.sourceAccountId === defaultAccount.id ? tx.targetAccountId : tx.sourceAccountId;
+      const type = counterpartyId ? typeById.get(counterpartyId) : undefined;
+      if (type === 'savings') savedInHaler = addHaler(savedInHaler, signed);
+      else if (type === 'investment' || type === 'pension') investedInHaler = addHaler(investedInHaler, signed);
+    }
+  }
+
+  const actuallySavedInHaler = getActuallySavedInHaler(balance);
+  const pct = (amount: number) => (income > 0 ? (amount / income) * 100 : null);
+  return {
+    openingInHaler: opening,
+    incomeInHaler: income,
+    expenseInHaler: expense,
+    netTransfersInHaler: netTransfers,
+    netChangeInHaler: netChange,
+    closingInHaler: closing,
+    withOverdraftInHaler: withOverdraft,
+    isOverdraftExceeded: withOverdraft < 0,
+    actuallySavedInHaler,
+    actuallySavedPct: pct(actuallySavedInHaler),
+    savedInHaler,
+    savedPct: pct(savedInHaler),
+    investedInHaler,
+    investedPct: pct(investedInHaler),
+  };
 }
 
 /** Souhrny pro zadanou sekvenci období. Aplikace volá calculateForecast; přímo jen testy výpočtu. */
 export function summarizePeriods(
   periods: BudgetPeriod[],
   data: Partial<Omit<ForecastData, 'settings'>>,
-  options: { today?: string; currentPeriodKey?: string } = {}
+  options: { today?: string; currentPeriodKey?: string; overdraftLimitInHaler?: number } = {}
 ): ForecastResult {
-  const { currentPeriodKey, today: todayStr } = options;
+  const { currentPeriodKey, today: todayStr, overdraftLimitInHaler = 0 } = options;
   const safeFees = Array.isArray(data.investmentFees) ? data.investmentFees : [];
   const safeAccounts = Array.isArray(data.accounts) ? data.accounts : [];
   const safeTxs = Array.isArray(data.transactions) ? data.transactions : [];
@@ -685,7 +774,7 @@ export function summarizePeriods(
       }
 
       // 2. Pokud je účet aktivován uvnitř období po prvním dni (initDate > period.startDate)
-      const baseInitialToAdd = (initDate > period.startDate && initDate <= period.endDate) ? initBal : 0;
+      const baseInitialToAdd = getActivationAmountInPeriod(acc, period);
 
       let closing = 0;
       if (isAsset) {
@@ -840,19 +929,43 @@ export function summarizePeriods(
     }
   }
 
+  // Pohled na období se sestaví až při prvním dotazu; výchozí účet až při prvním přístupu
+  let periodViews: Map<string, PeriodView> | null = null;
+  const buildPeriodViews = () => {
+    const views = new Map<string, PeriodView>();
+    const projectedByKey = new Map(forecastPeriods.map(s => [s.period.key, s]));
+    for (const recorded of periodSummaries) {
+      const projected = projectedByKey.get(recorded.period.key) ?? recorded;
+      let defaultAccount: DefaultAccountPeriod | undefined;
+      views.set(recorded.period.key, {
+        period: recorded.period,
+        projected,
+        recorded,
+        get defaultAccount() {
+          defaultAccount ??= summarizeDefaultAccount(projected, safeAccounts, getEffectiveForPeriod(recorded.period), overdraftLimitInHaler);
+          return defaultAccount;
+        },
+      });
+    }
+    return views;
+  };
+
   return {
     periods: periodSummaries,
     forecastPeriods,
     allPeriods: periodSummaries,
     currentPeriod: resolvedCurrentPeriod,
+    getPeriod: (key: string) => {
+      periodViews ??= buildPeriodViews();
+      return periodViews.get(key);
+    },
     overallMinBalanceInHaler: overallMinBalance === Infinity ? 0 : overallMinBalance,
     usableCashNowInHaler: (() => {
       let usableNow = currentSummary ? currentSummary.usableOpeningInHaler : 0;
       if (currentSummary) {
         for (const acc of safeAccounts) {
-          const initDate = acc.initialBalanceDate || '1970-01-01';
-          if (initDate > currentSummary.period.startDate && initDate <= today && acc.isUsableCash) {
-            usableNow = addHaler(usableNow, acc.initialBalanceInHaler);
+          if (acc.isUsableCash) {
+            usableNow = addHaler(usableNow, getActivationAmountInPeriod(acc, currentSummary.period, today));
           }
         }
       }
@@ -863,18 +976,15 @@ export function summarizePeriods(
       let netWorthNow = currentSummary ? currentSummary.netWorthOpeningInHaler : 0;
       if (currentSummary) {
         for (const acc of safeAccounts) {
-          const initDate = acc.initialBalanceDate || '1970-01-01';
-          if (initDate > currentSummary.period.startDate && initDate <= today && acc.isNetWorth) {
-            netWorthNow = addHaler(netWorthNow, acc.initialBalanceInHaler);
+          if (acc.isNetWorth) {
+            netWorthNow = addHaler(netWorthNow, getActivationAmountInPeriod(acc, currentSummary.period, today));
           }
         }
       }
       for (const acc of safeAccounts) {
         if (!acc.isNetWorth || (acc.type !== 'investment' && acc.type !== 'pension')) continue;
-        const initDate = acc.initialBalanceDate || '1970-01-01';
         const previousValue = currentSummary?.accountBalances[acc.id]?.openingBalanceInHaler || 0;
-        const activatedValue = currentSummary && initDate > currentSummary.period.startDate && initDate <= today
-          ? acc.initialBalanceInHaler : 0;
+        const activatedValue = currentSummary ? getActivationAmountInPeriod(acc, currentSummary.period, today) : 0;
         netWorthNow += getAccountBalanceAtDate(acc, today, { transactions: safeTxs, snapshots: safeSnapshots }) - previousValue - activatedValue;
       }
       return netWorthNow;

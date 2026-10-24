@@ -228,6 +228,41 @@ export interface ForecastResult {
   netWorthNowInHaler: number;
   plannedIncomeCurrentPeriodInHaler: number;
   plannedExpenseCurrentPeriodInHaler: number;
+  /** Period view for one period key of the forecast; undefined outside its period sequence. */
+  getPeriod: (key: string) => PeriodView | undefined;
+}
+
+/** Default account totals for one period (Budget tiles and KPIs); all zero without a default account. */
+export interface DefaultAccountPeriod {
+  openingInHaler: number;
+  incomeInHaler: number;
+  expenseInHaler: number;
+  netTransfersInHaler: number;
+  netChangeInHaler: number;
+  closingInHaler: number;
+  /** Konečný stav včetně kontokorentu */
+  withOverdraftInHaler: number;
+  isOverdraftExceeded: boolean;
+  /** Příjmy − výdaje + korekce výchozího účtu (bez převodů) */
+  actuallySavedInHaler: number;
+  actuallySavedPct: number | null;
+  /** Čisté převody na spořicí účty */
+  savedInHaler: number;
+  savedPct: number | null;
+  /** Čisté převody na investiční a penzijní účty */
+  investedInHaler: number;
+  investedPct: number | null;
+}
+
+/** One period of the forecast: see "Period view" in GLOSSARY.md. */
+export interface PeriodView {
+  period: BudgetPeriod;
+  /** Current and future periods: investment accounts anchored at today's value; past periods: the recorded summary. */
+  projected: PeriodSummary;
+  /** Built from stored values only, with no projection. */
+  recorded: PeriodSummary;
+  /** Computed on first access from the projected summary and the forecast's effective items. */
+  readonly defaultAccount: DefaultAccountPeriod;
 }
 
 // Struktura pro denní průběžný zůstatek (intra-day)
