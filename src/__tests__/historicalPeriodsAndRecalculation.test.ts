@@ -507,13 +507,13 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
   });
 
   // 13. Aktualizace aktuálního období a forecastu
-  it('Scénář 13: Aktualizace položky v minulosti okamžitě aktualizuje usableCashNowInHaler a expectedClosingCurrentPeriodInHaler', () => {
+  it('Scénář 13: Aktualizace položky v minulosti okamžitě aktualizuje počáteční a předpokládaný konečný stav aktuálního období', () => {
     const periods = getPeriods(2026, 7, 6, 1);
     const txBefore: Transaction[] = [];
     const res1 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txBefore }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
-    expect(res1.usableCashNowInHaler).toBe(10000000);
-    expect(res1.expectedClosingCurrentPeriodInHaler).toBe(10000000);
+    expect(res1.getPeriod('2026-09')!.recorded.usableOpeningInHaler).toBe(10000000);
+    expect(res1.getPeriod('2026-09')!.projected.usableClosingInHaler).toBe(10000000);
 
     // Přidáme minulý příjem 20 000 Kč do července
     const pastIncome: Transaction = {
@@ -530,8 +530,8 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     };
 
     const res2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [pastIncome] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
-    expect(res2.usableCashNowInHaler).toBe(12000000);
-    expect(res2.expectedClosingCurrentPeriodInHaler).toBe(12000000);
+    expect(res2.getPeriod('2026-09')!.recorded.usableOpeningInHaler).toBe(12000000);
+    expect(res2.getPeriod('2026-09')!.projected.usableClosingInHaler).toBe(12000000);
     expect(res2.periods.find(p => p.period.key === '2026-09')!.closingBalanceInHaler).toBe(12000000);
   });
 
@@ -569,8 +569,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     const run2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
     expect(run1.periods).toEqual(run2.periods);
-    expect(run1.usableCashNowInHaler).toBe(run2.usableCashNowInHaler);
-    expect(run1.netWorthNowInHaler).toBe(run2.netWorthNowInHaler);
+    expect(run1.forecastPeriods).toEqual(run2.forecastPeriods);
   });
 
   // 15. Správné zařazení podle vlastního počátečního dne období (např. 15. den v měsíci)

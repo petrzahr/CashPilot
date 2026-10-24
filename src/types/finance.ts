@@ -220,14 +220,7 @@ export interface PeriodSummary {
 export interface ForecastResult {
   periods: PeriodSummary[];
   forecastPeriods?: PeriodSummary[];
-  allPeriods?: PeriodSummary[];
   currentPeriod: BudgetPeriod;
-  overallMinBalanceInHaler: number;
-  usableCashNowInHaler: number;
-  expectedClosingCurrentPeriodInHaler: number;
-  netWorthNowInHaler: number;
-  plannedIncomeCurrentPeriodInHaler: number;
-  plannedExpenseCurrentPeriodInHaler: number;
   /** Period view for one period key of the forecast; undefined outside its period sequence. */
   getPeriod: (key: string) => PeriodView | undefined;
 }

@@ -458,16 +458,15 @@ export function getOverdraftLimitInHaler(settings: Pick<AppSettings, 'overdraftL
 }
 
 /**
- * Účet aktivovaný uvnitř období po jeho prvním dni (nejpozději k `until`): počáteční stav
- * období je 0 a počáteční zůstatek účtu vstupuje do období jako změna.
+ * Účet aktivovaný uvnitř období po jeho prvním dni: počáteční stav období je 0
+ * a počáteční zůstatek účtu vstupuje do období jako změna.
  */
 function getActivationAmountInPeriod(
   acc: Account,
-  period: Pick<BudgetPeriod, 'startDate' | 'endDate'>,
-  until: string = period.endDate
+  period: Pick<BudgetPeriod, 'startDate' | 'endDate'>
 ): number {
   const initDate = acc.initialBalanceDate || '1970-01-01';
-  return initDate > period.startDate && initDate <= until ? acc.initialBalanceInHaler || 0 : 0;
+  return initDate > period.startDate && initDate <= period.endDate ? acc.initialBalanceInHaler || 0 : 0;
 }
 
 /** Skutečně uspořeno = příjmy − výdaje + korekce účtu (bez převodů). */
@@ -583,8 +582,6 @@ export function summarizePeriods(
         : runningBalances[acc.id];
     }
   }
-
-  let overallMinBalance = Infinity;
 
   // Položky se do období roztřídí jednou předem, místo filtrování celé historie pro každé období.
   // Výsledné položky období se pak znovu použijí i pro předpověď (stejné vstupy => stejný výsledek).
@@ -878,8 +875,6 @@ export function summarizePeriods(
     };
   }
 
-  const currentSummary = periodSummaries.find(p => p.period.key === resolvedCurrentPeriod.key) || periodSummaries[0];
-
   // Projekce pokr?v? ka?d? obdob? od aktu?ln?ho a? do konce sekvence
   const currentPeriodIdx = periodSummaries.findIndex(p => p.period.key === resolvedCurrentPeriod.key);
   const historicalForecastPeriods = periodSummaries.slice(Math.max(0, currentPeriodIdx));
@@ -920,13 +915,6 @@ export function summarizePeriods(
     return projected;
   });
 
-  overallMinBalance = Infinity;
-  for (const s of forecastPeriods) {
-    if (s.usableClosingInHaler < overallMinBalance) {
-      overallMinBalance = s.usableClosingInHaler;
-    }
-  }
-
   // Pohled na období se sestaví až při prvním dotazu; výchozí účet až při prvním přístupu
   let periodViews: Map<string, PeriodView> | null = null;
   const buildPeriodViews = () => {
@@ -951,44 +939,11 @@ export function summarizePeriods(
   return {
     periods: periodSummaries,
     forecastPeriods,
-    allPeriods: periodSummaries,
     currentPeriod: resolvedCurrentPeriod,
     getPeriod: (key: string) => {
       periodViews ??= buildPeriodViews();
       return periodViews.get(key);
     },
-    overallMinBalanceInHaler: overallMinBalance === Infinity ? 0 : overallMinBalance,
-    usableCashNowInHaler: (() => {
-      let usableNow = currentSummary ? currentSummary.usableOpeningInHaler : 0;
-      if (currentSummary) {
-        for (const acc of safeAccounts) {
-          if (acc.isUsableCash) {
-            usableNow = addHaler(usableNow, getActivationAmountInPeriod(acc, currentSummary.period, today));
-          }
-        }
-      }
-      return usableNow;
-    })(),
-    expectedClosingCurrentPeriodInHaler: currentSummary ? currentSummary.usableClosingInHaler : 0,
-    netWorthNowInHaler: (() => {
-      let netWorthNow = currentSummary ? currentSummary.netWorthOpeningInHaler : 0;
-      if (currentSummary) {
-        for (const acc of safeAccounts) {
-          if (acc.isNetWorth) {
-            netWorthNow = addHaler(netWorthNow, getActivationAmountInPeriod(acc, currentSummary.period, today));
-          }
-        }
-      }
-      for (const acc of safeAccounts) {
-        if (!acc.isNetWorth || (acc.type !== 'investment' && acc.type !== 'pension')) continue;
-        const previousValue = currentSummary?.accountBalances[acc.id]?.openingBalanceInHaler || 0;
-        const activatedValue = currentSummary ? getActivationAmountInPeriod(acc, currentSummary.period, today) : 0;
-        netWorthNow += getAccountBalanceAtDate(acc, today, { transactions: safeTxs, snapshots: safeSnapshots }) - previousValue - activatedValue;
-      }
-      return netWorthNow;
-    })(),
-    plannedIncomeCurrentPeriodInHaler: currentSummary ? currentSummary.incomeInHaler : 0,
-    plannedExpenseCurrentPeriodInHaler: currentSummary ? currentSummary.expenseInHaler : 0,
   };
 }
 

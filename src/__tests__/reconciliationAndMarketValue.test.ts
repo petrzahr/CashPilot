@@ -109,9 +109,9 @@ describe('Reconciliation and Market Value Engine', () => {
         { accounts },
         { currentPeriodKey: periodSep2026.key, today: '2026-09-21' }
       );
-      expect(result.usableCashNowInHaler).toBe(5000000);
-      expect(result.expectedClosingCurrentPeriodInHaler).toBe(5000000);
-      expect(result.netWorthNowInHaler).toBe(23000000 + marketValue);
+      const projectedSep = result.getPeriod(periodSep2026.key)!.projected;
+      expect(projectedSep.usableClosingInHaler).toBe(5000000);
+      expect(projectedSep.netWorthClosingInHaler).toBe(23000000 + marketValue);
       // Current period keeps its period-start opening; only the closing is anchored at today
       const [current, ...later] = result.forecastPeriods!;
       expect(current.accountBalances[investment.id].openingBalanceInHaler).toBe(30000000);
@@ -147,13 +147,12 @@ describe('Reconciliation and Market Value Engine', () => {
         { currentPeriodKey: periodSep2026.key, today: '2026-09-21' }
       );
       const first = result.forecastPeriods![0];
-      expect(result.netWorthNowInHaler).toBe(40100000);
       expect(first.accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
       expect(first.accountBalances[investment.id].transfersInInHaler).toBe(300000);
       expect(first.accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
       expect(result.forecastPeriods![1].accountBalances[investment.id].closingBalanceInHaler).toBe(35300000);
       expect(first.usableClosingInHaler).toBe(5150000);
-      expect(result.expectedClosingCurrentPeriodInHaler).toBe(first.usableClosingInHaler);
+      expect(result.getPeriod(periodSep2026.key)!.projected.usableClosingInHaler).toBe(first.usableClosingInHaler);
       expect(result.periods[0].accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
     });
 

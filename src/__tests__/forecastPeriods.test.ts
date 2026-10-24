@@ -122,6 +122,5 @@ describe('calculateForecast builds its own period sequence', () => {
       expect(wide.periods.find(p => p.period.key === key)).toEqual(narrow.periods.find(p => p.period.key === key));
     }
     expect(wide.forecastPeriods).toEqual(narrow.forecastPeriods);
-    expect(wide.netWorthNowInHaler).toBe(narrow.netWorthNowInHaler);
   });
 });
