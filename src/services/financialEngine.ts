@@ -880,11 +880,9 @@ export function summarizePeriods(
 
   const currentSummary = periodSummaries.find(p => p.period.key === resolvedCurrentPeriod.key) || periodSummaries[0];
 
+  // Projekce pokr?v? ka?d? obdob? od aktu?ln?ho a? do konce sekvence
   const currentPeriodIdx = periodSummaries.findIndex(p => p.period.key === resolvedCurrentPeriod.key);
-  const forecastMonths = 12;
-  const historicalForecastPeriods = currentPeriodIdx >= 0
-    ? periodSummaries.slice(currentPeriodIdx, currentPeriodIdx + forecastMonths)
-    : periodSummaries.slice(0, forecastMonths);
+  const historicalForecastPeriods = periodSummaries.slice(Math.max(0, currentPeriodIdx));
 
   // Keep historical period balances intact; anchor the projected asset closing at today's value.
   // The period that has already started keeps its period-start opening and full-period flows,

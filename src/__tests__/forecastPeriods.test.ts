@@ -80,6 +80,29 @@ describe('calculateForecast builds its own period sequence', () => {
     expect(last).toBe('2028-08');
   });
 
+  it('projects every period from the current one to the end of the range, also periods 13–24', () => {
+    const investment: Account = { ...account('2026-01-01'), id: 'inv', type: 'investment', isDefault: false, isUsableCash: false, initialBalanceInHaler: 1500000 };
+    const contribution: RecurringRule = {
+      ...rule('2026-10-20'), id: 'contribution', type: 'transfer', amountInHaler: 10000, targetAccountId: 'inv',
+    };
+    const forecast = calculateForecast(
+      data({ accounts: [account('2026-01-01'), investment], recurringRules: [contribution] }),
+      { today, ranges: { overview: { direction: 'future', months: 24 } } }
+    );
+    const projected = forecast.forecastPeriods!;
+    expect(projected.map(p => p.period.key)).toEqual(forecast.periods.slice(forecast.periods.findIndex(p => p.period.key === '2026-09')).map(p => p.period.key));
+    expect(projected).toHaveLength(24);
+    expect(projected[23].period.key).toBe('2028-08');
+
+    for (let i = 12; i < 24; i++) {
+      const view = forecast.getPeriod(projected[i].period.key)!;
+      expect(view.projected).toBe(projected[i]);
+      expect(view.projected).not.toBe(view.recorded);
+      // Anchored at today's value, then one contribution per period from 2026-10 on
+      expect(view.projected.accountBalances.inv.closingBalanceInHaler).toBe(1500000 + 10000 * i);
+    }
+  });
+
   it('builds periods with the budget start day from settings', () => {
     const forecast = calculateForecast(data({ settings: { ...getInitialData().settings, budgetStartDay: 31 } }), { today });
     expect(forecast.currentPeriod).toMatchObject({ key: '2026-08', startDate: '2026-08-31', endDate: '2026-09-29', startDay: 31 });
