@@ -29,6 +29,7 @@ Client-only SPA for personal finance. No own backend: data is stored locally in 
 - `src/services/periodRange.ts` - period ranges for the Majetek and Analytics filters
 - `src/services/storageService.ts` - local browser storage
 - `src/hooks/useDriveSession.ts` - Google Drive session (SyncController lifecycle, connect/disconnect, Drive backups)
+- `src/hooks/usePeriodForecast.ts` - today, current/selected period and navigation, Overview/Analytics ranges, memoised forecast; the forecast builds its own period sequence (`calculateForecast` in `financialEngine.ts`)
 - `src/services/syncController.ts`, `src/services/syncModel.ts` - Google Drive sync logic; design in `docs/synchronization-v2.md` (read before changing sync)
 - `src/services/driveBackupService.ts` - backups to a visible Drive folder
 - `GLOSSARY.md` - domain terms used in code and reviews (default account, effective amount, account balance, command)

@@ -12,4 +12,12 @@ Domain terms used in code, docs and architecture reviews. Code for these lives i
 
 **Account balance** — the state of one account at the end of a day (`getAccountBalanceAtDate` in `src/services/accountBalance.ts`); 0 before the account's activation date. A liquid account is its initial balance plus the effect of its transactions plus legacy corrections not already stored as transactions. An investment or pension account is its latest valuation up to that day (market value snapshot, else the market value on the account) plus account flows after it; corrections never apply. By default only executed items count (actual balance); `includePlanned` gives the projected balance used for reconciliation and the forecast opening.
 
+**Forecast** — the module that, from data, today and the ranges, computes summaries for all periods (`calculateForecast` in `src/services/financialEngine.ts`). It builds its own period sequence (`buildForecastPeriods`): 12 periods back and 12 ahead of the current period, the data bounds, the Overview and Analytics ranges and the selected period. Screens never push bounds into it. `usePeriodForecast` (`src/hooks/usePeriodForecast.ts`) holds today, the current and selected period, the screen ranges and the memoised forecast.
+
+**Period view** — the answer to `getPeriod` for one period key: `{ period, projected, recorded, defaultAccount }`. Not built yet; it will replace `getAccountPeriodSummary`, `getDefaultAccountPeriodTotals` and `calculateDefaultAccountKpis`.
+
+**Projected summary** — an aktuální or budoucí (current or future) period with investment and pension accounts anchored at today's market value (`forecastPeriods` of the forecast).
+
+**Recorded summary** — a period summary built from stored values, with no projection (`periods` of the forecast).
+
 **Command** — a pure function that changes app data: `(data, input, ctx) → { data, outcome }` (`src/services/transactionCommands.ts`). It never touches React, storage or toasts; `ctx` supplies the current time, today's date and new IDs, so tests can fix them. `FinanceContext` is only the adapter: it runs the command through the sync controller and turns the outcome into a toast or an undo action. When nothing changes, a command returns the original data object.
