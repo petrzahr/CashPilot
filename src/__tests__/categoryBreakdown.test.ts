@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createBudgetPeriodInfo } from '../services/analyticsEngine';
 import { calculateBudgetCategoryOverview, calculateCategoryBreakdown, NO_SUBCATEGORY_LABEL } from '../services/categoryBreakdownService';
 import { createBudgetPeriod } from '../services/periodService';
-import { calculateDefaultAccountKpis } from '../services/budgetKpiService';
+import { summarizePeriods } from '../services/financialEngine';
 import { Account, Category, Transaction } from '../types/finance';
 import { CategoryBreakdownTable } from '../components/analytics/CategoryBreakdownTable';
 
@@ -168,8 +168,10 @@ describe('Přehled rozpočtu podle kategorií (calculateBudgetCategoryOverview)'
   });
 
   it('řádek převodů sedí s dlaždicí Uspořeno', () => {
-    const kpis = calculateDefaultAccountKpis(accounts[0], accounts, undefined, transactions);
-    expect(kpis.savedInHaler).toBe(overview.transferTotalInHaler);
+    const forecastAccounts = accounts.map((a, i) => ({ ...a, isDefault: i === 0 }));
+    const view = summarizePeriods([periodInfo.period], { accounts: forecastAccounts, transactions }, { today })
+      .getPeriod(periodInfo.key)!;
+    expect(view.defaultAccount.savedInHaler).toBe(overview.transferTotalInHaler);
   });
 
   it('bez výchozího účtu počítá všechny účty jako Analýza', () => {

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateForecast, ForecastData, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
-import { getAccountPeriodSummary } from '../services/accountSummaryService';
-import { getDefaultAccountPeriodTotals, getOverdraftLimitInHaler } from '../services/budgetBalances';
-import { calculateDefaultAccountKpis } from '../services/budgetKpiService';
-import { getDefaultAccount } from '../services/accountScope';
+import { calculateForecast, ForecastData } from '../services/financialEngine';
 import { createEmptyAppData } from '../services/demoData';
 import { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } from '../fixtures/demoData';
 import { ForecastResult } from '../types/finance';
@@ -27,19 +23,12 @@ const BUDGET_KEYS = ['2026-08', '2026-09', '2026-10', '2027-02'];
 const OVERVIEW_KEYS = ['2026-08', '2026-09', '2026-10', '2026-11', '2027-03'];
 
 function budgetValues(f: ForecastResult, key: string) {
-  const summary = getAccountPeriodSummary(f, key)!;
-  const defaultAccount = getDefaultAccount(data.accounts);
-  const balance = defaultAccount ? summary.accountBalances[defaultAccount.id] : undefined;
-  const totals = getDefaultAccountPeriodTotals(defaultAccount, balance, summary.period, getOverdraftLimitInHaler(data.settings));
-  const periodTxs = getEffectiveTransactionsForPeriod(
-    summary.period, data.transactions, data.recurringRules, data.recurringExceptions, today, data.accounts
-  );
-  const kpis = calculateDefaultAccountKpis(defaultAccount, data.accounts, balance, periodTxs);
-  return { ...totals, ...kpis, usableOpeningInHaler: summary.usableOpeningInHaler };
+  const view = f.getPeriod(key)!;
+  return { ...view.defaultAccount, usableOpeningInHaler: view.projected.usableOpeningInHaler };
 }
 
 function overviewRow(f: ForecastResult, key: string) {
-  const s = getAccountPeriodSummary(f, key)!;
+  const s = f.getPeriod(key)!.projected;
   return {
     opening: s.openingBalanceInHaler,
     closing: s.closingBalanceInHaler,
@@ -52,7 +41,7 @@ function overviewRow(f: ForecastResult, key: string) {
 }
 
 function accountsSummary(f: ForecastResult, key: string) {
-  const s = getAccountPeriodSummary(f, key)!;
+  const s = f.getPeriod(key)!.projected;
   return Object.values(s.accountBalances).map(b => ({ ...b }));
 }
 

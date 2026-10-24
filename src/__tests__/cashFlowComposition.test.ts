@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { calculateCashFlowComposition, generateBudgetPeriodSequence } from '../services/analyticsEngine';
 import { createBudgetPeriod } from '../services/periodService';
-import { Account, ForecastResult, PeriodSummary } from '../types/finance';
+import { summarizePeriods } from '../services/financialEngine';
+import { Account, Transaction } from '../types/finance';
 
 const today = '2026-09-13';
 
@@ -21,36 +22,27 @@ const account = (id: string, type: Account['type']): Account => ({
   updatedAt: '',
 });
 
-const bal = (accountId: string, income: number, expense: number, corrections = 0) => ({
-  accountId,
-  openingBalanceInHaler: 0,
-  incomeInHaler: income,
-  expenseInHaler: expense,
-  transfersInInHaler: 0,
-  transfersOutInHaler: 0,
-  correctionsInHaler: corrections,
-  closingBalanceInHaler: 0,
+let seq = 0;
+const tx = (sourceAccountId: string, type: Transaction['type'], amountInHaler: number): Transaction => ({
+  id: `t${++seq}`, title: '', type, amountInHaler, sourceAccountId, date: '2026-08-20', sequence: 1,
+  status: 'executed', actualAmountInHaler: amountInHaler, createdAt: '', updatedAt: '',
+  ...(type === 'balance_adjustment' ? { diffInHaler: amountInHaler } : {}),
 });
-
-const buildForecast = (summary: Partial<PeriodSummary>): ForecastResult =>
-  ({ periods: [summary as PeriodSummary] } as unknown as ForecastResult);
 
 describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowComposition)', () => {
   const period = createBudgetPeriod(2026, 8, 15);
   const periods = generateBudgetPeriodSequence(period, period, today);
   const accounts = [{ ...account('chk', 'checking'), isDefault: true }, account('cash', 'cash'), account('sav', 'savings')];
+  const buildForecast = (transactions: Transaction[], forecastAccounts = accounts) =>
+    summarizePeriods([period], { accounts: forecastAccounts, transactions }, { today });
 
   it('bere jen výchozí účet a Skutečně uspořeno = příjmy − výdaje + korekce', () => {
-    const forecast = buildForecast({
-      period,
-      accountBalances: {
-        chk: bal('chk', 9530000, 10000000, -50000),
-        cash: bal('cash', 0, 110000),
-        sav: bal('sav', 999900, 0),
-      },
-    });
+    const forecast = buildForecast([
+      tx('chk', 'income', 9530000), tx('chk', 'expense', 10000000), tx('chk', 'balance_adjustment', -50000),
+      tx('cash', 'expense', 110000), tx('sav', 'income', 999900),
+    ]);
 
-    const [point] = calculateCashFlowComposition(periods, forecast, accounts);
+    const [point] = calculateCashFlowComposition(periods, forecast);
     const byKey = Object.fromEntries(point.segments.map((s) => [s.key, s]));
 
     expect(byKey.income.amountInHaler).toBe(9530000);
@@ -59,8 +51,11 @@ describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowCompositio
   });
 
   it('bez výchozího účtu jsou hodnoty nulové', () => {
-    const forecast = buildForecast({ period, accountBalances: { chk: bal('chk', 9530000, 10000000) } });
-    const [point] = calculateCashFlowComposition(periods, forecast, accounts.map((a) => ({ ...a, isDefault: false })));
+    const forecast = buildForecast(
+      [tx('chk', 'income', 9530000), tx('chk', 'expense', 10000000)],
+      accounts.map((a) => ({ ...a, isDefault: false }))
+    );
+    const [point] = calculateCashFlowComposition(periods, forecast);
     for (const seg of point.segments) {
       expect(seg.amountInHaler).toBe(0);
       expect(seg.pct).toBeNull();
@@ -68,12 +63,9 @@ describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowCompositio
   });
 
   it('kladná a záporná strana dávají dohromady 100 %, záporné uspořeno jde pod nulu', () => {
-    const forecast = buildForecast({
-      period,
-      accountBalances: { chk: bal('chk', 9530000, 10160000) },
-    });
+    const forecast = buildForecast([tx('chk', 'income', 9530000), tx('chk', 'expense', 10160000)]);
 
-    const [point] = calculateCashFlowComposition(periods, forecast, accounts);
+    const [point] = calculateCashFlowComposition(periods, forecast);
     const absSum = point.segments.reduce((s, seg) => s + Math.abs(seg.pct ?? 0), 0);
     expect(absSum).toBeCloseTo(100, 6);
 
@@ -84,7 +76,7 @@ describe('Příjmy / Výdaje / Skutečně uspořeno (calculateCashFlowCompositio
   });
 
   it('pct je null, když nejsou žádné příjmy ani výdaje', () => {
-    const [point] = calculateCashFlowComposition(periods, buildForecast({ period, accountBalances: {} }), accounts);
+    const [point] = calculateCashFlowComposition(periods, buildForecast([]));
     for (const seg of point.segments) expect(seg.pct).toBeNull();
   });
 });

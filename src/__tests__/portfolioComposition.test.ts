@@ -334,9 +334,12 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
           [savings.id]: { closingBalanceInHaler: sav },
         },
       }) as unknown as PeriodSummary;
+    const projected = [summary('2026-07', 1, 1), summary('2026-08', 11000000, 21000000), summary('2026-09', 12000000, 25000000)];
     const forecast = {
-      periods: [summary('2026-07', 1, 1)],
-      forecastPeriods: [summary('2026-08', 11000000, 21000000), summary('2026-09', 12000000, 25000000)],
+      getPeriod: (key: string) => {
+        const found = projected.find(s => s.period.key === key);
+        return found && { period: found.period, projected: found, recorded: found };
+      },
     } as unknown as ForecastResult;
 
     const result = calculatePortfolioComposition(periods, [checking, savings], [], [], [], forecast, today);

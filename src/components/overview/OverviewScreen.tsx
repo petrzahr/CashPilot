@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
@@ -31,7 +30,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
   }), [range, forecast.currentPeriod, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
 
   const displayPeriods = useMemo(() => selectedPeriods.flatMap(period => {
-    const summary = getAccountPeriodSummary(forecast, period.key);
+    const summary = forecast.getPeriod(period.key)?.projected;
     return summary ? [summary] : [];
   }), [forecast, selectedPeriods]);
 

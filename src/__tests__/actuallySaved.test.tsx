@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { MonthlyBudgetScreen } from '../components/budget/MonthlyBudgetScreen';
 import { summarizePeriods } from '../services/financialEngine';
-import { calculateDefaultAccountKpis } from '../services/budgetKpiService';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { Account, AccountType, BudgetPeriod, Transaction } from '../types/finance';
@@ -29,92 +28,6 @@ const makeTx = (overrides: Partial<Transaction> & Pick<Transaction, 'type' | 'so
   id: `tx${txSeq++}`, title: 'Test', date: '2026-09-16', sequence: 1,
   status: 'planned', createdAt: '', updatedAt: '',
   ...overrides,
-});
-
-describe('KPI dlaždice z výchozího účtu (calculateDefaultAccountKpis)', () => {
-  const checking = makeAccount('checking', 'checking', { isDefault: true });
-  const checking2 = makeAccount('checking2', 'checking');
-  const cash = makeAccount('cash', 'cash');
-  const savings = makeAccount('savings', 'savings');
-  const investment = makeAccount('investment', 'investment');
-  const pension = makeAccount('pension', 'pension');
-  const other = makeAccount('other', 'other');
-  const accounts = [checking, checking2, cash, savings, investment, pension, other];
-
-  const kpis = (txs: Transaction[], defaultAccount: Account | null = checking) => {
-    const forecast = summarizePeriods([period], { accounts, transactions: txs });
-    const balance = defaultAccount ? forecast.periods[0].accountBalances[defaultAccount.id] : undefined;
-    return calculateDefaultAccountKpis(defaultAccount ?? undefined, accounts, balance, txs);
-  };
-
-  it('Skutečně uspořeno = příjmy − výdaje + korekce výchozího účtu', () => {
-    const result = kpis([
-      makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 500000 }),
-      makeTx({ type: 'expense', sourceAccountId: checking.id, amountInHaler: 200000 }),
-      makeTx({ type: 'balance_adjustment', sourceAccountId: checking.id, amountInHaler: 30000, diffInHaler: 30000 }),
-    ]);
-    expect(result.actuallySavedInHaler).toBe(330000);
-    expect(result.actuallySavedPct).toBeCloseTo(66, 6);
-  });
-
-  it('příjmy a výdaje ostatních účtů (i běžných a hotovostních) se nepočítají ani do základu %', () => {
-    const result = kpis([
-      makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 100000 }),
-      makeTx({ type: 'income', sourceAccountId: checking2.id, amountInHaler: 900000 }),
-      makeTx({ type: 'expense', sourceAccountId: cash.id, amountInHaler: 50000 }),
-      makeTx({ type: 'income', sourceAccountId: pension.id, amountInHaler: 22000 }),
-      makeTx({ type: 'income', sourceAccountId: other.id, amountInHaler: 10000 }),
-    ]);
-    expect(result.actuallySavedInHaler).toBe(100000);
-    expect(result.actuallySavedPct).toBe(100);
-  });
-
-  it('Uspořeno a Investováno jsou čisté převody mezi výchozím účtem a spořicími / investičními a penzijními účty', () => {
-    const result = kpis([
-      makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 1000000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking.id, targetAccountId: savings.id, amountInHaler: 200000 }),
-      makeTx({ type: 'transfer', sourceAccountId: savings.id, targetAccountId: checking.id, amountInHaler: 50000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking.id, targetAccountId: investment.id, amountInHaler: 100000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking.id, targetAccountId: pension.id, amountInHaler: 17000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking.id, targetAccountId: savings.id, amountInHaler: 99000, status: 'cancelled' }),
-    ]);
-    expect(result.savedInHaler).toBe(150000);
-    expect(result.savedPct).toBe(15);
-    expect(result.investedInHaler).toBe(117000);
-    expect(result.investedPct).toBeCloseTo(11.7, 6);
-    // Převody Skutečně uspořeno neovlivní
-    expect(result.actuallySavedInHaler).toBe(1000000);
-  });
-
-  it('převody mezi jinými účty než výchozím se nepočítají', () => {
-    const result = kpis([
-      makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 100000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking2.id, targetAccountId: savings.id, amountInHaler: 30000 }),
-      makeTx({ type: 'transfer', sourceAccountId: savings.id, targetAccountId: investment.id, amountInHaler: 20000 }),
-    ]);
-    expect(result.savedInHaler).toBe(0);
-    expect(result.investedInHaler).toBe(0);
-  });
-
-  it('procenta jsou null (zobrazí se "—"), když výchozí účet nemá v období příjmy', () => {
-    const result = kpis([makeTx({ type: 'expense', sourceAccountId: checking.id, amountInHaler: 20000 })]);
-    expect(result.actuallySavedInHaler).toBe(-20000);
-    expect(result.actuallySavedPct).toBeNull();
-    expect(result.savedPct).toBeNull();
-    expect(result.investedPct).toBeNull();
-  });
-
-  it('bez výchozího účtu jsou částky 0 a procenta null', () => {
-    const result = kpis([
-      makeTx({ type: 'income', sourceAccountId: checking.id, amountInHaler: 100000 }),
-      makeTx({ type: 'transfer', sourceAccountId: checking.id, targetAccountId: savings.id, amountInHaler: 30000 }),
-    ], null);
-    expect(result).toEqual({
-      actuallySavedInHaler: 0, actuallySavedPct: null,
-      savedInHaler: 0, savedPct: null,
-      investedInHaler: 0, investedPct: null,
-    });
-  });
 });
 
 describe('MonthlyBudgetScreen — nové rozvržení karet', () => {

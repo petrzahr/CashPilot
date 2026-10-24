@@ -5,7 +5,6 @@ import { useFinance } from '../context/FinanceContext';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { AccountsScreen } from '../components/accounts/AccountsScreen';
 import { summarizePeriods } from '../services/financialEngine';
-import { getAccountPeriodSummary } from '../services/accountSummaryService';
 import { createBudgetPeriod } from '../services/periodService';
 import { getPresetRange } from '../services/periodRangePreference';
 import { formatCurrency } from '../services/currencyService';
@@ -125,7 +124,7 @@ it('uses the same asset totals for budget and forecast summaries as the account 
     { currentPeriodKey: period.key, today: '2026-09-16' }
   );
   const original = JSON.stringify(forecast);
-  const summary = getAccountPeriodSummary(forecast, period.key)!;
+  const summary = forecast.getPeriod(period.key)!.projected;
   expect(summary).toBe(forecast.forecastPeriods![0]);
   expect(summary.netWorthClosingInHaler).toBe(130934800);
   expect(summary.accountBalances.asset.closingBalanceInHaler).toBe(83250000);
@@ -145,7 +144,7 @@ it('uses the same asset totals for budget and forecast summaries as the account 
 
   for (const excluded of [{ ...transfer, status: 'cancelled' as const }, { ...transfer, date: '2026-10-15' }]) {
     const next = summarizePeriods([period], { accounts, transactions: [excluded] }, { currentPeriodKey: period.key, today: '2026-09-16' });
-    expect(getAccountPeriodSummary(next, period.key)?.accountBalances.asset.closingBalanceInHaler).toBe(82600000);
+    expect(next.getPeriod(period.key)?.projected.accountBalances.asset.closingBalanceInHaler).toBe(82600000);
   }
   expect(JSON.stringify(forecast)).toBe(original);
 });

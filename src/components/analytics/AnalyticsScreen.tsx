@@ -112,8 +112,8 @@ export const AnalyticsScreen: React.FC = () => {
   }, [monthlyCashFlow]);
 
   const cashFlowComposition = useMemo(() => {
-    return calculateCashFlowComposition(dateRange.periods, forecast, accounts);
-  }, [dateRange.periods, forecast, accounts]);
+    return calculateCashFlowComposition(dateRange.periods, forecast);
+  }, [dateRange.periods, forecast]);
 
   const categoryBreakdown = useMemo(() => {
     return calculateCategoryBreakdown(

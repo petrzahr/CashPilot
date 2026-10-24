@@ -21,7 +21,6 @@ import {
 import { sortAccountsByOrder } from './accountService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { getAccountBalanceAtDate } from './accountBalance';
-import { getAccountPeriodSummary } from './accountSummaryService';
 
 export interface BudgetPeriodInfo {
   period: BudgetPeriod;
@@ -317,25 +316,20 @@ export const CASH_FLOW_COMPOSITION_COLORS = {
 /**
  * Spočítá procentuální rozložení Příjmy / Výdaje / Skutečně uspořeno podle rozpočtových
  * period. Hodnoty odpovídají souhrnným ukazatelům v Měsíčním rozpočtu (stejný souhrn
- * období z forecastu): příjmy a výdaje výchozího účtu a "Skutečně uspořeno"
- * = příjmy − výdaje + korekce výchozího účtu (bez převodů). Bez výchozího účtu jsou nulové. Základna pro % (= 100 %) je
+ * období z forecastu): příjmy, výdaje a "Skutečně uspořeno" výchozího účtu
+ * (viz PeriodView.defaultAccount). Bez výchozího účtu jsou nulové. Základna pro % (= 100 %) je
  * součet absolutních hodnot všech tří ukazatelů, záporné "Skutečně uspořeno" tak jde pod nulu.
  */
 export function calculateCashFlowComposition(
   periods: BudgetPeriodInfo[],
-  forecast: ForecastResult,
-  accounts: Account[]
+  forecast: ForecastResult
 ): CashFlowCompositionPoint[] {
-  const defaultAccount = getDefaultAccount(accounts);
-
   return periods.map((p) => {
-    const summary = getAccountPeriodSummary(forecast, p.key);
-    const bal = defaultAccount ? summary?.accountBalances[defaultAccount.id] : undefined;
+    const totals = forecast.getPeriod(p.key)?.defaultAccount;
 
-    const incomeInHaler = bal?.incomeInHaler ?? 0;
-    const expenseInHaler = bal?.expenseInHaler ?? 0;
-    const correctionsInHaler = bal?.correctionsInHaler ?? 0;
-    const actuallySavedInHaler = addHaler(subHaler(incomeInHaler, expenseInHaler), correctionsInHaler);
+    const incomeInHaler = totals?.incomeInHaler ?? 0;
+    const expenseInHaler = totals?.expenseInHaler ?? 0;
+    const actuallySavedInHaler = totals?.actuallySavedInHaler ?? 0;
 
     const base = sumAbsoluteHaler([incomeInHaler, expenseInHaler, actuallySavedInHaler]);
 
@@ -382,7 +376,7 @@ export function calculatePortfolioComposition(
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
     const projected =
-      forecast && p.endDate >= todayStr ? getAccountPeriodSummary(forecast, p.key) : undefined;
+      forecast && p.endDate >= todayStr ? forecast.getPeriod(p.key)?.projected : undefined;
 
     const rawSegments = eligibleAccounts.map((acc) => {
       const balanceInHaler =

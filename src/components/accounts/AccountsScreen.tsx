@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Account, AccountType } from '../../types/finance';
-import { getAccountPeriodSummary } from '../../services/accountSummaryService';
 import { formatCurrency, formatPercent, subHaler } from '../../services/currencyService';
 import { formatCzechDate } from '../../services/periodService';
 import { AccountModal } from './AccountModal';
@@ -68,7 +67,7 @@ export const AccountsScreen: React.FC = () => {
     .filter(a => showArchived ? true : a.status === 'active')
     .filter(a => typeFilters.length === 0 || typeFilters.includes(a.type));
 
-  const currentSummary = getAccountPeriodSummary(forecast, selectedPeriod.key);
+  const currentSummary = forecast.getPeriod(selectedPeriod.key)?.projected;
 
   const resetDragState = () => {
     setDragHandleAccountId(null);

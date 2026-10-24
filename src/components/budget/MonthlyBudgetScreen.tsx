@@ -2,19 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import {
-  getDefaultAccountPeriodTotals,
-  getOverdraftLimitInHaler,
-  getSourceAccountBalanceByTxId,
-  groupDaysWithRunningBalance,
-} from '../../services/budgetBalances';
+import { getSourceAccountBalanceByTxId, groupDaysWithRunningBalance } from '../../services/budgetBalances';
 import { calculatePeriodInvestmentChange } from '../../services/investmentPerformanceService';
-import { calculateDefaultAccountKpis } from '../../services/budgetKpiService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
 import { useItemFilters } from '../../hooks/useItemFilters';
 import { getCorrectionDiffInHaler } from '../../services/itemFilter';
 import { parseVirtualId } from '../../services/transactionCommands';
-import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
+import { DefaultAccountPeriod, MovementType, Transaction, TransactionStatus } from '../../types/finance';
 import { 
   Plus, 
   Copy, 
@@ -38,8 +32,7 @@ import {
   X,
   type LucideIcon
 } from 'lucide-react';
-import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
-import { getAccountPeriodSummary } from '../../services/accountSummaryService';
+import { getEffectiveTransactionsForPeriod, getOverdraftLimitInHaler } from '../../services/financialEngine';
 import { DeleteTransactionModal } from '../transactions/DeleteTransactionModal';
 import { ReorderScopeDialog } from '../transactions/ReorderScopeDialog';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
@@ -179,27 +172,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     />
   );
 
-  // Souhrn pro vybranou periodu z forecastu
-  const currentSummary = useMemo(() => {
-    return getAccountPeriodSummary(forecast, selectedPeriod.key) || {
-      period: selectedPeriod,
-      openingBalanceInHaler: 0,
-      incomeInHaler: 0,
-      expenseInHaler: 0,
-      transfersInHaler: 0,
-      correctionsInHaler: 0,
-      netChangeInHaler: 0,
-      closingBalanceInHaler: 0,
-      usableOpeningInHaler: 0,
-      usableClosingInHaler: 0,
-      usableNetChangeInHaler: 0,
-      netWorthOpeningInHaler: 0,
-      netWorthClosingInHaler: 0,
-      isNegativeBalance: false,
-      minUsableBalanceInHaler: 0,
-      accountBalances: {},
-    };
-  }, [forecast, selectedPeriod.key]);
+  // Pohled na vybrané období z forecastu (souhrny a výchozí účet)
+  const periodView = useMemo(() => forecast.getPeriod(selectedPeriod.key), [forecast, selectedPeriod.key]);
 
   const formatPercent = (value: number | null) => value === null
     ? '—'
@@ -225,26 +199,27 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     return getDefaultAccount(accounts);
   }, [accounts]);
 
-  // KPI dlaždice počítané z výchozího účtu; Změna investic zůstává za všechny investiční účty
-  const aggregateSummary = useMemo(() => {
-    const kpis = calculateDefaultAccountKpis(
-      defaultAccount,
-      accounts,
-      defaultAccount ? currentSummary.accountBalances[defaultAccount.id] : undefined,
-      allPeriodTransactions
-    );
+  // Dlaždice a KPI výchozího účtu; mimo sekvenci forecastu nulové
+  const overdraftLimitInHaler = getOverdraftLimitInHaler(settings);
+  const defaultTotals: DefaultAccountPeriod = periodView?.defaultAccount ?? {
+    openingInHaler: 0, incomeInHaler: 0, expenseInHaler: 0, netTransfersInHaler: 0, netChangeInHaler: 0,
+    closingInHaler: 0, withOverdraftInHaler: overdraftLimitInHaler, isOverdraftExceeded: overdraftLimitInHaler < 0,
+    actuallySavedInHaler: 0, actuallySavedPct: null, savedInHaler: 0, savedPct: null, investedInHaler: 0, investedPct: null,
+  };
 
+  // Změna investic zůstává za všechny investiční účty
+  const aggregateSummary = useMemo(() => {
     const investmentChange = calculatePeriodInvestmentChange(
       accounts, marketValueSnapshots, selectedPeriod, settings.budgetStartDay, undefined, transactions
     );
 
     return {
-      usableClosingInHaler: currentSummary.usableClosingInHaler,
-      netWorthClosingInHaler: currentSummary.netWorthClosingInHaler,
-      ...kpis,
+      usableClosingInHaler: periodView?.projected.usableClosingInHaler ?? 0,
+      netWorthClosingInHaler: periodView?.projected.netWorthClosingInHaler ?? 0,
+      ...defaultTotals,
       investmentChange,
     };
-  }, [defaultAccount, accounts, currentSummary, allPeriodTransactions, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
+  }, [accounts, periodView, defaultTotals, marketValueSnapshots, transactions, selectedPeriod, settings.budgetStartDay]);
 
   // Filtry seznamu položek v rámci období (sdílené se sekcí Všechny položky, viz useItemFilters)
   const itemFilters = useItemFilters(allPeriodTransactions, accounts, categories);
@@ -326,16 +301,16 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
   };
 
   const dayGroups = useMemo(
-    () => groupDaysWithRunningBalance(periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds),
-    [periodTransactions, currentSummary.usableOpeningInHaler, usableAccountIds]
+    () => groupDaysWithRunningBalance(periodTransactions, periodView, usableAccountIds),
+    [periodTransactions, periodView, usableAccountIds]
   );
 
   // Zůstatek zdrojového účtu po každé položce (z nefiltrovaných položek období, aby filtr neovlivnil výsledek);
-  // počáteční stavy z historického souhrnu období, bez projekce investic
-  const sourceAccountBalanceByTxId = useMemo(() => {
-    const balances = (forecast.periods.find(p => p.period.key === selectedPeriod.key) ?? currentSummary).accountBalances;
-    return getSourceAccountBalanceByTxId(allPeriodTransactions, balances);
-  }, [allPeriodTransactions, forecast.periods, currentSummary, selectedPeriod.key]);
+  // počáteční stavy ze záznamu období, bez projekce investic
+  const sourceAccountBalanceByTxId = useMemo(
+    () => getSourceAccountBalanceByTxId(allPeriodTransactions, periodView),
+    [allPeriodTransactions, periodView]
+  );
 
   // Drag-and-drop obsluha
   const handleDragStart = (e: React.DragEvent, txId: string) => {
@@ -406,11 +381,6 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     defaultAccount?.id
   ), [selectedPeriod, transactions, recurringRules, recurringExceptions, categories, accounts, settings.budgetStartDay, defaultAccount]);
 
-  const defaultAccountBalance = useMemo(() => {
-    if (!defaultAccount) return null;
-    return currentSummary.accountBalances[defaultAccount.id] || null;
-  }, [defaultAccount, currentSummary]);
-
   const {
     openingInHaler: defaultOpeningBalance,
     incomeInHaler: defaultIncomeBalance,
@@ -420,7 +390,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     closingInHaler: defaultClosingBalance,
     withOverdraftInHaler: defaultWithOverdraft,
     isOverdraftExceeded,
-  } = getDefaultAccountPeriodTotals(defaultAccount, defaultAccountBalance, selectedPeriod, getOverdraftLimitInHaler(settings));
+  } = defaultTotals;
 
   // Části řádku seznamu sdílí tabulka (od lg) i řádky-karty na mobilu, stejně jako ve Všech položkách
   const getListRowParts = (
