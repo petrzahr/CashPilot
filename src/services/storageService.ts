@@ -221,6 +221,24 @@ export function loadStoredDataResult(targetKey?: string): LoadDataResult {
 }
 
 /**
+ * Uloží kopii poškozeného raw obsahu pod recovery klíč a vrátí ho. Stejný obsah se
+ * při opakovaných pokusech neukládá znovu. Vrací undefined, když se kopii uložit nepodařilo.
+ */
+export function saveCorruptedRecoveryCopy(raw: string): string | undefined {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const existing = localStorage.key(i);
+      if (existing?.startsWith(RECOVERY_KEY_PREFIX) && localStorage.getItem(existing) === raw) return existing;
+    }
+    const recoveryKey = `${RECOVERY_KEY_PREFIX}${Date.now()}`;
+    localStorage.setItem(recoveryKey, raw);
+    return recoveryKey;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Export poškozeného raw obsahu úložiště do textového/JSON souboru pro kontrolu uživatelem
  */
 export function exportCorruptedRawData(rawContent: string): void {

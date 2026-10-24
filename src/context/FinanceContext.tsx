@@ -17,7 +17,6 @@ import {
 import {
   AppData,
   getInitialData,
-  loadStoredDataResult,
   exportBackupJSON,
   validateAndParseBackup,
   exportTransactionsCSV,
@@ -306,8 +305,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       latestDataRef.current = shared;
       publishData(shared);
       setLoadState('ready');
+      setLoadErrorDetails(null);
     },
     onNoSession: () => setLoadState('ready'),
+    onLoadError: (details) => {
+      setLoadState('loadError');
+      setLoadErrorDetails(details);
+    },
     onDisconnected: () => {
       const fresh = getInitialData();
       latestDataRef.current = fresh;
@@ -1158,21 +1162,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast('Aplikace začíná s prázdnými daty.');
   }, [saveData, showToast]);
 
+  // Znovu založí relaci: obálku účtu načte SyncController, výsledek přijde přes onData nebo onLoadError
+  const retrySession = session.syncWithGoogleDrive;
   const retryLoadData = useCallback(() => {
-    const res = loadStoredDataResult();
-    if (res.status === 'loadError') {
-      setLoadState('loadError');
-      setLoadErrorDetails({
-        message: res.error || 'Chyba při načítání dat.',
-        recoveryKey: res.recoveryKey,
-        corruptedRaw: res.corruptedRaw
-      });
-    } else {
-      setData(res.data);
-      setLoadState('ready');
-      setLoadErrorDetails(null);
-    }
-  }, []);
+    void retrySession();
+  }, [retrySession]);
 
   const exportJSON = useCallback(() => {
     exportBackupJSON(data);

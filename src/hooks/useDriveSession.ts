@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { accountStorageKey } from '../services/syncModel';
 import { SyncController, type SyncStatus } from '../services/syncController';
-import { AppData, STORAGE_KEY_PRODUCTION, setActiveStorageKey } from '../services/storageService';
+import { AppData, STORAGE_KEY_PRODUCTION, saveCorruptedRecoveryCopy, setActiveStorageKey } from '../services/storageService';
 import {
   GoogleUser,
   fetchGoogleUserProfile,
@@ -33,6 +33,8 @@ export interface DriveSessionOptions {
   onNoSession: () => void;
   /** Po odpojení Google Disku se zobrazí prázdná lokální data. */
   onDisconnected: () => void;
+  /** Lokální obálku účtu nelze načíst; zůstala beze změny a její kopie je pod recoveryKey. */
+  onLoadError: (details: { message: string; recoveryKey?: string; corruptedRaw?: string }) => void;
   /** Aktuální data pro ruční zálohu. */
   getData: () => AppData;
   showToast: ToastFn;
@@ -88,14 +90,29 @@ export function useDriveSession(options: DriveSessionOptions) {
       setDriveUser(user);
       setIsDriveConnected(true);
       setLastDriveBackupTime(getLastDriveBackupAt(user.permissionId));
-      const controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
-        if (generation !== authGeneration.current) return;
-        callbacks.current.onData(next);
-        setDriveSyncStatus(status);
-        setIsCloudReady(ready);
-        setDriveError(error || null);
-        if (status === 'synced') setLastDriveSyncTime(new Date());
-      });
+      let controller: SyncController;
+      try {
+        controller = new SyncController(user.permissionId, () => getValidAccessToken() === token ? token : null, (next, status, ready, error) => {
+          if (generation !== authGeneration.current) return;
+          callbacks.current.onData(next);
+          setDriveSyncStatus(status);
+          setIsCloudReady(ready);
+          setDriveError(error || null);
+          if (status === 'synced') setLastDriveSyncTime(new Date());
+        });
+      } catch (error) {
+        // Poškozená lokální obálka není chyba synchronizace: obálka zůstane beze změny a nabídne se obnova
+        const corruptedRaw = localStorage.getItem(accountStorageKey(user.permissionId)) ?? undefined;
+        const message = `Data uložená v tomto prohlížeči se nepodařilo bezpečně načíst (${(error as Error).message}). Původní data nebyla přepsána.`;
+        setDriveSyncStatus('error');
+        setDriveError(message);
+        callbacks.current.onLoadError({
+          message,
+          recoveryKey: corruptedRaw === undefined ? undefined : saveCorruptedRecoveryCopy(corruptedRaw),
+          corruptedRaw,
+        });
+        return;
+      }
       controllerRef.current = controller;
       await controller.sync();
       if (generation !== authGeneration.current) return;

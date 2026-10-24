@@ -60,6 +60,7 @@ function callbacks() {
     onData: vi.fn(),
     onNoSession: vi.fn(),
     onDisconnected: vi.fn(),
+    onLoadError: vi.fn(),
     getData: vi.fn(() => cloudData),
     showToast: vi.fn(),
   };
