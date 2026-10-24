@@ -75,6 +75,13 @@ export function updateAccount(
 
   const isDefault = Boolean(acc.isDefault);
   const updated: Account = { ...acc, isDefault, updatedAt: ctx.nowIso };
+  // Older clients copied the initial balance into an undated market value on create; drop that copy so it does not go stale
+  const before = data.accounts.find(a => a.id === acc.id);
+  if (before && !acc.marketValueUpdatedAt && acc.currentMarketValueInHaler !== undefined &&
+    acc.currentMarketValueInHaler === before.initialBalanceInHaler &&
+    acc.initialBalanceInHaler !== before.initialBalanceInHaler) {
+    updated.currentMarketValueInHaler = undefined;
+  }
   return {
     data: {
       ...data,

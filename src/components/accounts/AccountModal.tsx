@@ -116,7 +116,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         color,
         sortOrder: accounts.length + 1,
         status: 'active',
-        currentMarketValueInHaler: type === 'investment' ? initialBalanceInHaler : undefined,
       });
     }
 

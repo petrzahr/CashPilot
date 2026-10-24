@@ -21,6 +21,7 @@ import {
   updateCorrectionNote,
 } from '../services/accountCommands';
 import { createCommandContext } from '../services/transactionCommands';
+import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { Account, BalanceCorrection, InvestmentFee, MarketValueSnapshot, RecurringRule, Transaction } from '../types/finance';
 
 const ctx = createCommandContext('2026-09-20', new Date('2026-09-20T12:00:00Z'));
@@ -49,6 +50,25 @@ describe('účty', () => {
     const { data, outcome } = addAccount(dataWith({}), { ...acc({}), name: 'Nový', isDefault: true, sortOrder: 99 }, ctx);
     expect(outcome.account).toMatchObject({ name: 'Nový', isDefault: true, sortOrder: 3 });
     expect(data.accounts.filter(a => a.isDefault).map(a => a.id)).toEqual([outcome.account.id]);
+  });
+
+  it('úprava počátečního zůstatku investice bez ocenění se promítne do zůstatku účtu', () => {
+    // AccountModal creates an investment with currentMarketValueInHaler = initial balance and no date
+    const created = addAccount(dataWith({}), { ...investment, currentMarketValueInHaler: 100000 }, ctx);
+    const edited = updateAccount(created.data, { ...created.outcome.account, initialBalanceInHaler: 250000 }, ctx);
+    const account = edited.data.accounts.find(a => a.id === created.outcome.account.id)!;
+    expect(getAccountBalanceAtDate(account, '2026-09-20', { transactions: [], snapshots: [] })).toBe(250000);
+    expect(account.currentMarketValueInHaler).toBeUndefined();
+  });
+
+  it('úprava počátečního zůstatku nemaže skutečné ocenění investice', () => {
+    const dated = { ...investment, currentMarketValueInHaler: 100000, marketValueUpdatedAt: '2026-09-01' };
+    const undatedOther = { ...investment, id: 'inv2', currentMarketValueInHaler: 300000 };
+    const data = dataWith({ accounts: [checking, dated, undatedOther] });
+    const a = updateAccount(data, { ...dated, initialBalanceInHaler: 250000 }, ctx);
+    const b = updateAccount(data, { ...undatedOther, initialBalanceInHaler: 250000 }, ctx);
+    expect(a.data.accounts[1]).toMatchObject({ currentMarketValueInHaler: 100000, marketValueUpdatedAt: '2026-09-01' });
+    expect(b.data.accounts[2].currentMarketValueInHaler).toBe(300000);
   });
 
   it('počáteční zůstatek nesmí začínat po prvním pohybu účtu', () => {
