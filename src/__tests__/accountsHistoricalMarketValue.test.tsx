@@ -6,7 +6,7 @@ import { AccountsScreen } from '../components/accounts/AccountsScreen';
 import { Account } from '../types/finance';
 import { AppData, getInitialData } from '../services/storageService';
 import { SyncController } from '../services/syncController';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { getPeriodForDate } from '../services/periodService';
 import { formatCurrency, formatPercent } from '../services/currencyService';
@@ -49,7 +49,7 @@ it.each(['investment', 'pension'] as const)('%s cards retain historical values a
     const before = JSON.stringify(data);
     bridge.finance = {
       ...bridge.finance!, selectedPeriod: periods[index],
-      forecast: calculateForecast(periods, data.accounts, [], [], [], [], undefined, data.marketValueSnapshots),
+      forecast: summarizePeriods(periods, { accounts: data.accounts, marketValueSnapshots: data.marketValueSnapshots }),
     };
     const html = renderToStaticMarkup(<AccountsScreen />);
     const balances = [...html.matchAll(/class="text-xl font-extrabold truncate [^"]*">([^<]+)<\/div>/g)]

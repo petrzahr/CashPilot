@@ -1,22 +1,34 @@
 import {
   Account,
-  AppSettings,
   BalanceCorrection,
   BudgetPeriod,
   ForecastResult,
+  PeriodRangeScreen,
   PeriodSummary,
   AccountPeriodBalance,
   RecurringException,
   RecurringRule,
   Transaction,
   MarketValueSnapshot,
-  InvestmentFee
 } from '../types/finance';
+import type { AppData } from './storageService';
 import { addHaler, subHaler } from './currencyService';
 import { getAccountBalanceAtDate } from './accountBalance';
 import { getFeesUpToPeriod, getInvestedAmountAtValuation } from './investmentPerformanceService';
 import { getAccountFlowInHaler, getEffectiveAmountInHaler } from './accountScope';
-import { getPeriodForDate, getPreviousDay, isDateInPeriod, getDaysInMonth, getTodayInPrague } from './periodService';
+import { DualPeriodRange, resolvePeriodRange } from './periodRange';
+import {
+  createBudgetPeriod,
+  generatePeriodsBetween,
+  generatePeriodsSequence,
+  getDaysInMonth,
+  getOverviewPeriods,
+  getPeriodForDate,
+  getPreviousDay,
+  getTodayInPrague,
+  isDateInPeriod,
+  normalizeStartDay,
+} from './periodService';
 import { sortTransactionsByDateAndSequence } from './sequenceService';
 
 /**
@@ -352,32 +364,104 @@ export function groupTransactionsByPeriod(
   return groups;
 }
 
-export function calculateForecast(
+/** The parts of the stored data the forecast reads. */
+export type ForecastData = Pick<
+  AppData,
+  'accounts' | 'transactions' | 'recurringRules' | 'recurringExceptions' | 'corrections' | 'settings' | 'marketValueSnapshots' | 'investmentFees'
+>;
+
+/** Period ranges chosen on the Overview and Analytics screens; the forecast always covers them. */
+export type ForecastRanges = Partial<Record<PeriodRangeScreen, DualPeriodRange>>;
+
+export interface ForecastOptions {
+  today: string;
+  selectedPeriod?: BudgetPeriod;
+  ranges?: ForecastRanges;
+}
+
+/** Past preset and future horizon the forecast covers even without data, counted in periods incl. the current one. */
+const FORECAST_PAST_PERIODS = 12;
+const FORECAST_HORIZON_PERIODS = 12;
+
+/**
+ * Souvislá sekvence období, nad kterou se počítá předpověď. Pokrývá:
+ * - 12 období zpět a 12 období dopředu od aktuálního (včetně něj),
+ * - rozsah dat (nejstarší záznam; nejpozdější položka, korekce nebo ocenění),
+ * - rozsahy zvolené na obrazovkách Majetek a Analýza,
+ * - vybrané období.
+ */
+export function buildForecastPeriods(data: ForecastData, options: ForecastOptions): BudgetPeriod[] {
+  const startDay = normalizeStartDay(data.settings?.budgetStartDay);
+  const current = getPeriodForDate(options.today, startDay);
+
+  let earliest = getOverviewPeriods(current, { direction: 'past', months: FORECAST_PAST_PERIODS }, startDay)[0];
+  let latest = generatePeriodsSequence(current.year, current.month, FORECAST_HORIZON_PERIODS, startDay)[FORECAST_HORIZON_PERIODS - 1];
+  const extendTo = (period: BudgetPeriod) => {
+    if (period.startDate < earliest.startDate) earliest = period;
+    if (period.startDate > latest.startDate) latest = period;
+  };
+
+  const rangeData = {
+    accounts: data.accounts,
+    transactions: data.transactions,
+    corrections: data.corrections,
+    snapshots: data.marketValueSnapshots,
+  };
+  for (const range of Object.values(options.ranges ?? {})) {
+    if (!range) continue;
+    const periods = resolvePeriodRange(range, { current, startDay, data: rangeData });
+    if (periods.length === 0) continue;
+    extendTo(periods[0]);
+    extendTo(periods[periods.length - 1]);
+  }
+
+  // Období na sebe navazují, takže pozdější datum nikdy nepatří do dřívějšího období. Stačí proto
+  // najít nejmenší a největší datum a období spočítat jen pro ně (ne pro každou položku zvlášť).
+  const dates: { min: string | null; max: string | null } = { min: null, max: null };
+  const consider = (date: string | undefined, extendsEnd: boolean) => {
+    if (!date) return;
+    if (dates.min === null || date < dates.min) dates.min = date;
+    if (extendsEnd && (dates.max === null || date > dates.max)) dates.max = date;
+  };
+  for (const tx of data.transactions || []) consider(tx.date, true);
+  for (const c of data.corrections || []) consider(c.checkDate, true);
+  for (const s of data.marketValueSnapshots || []) consider(s.date, true);
+  for (const r of data.recurringRules || []) consider(r.startDate, false);
+  for (const a of data.accounts || []) consider(a.initialBalanceDate, false);
+  if (dates.min !== null) extendTo(getPeriodForDate(dates.min, startDay));
+  if (dates.max !== null) extendTo(getPeriodForDate(dates.max, startDay));
+
+  if (options.selectedPeriod) {
+    extendTo(createBudgetPeriod(options.selectedPeriod.year, options.selectedPeriod.month, startDay));
+  }
+
+  return generatePeriodsBetween(earliest, latest);
+}
+
+/**
+ * Předpověď nad vlastní sekvencí období (viz buildForecastPeriods): souhrny všech období
+ * a od aktuálního období dál projekce s investičními účty ukotvenými k dnešní tržní hodnotě.
+ */
+export function calculateForecast(data: ForecastData, options: ForecastOptions): ForecastResult {
+  const periods = buildForecastPeriods(data, options);
+  const currentPeriodKey = getPeriodForDate(options.today, normalizeStartDay(data.settings?.budgetStartDay)).key;
+  return summarizePeriods(periods, data, { today: options.today, currentPeriodKey });
+}
+
+/** Souhrny pro zadanou sekvenci období. Aplikace volá calculateForecast; přímo jen testy výpočtu. */
+export function summarizePeriods(
   periods: BudgetPeriod[],
-  accounts: Account[],
-  transactions: Transaction[] = [],
-  recurringRules: RecurringRule[] = [],
-  recurringExceptions: RecurringException[] = [],
-  corrections: BalanceCorrection[] = [],
-  settings: AppSettings = {
-    currency: 'CZK',
-    budgetStartDay: 15,
-    overdraftLimitInHaler: 2000000,
-    minReserveInHaler: 2000000,
-    roundAmounts: false
-  },
-  marketValueSnapshots: MarketValueSnapshot[] = [],
-  currentPeriodKey?: string,
-  todayStr?: string,
-  investmentFees: InvestmentFee[] = []
+  data: Partial<Omit<ForecastData, 'settings'>>,
+  options: { today?: string; currentPeriodKey?: string } = {}
 ): ForecastResult {
-  const safeFees = Array.isArray(investmentFees) ? investmentFees : [];
-  const safeAccounts = Array.isArray(accounts) ? accounts : [];
-  const safeTxs = Array.isArray(transactions) ? transactions : [];
-  const safeRules = Array.isArray(recurringRules) ? recurringRules : [];
-  const safeExceptions = Array.isArray(recurringExceptions) ? recurringExceptions : [];
-  const safeCorrections = Array.isArray(corrections) ? corrections : [];
-  const safeSnapshots = Array.isArray(marketValueSnapshots) ? marketValueSnapshots : [];
+  const { currentPeriodKey, today: todayStr } = options;
+  const safeFees = Array.isArray(data.investmentFees) ? data.investmentFees : [];
+  const safeAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+  const safeTxs = Array.isArray(data.transactions) ? data.transactions : [];
+  const safeRules = Array.isArray(data.recurringRules) ? data.recurringRules : [];
+  const safeExceptions = Array.isArray(data.recurringExceptions) ? data.recurringExceptions : [];
+  const safeCorrections = Array.isArray(data.corrections) ? data.corrections : [];
+  const safeSnapshots = Array.isArray(data.marketValueSnapshots) ? data.marketValueSnapshots : [];
 
   const periodSummaries: PeriodSummary[] = [];
 
@@ -700,7 +784,8 @@ export function calculateForecast(
       year: 2026,
       month: 9,
       startDate: '2026-09-15',
-      endDate: '2026-10-14'
+      endDate: '2026-10-14',
+      startDay: 15
     };
   }
 

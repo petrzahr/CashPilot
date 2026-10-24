@@ -3,7 +3,7 @@ import { Account, Category, Transaction, MovementType } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
 import { AppData, getInitialData } from '../services/storageService';
 import { loadStoredData, saveStoredData } from './testStorageHelpers';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 
 describe('CashPilot - Správa výchozího účtu a formulář Nová finanční položka', () => {
@@ -362,15 +362,9 @@ describe('CashPilot - Správa výchozího účtu a formulář Nová finanční p
   it('20. Výpočet forecastu a finančních statistik zůstává identický a nenarušený', () => {
     const initial = getInitialData();
     const periods = generatePeriodsSequence(2026, 9, 3, 15);
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      initial.accounts,
-      initial.transactions,
-      initial.recurringRules,
-      initial.recurringExceptions,
-      initial.corrections,
-      initial.settings,
-      initial.marketValueSnapshots
+      { accounts: initial.accounts, transactions: initial.transactions, recurringRules: initial.recurringRules, recurringExceptions: initial.recurringExceptions, corrections: initial.corrections, marketValueSnapshots: initial.marketValueSnapshots }
     );
 
     expect(forecast.periods.length).toBeGreaterThan(0);

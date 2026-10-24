@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, Transaction, RecurringRule } from '../types/finance';
-import { calculateForecast, generateOccurrenceForPeriod } from '../services/financialEngine';
+import { summarizePeriods, generateOccurrenceForPeriod } from '../services/financialEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { createBudgetPeriod } from '../services/periodService';
 import { addTransaction, createCommandContext } from '../services/transactionCommands';
@@ -45,14 +45,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     };
 
     const periods = [periodMarch2026, periodApril2026];
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [futureAccount],
-      [],
-      [],
-      [],
-      [],
-      defaultSettings
+      { accounts: [futureAccount] }
     );
 
     const marchResult = forecast.periods[0];
@@ -107,14 +102,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     expect(balanceAt('acc_mid', '2026-04-14', 1, [], [], [midPeriodAccount])).toBe(5000000);
 
     // Ve forecastu období:
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [customPeriod],
-      [midPeriodAccount],
-      [],
-      [],
-      [],
-      [],
-      { ...defaultSettings, budgetStartDay: 15 }
+      { accounts: [midPeriodAccount] }
     );
 
     const res = forecast.periods[0];
@@ -145,14 +135,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
       updatedAt: '2026-03-15T00:00:00Z',
     };
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [customPeriod],
-      [dayOneAccount],
-      [],
-      [],
-      [],
-      [],
-      { ...defaultSettings, budgetStartDay: 15 }
+      { accounts: [dayOneAccount] }
     );
 
     const res = forecast.periods[0];
@@ -216,14 +201,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     const pFeb = createBudgetPeriod(2026, 2, 1);
     const pMar = createBudgetPeriod(2026, 3, 1);
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [pJan, pFeb, pMar],
-      [pastAccount],
-      [txJan, txFeb],
-      [],
-      [],
-      [],
-      defaultSettings
+      { accounts: [pastAccount], transactions: [txJan, txFeb] }
     );
 
     const rJan = forecast.periods[0];
@@ -455,14 +435,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
       updatedAt: '2026-04-01T00:00:00Z',
     };
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [periodApril2026],
-      [acc],
-      [],
-      [],
-      [],
-      [],
-      defaultSettings
+      { accounts: [acc] }
     );
 
     const apr = forecast.periods[0];
@@ -583,14 +558,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
       updatedAt: '2026-05-01T00:00:00Z',
     };
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [periodMarch2026, periodApril2026, periodMay2026],
-      [accOld, accMid, accNew],
-      [],
-      [],
-      [],
-      [],
-      defaultSettings
+      { accounts: [accOld, accMid, accNew] }
     );
 
     // V březnu existuje jen starý účet: 100 000 Kč
@@ -643,14 +613,9 @@ describe('CashPilot - Testy data počátečního stavu účtu (16 scénářů dl
     // K datu aktivace (2026-04-01) je zůstatek 200 000 Kč
     expect(balanceAt('acc_pension', '2026-04-01', 1, [], [], [pensionAccount])).toBe(20000000);
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       [periodMarch2026, periodApril2026],
-      [pensionAccount],
-      [],
-      [],
-      [],
-      [],
-      defaultSettings
+      { accounts: [pensionAccount] }
     );
 
     // Březen (před aktivací): hodnota 0 Kč

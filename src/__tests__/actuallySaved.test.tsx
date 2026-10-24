@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { MonthlyBudgetScreen } from '../components/budget/MonthlyBudgetScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { calculateDefaultAccountKpis } from '../services/budgetKpiService';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
@@ -42,7 +42,7 @@ describe('KPI dlaždice z výchozího účtu (calculateDefaultAccountKpis)', () 
   const accounts = [checking, checking2, cash, savings, investment, pension, other];
 
   const kpis = (txs: Transaction[], defaultAccount: Account | null = checking) => {
-    const forecast = calculateForecast([period], accounts, txs, [], [], [], DEFAULT_SETTINGS);
+    const forecast = summarizePeriods([period], { accounts, transactions: txs });
     const balance = defaultAccount ? forecast.periods[0].accountBalances[defaultAccount.id] : undefined;
     return calculateDefaultAccountKpis(defaultAccount ?? undefined, accounts, balance, txs);
   };
@@ -123,7 +123,7 @@ describe('MonthlyBudgetScreen — nové rozvržení karet', () => {
   const accounts = [checking, savings];
 
   const renderScreen = (txs: Transaction[]) => {
-    const forecast = calculateForecast([period], accounts, txs, [], [], [], DEFAULT_SETTINGS, [], period.key, '2026-10-01');
+    const forecast = summarizePeriods([period], { accounts, transactions: txs }, { currentPeriodKey: period.key, today: '2026-10-01' });
     vi.mocked(useFinance).mockReturnValue({
       selectedPeriod: period, forecast, settings: DEFAULT_SETTINGS, accounts, categories: [],
       transactions: txs, recurringRules: [], recurringExceptions: [], marketValueSnapshots: [],

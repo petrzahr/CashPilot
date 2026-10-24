@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  calculateForecast,
+  summarizePeriods,
   generateOccurrenceForPeriod,
   getEffectiveTransactionsForPeriod
 } from '../services/financialEngine';
@@ -355,14 +355,9 @@ describe('CashPilot - Testy pořadí výskytů opakovaných plateb (Požadavek 1
       updatedAt: '2026-09-01T11:00:00.000Z',
     };
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [checkingAccount],
-      [],
-      [salaryRule, rentRule],
-      [],
-      [],
-      defaultSettings
+      { accounts: [checkingAccount], recurringRules: [salaryRule, rentRule] }
     );
 
     expect(forecast.periods.length).toBe(3);

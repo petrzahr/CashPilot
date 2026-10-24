@@ -53,7 +53,7 @@ export function autoExecuteDueTransactions(
   transactions: Transaction[] = [],
   rules: RecurringRule[] = [],
   exceptions: RecurringException[] = [],
-  budgetStartDay: number = 15,
+  budgetStartDay: number,
   todayStr?: string
 ): AutoExecuteResult {
   const today = todayStr || getTodayInPrague();

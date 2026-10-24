@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, Transaction, BalanceCorrection, MarketValueSnapshot } from '../types/finance';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import {
   createBudgetPeriod,
   getPeriodForDate,
@@ -76,7 +76,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     const periods = getPeriods(2026, 7, 4, 1);
     const txBefore: Transaction[] = [];
 
-    const resBefore = calculateForecast(periods, [checkingAccount], txBefore, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txBefore }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJulBefore = resBefore.periods.find(p => p.period.key === '2026-07')!;
     const pAugBefore = resBefore.periods.find(p => p.period.key === '2026-08')!;
     const pSepBefore = resBefore.periods.find(p => p.period.key === '2026-09')!;
@@ -100,7 +100,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const resAfter = calculateForecast(periods, [checkingAccount], [newTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [newTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJulAfter = resAfter.periods.find(p => p.period.key === '2026-07')!;
     const pAugAfter = resAfter.periods.find(p => p.period.key === '2026-08')!;
     const pSepAfter = resAfter.periods.find(p => p.period.key === '2026-09')!;
@@ -132,7 +132,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAccount], [expenseTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [expenseTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJul = res.periods.find(p => p.period.key === '2026-07')!;
     const pAug = res.periods.find(p => p.period.key === '2026-08')!;
     const pSep = res.periods.find(p => p.period.key === '2026-09')!;
@@ -162,7 +162,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
 
     // Vytvoříme sekvenci od 2024-01 do 2026-12 (36 měsíců)
     const periods = getPeriods(2024, 1, 36, 1);
-    const res = calculateForecast(periods, [checkingAccount], [oldTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [oldTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
     expect(res.periods.length).toBe(36);
     // Ověření prvního období 2024-01
@@ -199,7 +199,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const resV1 = calculateForecast(periods, [checkingAccount], [txV1], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resV1 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [txV1] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pSepV1 = resV1.periods.find(p => p.period.key === '2026-09')!;
     expect(pSepV1.openingBalanceInHaler).toBe(9000000);
 
@@ -210,7 +210,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       actualAmountInHaler: 1500000,
     };
 
-    const resV2 = calculateForecast(periods, [checkingAccount], [txV2], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resV2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [txV2] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJunV2 = resV2.periods.find(p => p.period.key === '2026-06')!;
     const pSepV2 = resV2.periods.find(p => p.period.key === '2026-09')!;
 
@@ -235,7 +235,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const resIncome = calculateForecast(periods, [checkingAccount], [incomeTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resIncome = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [incomeTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(resIncome.periods.find(p => p.period.key === '2026-09')!.openingBalanceInHaler).toBe(12000000);
 
     // Změna typu na výdaj
@@ -244,7 +244,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       type: 'expense',
     };
 
-    const resExpense = calculateForecast(periods, [checkingAccount], [expenseTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resExpense = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [expenseTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJun = resExpense.periods.find(p => p.period.key === '2026-06')!;
     const pSep = resExpense.periods.find(p => p.period.key === '2026-09')!;
 
@@ -270,7 +270,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res1 = calculateForecast(periods, [checkingAccount], [txInJune], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res1 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [txInJune] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(res1.periods.find(p => p.period.key === '2026-06')!.expenseInHaler).toBe(1000000);
     expect(res1.periods.find(p => p.period.key === '2026-07')!.expenseInHaler).toBe(0);
     expect(res1.periods.find(p => p.period.key === '2026-07')!.openingBalanceInHaler).toBe(9000000);
@@ -281,7 +281,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       date: '2026-07-05',
     };
 
-    const res2 = calculateForecast(periods, [checkingAccount], [txInJuly], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [txInJuly] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJun2 = res2.periods.find(p => p.period.key === '2026-06')!;
     const pJul2 = res2.periods.find(p => p.period.key === '2026-07')!;
 
@@ -320,11 +320,11 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const resWithBoth = calculateForecast(periods, [checkingAccount], [tx1, tx2], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resWithBoth = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [tx1, tx2] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(resWithBoth.periods.find(p => p.period.key === '2026-06')!.closingBalanceInHaler).toBe(13500000);
 
     // Smazání tx2
-    const resAfterDelete = calculateForecast(periods, [checkingAccount], [tx1], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resAfterDelete = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [tx1] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJun = resAfterDelete.periods.find(p => p.period.key === '2026-06')!;
     const pSep = resAfterDelete.periods.find(p => p.period.key === '2026-09')!;
 
@@ -350,7 +350,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     };
 
     // Stav se zrušenou položkou -> nezapočítává se
-    const resCancelled = calculateForecast(periods, [checkingAccount], [tx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resCancelled = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [tx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(resCancelled.periods.find(p => p.period.key === '2026-06')!.expenseInHaler).toBe(0);
     expect(resCancelled.periods.find(p => p.period.key === '2026-06')!.closingBalanceInHaler).toBe(10000000);
 
@@ -360,7 +360,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       status: 'executed',
     };
 
-    const resRestored = calculateForecast(periods, [checkingAccount], [txRestored], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resRestored = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [txRestored] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(resRestored.periods.find(p => p.period.key === '2026-06')!.expenseInHaler).toBe(1500000);
     expect(resRestored.periods.find(p => p.period.key === '2026-06')!.closingBalanceInHaler).toBe(8500000);
   });
@@ -399,7 +399,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     ];
 
     const periods = getPeriods(2026, 6, 4, 1);
-    const res = calculateForecast(periods, [checkingAccount], txs, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJun = res.periods.find(p => p.period.key === '2026-06')!;
     expect(pJun.expenseInHaler).toBe(200000); // 2 000 Kč celkem
   });
@@ -434,7 +434,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       }
     ];
 
-    const res = calculateForecast(periods, [checkingAccount], txs, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJul = res.periods.find(p => p.period.key === '2026-07')!;
 
     expect(pJul.openingBalanceInHaler).toBe(10000000);
@@ -448,7 +448,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
   it('Scénář 11: Vložení položky dovnitř minulého období nezmění jeho vlastní počáteční stav', () => {
     const periods = getPeriods(2026, 7, 4, 1);
     // Červenec má počáteční stav 100 000 Kč z předchozího stavu
-    const resWithout = calculateForecast(periods, [checkingAccount], [], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resWithout = summarizePeriods(periods, { accounts: [checkingAccount] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const initialOpening = resWithout.periods.find(p => p.period.key === '2026-07')!.openingBalanceInHaler;
 
     const tx: Transaction = {
@@ -464,7 +464,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const resWith = calculateForecast(periods, [checkingAccount], [tx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const resWith = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [tx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     const pJulWith = resWith.periods.find(p => p.period.key === '2026-07')!;
 
     // Počáteční stav července zůstává beze změny!
@@ -489,7 +489,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAccount], [pastTx], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [pastTx] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
     // Každé období musí začínat přesně tím, čím skončilo předchozí
     for (let i = 1; i < res.periods.length; i++) {
@@ -510,7 +510,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
   it('Scénář 13: Aktualizace položky v minulosti okamžitě aktualizuje usableCashNowInHaler a expectedClosingCurrentPeriodInHaler', () => {
     const periods = getPeriods(2026, 7, 6, 1);
     const txBefore: Transaction[] = [];
-    const res1 = calculateForecast(periods, [checkingAccount], txBefore, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res1 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txBefore }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
     expect(res1.usableCashNowInHaler).toBe(10000000);
     expect(res1.expectedClosingCurrentPeriodInHaler).toBe(10000000);
@@ -529,7 +529,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res2 = calculateForecast(periods, [checkingAccount], [pastIncome], [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const res2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [pastIncome] }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
     expect(res2.usableCashNowInHaler).toBe(12000000);
     expect(res2.expectedClosingCurrentPeriodInHaler).toBe(12000000);
     expect(res2.periods.find(p => p.period.key === '2026-09')!.closingBalanceInHaler).toBe(12000000);
@@ -565,8 +565,8 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       }
     ];
 
-    const run1 = calculateForecast(periods, [checkingAccount], txs, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
-    const run2 = calculateForecast(periods, [checkingAccount], txs, [], [], [], defaultSettings, [], '2026-09', '2026-09-12');
+    const run1 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
+    const run2 = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs }, { currentPeriodKey: '2026-09', today: '2026-09-12' });
 
     expect(run1.periods).toEqual(run2.periods);
     expect(run1.usableCashNowInHaler).toBe(run2.usableCashNowInHaler);
@@ -593,7 +593,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
     expect(pOct15.startDate).toBe('2026-10-15');
     expect(pOct15.endDate).toBe('2026-11-14');
 
-    // Nyní otestujeme v calculateForecast
+    // Nyní otestujeme v summarizePeriods
     const periodsDay15 = generatePeriodsSequence(2026, 9, 3, 15);
     const txOnOct10: Transaction = {
       id: 'tx_oct10',
@@ -608,7 +608,7 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res = calculateForecast(periodsDay15, [checkingAccount], [txOnOct10], [], [], [], settingsDay15, [], '2026-09', '2026-09-20');
+    const res = summarizePeriods(periodsDay15, { accounts: [checkingAccount], transactions: [txOnOct10] }, { currentPeriodKey: '2026-09', today: '2026-09-20' });
     const pSep = res.periods.find(p => p.period.key === '2026-09')!;
     const pOct = res.periods.find(p => p.period.key === '2026-10')!;
 
@@ -656,17 +656,10 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res = calculateForecast(
+    const res = summarizePeriods(
       periods,
-      allAccounts,
-      [transferTx],
-      [],
-      [],
-      [correction],
-      defaultSettings,
-      [marketSnapshot],
-      '2026-09',
-      '2026-09-12'
+      { accounts: allAccounts, transactions: [transferTx], corrections: [correction], marketValueSnapshots: [marketSnapshot] },
+      { currentPeriodKey: '2026-09', today: '2026-09-12' }
     );
 
     const pJul = res.periods.find(p => p.period.key === '2026-07')!;
@@ -706,17 +699,10 @@ describe('CashPilot - Testy přepočtu minulých období a zachování finančn�
       updatedAt: '',
     };
 
-    const res = calculateForecast(
+    const res = summarizePeriods(
       periods,
-      [checkingAccount, savingsAccount],
-      [txChecking],
-      [],
-      [],
-      [],
-      defaultSettings,
-      [],
-      '2026-09',
-      '2026-09-12'
+      { accounts: [checkingAccount, savingsAccount], transactions: [txChecking] },
+      { currentPeriodKey: '2026-09', today: '2026-09-12' }
     );
 
     const pJul = res.periods.find(p => p.period.key === '2026-07')!;

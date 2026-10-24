@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { MonthlyBudgetScreen } from '../components/budget/MonthlyBudgetScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { Account, BudgetPeriod, RecurringRule } from '../types/finance';
@@ -28,7 +28,7 @@ describe('MonthlyBudgetScreen respects account activation date for recurring rul
       startDate: '2026-01-01', isActive: true, createdAt: '', updatedAt: '',
     };
     const settings = { ...DEFAULT_SETTINGS, budgetStartDay: 15 };
-    const forecast = calculateForecast([period], [checking], [], [rule], [], [], settings, [], period.key, '2026-10-01');
+    const forecast = summarizePeriods([period], { accounts: [checking], recurringRules: [rule] }, { currentPeriodKey: period.key, today: '2026-10-01' });
 
     // Forecast (KPI panel) correctly has zero income for this period.
     expect(forecast.periods[0].incomeInHaler).toBe(0);

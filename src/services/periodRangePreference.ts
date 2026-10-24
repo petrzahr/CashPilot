@@ -49,24 +49,18 @@ export function getPresetRange(id: PeriodRangePresetId): DualPeriodRange {
   return { ...byId.get(id)!.range };
 }
 
-/**
- * Poslední výběr v rámci relace, svázaný s výchozí volbou, ze které vznikl.
- * Po změně výchozí volby v Nastavení se obrazovka vrátí k nové výchozí.
- */
-const sessionRanges: Partial<Record<PeriodRangeScreen, { defaultId: PeriodRangePresetId; range: DualPeriodRange }>> = {};
+/** Poslední výběr obrazovky v rámci relace, svázaný s výchozí volbou, ze které vznikl. */
+export interface SessionRange {
+  defaultId: PeriodRangePresetId;
+  range: DualPeriodRange;
+}
 
-export function getInitialRange(settings: AppSettings | undefined, screen: PeriodRangeScreen): DualPeriodRange {
+export function rememberSessionRange(settings: AppSettings | undefined, screen: PeriodRangeScreen, range: DualPeriodRange): SessionRange {
+  return { defaultId: getDefaultRangeId(settings, screen), range };
+}
+
+/** Zapamatovaný výběr, nebo výchozí rozsah z Nastavení. Po změně výchozí volby se obrazovka vrátí k nové výchozí. */
+export function resolveSessionRange(saved: SessionRange | undefined, settings: AppSettings | undefined, screen: PeriodRangeScreen): DualPeriodRange {
   const defaultId = getDefaultRangeId(settings, screen);
-  const saved = sessionRanges[screen];
   return saved && saved.defaultId === defaultId ? saved.range : getPresetRange(defaultId);
-}
-
-export function rememberRange(settings: AppSettings | undefined, screen: PeriodRangeScreen, range: DualPeriodRange): void {
-  sessionRanges[screen] = { defaultId: getDefaultRangeId(settings, screen), range };
-}
-
-/** Jen pro testy. */
-export function resetSessionRanges(): void {
-  delete sessionRanges.overview;
-  delete sessionRanges.analytics;
 }

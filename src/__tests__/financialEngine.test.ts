@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, RecurringException, RecurringRule, Transaction, BalanceCorrection } from '../types/finance';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { generatePeriodsSequence, getPeriodForDate, formatPeriodRange } from '../services/periodService';
 
 describe('CashPilot - Testy kritické finanční logiky', () => {
@@ -73,7 +73,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       }
     ];
 
-    const result = calculateForecast(periods, [checkingAccount], txs, [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txs });
     
     // Perioda 0 (Září 2026): Počáteční 100k, Příjmy 50k, Výdaje 20k -> Konečný 130k
     expect(result.periods[0].openingBalanceInHaler).toBe(10000000);
@@ -91,7 +91,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
   it('Scénář 2: Přidání výdaje do budoucího měsíce ovlivní tento měsíc i všechny následující měsíce', () => {
     const periods = generatePeriodsSequence(2026, 9, 4, 15);
     
-    const baseResult = calculateForecast(periods, [checkingAccount], [], [], [], [], defaultSettings);
+    const baseResult = summarizePeriods(periods, { accounts: [checkingAccount] });
     const baseP1Closing = baseResult.periods[1].closingBalanceInHaler;
     const baseP2Opening = baseResult.periods[2].openingBalanceInHaler;
     const baseP2Closing = baseResult.periods[2].closingBalanceInHaler;
@@ -111,7 +111,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const newResult = calculateForecast(periods, [checkingAccount], [futureExpense], [], [], [], defaultSettings);
+    const newResult = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [futureExpense] });
 
     expect(newResult.periods[0].closingBalanceInHaler).toBe(baseResult.periods[0].closingBalanceInHaler);
     expect(newResult.periods[1].closingBalanceInHaler).toBe(baseP1Closing);
@@ -139,17 +139,17 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const resultWithTx = calculateForecast(periods, [checkingAccount], [tx], [], [], [], defaultSettings);
+    const resultWithTx = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [tx] });
     expect(resultWithTx.periods[1].closingBalanceInHaler).toBe(10000000 - 1500000);
     expect(resultWithTx.periods[2].openingBalanceInHaler).toBe(10000000 - 1500000);
 
     const modifiedTx = { ...tx, amountInHaler: 500000 };
-    const resultModified = calculateForecast(periods, [checkingAccount], [modifiedTx], [], [], [], defaultSettings);
+    const resultModified = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [modifiedTx] });
     expect(resultModified.periods[1].closingBalanceInHaler).toBe(10000000 - 500000);
     expect(resultModified.periods[2].openingBalanceInHaler).toBe(10000000 - 500000);
     expect(resultModified.periods[3].closingBalanceInHaler).toBe(10000000 - 500000);
 
-    const resultDeleted = calculateForecast(periods, [checkingAccount], [], [], [], [], defaultSettings);
+    const resultDeleted = summarizePeriods(periods, { accounts: [checkingAccount] });
     expect(resultDeleted.periods[1].closingBalanceInHaler).toBe(10000000);
     expect(resultDeleted.periods[2].openingBalanceInHaler).toBe(10000000);
     expect(resultDeleted.periods[3].closingBalanceInHaler).toBe(10000000);
@@ -174,7 +174,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const result = calculateForecast(periods, [checkingAccount, savingsAccount], [transferTx], [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount, savingsAccount], transactions: [transferTx] });
 
     expect(result.periods[0].netWorthOpeningInHaler).toBe(initialNetWorth);
     expect(result.periods[0].netWorthClosingInHaler).toBe(initialNetWorth);
@@ -199,7 +199,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const result = calculateForecast(periods, [checkingAccount, savingsAccount], [transferTx], [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount, savingsAccount], transactions: [transferTx] });
 
     const checkingBal = result.periods[0].accountBalances['acc_checking'];
     const savingsBal = result.periods[0].accountBalances['acc_savings'];
@@ -229,7 +229,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const resultPlanned = calculateForecast(periods, [checkingAccount], [], [salaryRule], [], [], defaultSettings);
+    const resultPlanned = summarizePeriods(periods, { accounts: [checkingAccount], recurringRules: [salaryRule] });
     expect(resultPlanned.periods[0].incomeInHaler).toBe(4500000);
 
     const executedTx: Transaction = {
@@ -247,7 +247,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const resultExecuted = calculateForecast(periods, [checkingAccount], [executedTx], [salaryRule], [], [], defaultSettings);
+    const resultExecuted = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [executedTx], recurringRules: [salaryRule] });
     expect(resultExecuted.periods[0].incomeInHaler).toBe(4700000);
     expect(resultExecuted.periods[0].closingBalanceInHaler).toBe(checkingAccount.initialBalanceInHaler + 4700000);
   });
@@ -269,7 +269,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       updatedAt: ''
     };
 
-    const result = calculateForecast(periods, [checkingAccount], [cancelledTx], [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [cancelledTx] });
 
     expect(result.periods[0].expenseInHaler).toBe(0);
     expect(result.periods[0].closingBalanceInHaler).toBe(checkingAccount.initialBalanceInHaler);
@@ -301,7 +301,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       createdAt: ''
     };
 
-    const result = calculateForecast(periods, [checkingAccount], [], [rule], [exception], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount], recurringRules: [rule], recurringExceptions: [exception] });
 
     expect(result.periods[0].expenseInHaler).toBe(50000);
     expect(result.periods[1].expenseInHaler).toBe(120000);
@@ -320,7 +320,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       initialBalanceInHaler: 1500000, // 15 000 Kč
     };
 
-    const result = calculateForecast(periods, [archivedAccount], [], [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [archivedAccount] });
 
     expect(result.periods[0].accountBalances['acc_old']).toBeDefined();
     expect(result.periods[0].accountBalances['acc_old'].closingBalanceInHaler).toBe(1500000);
@@ -342,7 +342,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
       createdAt: ''
     };
 
-    const result = calculateForecast(periods, [checkingAccount], [], [], [], [correction], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount], corrections: [correction] });
 
     expect(result.periods[0].correctionsInHaler).toBe(250000);
     expect(result.periods[0].closingBalanceInHaler).toBe(10250000);
@@ -363,7 +363,7 @@ describe('CashPilot - Testy kritické finanční logiky', () => {
     expect(periods[4].month).toBe(1);
     expect(periods[11].name).toBe('Srpen 2027');
 
-    const result = calculateForecast(periods, [checkingAccount], [], [], [], [], defaultSettings);
+    const result = summarizePeriods(periods, { accounts: [checkingAccount] });
     expect(result.periods).toHaveLength(12);
     expect(result.periods[4].openingBalanceInHaler).toBe(result.periods[3].closingBalanceInHaler);
   });

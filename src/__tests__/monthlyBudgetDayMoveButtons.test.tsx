@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { MonthlyBudgetScreen } from '../components/budget/MonthlyBudgetScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { Account, BudgetPeriod, Transaction } from '../types/finance';
 
@@ -25,7 +25,7 @@ it('denní pohled nabízí posun položek tlačítky s názvem položky, na okra
   });
   const transactions = [mk('t2', 'Nájem', 2), mk('t1', 'Nákup', 1)];
   const settings = { ...DEFAULT_SETTINGS, budgetStartDay: 15 };
-  const forecast = calculateForecast([period], [checking], transactions, [], [], [], settings, [], period.key, '2026-09-16');
+  const forecast = summarizePeriods([period], { accounts: [checking], transactions }, { currentPeriodKey: period.key, today: '2026-09-16' });
 
   vi.mocked(useFinance).mockReturnValue({
     selectedPeriod: period, forecast, settings, accounts: [checking], categories: [],

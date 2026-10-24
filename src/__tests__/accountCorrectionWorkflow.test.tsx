@@ -9,7 +9,7 @@ import { InvestmentFeeModal } from '../components/accounts/InvestmentFeeModal';
 import { AppData, getInitialData } from '../services/storageService';
 import { loadStoredData, saveStoredData } from './testStorageHelpers';
 import { SyncController } from '../services/syncController';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 
 const bridge = vi.hoisted(() => ({ finance: null as ReturnType<typeof useFinance> | null }));
 vi.mock('react', async importOriginal => ({ ...await importOriginal<typeof import('react')>() }));
@@ -112,9 +112,12 @@ it('saves valuations and monthly fees separately and keeps them through general 
     data = loadStoredData('workflow-test');
     expect(data.accounts[0].name).toBe('Renamed investment');
     expect(data.investmentFees[0].amountInHaler).toBe(-expected);
-    const forecast = calculateForecast([{
-      key: '2026-09', name: '', year: 2026, month: 9, startDate: '2026-09-01', endDate: '2026-09-30', startDay: 1,
-    }], data.accounts, [], [], [], [], undefined, data.marketValueSnapshots, undefined, undefined, data.investmentFees);
+    const forecast = summarizePeriods(
+      [{
+        key: '2026-09', name: '', year: 2026, month: 9, startDate: '2026-09-01', endDate: '2026-09-30', startDay: 1,
+      }],
+      { accounts: data.accounts, marketValueSnapshots: data.marketValueSnapshots, investmentFees: data.investmentFees }
+    );
     const balance = forecast.periods[0].accountBalances[data.accounts[0].id];
     expect(balance.investedPrincipalInHaler).toBe(10000000 + expected);
     expect(balance.unrealizedGainLossInHaler).toBe(2000000 - expected);

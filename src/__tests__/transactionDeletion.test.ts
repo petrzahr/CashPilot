@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, AppSettings, BudgetPeriod, RecurringRule, Transaction } from '../types/finance';
-import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { summarizePeriods, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { deleteTransactionAndReorder } from '../services/sequenceService';
 import { createBudgetPeriod, generatePeriodsSequence, getPreviousDay } from '../services/periodService';
 import { AppData } from '../services/storageService';
@@ -101,13 +101,13 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     };
 
     const txsBefore = [expenseTx];
-    const forecastBefore = calculateForecast(periods, [checkingAccount], txsBefore, [], [], [], defaultSettings);
+    const forecastBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsBefore });
     expect(forecastBefore.periods[0].expenseInHaler).toBe(150000);
 
     const txsAfter = deleteTransactionAndReorder('tx_exp_1', txsBefore);
     expect(txsAfter.length).toBe(0);
 
-    const forecastAfter = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const forecastAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     expect(forecastAfter.periods[0].expenseInHaler).toBe(0);
     expect(forecastAfter.periods[0].closingBalanceInHaler).toBe(checkingAccount.initialBalanceInHaler);
   });
@@ -129,13 +129,13 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     };
 
     const txsBefore = [incomeTx];
-    const forecastBefore = calculateForecast(periods, [checkingAccount], txsBefore, [], [], [], defaultSettings);
+    const forecastBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsBefore });
     expect(forecastBefore.periods[0].incomeInHaler).toBe(500000);
 
     const txsAfter = deleteTransactionAndReorder('tx_inc_1', txsBefore);
     expect(txsAfter.length).toBe(0);
 
-    const forecastAfter = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const forecastAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     expect(forecastAfter.periods[0].incomeInHaler).toBe(0);
     expect(forecastAfter.periods[0].closingBalanceInHaler).toBe(checkingAccount.initialBalanceInHaler);
   });
@@ -158,7 +158,7 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     };
 
     const txsBefore = [transferTx];
-    const forecastBefore = calculateForecast(periods, [checkingAccount, savingsAccount], txsBefore, [], [], [], defaultSettings);
+    const forecastBefore = summarizePeriods(periods, { accounts: [checkingAccount, savingsAccount], transactions: txsBefore });
     const p0Before = forecastBefore.periods[0];
     const checkingBalBefore = p0Before.accountBalances['acc_checking'];
     const savingsBalBefore = p0Before.accountBalances['acc_savings'];
@@ -171,7 +171,7 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     const txsAfter = deleteTransactionAndReorder('tx_trans_1', txsBefore);
     expect(txsAfter.length).toBe(0);
 
-    const forecastAfter = calculateForecast(periods, [checkingAccount, savingsAccount], txsAfter, [], [], [], defaultSettings);
+    const forecastAfter = summarizePeriods(periods, { accounts: [checkingAccount, savingsAccount], transactions: txsAfter });
     const p0After = forecastAfter.periods[0];
     const checkingBalAfter = p0After.accountBalances['acc_checking'];
     const savingsBalAfter = p0After.accountBalances['acc_savings'];
@@ -197,11 +197,11 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     };
 
     const txsBefore = [plannedTx];
-    const fBefore = calculateForecast(periods, [checkingAccount], txsBefore, [], [], [], defaultSettings);
+    const fBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsBefore });
     expect(fBefore.periods[0].expenseInHaler).toBe(300000);
 
     const txsAfter = deleteTransactionAndReorder('tx_plan_1', txsBefore);
-    const fAfter = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const fAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     expect(fAfter.periods[0].expenseInHaler).toBe(0);
   });
 
@@ -221,12 +221,12 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       updatedAt: ''
     };
 
-    const fBefore = calculateForecast(periods, [checkingAccount], [executedTx], [], [], [], defaultSettings);
+    const fBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [executedTx] });
     expect(fBefore.periods[0].expenseInHaler).toBe(260000);
     expect(fBefore.periods[0].closingBalanceInHaler).toBe(10000000 - 260000);
 
     const txsAfter = deleteTransactionAndReorder('tx_exec_1', [executedTx]);
-    const fAfter = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const fAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     expect(fAfter.periods[0].expenseInHaler).toBe(0);
     expect(fAfter.periods[0].closingBalanceInHaler).toBe(10000000);
   });
@@ -264,7 +264,7 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
     expect(txsAfter[0].id).toBe('tx_active');
     expect(txsAfter[0].sequence).toBe(1);
 
-    const f = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const f = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     expect(f.periods[0].expenseInHaler).toBe(100000);
   });
 
@@ -406,7 +406,7 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
       updatedAt: ''
     };
 
-    const fBefore = calculateForecast(periods, [checkingAccount], [expenseTx], [], [], [], defaultSettings);
+    const fBefore = summarizePeriods(periods, { accounts: [checkingAccount], transactions: [expenseTx] });
     // Perioda 0: Konečný 50 000 Kč (100k - 50k)
     expect(fBefore.periods[0].closingBalanceInHaler).toBe(5000000);
     // Perioda 1: Počáteční 50 000 Kč, Konečný 50 000 Kč
@@ -417,7 +417,7 @@ describe('CashPilot - Testy mazání finančních položek (Klasický seznam a M
 
     // Po smazání výdaje:
     const txsAfter = deleteTransactionAndReorder('tx_p0', [expenseTx]);
-    const fAfter = calculateForecast(periods, [checkingAccount], txsAfter, [], [], [], defaultSettings);
+    const fAfter = summarizePeriods(periods, { accounts: [checkingAccount], transactions: txsAfter });
     // Perioda 0: Konečný 100 000 Kč
     expect(fAfter.periods[0].closingBalanceInHaler).toBe(10000000);
     // Perioda 1: Počáteční 100 000 Kč, Konečný 100 000 Kč

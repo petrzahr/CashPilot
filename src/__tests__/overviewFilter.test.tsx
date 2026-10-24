@@ -4,10 +4,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { PeriodRangeSelector } from '../components/shared/PeriodRangeSelector';
 import { DualPeriodFilterPanel } from '../components/shared/DualPeriodFilterPanel';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 import { getInitialData } from '../services/storageService';
-import { resetSessionRanges } from '../services/periodRangePreference';
+import { resolveSessionRange } from '../services/periodRangePreference';
 
 // Exercise the event handlers and subsequent renders without adding a DOM dependency.
 const hooks = vi.hoisted(() => ({ values: [] as any[], index: 0, effects: [] as any[], effectIndex: 0, finance: {} as any }));
@@ -58,7 +58,6 @@ function expectRange(first: string, last: string, count: number) {
   const tree = render();
   const periods = generatePeriodsSequence(Number(first.slice(0, 4)), Number(first.slice(5)), count, 31);
   expect(periods[periods.length - 1]?.key).toBe(last);
-  expect(hooks.finance.setOverviewPeriodBounds).toHaveBeenLastCalledWith([periods[0], periods[periods.length - 1]]);
   const html = renderToStaticMarkup(tree);
   for (const section of [html.slice(0, html.indexOf('</table>')), html.slice(html.indexOf('</table>') + 8)]) {
     for (const period of periods) expect(section).toContain(period.name);
@@ -70,15 +69,18 @@ function expectRange(first: string, last: string, count: number) {
 beforeEach(() => {
   hooks.values = [];
   hooks.effects = [];
-  // Výběr rozsahu se v rámci relace pamatuje, každý test začíná od výchozího
-  resetSessionRanges();
   const data = getInitialData();
   data.settings.budgetStartDay = 31;
   data.accounts = [{ id: 'cash', name: 'Cash', type: 'checking', currency: 'CZK', initialBalanceInHaler: 10000,
     initialBalanceDate: '2024-02-15', isUsableCash: true, isNetWorth: true, status: 'active',
     color: '', sortOrder: 0, createdAt: '', updatedAt: '' }];
-  const forecast = calculateForecast(generatePeriodsSequence(2023, 1, 96, 31), data.accounts, [], [], [], [], data.settings, [], '2026-08', '2026-09-16');
-  hooks.finance = { ...data, forecast, setSelectedPeriod: vi.fn(), setOverviewPeriodBounds: vi.fn() };
+  const forecast = summarizePeriods(generatePeriodsSequence(2023, 1, 96, 31), { accounts: data.accounts }, { currentPeriodKey: '2026-08', today: '2026-09-16' });
+  // Rozsah drží kontext (usePeriodForecast); každý test začíná od výchozího
+  hooks.finance = {
+    ...data, forecast, setSelectedPeriod: vi.fn(),
+    periodRanges: { overview: resolveSessionRange(undefined, data.settings, 'overview'), analytics: resolveSessionRange(undefined, data.settings, 'analytics') },
+    setPeriodRange: (screen: string, range: unknown) => { hooks.finance.periodRanges = { ...hooks.finance.periodRanges, [screen]: range }; },
+  };
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-09-16T12:00:00Z'));
 });

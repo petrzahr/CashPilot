@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Account, AppSettings, RecurringRule, Transaction } from '../types/finance';
-import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { summarizePeriods, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import { createBudgetPeriod, generatePeriodsSequence } from '../services/periodService';
 import { calculateIntraDayRunningBalances } from '../services/sequenceService';
 
@@ -46,7 +46,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAcc], [plannedTx], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [plannedTx] });
     const p1 = res.periods[0];
 
     expect(p1.incomeInHaler).toBe(2000000);
@@ -70,7 +70,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAcc], [executedTxWithDiffActual], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [executedTxWithDiffActual] });
     const p1 = res.periods[0];
 
     // Uses 3 450 Kč instead of 3 000 Kč
@@ -92,7 +92,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAcc], [cancelledTx], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [cancelledTx] });
     const p1 = res.periods[0];
 
     expect(p1.expenseInHaler).toBe(0);
@@ -116,7 +116,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAcc], [revertedTx], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [revertedTx] });
     const p1 = res.periods[0];
 
     expect(p1.expenseInHaler).toBe(400000);
@@ -137,7 +137,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [checkingAcc], [uncancelledTx], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [uncancelledTx] });
     expect(res.periods[0].expenseInHaler).toBe(1500000);
     expect(res.periods[0].closingBalanceInHaler).toBe(8500000);
   });
@@ -230,7 +230,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     expect(effSep[0].status).toBe('cancelled');
 
     // Forecast calculation ignores the cancelled rent in Sep
-    const res = calculateForecast(periods, [checkingAcc], [realCancelledRent], [rentRule], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [checkingAcc], transactions: [realCancelledRent], recurringRules: [rentRule] });
     expect(res.periods[0].expenseInHaler).toBe(0); // Rent is cancelled!
     expect(res.periods[0].closingBalanceInHaler).toBe(10000000);
 
@@ -354,7 +354,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
     ];
 
     const all12Periods = generatePeriodsSequence(2026, 9, 12, 15);
-    const res = calculateForecast(all12Periods, [checkingAcc, savingsAcc], txs, [], [], [], defaultSettings);
+    const res = summarizePeriods(all12Periods, { accounts: [checkingAcc, savingsAcc], transactions: txs });
 
     expect(res.periods.length).toBe(12);
 
@@ -410,7 +410,7 @@ describe('Transaction Status Transitions & Financial Engine', () => {
       updatedAt: '',
     };
 
-    const res = calculateForecast(periods, [includedAcc, excludedAcc], [], [], [], [], defaultSettings);
+    const res = summarizePeriods(periods, { accounts: [includedAcc, excludedAcc] });
     const p1 = res.periods[0];
 
     // Total opening in net worth includes ONLY includedAcc (10 000 Kč), NOT excludedAcc (50 000 Kč)

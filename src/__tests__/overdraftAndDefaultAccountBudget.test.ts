@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Account, AppSettings, BalanceCorrection, Transaction } from '../types/finance';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { generatePeriodsSequence } from '../services/periodService';
 import { validateAndParseBackup, AppData, getInitialData, getActiveStorageKey } from '../services/storageService';
 import { loadStoredData, saveStoredData } from './testStorageHelpers';
@@ -195,14 +195,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       }),
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txs }
     );
 
     const s1 = forecast.periods[0];
@@ -231,14 +226,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecastBefore = calculateForecast(
+    const forecastBefore = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txsBefore,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txsBefore }
     );
     const defBalBefore = forecastBefore.periods[0].accountBalances[defaultAccount.id];
 
@@ -255,14 +245,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecastAfter = calculateForecast(
+    const forecastAfter = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txsAfter,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txsAfter }
     );
     const defBalAfter = forecastAfter.periods[0].accountBalances[defaultAccount.id];
 
@@ -288,14 +273,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txs }
     );
 
     const defBal = forecast.periods[0].accountBalances[defaultAccount.id];
@@ -324,14 +304,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txs }
     );
 
     const defBal = forecast.periods[0].accountBalances[defaultAccount.id];
@@ -360,14 +335,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount, thirdAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount, thirdAccount], transactions: txs }
     );
 
     const defBal = forecast.periods[0].accountBalances[defaultAccount.id];
@@ -409,14 +379,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txs }
     );
 
     const defBal = forecast.periods[0].accountBalances[defaultAccount.id];
@@ -479,14 +444,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       }
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount],
-      txs,
-      [],
-      [],
-      corrections,
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount], transactions: txs, corrections }
     );
 
     forecast.periods.forEach(pSummary => {
@@ -549,14 +509,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecastInitial = calculateForecast(
+    const forecastInitial = summarizePeriods(
       periods,
-      [defaultAccount],
-      txsInitial,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount], transactions: txsInitial }
     );
 
     const initP1Opening = forecastInitial.periods[1].accountBalances[defaultAccount.id].openingBalanceInHaler;
@@ -570,14 +525,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecastUpdated = calculateForecast(
+    const forecastUpdated = summarizePeriods(
       periods,
-      [defaultAccount],
-      txsUpdated,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount], transactions: txsUpdated }
     );
 
     const updatedP0Closing = forecastUpdated.periods[0].accountBalances[defaultAccount.id].closingBalanceInHaler;
@@ -655,14 +605,9 @@ describe('CashPilot - Nastavení kontokorentu a souhrnné údaje Měsíčního r
       })
     ];
 
-    const forecast = calculateForecast(
+    const forecast = summarizePeriods(
       periods,
-      [defaultAccount, secondaryAccount, thirdAccount],
-      txs,
-      [],
-      [],
-      [],
-      baseSettings
+      { accounts: [defaultAccount, secondaryAccount, thirdAccount], transactions: txs }
     );
 
     const p0 = forecast.periods[0];

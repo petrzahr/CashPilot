@@ -4,9 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { useFinance } from '../context/FinanceContext';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import { AccountsScreen } from '../components/accounts/AccountsScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { getAccountPeriodSummary } from '../services/accountSummaryService';
 import { createBudgetPeriod } from '../services/periodService';
+import { getPresetRange } from '../services/periodRangePreference';
 import { formatCurrency } from '../services/currencyService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
 import { Account, Transaction } from '../types/finance';
@@ -17,7 +18,7 @@ vi.mock('../context/FinanceContext', () => ({ useFinance: vi.fn() }));
 // default (it used to auto-expand the current period). This test needs that
 // breakdown table rendered to check per-account computed values, and the
 // project has no jsdom/testing-library set up to click the accordion open,
-// so when explicitly enabled we force the 4th useState call
+// so when explicitly enabled we force the 3rd useState call
 // (expandedPeriodKey, in source order) to the desired key instead of its
 // normal `null` default. Disabled by default so it never touches any other
 // component's hooks (e.g. AccountsScreen, rendered elsewhere in this file).
@@ -30,7 +31,7 @@ vi.mock('react', async importOriginal => {
     useState: (initial: unknown) => {
       if (!expandOverride.enabled) return actual.useState(initial);
       useStateCallIndex += 1;
-      return actual.useState(useStateCallIndex === 4 ? expandOverride.key : initial);
+      return actual.useState(useStateCallIndex === 3 ? expandOverride.key : initial);
     },
   };
 });
@@ -75,11 +76,15 @@ describe.each(['investment', 'pension'] as const)('Overview %s forecast', type =
     }));
     const accounts = [asset, cash];
     const settings = { ...DEFAULT_SETTINGS, budgetStartDay: 15 };
-    const forecast = calculateForecast([period, createBudgetPeriod(2026, 9, 15)], accounts, transactions, [], [], [], settings,
-      marketValueSnapshots, period.key, '2026-09-14');
+    const forecast = summarizePeriods(
+      [period, createBudgetPeriod(2026, 9, 15)],
+      { accounts, transactions, marketValueSnapshots },
+      { currentPeriodKey: period.key, today: '2026-09-14' }
+    );
     const before = JSON.stringify({ forecast, accounts, transactions, marketValueSnapshots });
     vi.mocked(useFinance).mockReturnValue({ forecast, accounts, transactions, settings,
       selectedPeriod: period, marketValueSnapshots, setSelectedPeriod: vi.fn(),
+      periodRanges: { overview: getPresetRange('future:12') }, setPeriodRange: vi.fn(),
     } as unknown as ReturnType<typeof useFinance>);
     const html = renderOverviewWithExpandedPeriod(period.key, { onNavigateToBudget: vi.fn() });
     const cells = (name: string) => {
@@ -114,8 +119,11 @@ it('uses the same asset totals for budget and forecast summaries as the account 
   const transfer: Transaction = { id: 'transfer', title: 'Investment', type: 'transfer',
     sourceAccountId: cash.id, targetAccountId: asset.id, date: '2026-09-25', sequence: 1,
     amountInHaler: 650000, status: 'planned', createdAt: '', updatedAt: '' };
-  const forecast = calculateForecast([period], accounts, [transfer], [], [], [],
-    DEFAULT_SETTINGS, [], period.key, '2026-09-16');
+  const forecast = summarizePeriods(
+    [period],
+    { accounts, transactions: [transfer] },
+    { currentPeriodKey: period.key, today: '2026-09-16' }
+  );
   const original = JSON.stringify(forecast);
   const summary = getAccountPeriodSummary(forecast, period.key)!;
   expect(summary).toBe(forecast.forecastPeriods![0]);
@@ -127,6 +135,7 @@ it('uses the same asset totals for budget and forecast summaries as the account 
   vi.mocked(useFinance).mockReturnValue({ forecast, accounts, transactions: [transfer],
     corrections: [], marketValueSnapshots: [], settings: DEFAULT_SETTINGS,
     selectedPeriod: period, currentPeriod: period, setSelectedPeriod: vi.fn(),
+    periodRanges: { overview: getPresetRange('future:12') }, setPeriodRange: vi.fn(),
   } as unknown as ReturnType<typeof useFinance>);
   const html = renderToStaticMarkup(<AccountsScreen />);
   expect(html).toContain(formatCurrency(83250000));
@@ -135,7 +144,7 @@ it('uses the same asset totals for budget and forecast summaries as the account 
     .toContain(`Zůstatek celkem: ${formatCurrency(130934800)}`);
 
   for (const excluded of [{ ...transfer, status: 'cancelled' as const }, { ...transfer, date: '2026-10-15' }]) {
-    const next = calculateForecast([period], accounts, [excluded], [], [], [], DEFAULT_SETTINGS, [], period.key, '2026-09-16');
+    const next = summarizePeriods([period], { accounts, transactions: [excluded] }, { currentPeriodKey: period.key, today: '2026-09-16' });
     expect(getAccountPeriodSummary(next, period.key)?.accountBalances.asset.closingBalanceInHaler).toBe(82600000);
   }
   expect(JSON.stringify(forecast)).toBe(original);

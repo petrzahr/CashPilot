@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
 import { getAccountPeriodSummary } from '../../services/accountSummaryService';
@@ -6,7 +6,6 @@ import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
 import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
-import { getInitialRange, rememberRange } from '../../services/periodRangePreference';
 import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
 import { getTodayInPrague } from '../../services/periodService';
 import { BudgetPeriod } from '../../types/finance';
@@ -20,24 +19,16 @@ interface OverviewScreenProps {
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod, setOverviewPeriodBounds, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
+  const { forecast, settings, accounts, setSelectedPeriod, periodRanges, setPeriodRange, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
   // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
-  const [range, setRangeState] = useState<DualPeriodRange>(getInitialRange(settings, 'overview'));
-  const setRange = (newRange: DualPeriodRange) => {
-    setRangeState(newRange);
-    rememberRange(settings, 'overview', newRange);
-  };
+  const range = periodRanges.overview;
+  const setRange = (newRange: DualPeriodRange) => setPeriodRange('overview', newRange);
+  // Předpověď rozsah pokrývá sama (viz buildForecastPeriods)
   const selectedPeriods = useMemo(() => resolvePeriodRange(range, {
     current: forecast.currentPeriod,
     startDay: settings.budgetStartDay,
     data: { accounts, transactions, corrections, snapshots: marketValueSnapshots },
   }), [range, forecast.currentPeriod, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
-  const firstPeriod = selectedPeriods[0];
-  const lastPeriod = selectedPeriods[selectedPeriods.length - 1];
-  useEffect(() => {
-    setOverviewPeriodBounds?.([firstPeriod, lastPeriod]);
-  }, [firstPeriod.key, lastPeriod.key, settings.budgetStartDay, setOverviewPeriodBounds]);
-  useEffect(() => () => setOverviewPeriodBounds?.(null), [setOverviewPeriodBounds]);
 
   const displayPeriods = useMemo(() => selectedPeriods.flatMap(period => {
     const summary = getAccountPeriodSummary(forecast, period.key);

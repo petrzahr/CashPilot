@@ -7,7 +7,7 @@ import { getInitialData, validateAndParseBackup } from '../services/storageServi
 import { SyncController } from '../services/syncController';
 import { mutateMarketValueHistory } from '../services/marketValueHistoryService';
 import { calculatePeriodInvestmentChange } from '../services/investmentPerformanceService';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
 import { mergePending, recordLocalChange } from '../services/syncModel';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
@@ -60,7 +60,7 @@ it('deletes intermediate and latest valuations and recalculates history', () => 
   expect(flow.data.accounts[0]).toMatchObject({ currentMarketValueInHaler: c.marketValueInHaler, marketValueUpdatedAt: c.date });
   expect(calculatePeriodInvestmentChange(flow.data.accounts, flow.data.marketValueSnapshots,
     createBudgetPeriod(2026, 9, 15), 15, '2026-11-15')).toBe(4192700);
-  const forecast = calculateForecast([createBudgetPeriod(2026, 9, 15)], flow.data.accounts, [], [], [], [], undefined, flow.data.marketValueSnapshots, undefined, '2026-11-15');
+  const forecast = summarizePeriods([createBudgetPeriod(2026, 9, 15)], { accounts: flow.data.accounts, marketValueSnapshots: flow.data.marketValueSnapshots }, { today: '2026-11-15' });
   expect(forecast.periods[0].accountBalances[account.id]).toMatchObject({ marketValueInHaler: c.marketValueInHaler, investedPrincipalInHaler: 31000000, unrealizedGainLossInHaler: 4192700 });
   expect(forecast.periods[0]).toMatchObject({ netWorthOpeningInHaler: 31000000, netWorthClosingInHaler: c.marketValueInHaler });
   expect(getAccountBalanceAtDate(flow.data.accounts[0], '2026-10-14', { transactions: [], snapshots: flow.data.marketValueSnapshots })).toBe(c.marketValueInHaler);

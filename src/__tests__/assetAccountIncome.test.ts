@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { getInvestedAmountAtValuation } from '../services/investmentPerformanceService';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { Account, Transaction } from '../types/finance';
@@ -41,7 +41,7 @@ describe('income and expense on investment/pension accounts', () => {
   it('forecast keeps income in invested principal, gain stays zero', () => {
     const period = { key: '2026-06', name: 'x', year: 2026, month: 6, startDate: '2026-05-15', endDate: '2026-06-14' } as any;
     const acc = { ...pension, initialBalanceDate: '2026-05-20', status: 'active', isNetWorth: true } as Account;
-    const r = calculateForecast([period], [acc], [tx({})], [], [], [], undefined, [], '2026-06', '2026-06-20');
+    const r = summarizePeriods([period], { accounts: [acc], transactions: [tx({})] }, { currentPeriodKey: '2026-06', today: '2026-06-20' });
     const bal = r.periods[0].accountBalances.pension1;
     expect(bal.closingBalanceInHaler).toBe(150000);
     expect(bal.investedPrincipalInHaler).toBe(150000);

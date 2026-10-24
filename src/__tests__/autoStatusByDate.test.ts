@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getStatusForDate, autoExecuteDueTransactions } from '../services/statusService';
 import { getTodayInPrague, createBudgetPeriod } from '../services/periodService';
-import { calculateForecast, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { summarizePeriods, getEffectiveTransactionsForPeriod } from '../services/financialEngine';
 import {
   Account,
   AppSettings,
@@ -232,7 +232,7 @@ describe('CashPilot - Automatické určování a aktualizace stavu položek podl
     expect(eff[0].status).toBe('executed');
     expect(eff[0].actualAmountInHaler).toBe(5000000);
 
-    const forecast = calculateForecast([periodSep], [checkingAccount], synced.transactions, [], [], [], defaultSettings);
+    const forecast = summarizePeriods([periodSep], { accounts: [checkingAccount], transactions: synced.transactions });
     expect(forecast.periods[0].closingBalanceInHaler).toBe(15000000);
   });
 
@@ -266,7 +266,7 @@ describe('CashPilot - Automatické určování a aktualizace stavu položek podl
     expect(effAfter[0].status).toBe('executed');
 
     // Forecast počítá položku přesně jednou
-    const forecast = calculateForecast([periodSep], [checkingAccount], autoRes.transactions, [rentRule], [], [], defaultSettings);
+    const forecast = summarizePeriods([periodSep], { accounts: [checkingAccount], transactions: autoRes.transactions, recurringRules: [rentRule] });
     expect(forecast.periods[0].expenseInHaler).toBe(1500000);
     expect(forecast.periods[0].closingBalanceInHaler).toBe(8500000);
   });

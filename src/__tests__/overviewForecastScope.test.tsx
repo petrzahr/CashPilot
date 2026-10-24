@@ -2,10 +2,11 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { formatCurrency } from '../services/currencyService';
 import { generatePeriodsSequence } from '../services/periodService';
 import { getInitialData } from '../services/storageService';
+import { getPresetRange } from '../services/periodRangePreference';
 import { Account, Transaction } from '../types/finance';
 
 const hooks = vi.hoisted(() => ({ values: [] as any[], index: 0, finance: {} as any }));
@@ -56,14 +57,14 @@ beforeEach(() => {
     tx('savingsFee', 'expense', 10000, { sourceAccountId: 'savings' }),
   ];
   const periods = generatePeriodsSequence(2026, 9, 12, 1);
-  const forecast = calculateForecast(periods, data.accounts, data.transactions, [], [], [], data.settings, [], '2026-09', '2026-09-10');
-  hooks.finance = { ...data, forecast, setSelectedPeriod: vi.fn(), setOverviewPeriodBounds: vi.fn() };
+  const forecast = summarizePeriods(periods, { accounts: data.accounts, transactions: data.transactions }, { currentPeriodKey: '2026-09', today: '2026-09-10' });
+  hooks.finance = { ...data, forecast, setSelectedPeriod: vi.fn(), periodRanges: { overview: getPresetRange('future:12') }, setPeriodRange: vi.fn() };
 });
 afterEach(() => { vi.useRealTimers(); });
 
 it('sums income, expense and signed net transfers only from accounts in the usable scope', () => {
-  // Stav pohledu je druhý useState v komponentě; výchozí je Celkový majetek
-  hooks.values[1] = 'usable';
+  // Stav pohledu je první useState v komponentě; výchozí je Celkový majetek
+  hooks.values[0] = 'usable';
   const html = forecastTable();
   expect(html).toContain(`+${formatCurrency(5000000)}`);
   // Výdaj ze spořicího účtu do použitelných peněz nepatří

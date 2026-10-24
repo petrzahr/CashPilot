@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Account, BalanceCorrection, BudgetPeriod, MarketValueSnapshot, RecurringRule, Transaction } from '../types/finance';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
 import { getNextSequenceForDate, normalizeDaySequences } from '../services/sequenceService';
 import { DEFAULT_SETTINGS } from '../services/demoData';
@@ -104,8 +104,11 @@ describe('Reconciliation and Market Value Engine', () => {
       const pension = { ...samplePensionAccount, currentMarketValueInHaler: 18000000,
         marketValueUpdatedAt: '2026-09-20' };
       const accounts = [sampleCheckingAccount, investment, pension];
-      const result = calculateForecast([periodSep2026, periodOct2026], accounts,
-        [], [], [], [], DEFAULT_SETTINGS, [], periodSep2026.key, '2026-09-21');
+      const result = summarizePeriods(
+        [periodSep2026, periodOct2026],
+        { accounts },
+        { currentPeriodKey: periodSep2026.key, today: '2026-09-21' }
+      );
       expect(result.usableCashNowInHaler).toBe(5000000);
       expect(result.expectedClosingCurrentPeriodInHaler).toBe(5000000);
       expect(result.netWorthNowInHaler).toBe(23000000 + marketValue);
@@ -138,8 +141,11 @@ describe('Reconciliation and Market Value Engine', () => {
         tx('future', '2026-09-25', 'planned', 'transfer', 200000),
         tx('income', '2026-09-26', 'planned', 'income', 500000),
         tx('expense', '2026-09-27', 'planned', 'expense', 50000)];
-      const result = calculateForecast([periodSep2026, periodOct2026], [sampleCheckingAccount, investment],
-        transactions, [], [], [], DEFAULT_SETTINGS, snapshots, periodSep2026.key, '2026-09-21');
+      const result = summarizePeriods(
+        [periodSep2026, periodOct2026],
+        { accounts: [sampleCheckingAccount, investment], transactions, marketValueSnapshots: snapshots },
+        { currentPeriodKey: periodSep2026.key, today: '2026-09-21' }
+      );
       const first = result.forecastPeriods![0];
       expect(result.netWorthNowInHaler).toBe(40100000);
       expect(first.accountBalances[investment.id].openingBalanceInHaler).toBe(12000000);
@@ -165,8 +171,11 @@ describe('Reconciliation and Market Value Engine', () => {
         tx('oct_contribution', '2026-10-20', 'planned', 'transfer', 170000),
         tx('oct_state', '2026-10-25', 'planned', 'income', 220000),
       ];
-      const result = calculateForecast([periodSep2026, periodOct2026], [sampleCheckingAccount, pension],
-        transactions, [], [], [], DEFAULT_SETTINGS, [], periodSep2026.key, '2026-09-21');
+      const result = summarizePeriods(
+        [periodSep2026, periodOct2026],
+        { accounts: [sampleCheckingAccount, pension], transactions },
+        { currentPeriodKey: periodSep2026.key, today: '2026-09-21' }
+      );
       const [sep, oct] = result.forecastPeriods!;
 
       expect(sep.accountBalances[pension.id]).toMatchObject({
@@ -430,15 +439,9 @@ describe('Reconciliation and Market Value Engine', () => {
         updatedAt: '2026-09-20T10:00:00Z',
       };
 
-      const forecast = calculateForecast(
+      const forecast = summarizePeriods(
         [periodSep2026, periodOct2026],
-        [sampleCheckingAccount],
-        [corrTx],
-        [],
-        [],
-        [],
-        DEFAULT_SETTINGS,
-        []
+        { accounts: [sampleCheckingAccount], transactions: [corrTx] }
       );
 
       const sepSummary = forecast.periods[0];
@@ -522,15 +525,9 @@ describe('Reconciliation and Market Value Engine', () => {
         updatedAt: '2026-09-01T00:00:00Z',
       };
 
-      const forecast = calculateForecast(
+      const forecast = summarizePeriods(
         [periodSep2026, periodOct2026],
-        [sampleCheckingAccount, samplePensionAccount],
-        [],
-        [transferRule],
-        [],
-        [],
-        DEFAULT_SETTINGS,
-        [snap]
+        { accounts: [sampleCheckingAccount, samplePensionAccount], recurringRules: [transferRule], marketValueSnapshots: [snap] }
       );
 
       const sepSummary = forecast.periods[0];
@@ -554,15 +551,9 @@ describe('Reconciliation and Market Value Engine', () => {
     });
 
     it('12. Asset account without new valuation snapshot retains latest known market value in forecast', () => {
-      const forecast = calculateForecast(
+      const forecast = summarizePeriods(
         [periodSep2026, periodOct2026],
-        [sampleInvestmentAccount],
-        [],
-        [],
-        [],
-        [],
-        DEFAULT_SETTINGS,
-        []
+        { accounts: [sampleInvestmentAccount] }
       );
 
       const sepSummary = forecast.periods[0];

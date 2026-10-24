@@ -1,14 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { FinanceProvider } from '../context/FinanceContext';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
 import { OverviewScreen } from '../components/overview/OverviewScreen';
 import {
   BUILT_IN_DEFAULT_RANGE,
   getDefaultRangeId,
-  getInitialRange,
-  rememberRange,
-  resetSessionRanges,
+  rememberSessionRange,
+  resolveSessionRange,
 } from '../services/periodRangePreference';
 import { getInitialData, validateAndParseBackup } from '../services/storageService';
 import { mergePending, migrateSyncData, recordLocalChange, type SyncEnvelope } from '../services/syncModel';
@@ -16,8 +15,6 @@ import { SyncController } from '../services/syncController';
 import { AppSettings } from '../types/finance';
 
 const base = (): AppSettings => ({ ...getInitialData().settings });
-
-beforeEach(() => resetSessionRanges());
 
 describe('Výchozí rozsah období v nastavení', () => {
   it('bez uložené volby (starší data) použije vestavěné výchozí rozsahy', () => {
@@ -38,15 +35,14 @@ describe('Výchozí rozsah období v nastavení', () => {
 
   it('v relaci si pamatuje poslední výběr, po změně výchozí volby začne znovu od ní', () => {
     const settings = { ...base(), defaultPeriodRanges: { overview: 'future:6' as const } };
-    expect(getInitialRange(settings, 'overview')).toEqual({ direction: 'future', months: 6 });
+    expect(resolveSessionRange(undefined, settings, 'overview')).toEqual({ direction: 'future', months: 6 });
 
-    rememberRange(settings, 'overview', { direction: 'past', preset: 'ytd' });
-    expect(getInitialRange(settings, 'overview')).toEqual({ direction: 'past', preset: 'ytd' });
-    // Druhá obrazovka má vlastní paměť
-    expect(getInitialRange(settings, 'analytics')).toEqual({ direction: 'past', months: 12 });
+    const saved = rememberSessionRange(settings, 'overview', { direction: 'past', preset: 'ytd' });
+    expect(resolveSessionRange(saved, settings, 'overview')).toEqual({ direction: 'past', preset: 'ytd' });
+    expect(resolveSessionRange(undefined, settings, 'analytics')).toEqual({ direction: 'past', months: 12 });
 
     const changed = { ...settings, defaultPeriodRanges: { overview: 'future:24' as const } };
-    expect(getInitialRange(changed, 'overview')).toEqual({ direction: 'future', months: 24 });
+    expect(resolveSessionRange(saved, changed, 'overview')).toEqual({ direction: 'future', months: 24 });
   });
 
   it('obrazovky se otevřou s výchozím rozsahem z nastavení', () => {

@@ -4,7 +4,7 @@ import {
   calculatePeriodInvestmentChange, getAccountFees, getFeesUpToDate, getFeesUpToPeriod,
   getInvestedAmountAtValuation as capital,
 } from '../services/investmentPerformanceService';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { createBudgetPeriod } from '../services/periodService';
 
 const account: Account = {
@@ -103,8 +103,11 @@ describe('monthly broker fees', () => {
   });
   it('reports contributions, cumulative fees and return in the forecast', () => {
     const periods = [createBudgetPeriod(2026, 9, 15), createBudgetPeriod(2026, 10, 15)];
-    const result = calculateForecast(periods, [account], [], [], [], [], undefined, [snapshot('2026-09-20', 305000)],
-      undefined, '2026-11-20', [fee('2026-09', 500), fee('2026-10', 700)]);
+    const result = summarizePeriods(
+      periods,
+      { accounts: [account], marketValueSnapshots: [snapshot('2026-09-20', 305000)], investmentFees: [fee('2026-09', 500), fee('2026-10', 700)] },
+      { today: '2026-11-20' }
+    );
     expect(result.periods.map(p => p.accountBalances[account.id])).toEqual([
       expect.objectContaining({ contributedPrincipalInHaler: 30000000, feesInHaler: 50000, investedPrincipalInHaler: 29950000, unrealizedGainLossInHaler: 550000 }),
       expect.objectContaining({ contributedPrincipalInHaler: 30000000, feesInHaler: 120000, investedPrincipalInHaler: 29880000, unrealizedGainLossInHaler: 620000 }),

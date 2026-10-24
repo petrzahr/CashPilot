@@ -9,6 +9,7 @@ import {
   ForecastResult,
   InvestmentFee,
   MarketValueSnapshot,
+  PeriodRangeScreen,
   RecurringException,
   RecurringRule,
   Transaction,
@@ -30,22 +31,11 @@ import {
   createResetAppData,
 } from '../constants/defaultData';
 import {
-  calculateForecast,
   calculateQuickFinancialOverview,
   QuickFinancialOverview,
 } from '../services/financialEngine';
-import {
-  createBudgetPeriod,
-  generatePeriodsSequence,
-  generatePeriodsBetween,
-  getOverviewPeriods,
-  getNextPeriod,
-  getPeriodForDate,
-  getPreviousPeriod,
-  getTodayInPrague,
-  formatCzechDate,
-  normalizeStartDay,
-} from '../services/periodService';
+import { getTodayInPrague, formatCzechDate } from '../services/periodService';
+import type { DualPeriodRange } from '../services/periodRange';
 import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
 import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
 import { formatCurrency } from '../services/currencyService';
@@ -101,6 +91,7 @@ import {
 } from '../services/categoryCommands';
 import { importBackup as importBackupCommand } from '../services/dataCommands';
 import { useDriveSession } from '../hooks/useDriveSession';
+import { usePeriodForecast } from '../hooks/usePeriodForecast';
 
 export type DriveSyncStatus = SyncStatus;
 
@@ -130,7 +121,9 @@ interface FinanceContextType {
   currentPeriod: BudgetPeriod;
   selectedPeriod: BudgetPeriod;
   setSelectedPeriod: (p: BudgetPeriod) => void;
-  setOverviewPeriodBounds: (bounds: BudgetPeriod[] | null) => void;
+  /** Rozsah období obrazovek Majetek a Analýza; pamatuje se v rámci relace a předpověď ho vždy pokrývá. */
+  periodRanges: Record<PeriodRangeScreen, DualPeriodRange>;
+  setPeriodRange: (screen: PeriodRangeScreen, range: DualPeriodRange) => void;
   goToNextPeriod: () => void;
   goToPreviousPeriod: () => void;
   goToCurrentPeriod: () => void;
@@ -354,7 +347,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return outcome;
   }, [sessionChange, notifyNotSaved]);
 
-  const [todayStr, setTodayStr] = useState<string>(() => getTodayInPrague());
+  // Dnešek, období, rozsahy obrazovek a předpověď
+  const periodForecast = usePeriodForecast(data);
+  const { today: todayStr, setToday: setTodayStr, forecast } = periodForecast;
 
   const runAutoExecute = useCallback((customToday?: string) => {
     const currentToday = customToday || getTodayInPrague();
@@ -412,139 +407,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
 
     return () => clearInterval(interval);
   }, [runAutoExecute]);
-
-  const currentPeriod = useMemo(() => {
-    return getPeriodForDate(todayStr, data.settings.budgetStartDay);
-  }, [todayStr, data.settings.budgetStartDay]);
-
-  const [overviewPeriodBounds, setOverviewPeriodBounds] = useState<BudgetPeriod[] | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<BudgetPeriod>(() => currentPeriod);
-
-  useEffect(() => {
-    setSelectedPeriod(prev => createBudgetPeriod(prev.year, prev.month, data.settings.budgetStartDay));
-  }, [data.settings.budgetStartDay]);
-
-  const goToNextPeriod = useCallback(() => {
-    setSelectedPeriod(prev => getNextPeriod(prev));
-  }, [data.settings.budgetStartDay]);
-
-  const goToPreviousPeriod = useCallback(() => {
-    setSelectedPeriod(prev => getPreviousPeriod(prev));
-  }, [data.settings.budgetStartDay]);
-
-  const goToCurrentPeriod = useCallback(() => {
-    const liveToday = getTodayInPrague();
-    setTodayStr(liveToday);
-    const liveCurrentPeriod = getPeriodForDate(liveToday, data.settings.budgetStartDay);
-    setSelectedPeriod(liveCurrentPeriod);
-  }, [data.settings.budgetStartDay]);
-
-  const isCurrentPeriodSelected = useMemo(() => {
-    return selectedPeriod.startDate === currentPeriod.startDate && selectedPeriod.endDate === currentPeriod.endDate;
-  }, [selectedPeriod.startDate, selectedPeriod.endDate, currentPeriod.startDate, currentPeriod.endDate]);
-
-  // Rozsah období podle dat - nezávisí na vybraném období, aby přepnutí měsíce nepřepočítávalo celou předpověď
-  const dataPeriodBounds = useMemo(() => {
-    const startDay = normalizeStartDay(data.settings.budgetStartDay);
-    const forecastMonths = 12;
-
-    const baseForecastPeriods = generatePeriodsSequence(
-      currentPeriod.year,
-      currentPeriod.month,
-      forecastMonths,
-      startDay
-    );
-    const lastForecastPeriod = baseForecastPeriods[baseForecastPeriods.length - 1];
-
-    // Include every historical preset even when there are no recorded movements.
-    let earliestPeriod = getOverviewPeriods(currentPeriod, { direction: 'past', months: 12 }, startDay)[0];
-    let latestPeriod = lastForecastPeriod;
-
-    for (const period of overviewPeriodBounds || []) {
-      if (period.key < earliestPeriod.key) earliestPeriod = period;
-      if (period.key > latestPeriod.key) latestPeriod = period;
-    }
-
-    // Období na sebe navazují, takže pozdější datum nikdy nepatří do dřívějšího období. Stačí proto
-    // najít nejmenší a největší datum a období spočítat jen pro ně (ne pro každou položku zvlášť).
-    const dates: { min: string | null; max: string | null } = { min: null, max: null };
-    const consider = (date: string | undefined, extendsEnd: boolean) => {
-      if (!date) return;
-      if (dates.min === null || date < dates.min) dates.min = date;
-      if (extendsEnd && (dates.max === null || date > dates.max)) dates.max = date;
-    };
-    for (const tx of data.transactions) consider(tx.date, true);
-    for (const c of data.corrections) consider(c.checkDate, true);
-    for (const s of data.marketValueSnapshots) consider(s.date, true);
-    for (const r of data.recurringRules) consider(r.startDate, false);
-    for (const a of data.accounts) consider(a.initialBalanceDate, false);
-
-    if (dates.min !== null) {
-      const p = getPeriodForDate(dates.min, startDay);
-      if (p.startDate < earliestPeriod.startDate) earliestPeriod = p;
-    }
-    if (dates.max !== null) {
-      const p = getPeriodForDate(dates.max, startDay);
-      if (p.startDate > latestPeriod.startDate) latestPeriod = p;
-    }
-
-    return { earliestPeriod, latestPeriod };
-  }, [
-    currentPeriod,
-    overviewPeriodBounds,
-    data.transactions,
-    data.corrections,
-    data.marketValueSnapshots,
-    data.recurringRules,
-    data.accounts,
-    data.settings.budgetStartDay
-  ]);
-
-  // Vybrané období rozšiřuje rozsah jen tehdy, když leží mimo něj; sekvence se mění jen se změnou hranic
-  const rangeStart = selectedPeriod.startDate < dataPeriodBounds.earliestPeriod.startDate ? selectedPeriod : dataPeriodBounds.earliestPeriod;
-  const rangeEnd = selectedPeriod.startDate > dataPeriodBounds.latestPeriod.startDate ? selectedPeriod : dataPeriodBounds.latestPeriod;
-  const allPeriodsSequence = useMemo(
-    () => generatePeriodsBetween(rangeStart, rangeEnd),
-    // Období je plně určeno svými hranicemi, proto stačí závislost na datech hranic
-    [rangeStart.startDate, rangeStart.endDate, rangeEnd.startDate, rangeEnd.endDate, data.settings.budgetStartDay]
-  );
-
-  const forecast = useMemo(() => {
-    return calculateForecast(
-      allPeriodsSequence,
-      data.accounts,
-      data.transactions,
-      data.recurringRules,
-      data.recurringExceptions,
-      data.corrections,
-      data.settings,
-      data.marketValueSnapshots,
-      currentPeriod.key,
-      todayStr,
-      data.investmentFees
-    );
-  }, [
-    allPeriodsSequence,
-    data.accounts,
-    data.transactions,
-    data.recurringRules,
-    data.recurringExceptions,
-    data.corrections,
-    data.settings,
-    data.marketValueSnapshots,
-    data.investmentFees,
-    currentPeriod.key,
-    todayStr
-  ]);
-
-  const forecastSequence = useMemo(() => {
-    return forecast.forecastPeriods?.map(p => p.period) || generatePeriodsSequence(
-      currentPeriod.year,
-      currentPeriod.month,
-      12,
-      data.settings.budgetStartDay
-    );
-  }, [forecast.forecastPeriods, currentPeriod.year, currentPeriod.month, data.settings.budgetStartDay]);
 
   const quickOverview = useMemo(() => {
     return calculateQuickFinancialOverview(
@@ -1246,15 +1108,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     marketValueSnapshots: data.marketValueSnapshots,
     investmentFees: data.investmentFees || [],
 
-    currentPeriod,
-    selectedPeriod,
-    setSelectedPeriod,
-    setOverviewPeriodBounds,
-    goToNextPeriod,
-    goToPreviousPeriod,
-    goToCurrentPeriod,
-    isCurrentPeriodSelected,
-    forecastSequence,
+    currentPeriod: periodForecast.currentPeriod,
+    selectedPeriod: periodForecast.selectedPeriod,
+    setSelectedPeriod: periodForecast.setSelectedPeriod,
+    periodRanges: periodForecast.periodRanges,
+    setPeriodRange: periodForecast.setPeriodRange,
+    goToNextPeriod: periodForecast.goToNextPeriod,
+    goToPreviousPeriod: periodForecast.goToPreviousPeriod,
+    goToCurrentPeriod: periodForecast.goToCurrentPeriod,
+    isCurrentPeriodSelected: periodForecast.isCurrentPeriodSelected,
+    forecastSequence: periodForecast.forecastSequence,
     forecast,
     quickOverview,
 

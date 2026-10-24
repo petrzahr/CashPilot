@@ -6,14 +6,13 @@ import { SettingsScreen } from '../components/settings/SettingsScreen';
 import { createBudgetPeriod, getOverviewPeriods, OverviewRange } from '../services/periodService';
 import { getInitialData, validateAndParseBackup } from '../services/storageService';
 import { SyncController } from '../services/syncController';
+import { PeriodRangePresetId } from '../types/finance';
 
 const selection = vi.hoisted(() => ({ direction: 'future', months: 12, matrix: false }));
 vi.mock('react', async importOriginal => {
   const actual = await importOriginal<typeof import('react')>();
   return { ...actual, useState: (initial: unknown) => actual.useState(
-    initial && typeof initial === 'object' && 'direction' in initial
-      ? { direction: selection.direction, months: selection.months }
-      : initial === 'period' && selection.matrix ? 'matrix' : initial
+    initial === 'period' && selection.matrix ? 'matrix' : initial
   ) };
 });
 
@@ -27,6 +26,8 @@ afterEach(() => vi.useRealTimers());
 function renderOverview(startDay: number) {
   const data = getInitialData();
   data.settings.budgetStartDay = startDay;
+  // Rozsah se vybírá přes výchozí volbu z Nastavení; předpověď ho musí pokrýt sama
+  data.settings.defaultPeriodRanges = { overview: `${selection.direction}:${selection.months}` as PeriodRangePresetId };
   let finance!: ReturnType<typeof useFinance>;
   function Capture() { finance = useFinance(); return <OverviewScreen onNavigateToBudget={vi.fn()} />; }
   const session = { data, isReady: true } as SyncController;

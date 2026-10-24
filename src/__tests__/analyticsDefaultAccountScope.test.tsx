@@ -2,10 +2,11 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
-import { calculateForecast } from '../services/financialEngine';
+import { summarizePeriods } from '../services/financialEngine';
 import { formatCurrency } from '../services/currencyService';
 import { generatePeriodsSequence } from '../services/periodService';
 import { getInitialData } from '../services/storageService';
+import { getPresetRange } from '../services/periodRangePreference';
 import { Account, Transaction } from '../types/finance';
 
 const hooks = vi.hoisted(() => ({ finance: {} as any }));
@@ -28,8 +29,8 @@ function render(accounts: Account[]) {
   data.accounts = accounts;
   data.transactions = [tx('a', 'Nákup z hlavního', 'main', 300000), tx('b', 'Nákup kreditkou', 'card', 900000)];
   const periods = generatePeriodsSequence(2025, 10, 12, 1);
-  const forecast = calculateForecast(periods, data.accounts, data.transactions, [], [], [], data.settings, [], '2026-09', '2026-09-10');
-  hooks.finance = { ...data, forecast, setOverviewPeriodBounds: vi.fn() };
+  const forecast = summarizePeriods(periods, { accounts: data.accounts, transactions: data.transactions }, { currentPeriodKey: '2026-09', today: '2026-09-10' });
+  hooks.finance = { ...data, forecast, periodRanges: { analytics: getPresetRange('past:12') }, setPeriodRange: vi.fn() };
   return renderToStaticMarkup(<AnalyticsScreen />);
 }
 
