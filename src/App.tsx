@@ -253,7 +253,7 @@ export function AppContent() {
     loadState,
     loadErrorDetails,
     restoreFromBackupFile,
-    resetToFreshData,
+    reloadFromDrive,
     retryLoadData,
   } = useFinance();
 
@@ -265,7 +265,7 @@ export function AppContent() {
           recoveryKey={loadErrorDetails?.recoveryKey}
           corruptedRaw={loadErrorDetails?.corruptedRaw}
           onRestoreBackup={restoreFromBackupFile}
-          onResetToFresh={resetToFreshData}
+          onReloadFromDrive={reloadFromDrive}
           onRetry={retryLoadData}
         />
         <ToastContainer />

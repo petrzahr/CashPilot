@@ -27,7 +27,6 @@ import {
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_SETTINGS,
-  createEmptyAppData,
   createResetAppData,
 } from '../constants/defaultData';
 import {
@@ -218,7 +217,7 @@ interface FinanceContextType {
   loadState: AppLoadState;
   loadErrorDetails: { message: string; recoveryKey?: string; corruptedRaw?: string } | null;
   restoreFromBackupFile: (jsonStr: string) => void;
-  resetToFreshData: () => void;
+  reloadFromDrive: () => void;
   retryLoadData: () => void;
 
   // Nastavení & Správa dat
@@ -1144,23 +1143,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return true;
   }, [saveData, showToast]);
 
+  // Obnova z obrazovky chyby načtení: poškozená je jen lokální obálka, data na Google Disku
+  // se nikdy neresetují. Relace se načte z Disku a výsledek přijde přes onData.
+  const discardCorruptedCache = session.discardCorruptedCache;
+  const reloadFromDrive = useCallback(() => {
+    void discardCorruptedCache();
+  }, [discardCorruptedCache]);
+
+  // Neplatný soubor vyhodí chybu synchronně, ještě než se cokoli smaže
   const restoreFromBackupFile = useCallback((jsonStr: string) => {
     const parsed = validateAndParseBackup(jsonStr);
-    if (!saveData(parsed)) return;
-
-    setLoadState('ready');
-    setLoadErrorDetails(null);
-    showToast('Data byla obnovena ze zálohy.');
-  }, [saveData, showToast]);
-
-  const resetToFreshData = useCallback(() => {
-    const fresh = createEmptyAppData();
-    if (!saveData(fresh, true)) return;
-
-    setLoadState('ready');
-    setLoadErrorDetails(null);
-    showToast('Aplikace začíná s prázdnými daty.');
-  }, [saveData, showToast]);
+    void discardCorruptedCache().then(result => {
+      if (result === 'refused') return;
+      let merged = false;
+      if (result === 'ready') {
+        try {
+          merged = runCommand(prev => importBackupCommand(prev, parsed), { silent: true }) !== undefined;
+        } catch {
+          // Chybu zápisu už hlásí stav synchronizace; záloha se jen nesloučila
+        }
+      }
+      if (merged) {
+        showToast('Data z Google Disku byla načtena a záloha s nimi sloučena.');
+      } else {
+        showToast('Zálohu se zatím nepodařilo sloučit. Až se data z Google Disku načtou, sloučte ji v Nastavení.', 'error');
+      }
+    });
+  }, [discardCorruptedCache, runCommand, showToast]);
 
   // Znovu založí relaci: obálku účtu načte SyncController, výsledek přijde přes onData nebo onLoadError
   const retrySession = session.syncWithGoogleDrive;
@@ -1296,7 +1305,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     loadState,
     loadErrorDetails,
     restoreFromBackupFile,
-    resetToFreshData,
+    reloadFromDrive,
     retryLoadData,
     clearAllTransactions,
     clearAllAccounts,

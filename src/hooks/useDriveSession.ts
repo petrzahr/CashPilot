@@ -188,6 +188,36 @@ export function useDriveSession(options: DriveSessionOptions) {
     }
   }, [startCloudSession, connectGoogleDrive]);
 
+  /**
+   * Zahodí poškozenou lokální obálku a načte data z Google Disku jako na novém zařízení.
+   * Nová obálka nemá resetMarker, takže cloud zůstane netknutý. Obálka se smaže jen tehdy,
+   * když je její přesná kopie bezpečně uložená pod recovery klíčem. Vrací 'ready', když je relace
+   * po úvodní synchronizaci připravená na zápis, 'pending', když se úvodní synchronizace nedokončila,
+   * a 'refused', když se obálka nesmazala (důvod už oznámil toast).
+   */
+  const discardCorruptedCache = useCallback(async (): Promise<'ready' | 'pending' | 'refused'> => {
+    const { showToast } = callbacks.current;
+    const token = getValidAccessToken();
+    if (!token || !driveUser?.permissionId || controllerRef.current) {
+      showToast('Data z Google Disku teď nelze načíst. Zkuste nejdřív „Načíst znovu“.', 'error');
+      return 'refused';
+    }
+    const key = accountStorageKey(driveUser.permissionId);
+    const raw = localStorage.getItem(key);
+    if (raw !== null) {
+      const recoveryKey = saveCorruptedRecoveryCopy(raw);
+      if (!recoveryKey || localStorage.getItem(recoveryKey) !== raw) {
+        showToast('Kopii poškozených dat se nepodařilo uložit, proto zůstala beze změny.', 'error');
+        return 'refused';
+      }
+      localStorage.removeItem(key);
+    }
+    await startCloudSession(token, ++authGeneration.current);
+    // startCloudSession controller nastavil; TS po await kontrolu výše nezneplatní
+    const controller = controllerRef.current as SyncController | null;
+    return controller?.isReady ? 'ready' : 'pending';
+  }, [driveUser, startCloudSession]);
+
   // Selhání synchronizace se nesmí ztratit v barevné tečce: při přechodu do chyby nebo konfliktu
   // zůstane oznámení s možností zkusit to znovu, po obnovení přijde krátké potvrzení.
   const lastSyncProblemRef = useRef(false);
@@ -241,6 +271,7 @@ export function useDriveSession(options: DriveSessionOptions) {
     connectGoogleDrive,
     disconnectGoogleDrive,
     syncWithGoogleDrive,
+    discardCorruptedCache,
     setDriveBackupEnabled,
     runDriveBackupNow,
   };

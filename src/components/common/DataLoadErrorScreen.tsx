@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { AlertTriangle, Download, Upload, RefreshCw, Trash2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Download, Upload, RefreshCw, CloudDownload, ShieldCheck } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { exportCorruptedRawData } from '../../services/storageService';
 
@@ -8,7 +8,7 @@ interface DataLoadErrorScreenProps {
   recoveryKey?: string;
   corruptedRaw?: string;
   onRestoreBackup: (jsonStr: string) => void;
-  onResetToFresh: () => void;
+  onReloadFromDrive: () => void;
   onRetry: () => void;
 }
 
@@ -17,12 +17,16 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
   recoveryKey,
   corruptedRaw,
   onRestoreBackup,
-  onResetToFresh,
+  onReloadFromDrive,
   onRetry,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [confirmReloadOpen, setConfirmReloadOpen] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
+  const keptCopyNote = recoveryKey
+    ? ` Změny, které se z tohoto prohlížeče ještě neodeslaly, zůstanou jen v kopii pod klíčem „${recoveryKey}“ – pokud je chcete mít v souboru, stáhněte si je nejdřív.`
+    : ' Změny, které se z tohoto prohlížeče ještě neodeslaly, se nenačtou – pokud je chcete mít v souboru, stáhněte si je nejdřív.';
 
   const handleDownloadCorrupted = () => {
     if (corruptedRaw) {
@@ -36,16 +40,21 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string;
-        onRestoreBackup(text);
-        setRestoreError(null);
-      } catch (err: any) {
-        setRestoreError(err.message || 'Soubor se zálohou se nepodařilo načíst. Zkontrolujte, že jde o zálohu z CashPilotu (.json).');
-      }
+      setPendingBackup(event.target?.result as string);
     };
     reader.readAsText(file);
     if (e.target) e.target.value = '';
+  };
+
+  // Neplatná záloha skončí chybou ještě před smazáním čehokoli
+  const handleConfirmRestore = () => {
+    if (pendingBackup === null) return;
+    try {
+      onRestoreBackup(pendingBackup);
+      setRestoreError(null);
+    } catch (err: any) {
+      setRestoreError(err.message || 'Soubor se zálohou se nepodařilo načíst. Zkontrolujte, že jde o zálohu z CashPilotu (.json).');
+    }
   };
 
   return (
@@ -130,23 +139,33 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
 
             <button
               type="button"
-              onClick={() => setConfirmResetOpen(true)}
+              onClick={() => setConfirmReloadOpen(true)}
               className="btn-text btn-text-danger -mx-1"
             >
-              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Začít s prázdnými daty</span>
+              <CloudDownload className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Načíst data z Google Disku</span>
             </button>
           </div>
         </div>
       </div>
 
       <ConfirmationModal
-        isOpen={confirmResetOpen}
-        onClose={() => setConfirmResetOpen(false)}
-        onConfirm={onResetToFresh}
-        title="Začít s prázdnými daty?"
-        message="Poškozená data v tomto prohlížeči se zahodí a aplikace začne bez účtů a položek. Pokud jste si je ještě nestáhli, udělejte to nejdřív."
-        confirmText="Zahodit data a začít znovu"
+        isOpen={confirmReloadOpen}
+        onClose={() => setConfirmReloadOpen(false)}
+        onConfirm={onReloadFromDrive}
+        title="Načíst data z Google Disku?"
+        message={`Poškozená data v tomto prohlížeči se zahodí a aplikace načte data uložená na Google Disku. Data na Disku zůstanou beze změny.${keptCopyNote}`}
+        confirmText="Zahodit a načíst z Disku"
+        isDestructive
+      />
+
+      <ConfirmationModal
+        isOpen={pendingBackup !== null}
+        onClose={() => setPendingBackup(null)}
+        onConfirm={handleConfirmRestore}
+        title="Obnovit ze zálohy?"
+        message={`Poškozená data v tomto prohlížeči se zahodí, aplikace načte data z Google Disku a sloučí s nimi vybranou zálohu. Nic z Disku se nesmaže.${keptCopyNote}`}
+        confirmText="Zahodit a sloučit se zálohou"
         isDestructive
       />
     </div>
