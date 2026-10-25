@@ -53,7 +53,7 @@ export function parseVirtualId(id: string): { ruleId: string; periodKey: string 
  * Zruší pevné pozice (overrideSequence) jednotlivých period u daných pravidel, aby pořadí
  * série platilo všude. Výjimky, které po tom nenesou žádnou jinou změnu, se odstraní.
  */
-function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<string>): RecurringException[] {
+function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<string>, nowIso: string): RecurringException[] {
   return exceptions.flatMap(e => {
     if (!ruleIds.has(e.ruleId) || e.overrideSequence === undefined) return [e];
     const { overrideSequence: _removed, ...rest } = e;
@@ -61,7 +61,7 @@ function clearSequenceOverrides(exceptions: RecurringException[], ruleIds: Set<s
       rest.overrideAmountInHaler !== undefined || rest.overrideSourceAccountId !== undefined ||
       rest.overrideTargetAccountId !== undefined || rest.overrideCategoryId !== undefined ||
       rest.overrideSubcategoryId !== undefined;
-    return carriesOtherChange ? [{ ...rest, updatedAt: new Date().toISOString() }] : [];
+    return carriesOtherChange ? [{ ...rest, updatedAt: nowIso }] : [];
   });
 }
 
@@ -101,14 +101,15 @@ export function withSequenceExceptions(
   exceptions: RecurringException[],
   positions: Map<string, number>,
   periodKey: string,
-  nowIso: string
+  ctx: CommandContext
 ): RecurringException[] {
+  const { nowIso } = ctx;
   let result = exceptions;
   positions.forEach((seq, ruleId) => {
     const idx = result.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
     result = idx >= 0
       ? result.map((e, i) => i === idx ? { ...e, overrideSequence: seq, updatedAt: nowIso } : e)
-      : [...result, { id: `ex_${Date.now()}_${ruleId}`, ruleId, periodKey, overrideSequence: seq, createdAt: nowIso, updatedAt: nowIso }];
+      : [...result, { id: ctx.newId('ex', `_${ruleId}`), ruleId, periodKey, overrideSequence: seq, createdAt: nowIso, updatedAt: nowIso }];
   });
   return result;
 }
@@ -513,7 +514,7 @@ export function reorderDayTransactions(
             data.recurringExceptions,
             virtualPositions,
             getPeriodForDate(date, data.settings.budgetStartDay).key,
-            ctx.nowIso
+            ctx
           )
         : data.recurringExceptions,
     },
@@ -907,7 +908,7 @@ export function reorderRecurringItem(
     return {
       data: {
         ...data,
-        recurringExceptions: withSequenceExceptions(data.recurringExceptions, positions, periodKey, nowIso),
+        recurringExceptions: withSequenceExceptions(data.recurringExceptions, positions, periodKey, ctx),
         transactions: reorderRealToday(data.transactions),
       },
       outcome: { reordered: true },
@@ -957,7 +958,7 @@ export function reorderRecurringItem(
         ...data,
         recurringRules: rules,
         recurringExceptions: withSequenceExceptions(
-          clearSequenceOverrides(exceptions, new Set(newRanks.keys())), newPositions, periodKey, nowIso
+          clearSequenceOverrides(exceptions, new Set(newRanks.keys()), nowIso), newPositions, periodKey, ctx
         ),
         transactions: applyRulePositions(reorderRealToday(txs), toRuleOrder(newRanks, newPositions), date),
       },
@@ -973,7 +974,7 @@ export function reorderRecurringItem(
         ? { ...r, orderRank: ranks.get(r.id), orderPosition: positions.get(r.id), orderRankUpdatedAt: nowIso, updatedAt: nowIso }
         : r),
       recurringExceptions: withSequenceExceptions(
-        clearSequenceOverrides(data.recurringExceptions, new Set(ranks.keys())), positions, periodKey, nowIso
+        clearSequenceOverrides(data.recurringExceptions, new Set(ranks.keys()), nowIso), positions, periodKey, ctx
       ),
       transactions: applyRulePositions(reorderRealToday(data.transactions), toRuleOrder(ranks, positions)),
     },

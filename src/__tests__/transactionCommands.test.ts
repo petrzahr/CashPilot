@@ -10,6 +10,7 @@ import {
   deleteTransaction,
   parseVirtualId,
   reorderDayTransactions,
+  reorderRecurringItem,
   restoreDeletedTransaction,
   setTransactionStatus,
   updateRecurringRule,
@@ -340,6 +341,28 @@ describe('reorderDayTransactions', () => {
     const data = dataWith({ transactions: [tx({ id: 'a', sequence: 1 }), tx({ id: 'b', sequence: 2 })] });
     const { data: after } = reorderDayTransactions(data, { date: '2026-09-20', orderedIds: ['b', 'a'] }, ctx);
     expect(after.recurringExceptions).toBe(data.recurringExceptions);
+  });
+});
+
+describe('reorderRecurringItem', () => {
+  it('výjimky dostanou čas i ID z kontextu příkazu, ne z hodin prohlížeče', () => {
+    const fixedCtx = { ...ctx, nowIso: '2030-01-01T00:00:00.000Z', newId: (prefix: string, suffix = '') => `${prefix}_fixed${suffix}` };
+    const data = dataWith({
+      recurringRules: [rule],
+      recurringExceptions: [{ id: 'ex_aug', ruleId: rule.id, periodKey: '2026-08', overrideSequence: 3, overrideAmountInHaler: 5, createdAt: '' }],
+      transactions: [tx({ id: 'a', sequence: 1 })],
+    });
+    const moved = 'virtual_rule_rent_2026-09';
+    const { data: after } = reorderRecurringItem(data, {
+      ruleId: rule.id, mode: 'series', date: '2026-09-20', periodKey: '2026-09', orderedIds: [moved, 'a'], movedTransactionId: moved,
+    }, fixedCtx);
+
+    const aug = after.recurringExceptions.find(e => e.periodKey === '2026-08')!;
+    expect(aug.overrideSequence).toBeUndefined();
+    expect(aug.updatedAt).toBe(fixedCtx.nowIso);
+    expect(after.recurringExceptions.find(e => e.periodKey === '2026-09')).toMatchObject({
+      id: 'ex_fixed_rule_rent', overrideSequence: 1, createdAt: fixedCtx.nowIso,
+    });
   });
 });
 
