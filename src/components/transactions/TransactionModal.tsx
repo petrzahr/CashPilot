@@ -68,7 +68,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     updateTransaction,
     addRecurringRule,
     updateRecurringRule,
-    reorderRecurringItem,
   } = useFinance();
 
   // Další volné pořadí v daném dni musí počítat i s ještě nezhmotněnými (virtuálními)
@@ -387,7 +386,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               });
             }
           } else {
-            const futureRuleId = updateRecurringRule(
+            // Pořadí se nastaví stejně jako přetažením, jen když se pořadí nebo den změnily
+            const seqChanged = sequenceNum !== (transactionToEdit.sequence || 1);
+            const placement = seqChanged || date !== transactionToEdit.date
+              ? { date, position: sequenceNum }
+              : undefined;
+            updateRecurringRule(
               transactionToEdit.recurringRuleId,
               recurringEditMode,
               selectedPeriod.key,
@@ -403,33 +407,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
                 note
               },
-              transactionToEdit.id
+              transactionToEdit.id,
+              placement
             );
-
-            // Pořadí se nastaví stejně jako přetažením: pozice v tomto dni a pořadí mezi
-            // opakovanými platbami pro ostatní období. U „tento a budoucí“ už pravidlo
-            // bylo rozštěpené, takže se pořadí nastaví nové větvi (ta minulost nemá).
-            const seqChanged = sequenceNum !== (transactionToEdit.sequence || 1);
-            const targetRuleId = recurringEditMode === 'future' ? futureRuleId : transactionToEdit.recurringRuleId;
-            if (targetRuleId && (seqChanged || date !== transactionToEdit.date)) {
-              const ruleId = transactionToEdit.recurringRuleId;
-              const targetPeriod = getPeriodForDate(date, settings.budgetStartDay);
-              const movedId = transactionToEdit.id.startsWith('virtual_')
-                ? `virtual_${targetRuleId}_${targetPeriod.key}`
-                : transactionToEdit.id;
-              const orderedIds = getEffectiveTransactionsForPeriod(
-                targetPeriod,
-                transactions,
-                recurringRules,
-                recurringExceptions,
-                undefined,
-                accounts
-              )
-                .filter(t => t.date === date && t.recurringRuleId !== ruleId && t.id !== transactionToEdit.id)
-                .map(t => t.id);
-              orderedIds.splice(Math.min(sequenceNum - 1, orderedIds.length), 0, movedId);
-              reorderRecurringItem(targetRuleId, recurringEditMode, date, targetPeriod.key, orderedIds, movedId);
-            }
           }
         } else {
           updateTransaction({

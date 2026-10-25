@@ -44,6 +44,7 @@ import type { GoogleUser } from '../services/googleDriveService';
 
 import {
   CommandResult,
+  DayPlacement,
   RecurringMode,
   StatusUpdates,
   createCommandContext,
@@ -168,8 +169,9 @@ interface FinanceContextType {
     mode: 'occurrence' | 'future' | 'series',
     periodKey: string,
     overrideData: Partial<Transaction>,
-    originalTransactionId?: string
-  ) => string | undefined; // mode 'future': ID nové (odštěpené) větve pravidla
+    originalTransactionId?: string,
+    placement?: DayPlacement
+  ) => void;
   deleteRecurringRule: (id: string) => void;
   reorderRecurringItem: (
     ruleId: string,
@@ -560,21 +562,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     mode: RecurringMode,
     periodKey: string,
     overrideData: Partial<Transaction>,
-    originalTransactionId?: string
-  ): string | undefined => {
-    const ctx = createCommandContext(todayStr);
-    // ID nové větve se určí předem, aby ho volající znal - např. pro následné nastavení pořadí.
-    const futureRuleId = mode === 'future' ? ctx.newId('rec', '_split') : undefined;
+    originalTransactionId?: string,
+    placement?: DayPlacement
+  ) => {
     const outcome = runCommand(prev => updateRecurringRuleCommand(
       prev,
-      { ruleId, mode, periodKey, overrideData, originalTransactionId, futureRuleId },
-      ctx
+      { ruleId, mode, periodKey, overrideData, originalTransactionId, placement },
+      createCommandContext(todayStr)
     ));
-    if (!outcome) return undefined;
+    if (!outcome) return;
 
     const ruleTitle = outcome.ruleTitle;
     showToast(ruleTitle ? `Pravidelná položka „${ruleTitle}“ byla upravena.` : 'Pravidelná položka byla upravena.');
-    return futureRuleId;
   }, [runCommand, todayStr, showToast]);
 
   const reorderRecurringItem = useCallback((

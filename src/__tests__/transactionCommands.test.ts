@@ -5,6 +5,7 @@ import {
   addRecurringRule,
   addTransaction,
   autoExecute,
+  buildVirtualId,
   createCommandContext,
   deleteRecurringRule,
   deleteTransaction,
@@ -16,6 +17,8 @@ import {
   updateRecurringRule,
   updateTransaction,
 } from '../services/transactionCommands';
+import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { getPeriodForDate } from '../services/periodService';
 import { Account, BalanceCorrection, RecurringRule, Transaction } from '../types/finance';
 
 const ctx = createCommandContext('2026-09-13', new Date('2026-09-13T10:00:00Z'));
@@ -47,6 +50,11 @@ describe('parseVirtualId', () => {
   it('rozloží ID pravidla s podtržítky a klíč období', () => {
     expect(parseVirtualId('virtual_rule_rent_2026-09')).toEqual({ ruleId: 'rule_rent', periodKey: '2026-09' });
     expect(parseVirtualId('tx_1')).toBeNull();
+  });
+
+  it('buildVirtualId je jeho opak', () => {
+    expect(buildVirtualId('rule_rent', '2026-09')).toBe('virtual_rule_rent_2026-09');
+    expect(parseVirtualId(buildVirtualId('rule_rent', '2026-09'))).toEqual({ ruleId: 'rule_rent', periodKey: '2026-09' });
   });
 });
 
@@ -223,6 +231,56 @@ describe('updateRecurringRule', () => {
     expect(after.recurringRules[0]).toMatchObject({ title: 'Bydlení', amountInHaler: 2000000 });
     expect(after.transactions.find(t => t.id === 'occ_2026-08-20')).toMatchObject({ title: 'Bydlení', actualAmountInHaler: 2000000 });
     expect(outcome).toEqual({ ruleTitle: 'Bydlení' });
+  });
+
+  describe('s pozicí v dni (placement)', () => {
+    const manual = (id: string, date: string) => tx({ id, title: 'Nákup', date, sequence: 1 });
+    const dayOrder = (after: AppData, date: string) => {
+      const period = getPeriodForDate(date, 15);
+      return getEffectiveTransactionsForPeriod(period, after.transactions, after.recurringRules, after.recurringExceptions)
+        .filter(t => t.date === date)
+        .map(t => t.recurringRuleId || t.id);
+    };
+
+    it('budoucí: v jednom příkazu rozštěpí pravidlo a nové větvi dá pozici, bez dalšího štěpení', () => {
+      const data = dataWith({ recurringRules: [rule], transactions: [manual('m', '2026-10-20')] });
+      const { data: after } = updateRecurringRule(data, {
+        ruleId: rule.id, mode: 'future', periodKey: '2026-10',
+        overrideData: { date: '2026-10-20', amountInHaler: 2000000 },
+        originalTransactionId: buildVirtualId(rule.id, '2026-10'),
+        futureRuleId: 'rule_new',
+        placement: { date: '2026-10-20', position: 1 },
+      }, ctx);
+
+      expect(after.recurringRules).toHaveLength(2);
+      expect(after.recurringRules.find(r => r.id === rule.id)!.endDate).toBe('2026-10-19');
+      expect(after.recurringRules.find(r => r.id === 'rule_new')).toMatchObject({ amountInHaler: 2000000, orderRank: 1 });
+      expect(dayOrder(after, '2026-10-20')).toEqual(['rule_new', 'm']);
+    });
+
+    it('série: zhmotněný výskyt jde na danou pozici a pořadí platí i v dalších obdobích', () => {
+      const data = dataWith({
+        recurringRules: [rule],
+        transactions: [manual('m', '2026-10-20'), occurrence('2026-10-20', { sequence: 2 }), manual('n', '2026-11-20')],
+      });
+      const { data: after } = updateRecurringRule(data, {
+        ruleId: rule.id, mode: 'series', periodKey: '2026-10',
+        overrideData: { title: 'Bydlení' },
+        originalTransactionId: 'occ_2026-10-20',
+        placement: { date: '2026-10-20', position: 1 },
+      }, ctx);
+
+      expect(after.recurringRules).toEqual([expect.objectContaining({ id: rule.id, title: 'Bydlení', orderRank: 1 })]);
+      expect(after.transactions.find(t => t.id === 'occ_2026-10-20')).toMatchObject({ title: 'Bydlení', sequence: 1 });
+      expect(after.transactions.find(t => t.id === 'm')!.sequence).toBe(2);
+      expect(dayOrder(after, '2026-11-20')).toEqual([rule.id, 'n']);
+    });
+
+    it('bez pozice zůstává pořadí série beze změny', () => {
+      const { data: after } = updateRecurringRule(data, { ruleId: rule.id, mode: 'series', periodKey: '2026-09', overrideData: { title: 'Bydlení' } }, ctx);
+      expect(after.recurringRules[0].orderRank).toBeUndefined();
+      expect(after.recurringExceptions).toEqual([]);
+    });
   });
 });
 

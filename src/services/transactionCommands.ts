@@ -1,6 +1,6 @@
 import { BalanceCorrection, RecurringException, RecurringRule, Transaction, TransactionStatus } from '../types/finance';
 import type { AppData } from './storageService';
-import { generateOccurrenceForPeriod } from './financialEngine';
+import { generateOccurrenceForPeriod, getEffectiveTransactionsForPeriod } from './financialEngine';
 import { createBudgetPeriod, formatCzechDate, getDaysInMonth, getPeriodForDate, getPreviousDay } from './periodService';
 import { autoExecuteDueTransactions, getStatusForDate } from './statusService';
 import {
@@ -47,6 +47,11 @@ export function parseVirtualId(id: string): { ruleId: string; periodKey: string 
   const rest = id.slice('virtual_'.length);
   const cut = rest.lastIndexOf('_');
   return cut > 0 ? { ruleId: rest.slice(0, cut), periodKey: rest.slice(cut + 1) } : null;
+}
+
+/** ID virtuálního výskytu pravidla v daném období (opak parseVirtualId). */
+export function buildVirtualId(ruleId: string, periodKey: string): string {
+  return `virtual_${ruleId}_${periodKey}`;
 }
 
 /**
@@ -717,12 +722,52 @@ export function addRecurringRule(
   };
 }
 
+/** Cílové místo upraveného výskytu: den a pozice v něm (1 = první položka dne). */
+export interface DayPlacement {
+  date: string;
+  position: number;
+}
+
+/**
+ * Postaví upravený výskyt na danou pozici dne stejně jako přetažení: pozice v tomto dni
+ * a pořadí mezi opakovanými platbami pro ostatní období (reorderRecurringItem).
+ */
+function placeEditedOccurrence(
+  data: AppData,
+  input: { originalRuleId: string; targetRuleId: string; mode: RecurringMode; originalTransactionId?: string; placement: DayPlacement },
+  ctx: CommandContext
+): AppData {
+  const { originalRuleId, targetRuleId, mode, originalTransactionId, placement: { date, position } } = input;
+  const period = getPeriodForDate(date, data.settings.budgetStartDay);
+  const movedId = originalTransactionId && !originalTransactionId.startsWith('virtual_')
+    ? originalTransactionId
+    : buildVirtualId(targetRuleId, period.key);
+  const orderedIds = getEffectiveTransactionsForPeriod(
+    period,
+    data.transactions,
+    data.recurringRules,
+    data.recurringExceptions,
+    undefined,
+    data.accounts
+  )
+    .filter(t => t.date === date && t.recurringRuleId !== originalRuleId && t.recurringRuleId !== targetRuleId && t.id !== movedId)
+    .map(t => t.id);
+  orderedIds.splice(Math.min(Math.max(1, position) - 1, orderedIds.length), 0, movedId);
+  return reorderRecurringItem(
+    data,
+    { ruleId: targetRuleId, mode, date, periodKey: period.key, orderedIds, movedTransactionId: movedId },
+    ctx
+  ).data;
+}
+
 /**
  * Upraví pravidelnou platbu:
  * - occurrence: výjimka jen pro dané období,
- * - future: pravidlo se rozštěpí k datu výskytu a nová větev nese změny (její ID vrací outcome),
+ * - future: pravidlo se rozštěpí k datu výskytu a nová větev nese změny,
  * - series: změna celé série včetně už zhmotněných výskytů; změna dne v měsíci posune
  *   i začátek pravidla a přečísluje přesunuté výskyty.
+ * S placement (future a series) se upravený výskyt v témže příkazu postaví na danou
+ * pozici dne; u future dostane pořadí nová větev (minulost nemá).
  */
 export function updateRecurringRule(
   data: AppData,
@@ -732,15 +777,19 @@ export function updateRecurringRule(
     periodKey: string;
     overrideData: Partial<Transaction>;
     originalTransactionId?: string;
-    /** ID nové větve v režimu future; volající ho zná předem (např. pro následné pořadí). */
+    /** ID nové větve v režimu future; bez něj se vytvoří z kontextu. */
     futureRuleId?: string;
+    placement?: DayPlacement;
   },
   ctx: CommandContext
 ): CommandResult<{ ruleTitle?: string }> {
-  const { ruleId, mode, periodKey, overrideData, originalTransactionId } = input;
+  const { ruleId, mode, periodKey, overrideData, originalTransactionId, placement } = input;
   const rule = data.recurringRules.find(r => r.id === ruleId);
   const outcome = { ruleTitle: overrideData.title ?? rule?.title };
   if (!rule) return { data, outcome };
+  const placed = (next: AppData, targetRuleId: string): AppData => placement
+    ? placeEditedOccurrence(next, { originalRuleId: ruleId, targetRuleId, mode, originalTransactionId, placement }, ctx)
+    : next;
 
   if (mode === 'occurrence') {
     const existingExIndex = data.recurringExceptions.findIndex(e => e.ruleId === ruleId && e.periodKey === periodKey);
@@ -786,12 +835,12 @@ export function updateRecurringRule(
       input.futureRuleId ?? ctx.newId('rec', '_split')
     );
     return {
-      data: {
+      data: placed({
         ...data,
         recurringRules: [...data.recurringRules.map(r => r.id === ruleId ? updatedOldRule : r), newFutureRule],
         recurringExceptions: updatedExceptions,
         transactions: updatedTransactions,
-      },
+      }, newFutureRule.id),
       outcome,
     };
   }
@@ -857,11 +906,11 @@ export function updateRecurringRule(
   }
 
   return {
-    data: {
+    data: placed({
       ...data,
       recurringRules: data.recurringRules.map(r => r.id === ruleId ? updatedSeries : r),
       transactions: updatedTxs,
-    },
+    }, ruleId),
     outcome,
   };
 }

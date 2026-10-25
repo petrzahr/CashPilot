@@ -373,14 +373,12 @@ describe('reorderRecurringItem - přeuspořádání opakující se položky s vo
       .find(t => t.recurringRuleId === gymRule.id)!;
     expect(virtual.sequence).toBe(2);
 
-    // Stejný tok jako TransactionModal: úprava „tento a budoucí“, pak pořadí 1 pro novou větev
-    const newRuleId = ctx.updateRecurringRule(gymRule.id, 'future', period.key, { amountInHaler: 90000, date: '2026-10-15' }, virtual.id);
-    expect(newRuleId).toBeTruthy();
-    const movedId = `virtual_${newRuleId}_${period.key}`;
-    ctx.reorderRecurringItem(newRuleId, 'future', '2026-10-15', period.key, [movedId, octManual.id], movedId);
+    // Úprava „tento a budoucí“ s pořadím 1 v jednom příkazu
+    ctx.updateRecurringRule(gymRule.id, 'future', period.key, { amountInHaler: 90000, date: '2026-10-15' }, virtual.id, { date: '2026-10-15', position: 1 });
 
     const stored = loadStoredDataResult().data;
     expect(stored.recurringRules).toHaveLength(2);
+    const newRuleId = stored.recurringRules.find(r => r.id !== gymRule.id)!.id;
     expect(stored.recurringRules.find(r => r.id === newRuleId)?.orderRank).toBe(1);
     const day = getEffectiveTransactionsForPeriod(period, stored.transactions, stored.recurringRules, stored.recurringExceptions)
       .filter(t => t.date === '2026-10-15');
