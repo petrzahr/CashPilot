@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatCurrency } from '../../services/currencyService';
-import { addHaler, subHaler } from '../../services/currencyService';
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
 import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
 import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
-import { getTodayInPrague } from '../../services/periodService';
+import { getAccountRow, getScopeRow } from '../../services/overviewRows';
+import { getSignTone, ItemAmountTone } from '../../services/itemRow';
 import { BudgetPeriod } from '../../types/finance';
 import {
   ChevronRight,
@@ -17,8 +17,12 @@ interface OverviewScreenProps {
   onNavigateToBudget: (period: BudgetPeriod) => void;
 }
 
+// Nula je v tabulkách zůstatků tlumená, ne inkoustová jako ve výpisech položek
+const signToneClass = (tone: ItemAmountTone) =>
+  tone === 'positive' ? 'text-emerald-600' : tone === 'negative' ? 'text-red-600' : 'text-slate-500';
+
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudget }) => {
-  const { forecast, settings, accounts, setSelectedPeriod, periodRanges, setPeriodRange, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
+  const { forecast, settings, accounts, today: todayStr, setSelectedPeriod, periodRanges, setPeriodRange, transactions = [], corrections = [], marketValueSnapshots = [] } = useFinance();
   // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
   const range = periodRanges.overview;
   const setRange = (newRange: DualPeriodRange) => setPeriodRange('overview', newRange);
@@ -34,10 +38,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     return summary ? [summary] : [];
   }), [forecast, selectedPeriods]);
 
-  const accountPeriods = displayPeriods;
-
   // Rozložení celkového majetku za stejná období jako tabulky
-  const todayStr = getTodayInPrague();
   const portfolioComposition = useMemo(() => calculatePortfolioComposition(
     selectedPeriods.map(period => createBudgetPeriodInfo(period, todayStr)),
     accounts,
@@ -114,23 +115,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
             <tbody className="divide-y divide-slate-100">
               {displayPeriods.map((p) => {
                 const isCurrent = p.period.key === forecast.currentPeriod.key;
-                
-                const opening = forecastScope === 'usable' ? p.usableOpeningInHaler : p.openingBalanceInHaler;
-                const closing = forecastScope === 'usable' ? p.usableClosingInHaler : p.closingBalanceInHaler;
-                const change = forecastScope === 'usable' ? p.usableNetChangeInHaler : p.netChangeInHaler;
-
-                // Příjmy, výdaje a čisté převody jen z účtů zvoleného pohledu, aby řádek seděl na Čistou změnu
-                let scopeIncome = 0;
-                let scopeExpense = 0;
-                let scopeTransfers = 0;
-                for (const [accountId, bal] of Object.entries(p.accountBalances)) {
-                  if (forecastScope === 'usable' && !accounts.find(a => a.id === accountId)?.isUsableCash) continue;
-                  scopeIncome = addHaler(scopeIncome, bal.incomeInHaler);
-                  scopeExpense = addHaler(scopeExpense, bal.expenseInHaler);
-                  scopeTransfers = addHaler(scopeTransfers, subHaler(bal.transfersInInHaler, bal.transfersOutInHaler));
-                }
-
-                const isNegative = closing < 0;
+                const row = getScopeRow(p, accounts, forecastScope);
 
                 return (
                   <tr
@@ -159,28 +144,24 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       )}
                     </td>
                     <td className="py-3 px-4 w-[140px] text-right text-slate-500 font-medium">
-                      {formatCurrency(opening)}
+                      {formatCurrency(row.openingInHaler)}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-emerald-600">
-                      {scopeIncome > 0 ? `+${formatCurrency(scopeIncome)}` : '0 Kč'}
+                      {row.incomeInHaler > 0 ? `+${formatCurrency(row.incomeInHaler)}` : '0 Kč'}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-red-600">
-                      {scopeExpense > 0 ? `−${formatCurrency(scopeExpense)}` : '0 Kč'}
+                      {row.expenseInHaler > 0 ? `−${formatCurrency(row.expenseInHaler)}` : '0 Kč'}
                     </td>
-                    <td className={`py-3 px-4 w-[120px] text-right font-semibold ${
-                      scopeTransfers > 0 ? 'text-emerald-600' : scopeTransfers < 0 ? 'text-red-600' : 'text-slate-500'
-                    }`}>
-                      {formatCurrency(scopeTransfers, { showPlus: true })}
+                    <td className={`py-3 px-4 w-[120px] text-right font-semibold ${signToneClass(getSignTone(row.netTransfersInHaler))}`}>
+                      {formatCurrency(row.netTransfersInHaler, { showPlus: true })}
                     </td>
-                    <td className={`py-3 px-4 w-[130px] text-right font-medium ${
-                      change > 0 ? 'text-emerald-600' : change < 0 ? 'text-red-600' : 'text-slate-500'
-                    }`}>
-                      {formatCurrency(change, { showPlus: true })}
+                    <td className={`py-3 px-4 w-[130px] text-right font-medium ${signToneClass(getSignTone(row.netChangeInHaler))}`}>
+                      {formatCurrency(row.netChangeInHaler, { showPlus: true })}
                     </td>
                     <td className={`py-3 px-4 w-[140px] text-right font-bold ${
-                      isNegative ? 'text-red-600' : 'text-slate-900'
+                      row.closingInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                     }`}>
-                      {formatCurrency(closing)}
+                      {formatCurrency(row.closingInHaler)}
                     </td>
                   </tr>
                 );
@@ -222,7 +203,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         {/* 1. Režim: Přehled podle období */}
         {accountViewMode === 'period' && (
           <div className="divide-y divide-slate-100">
-            {accountPeriods.map((p) => {
+            {displayPeriods.map((p) => {
               const isExpanded = expandedPeriodKey === p.period.key;
 
               return (
@@ -265,20 +246,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                           {activeAccounts.map((acc) => {
                             const accBal = p.accountBalances[acc.id];
                             if (!accBal) return null;
-
-                            // Pro investiční/penzijní účty konečný stav zahrnuje i změnu tržní hodnoty,
-                            // kterou je nutné promítnout do pohybů, jinak počáteční + pohyby != konečný stav.
-                            const valuationChangeInHaler = (acc.type === 'investment' || acc.type === 'pension')
-                              ? subHaler(
-                                  subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler),
-                                  addHaler(subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler), subHaler(accBal.incomeInHaler, accBal.expenseInHaler))
-                                )
-                              : 0;
-
-                            const incoming = addHaler(accBal.incomeInHaler, accBal.correctionsInHaler > 0 ? accBal.correctionsInHaler : 0, valuationChangeInHaler > 0 ? valuationChangeInHaler : 0);
-                            const outgoing = addHaler(accBal.expenseInHaler, accBal.correctionsInHaler < 0 ? Math.abs(accBal.correctionsInHaler) : 0, valuationChangeInHaler < 0 ? Math.abs(valuationChangeInHaler) : 0);
-                            const netTransfers = subHaler(accBal.transfersInInHaler, accBal.transfersOutInHaler);
-                            const netChange = subHaler(accBal.closingBalanceInHaler, accBal.openingBalanceInHaler);
+                            const row = getAccountRow(acc, accBal);
 
                             return (
                               <tr key={acc.id} className="group hover:bg-white">
@@ -290,28 +258,24 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                   </div>
                                 </td>
                                 <td className="py-2.5 px-4 w-[140px] text-right text-slate-500 font-medium">
-                                  {formatCurrency(accBal.openingBalanceInHaler)}
+                                  {formatCurrency(row.openingInHaler)}
                                 </td>
                                 <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-emerald-600">
-                                  {incoming > 0 ? `+${formatCurrency(incoming)}` : '0 Kč'}
+                                  {row.incomingInHaler > 0 ? `+${formatCurrency(row.incomingInHaler)}` : '0 Kč'}
                                 </td>
                                 <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-red-600">
-                                  {outgoing > 0 ? `−${formatCurrency(outgoing)}` : '0 Kč'}
+                                  {row.outgoingInHaler > 0 ? `−${formatCurrency(row.outgoingInHaler)}` : '0 Kč'}
                                 </td>
-                                <td className={`py-2.5 px-4 w-[120px] text-right font-semibold ${
-                                  netTransfers > 0 ? 'text-emerald-600' : netTransfers < 0 ? 'text-red-600' : 'text-slate-500'
-                                }`}>
-                                  {formatCurrency(netTransfers, { showPlus: true })}
+                                <td className={`py-2.5 px-4 w-[120px] text-right font-semibold ${signToneClass(getSignTone(row.netTransfersInHaler))}`}>
+                                  {formatCurrency(row.netTransfersInHaler, { showPlus: true })}
                                 </td>
-                                <td className={`py-2.5 px-4 w-[130px] text-right font-medium ${
-                                  netChange > 0 ? 'text-emerald-600' : netChange < 0 ? 'text-red-600' : 'text-slate-500'
-                                }`}>
-                                  {formatCurrency(netChange, { showPlus: true })}
+                                <td className={`py-2.5 px-4 w-[130px] text-right font-medium ${signToneClass(getSignTone(row.netChangeInHaler))}`}>
+                                  {formatCurrency(row.netChangeInHaler, { showPlus: true })}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[140px] text-right font-bold ${
-                                  accBal.closingBalanceInHaler < 0 ? 'text-red-600' : 'text-slate-900'
+                                  row.closingInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                                 }`}>
-                                  {formatCurrency(accBal.closingBalanceInHaler)}
+                                  {formatCurrency(row.closingInHaler)}
                                 </td>
                               </tr>
                             );
@@ -336,7 +300,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="py-2.5 px-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_0_rgb(var(--c-slate-200))] z-20">Účet</th>
-                  {accountPeriods.map((p) => (
+                  {displayPeriods.map((p) => (
                     <th
                       key={p.period.key}
                       className="p-0 text-right min-w-[125px] hover:bg-slate-100 transition-colors"
@@ -368,7 +332,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         </div>
                       </div>
                     </td>
-                    {accountPeriods.map((p) => {
+                    {displayPeriods.map((p) => {
                       const accBal = p.accountBalances[acc.id];
                       const opening = accBal?.openingBalanceInHaler || 0;
                       const closing = accBal?.closingBalanceInHaler || 0;
@@ -434,7 +398,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                       <span className="text-xs font-normal text-slate-500">Zahrnuté účty</span>
                     </div>
                   </td>
-                  {accountPeriods.map((p) => {
+                  {displayPeriods.map((p) => {
                     const totalOpening = p.netWorthOpeningInHaler;
                     const totalClosing = p.netWorthClosingInHaler;
                     const isOpeningNegative = totalOpening < 0;

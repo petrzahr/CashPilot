@@ -10,6 +10,10 @@ import { getCorrectionDiffInHaler } from './itemFilter';
 
 export type ItemAmountTone = 'positive' | 'negative' | 'neutral';
 
+/** Tón podle znaménka částky: kladná, záporná, nula. */
+export const getSignTone = (valueInHaler: number): ItemAmountTone =>
+  valueInHaler > 0 ? 'positive' : valueInHaler < 0 ? 'negative' : 'neutral';
+
 export interface ItemRowAmount {
   /** Znaménko před částkou; korekce místo něj nese znaménko rozdílu (showPlus). */
   sign: '+' | '−' | '';

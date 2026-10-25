@@ -119,6 +119,8 @@ interface FinanceContextType {
   investmentFees: InvestmentFee[];
 
   // Periody a výpočty
+  /** Dnešek (Praha), se kterým počítá předpověď. */
+  today: string;
   currentPeriod: BudgetPeriod;
   selectedPeriod: BudgetPeriod;
   setSelectedPeriod: (p: BudgetPeriod) => void;
@@ -1107,6 +1109,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     marketValueSnapshots: data.marketValueSnapshots,
     investmentFees: data.investmentFees || [],
 
+    today: todayStr,
     currentPeriod: periodForecast.currentPeriod,
     selectedPeriod: periodForecast.selectedPeriod,
     setSelectedPeriod: periodForecast.setSelectedPeriod,
