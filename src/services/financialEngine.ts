@@ -4,6 +4,7 @@ import {
   AppSettings,
   BudgetPeriod,
   DefaultAccountPeriod,
+  DefaultAccountSplit,
   ForecastResult,
   PeriodRangeScreen,
   PeriodView,
@@ -469,6 +470,53 @@ function getActivationAmountInPeriod(
   return initDate > period.startDate && initDate <= period.endDate ? acc.initialBalanceInHaler || 0 : 0;
 }
 
+/** Položka, která se ještě neuskutečnila: není zrušená a není provedená s datem nejpozději dnes. */
+export function isRemainingPlanned(tx: Transaction, today: string): boolean {
+  return tx.status !== 'cancelled' && !(tx.status === 'executed' && tx.date <= today);
+}
+
+/**
+ * Rozdělení příjmů, výdajů a korekcí výchozího účtu na uskutečněnou a plánovanou část.
+ * Plánovaná část jsou zbývající položky (isRemainingPlanned) výchozího účtu od data jeho aktivace,
+ * uskutečněná je zbytek do souhrnu výchozího účtu; korekce jsou vždy uskutečněné.
+ */
+function splitDefaultAccount(
+  totals: DefaultAccountPeriod,
+  accounts: Account[],
+  periodTransactions: Transaction[],
+  today: string
+): DefaultAccountSplit {
+  const defaultAccount = getDefaultAccount(accounts);
+  let plannedIncome = 0;
+  let plannedExpense = 0;
+  if (defaultAccount) {
+    const activeFrom = defaultAccount.initialBalanceDate;
+    for (const tx of periodTransactions) {
+      if (tx.sourceAccountId !== defaultAccount.id || !isRemainingPlanned(tx, today)) continue;
+      if (activeFrom && tx.date < activeFrom) continue;
+      if (tx.type === 'income') plannedIncome = addHaler(plannedIncome, getEffectiveAmountInHaler(tx));
+      else if (tx.type === 'expense') plannedExpense = addHaler(plannedExpense, getEffectiveAmountInHaler(tx));
+    }
+  }
+  const corrections = subHaler(totals.actuallySavedInHaler, subHaler(totals.incomeInHaler, totals.expenseInHaler));
+  const executedIncome = subHaler(totals.incomeInHaler, plannedIncome);
+  const executedExpense = subHaler(totals.expenseInHaler, plannedExpense);
+  return {
+    executed: {
+      incomeInHaler: executedIncome,
+      expenseInHaler: executedExpense,
+      correctionsInHaler: corrections,
+      actuallySavedInHaler: addHaler(subHaler(executedIncome, executedExpense), corrections),
+    },
+    planned: {
+      incomeInHaler: plannedIncome,
+      expenseInHaler: plannedExpense,
+      correctionsInHaler: 0,
+      actuallySavedInHaler: subHaler(plannedIncome, plannedExpense),
+    },
+  };
+}
+
 /** Skutečně uspořeno = příjmy − výdaje + korekce účtu (bez převodů). */
 function getActuallySavedInHaler(balance: AccountPeriodBalance | undefined): number {
   return balance ? addHaler(subHaler(balance.incomeInHaler, balance.expenseInHaler), balance.correctionsInHaler) : 0;
@@ -886,8 +934,7 @@ export function summarizePeriods(
     .map(a => [a.id, getAccountBalanceAtDate(a, today, { transactions: safeTxs, snapshots: safeSnapshots })]));
   const forecastPeriods = historicalForecastPeriods.map(summary => {
     const projected = { ...summary, accountBalances: { ...summary.accountBalances } };
-    const remainingTxs = getEffectiveForPeriod(summary.period)
-      .filter(t => t.status !== 'cancelled' && !(t.status === 'executed' && t.date <= today));
+    const remainingTxs = getEffectiveForPeriod(summary.period).filter(t => isRemainingPlanned(t, today));
     for (const acc of safeAccounts) {
       const anchor = assetValues.get(acc.id);
       if (anchor === undefined) continue;
@@ -922,13 +969,21 @@ export function summarizePeriods(
     for (const recorded of periodSummaries) {
       const projected = projectedByKey.get(recorded.period.key) ?? recorded;
       let defaultAccount: DefaultAccountPeriod | undefined;
+      let defaultAccountSplit: DefaultAccountSplit | undefined;
       views.set(recorded.period.key, {
         period: recorded.period,
         projected,
         recorded,
+        get items() {
+          return getEffectiveForPeriod(recorded.period);
+        },
         get defaultAccount() {
           defaultAccount ??= summarizeDefaultAccount(projected, safeAccounts, getEffectiveForPeriod(recorded.period), overdraftLimitInHaler);
           return defaultAccount;
+        },
+        get defaultAccountSplit() {
+          defaultAccountSplit ??= splitDefaultAccount(this.defaultAccount, safeAccounts, getEffectiveForPeriod(recorded.period), today);
+          return defaultAccountSplit;
         },
       });
     }

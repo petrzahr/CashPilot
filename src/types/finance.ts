@@ -247,6 +247,25 @@ export interface DefaultAccountPeriod {
   investedPct: number | null;
 }
 
+/** Default account income, expense and corrections for one part of a period. */
+export interface DefaultAccountFlows {
+  incomeInHaler: number;
+  expenseInHaler: number;
+  correctionsInHaler: number;
+  /** Příjmy − výdaje + korekce */
+  actuallySavedInHaler: number;
+}
+
+/**
+ * The default account totals split into what already happened (executed items dated today or earlier,
+ * and all corrections) and what is still planned (every other non-cancelled item). The two parts add up
+ * to the matching DefaultAccountPeriod values.
+ */
+export interface DefaultAccountSplit {
+  executed: DefaultAccountFlows;
+  planned: DefaultAccountFlows;
+}
+
 /** One period of the forecast: see "Period view" in GLOSSARY.md. */
 export interface PeriodView {
   period: BudgetPeriod;
@@ -254,8 +273,12 @@ export interface PeriodView {
   projected: PeriodSummary;
   /** Built from stored values only, with no projection. */
   recorded: PeriodSummary;
+  /** The period's effective items (stored items and virtual recurring occurrences), including cancelled ones. */
+  readonly items: Transaction[];
   /** Computed on first access from the projected summary and the forecast's effective items. */
   readonly defaultAccount: DefaultAccountPeriod;
+  /** Computed on first access; executed + planned = defaultAccount income, expense, corrections. */
+  readonly defaultAccountSplit: DefaultAccountSplit;
 }
 
 // Struktura pro denní průběžný zůstatek (intra-day)

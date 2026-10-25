@@ -174,3 +174,72 @@ describe('PeriodView.defaultAccount KPIs', () => {
     expect(forecast.getPeriod(period.key)!.defaultAccount.savedInHaler).toBe(40000);
   });
 });
+
+describe('PeriodView.defaultAccountSplit', () => {
+  // today = 2026-09-20 (see view)
+  const mixed = () => [
+    tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 50000, actualAmountInHaler: 48000, status: 'executed', date: '2026-09-16' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 10000, status: 'executed', date: '2026-09-20' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 7000, status: 'planned', date: '2026-09-18' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 3000, status: 'executed', date: '2026-10-02' }),
+    tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 20000, status: 'planned', date: '2026-10-05' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 99000, status: 'cancelled', date: '2026-10-06' }),
+    tx({ type: 'balance_adjustment', sourceAccountId: 'chk', amountInHaler: 500, diffInHaler: -500, status: 'executed', date: '2026-09-19' }),
+    tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'sav', amountInHaler: 8000, date: '2026-10-01' }),
+  ];
+
+  it('splits into executed items dated up to today and the remaining planned items', () => {
+    const { executed, planned } = view([checking, savings], mixed()).defaultAccountSplit;
+    expect(executed).toEqual({ incomeInHaler: 48000, expenseInHaler: 10000, correctionsInHaler: -500, actuallySavedInHaler: 37500 });
+    // planned expense dated in the past and executed expense dated in the future both still count as planned
+    expect(planned).toEqual({ incomeInHaler: 20000, expenseInHaler: 10000, correctionsInHaler: 0, actuallySavedInHaler: 10000 });
+  });
+
+  it('adds up to the default account totals', () => {
+    const v = view([checking, savings], mixed());
+    const { executed, planned } = v.defaultAccountSplit;
+    expect(executed.incomeInHaler + planned.incomeInHaler).toBe(v.defaultAccount.incomeInHaler);
+    expect(executed.expenseInHaler + planned.expenseInHaler).toBe(v.defaultAccount.expenseInHaler);
+    expect(executed.actuallySavedInHaler + planned.actuallySavedInHaler).toBe(v.defaultAccount.actuallySavedInHaler);
+  });
+
+  it('counts virtual recurring occurrences as planned and exposes them in the period items', () => {
+    const forecast = summarizePeriods([period], {
+      accounts: [checking],
+      recurringRules: [{
+        id: 'r', title: 'Nájem', type: 'expense', amountInHaler: 15000, sourceAccountId: 'chk',
+        dayOfMonth: 1, frequency: 'monthly', startDate: '2026-01-01', isActive: true, createdAt: '', updatedAt: '',
+      }],
+    }, { today: '2026-09-20', currentPeriodKey: period.key });
+    const v = forecast.getPeriod(period.key)!;
+    expect(v.items.some(t => t.recurringRuleId === 'r' && t.date === '2026-10-01')).toBe(true);
+    expect(v.defaultAccountSplit.planned.expenseInHaler).toBe(15000);
+    expect(v.defaultAccountSplit.executed.expenseInHaler).toBe(0);
+  });
+
+  it('ignores items of other accounts and items before the default account was activated', () => {
+    const activated = { ...checking, initialBalanceDate: '2026-10-01' };
+    const { planned } = view([activated, account('chk2', 'checking')], [
+      tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 4000, date: '2026-09-25' }),
+      tx({ type: 'expense', sourceAccountId: 'chk2', amountInHaler: 6000, date: '2026-10-03' }),
+      tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 1000, date: '2026-10-03' }),
+    ]).defaultAccountSplit;
+    expect(planned.expenseInHaler).toBe(1000);
+  });
+
+  it('is all executed in a past period whose items were executed', () => {
+    const v = summarizePeriods([period], {
+      accounts: [checking],
+      transactions: [tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 4000, status: 'executed', date: '2026-10-01' })],
+    }, { today: '2026-11-01' }).getPeriod(period.key)!;
+    expect(v.defaultAccountSplit.planned).toEqual({ incomeInHaler: 0, expenseInHaler: 0, correctionsInHaler: 0, actuallySavedInHaler: 0 });
+    expect(v.defaultAccountSplit.executed.expenseInHaler).toBe(4000);
+  });
+
+  it('is all zero without a default account and remembers the result', () => {
+    const v = view([{ ...checking, isDefault: false }], mixed());
+    expect(v.defaultAccountSplit.planned.incomeInHaler).toBe(0);
+    expect(v.defaultAccountSplit.executed.incomeInHaler).toBe(0);
+    expect(v.defaultAccountSplit).toBe(v.defaultAccountSplit);
+  });
+});
