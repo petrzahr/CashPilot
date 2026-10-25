@@ -20,4 +20,10 @@ Domain terms used in code, docs and architecture reviews. Code for these lives i
 
 **Recorded summary** — a period summary built from stored values, with no projection (`periods` of the forecast).
 
+**Virtual occurrence** — an occurrence of a recurring rule in one period that is computed from the rule (and its period exception), not stored as a transaction. Its ID is `virtual_<ruleId>_<periodKey>` (`buildVirtualId` / `parseVirtualId` in `src/services/transactionCommands.ts`). Editing it or changing its status stores it as a real transaction (it materialises); a manual position in its day is remembered by the period exception.
+
+**Edit scope** — what an edit of a recurring item changes (`RecurringMode`): `occurrence` only this period (a period exception, or the materialised transaction); `future` this occurrence and later, by splitting the rule at its date into an old branch and a new one that carries the change; `series` the whole rule including already materialised past occurrences. With a new position in the day, `future` and `series` set the order in the same command (`updateRecurringRule` with `placement`).
+
+**Transaction form** — the item form as pure data (`src/services/transactionForm.ts`): defaults for new, edit and duplicate, field transitions, options, validation and the save action that `TransactionModal` dispatches to one command.
+
 **Command** — a pure function that changes app data: `(data, input, ctx) → { data, outcome }` (`src/services/transactionCommands.ts`). It never touches React, storage or toasts; `ctx` supplies the current time, today's date and new IDs, so tests can fix them. `FinanceContext` is only the adapter: it runs the command through the sync controller and turns the outcome into a toast or an undo action. When nothing changes, a command returns the original data object.
