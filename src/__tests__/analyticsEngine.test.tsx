@@ -5,7 +5,6 @@ import { AnalyticsScreen } from '../components/analytics/AnalyticsScreen';
 import { FinanceProvider } from '../context/FinanceContext';
 import { PeriodRangeSelector } from '../components/shared/PeriodRangeSelector';
 import {
-  getFilteredExecutedTransactions,
   calculateMonthlyCashFlow,
   calculateExpenseMoMTrend,
   getTopExpenses,
@@ -14,6 +13,7 @@ import {
   toAnalyticsDateRange,
 } from '../services/analyticsEngine';
 import { getAccountBalanceAtDate } from '../services/accountBalance';
+import { summarizePeriods } from '../services/financialEngine';
 import { DualPeriodRange, PeriodRangeData, resolvePeriodRange } from '../services/periodRange';
 
 // Rozsah pro analytické výpočty stejně jako v Analýze a trendech: výběr filtru → období → rozsah dat
@@ -41,10 +41,12 @@ import {
   createBudgetPeriod,
   isDateInPeriod,
   formatPeriodRange,
+  getPreviousPeriod,
 } from '../services/periodService';
 import {
   Account,
   BalanceCorrection,
+  BudgetPeriod,
   Category,
   MarketValueSnapshot,
   Transaction,
@@ -248,75 +250,6 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     expect(res.range.periods[3].label).toBe('Srpen 2026');
   });
 
-  // 5. Zahrnutí pouze uskutečněných položek
-  it('5. Zahrnuje pouze položky se stavem executed', () => {
-    const range = analyticsRange('12m', undefined, undefined, undefined, today).range;
-    const txs: Transaction[] = [
-      {
-        id: 't_exec',
-        title: 'Uskutečněný nákup',
-        amountInHaler: 150000,
-        date: '2026-09-05',
-        sequence: 1,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: 't_plan',
-        title: 'Plánovaný nákup',
-        amountInHaler: 150000,
-        date: '2026-09-05',
-        sequence: 2,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'planned',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const filtered = getFilteredExecutedTransactions(txs, range, {}, testCategories, today);
-    expect(filtered.length).toBe(1);
-    expect(filtered[0].id).toBe('t_exec');
-  });
-
-  // 6. Vyloučení budoucích plánovaných položek
-  it('6. Vylučuje budoucí plánované položky z výpočtů i když spadají do kalendářního měsíce', () => {
-    const range = analyticsRange('12m', undefined, undefined, undefined, today).range;
-    const txs: Transaction[] = [
-      {
-        id: 't_future_plan',
-        title: 'Plán na konec měsíce',
-        amountInHaler: 500000,
-        date: '2026-09-28',
-        sequence: 1,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'planned',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: 't_future_exec_ignored',
-        title: 'Chybná budoucí transakce',
-        amountInHaler: 500000,
-        date: '2026-09-28',
-        sequence: 2,
-        type: 'expense',
-        sourceAccountId: sampleChecking.id,
-        status: 'executed',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const filtered = getFilteredExecutedTransactions(txs, range, {}, testCategories, today);
-    expect(filtered.length).toBe(0);
-  });
-
   // 9. Zohlednění převodů v historii konkrétního účtu
   it('9. Zohledňuje převody v historii zůstatku konkrétního účtu', () => {
     const transferTx: Transaction = {
@@ -402,95 +335,16 @@ describe('Analýza & trendy (Kompletní testovací sada 25 požadavků)', () => 
     expect(balAug).toBe(55000000);
   });
 
-  // 22. Zahrnutí historie archivovaných účtů a kategorií
-  it('22. Archivovaný účet i kategorie jsou v historických datech plně zachovány', () => {
-    const archivedAcc: Account = {
-      ...sampleChecking,
-      id: 'acc_arch',
-      name: 'Zrušený účet',
-      status: 'archived',
-    };
-
-    const range = analyticsRange('12m', undefined, undefined, undefined, today).range;
-    const tx: Transaction = {
-      id: 't_arch',
-      title: 'Starý výdaj ze zrušeného účtu',
-      amountInHaler: 80000,
-      date: '2026-05-10',
-      sequence: 1,
-      type: 'expense',
-      sourceAccountId: archivedAcc.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const filtered = getFilteredExecutedTransactions([tx], range, {}, testCategories, today);
-    expect(filtered.length).toBe(1);
-  });
-
-  // 23. Správnou funkci všech filtrů
-  it('23. Filtry správně omezují transakce podle účtu a kategorie', () => {
-    const range = analyticsRange('12m', undefined, undefined, undefined, today).range;
-    const tx1: Transaction = {
-      id: 't1',
-      title: 'Jídlo z KB',
-      amountInHaler: 10000,
-      date: '2026-09-01',
-      sequence: 1,
-      type: 'expense',
-      sourceAccountId: sampleChecking.id,
-      categoryId: catFood.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-    const tx2: Transaction = {
-      id: 't2',
-      title: 'Výplata na AirBank',
-      amountInHaler: 50000,
-      date: '2026-09-01',
-      sequence: 2,
-      type: 'income',
-      sourceAccountId: sampleSavings.id,
-      categoryId: catSalary.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    // Filtr na běžný účet
-    const filteredAcc = getFilteredExecutedTransactions(
-      [tx1, tx2],
-      range,
-      { accountId: sampleChecking.id },
-      testCategories,
-      today
-    );
-    expect(filteredAcc.length).toBe(1);
-    expect(filteredAcc[0].id).toBe('t1');
-
-    // Filtr na kategorii Potraviny
-    const filteredCat = getFilteredExecutedTransactions(
-      [tx1, tx2],
-      range,
-      { categoryId: catFood.id },
-      testCategories,
-      today
-    );
-    expect(filteredCat.length).toBe(1);
-    expect(filteredCat[0].id).toBe('t1');
-  });
-
   // 24. Prázdný stav bez chybových hodnot
   it('24. Prázdný stav nevykazuje NaN ani neplatné hodnoty', () => {
     const extremes = calculateFinancialExtremes([]);
     expect(extremes.highestIncomeMonth).toBeNull();
     expect(extremes.highestExpenseMonth).toBeNull();
     expect(extremes.avgMonthlyIncomeInHaler).toBe(0);
-    expect(extremes.avgMonthlyNetChangeInHaler).toBe(0);
+    expect(extremes.avgMonthlyActuallySavedInHaler).toBe(0);
+    expect(extremes.closedPeriodCount).toBe(0);
 
-    const top = getTopExpenses([], [], []);
+    const top = getTopExpenses([], summarizePeriods([], {}), [], []);
     expect(top.length).toBe(0);
   });
 
@@ -553,7 +407,12 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
     status: 'active',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
+    isDefault: true,
   };
+
+  // Předpověď nad zadanými obdobími a obdobím před prvním z nich (pro meziměsíční srovnání)
+  const forecastFor = (periods: BudgetPeriod[], transactions: Transaction[], today: string) =>
+    summarizePeriods([getPreviousPeriod(periods[0]), ...periods], { accounts: [sampleChecking], transactions }, { today });
 
   // 1. Pole Od a Do používají pouze výběr měsíce a roku
   it('1. Pole Od a Do používají pouze výběr měsíce a roku (input type="month")', () => {
@@ -613,7 +472,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       updatedAt: '',
     };
     const periodInfo = createBudgetPeriodInfo(period, '2026-09-14');
-    const cf = calculateMonthlyCashFlow([periodInfo], [tx]);
+    const cf = calculateMonthlyCashFlow([periodInfo], forecastFor([period], [tx], periodInfo.analysisEndDate), periodInfo.analysisEndDate);
     expect(cf[0].expenseInHaler).toBe(100000);
   });
 
@@ -636,7 +495,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       updatedAt: '',
     };
     const periodInfo = createBudgetPeriodInfo(period, '2026-09-15');
-    const cf = calculateMonthlyCashFlow([periodInfo], [tx]);
+    const cf = calculateMonthlyCashFlow([periodInfo], forecastFor([period], [tx], periodInfo.analysisEndDate), periodInfo.analysisEndDate);
     expect(cf[0].expenseInHaler).toBe(200000);
   });
 
@@ -664,39 +523,6 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
     const info = createBudgetPeriodInfo(period, '2026-09-13');
     expect(info.endDate).toBe('2026-09-14');
     expect(info.analysisEndDate).toBe('2026-09-13');
-  });
-
-  // 10. Budoucí část probíhajícího období není zahrnuta
-  it('10. Budoucí část probíhajícího období a položky po aktuálním datu nejsou zahrnuty', () => {
-    const range = analyticsRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
-    const txPast: Transaction = {
-      id: 'tx_past',
-      title: 'Minulý nákup',
-      amountInHaler: 100000,
-      date: '2026-09-12',
-      sequence: 1,
-      type: 'expense',
-      sourceAccountId: sampleChecking.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-    const txFuture: Transaction = {
-      id: 'tx_fut',
-      title: 'Budoucí položka',
-      amountInHaler: 100000,
-      date: '2026-09-14', // Za dnešním datem 13. 9.
-      sequence: 2,
-      type: 'expense',
-      sourceAccountId: sampleChecking.id,
-      status: 'executed',
-      createdAt: '',
-      updatedAt: '',
-    };
-
-    const filtered = getFilteredExecutedTransactions([txPast, txFuture], range, {}, [], '2026-09-13');
-    expect(filtered.length).toBe(1);
-    expect(filtered[0].id).toBe('tx_past');
   });
 
   it('12. Rychlé volby (3m, 6m, 12m, all) pracují s rozpočtovými obdobími', () => {
@@ -728,7 +554,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
   // 14. Grafy používají správné názvy a hranice období
   it('14. Grafy používají správné názvy a hranice období (např. srp 2026, 15. 8. 2026 – 13. 9. 2026)', () => {
     const range = analyticsRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
-    const cf = calculateMonthlyCashFlow(range.periods, []);
+    const cf = calculateMonthlyCashFlow(range.periods, forecastFor(range.periods.map(p => p.period), [], '2026-09-13'), '2026-09-13');
     expect(cf[2].shortLabel).toBe('Srp 2026');
     expect(cf[2].dateRangeStr).toBe('15. 8. 2026 – 13. 9. 2026');
   });
@@ -741,7 +567,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
   // 15. Tooltip ukazuje skutečný rozsah období
   it('15. Tooltip ukazuje skutečný analyzovaný rozsah období a stav (Probíhající vs Uzavřené)', () => {
     const range = analyticsRange('3m', undefined, undefined, undefined, '2026-09-13', 15).range;
-    const cf = calculateMonthlyCashFlow(range.periods, []);
+    const cf = calculateMonthlyCashFlow(range.periods, forecastFor(range.periods.map(p => p.period), [], '2026-09-13'), '2026-09-13');
 
     // Probíhající srpen
     expect(cf[2].label).toBe('Srpen 2026');
@@ -766,7 +592,7 @@ describe('Rozpočtová období v sekci Analýza & trendy dle Počátečního dne
       { id: 'tx_cur', title: '', amountInHaler: 120000, date: '2026-08-25', sequence: 3, type: 'expense', sourceAccountId: sampleChecking.id, status: 'executed', createdAt: '', updatedAt: '' },
     ];
 
-    const trends = calculateExpenseMoMTrend(range.periods, txs, {}, [], '2026-09-13');
+    const trends = calculateExpenseMoMTrend(range.periods, forecastFor(range.periods.map(p => p.period), txs, '2026-09-13'));
     const aug = trends.find((t) => t.monthKey === '2026-08')!;
     expect(aug.expenseInHaler).toBe(120000);
     expect(aug.prevMonthExpenseInHaler).toBe(1000000); // Celé předchozí období

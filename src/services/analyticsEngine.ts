@@ -21,6 +21,7 @@ import {
 import { sortAccountsByOrder } from './accountService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { getAccountBalanceAtDate } from './accountBalance';
+import { isRemainingPlanned } from './financialEngine';
 
 export interface BudgetPeriodInfo {
   period: BudgetPeriod;
@@ -44,22 +45,27 @@ export interface AnalyticsDateRange {
   periods: BudgetPeriodInfo[];
 }
 
-export interface AnalyticsFilters {
-  accountId?: string | null;
-  categoryId?: string | null;
-  subcategoryId?: string | null;
+export interface CashFlowAmounts {
+  incomeInHaler: number;
+  expenseInHaler: number;
+  /** Příjmy − výdaje + korekce */
+  actuallySavedInHaler: number;
 }
 
-export interface MonthlyCashFlowPoint {
+/** Příjmy, výdaje a Skutečně uspořeno výchozího účtu za období (shodné s KPI Měsíčního rozpočtu). */
+export interface MonthlyCashFlowPoint extends CashFlowAmounts {
   monthKey: string;
   label: string;
   shortLabel: string;
   dateRangeStr: string;
-  incomeInHaler: number;
-  expenseInHaler: number;
-  netChangeInHaler: number;
-  savingsRate: number | null;
+  /** Korekce výchozího účtu; jsou součástí Skutečně uspořeno a vždy uskutečněné */
+  correctionsInHaler: number;
+  /** Část hodnot z položek, které se ještě neuskutečnily */
+  planned: CashFlowAmounts;
+  hasPlanned: boolean;
   isCurrentMonth: boolean;
+  /** Období skončilo před dneškem */
+  isClosed: boolean;
 }
 
 export interface PortfolioCompositionSegment {
@@ -86,6 +92,10 @@ export interface CashFlowCompositionSegment {
   color: string;
   amountInHaler: number;
   pct: number | null;     // % podíl na součtu absolutních hodnot všech tří ukazatelů (null, pokud je součet 0)
+  /** Šrafovaná (plánovaná) část pct se stejným znaménkem; 0 = celý segment plný */
+  plannedPct: number;
+  /** Rozpad částky pro tooltip */
+  split: { executedLabel: string; executedInHaler: number; plannedInHaler: number; correctionsInHaler: number };
 }
 
 export interface CashFlowCompositionPoint {
@@ -94,6 +104,7 @@ export interface CashFlowCompositionPoint {
   periodShortLabel: string;
   dateRangeStr: string;
   isCurrentMonth: boolean;
+  hasPlanned: boolean;
   segments: CashFlowCompositionSegment[];
 }
 
@@ -102,22 +113,36 @@ export interface ExpenseTrendItem {
   label: string;
   dateRangeStr: string;
   expenseInHaler: number;
+  /** Plánovaná část výdajů období */
+  plannedExpenseInHaler: number;
+  /** Výdaje celého předchozího období; null mimo rozsah předpovědi */
   prevMonthExpenseInHaler: number | null;
   changePercent: number | null;
   isCurrentMonth: boolean;
 }
 
+export interface FinancialExtremePeriod {
+  monthKey: string;
+  label: string;
+  amountInHaler: number;
+}
+
+/** Extrémy a průměry jen z uzavřených období (konec před dneškem). */
 export interface FinancialExtremes {
-  highestIncomeMonth: { monthKey: string; label: string; amountInHaler: number } | null;
-  highestExpenseMonth: { monthKey: string; label: string; amountInHaler: number } | null;
-  bestNetMonth: { monthKey: string; label: string; amountInHaler: number } | null;
-  worstNetMonth: { monthKey: string; label: string; amountInHaler: number } | null;
+  highestIncomeMonth: FinancialExtremePeriod | null;
+  highestExpenseMonth: FinancialExtremePeriod | null;
+  mostSavedMonth: FinancialExtremePeriod | null;
+  leastSavedMonth: FinancialExtremePeriod | null;
   avgMonthlyIncomeInHaler: number;
-  avgMonthlyNetChangeInHaler: number;
+  avgMonthlyActuallySavedInHaler: number;
+  closedPeriodCount: number;
 }
 
 export interface TopExpenseItem {
   transaction: Transaction;
+  amountInHaler: number;
+  /** Položka se ještě neuskutečnila (plánovaná nebo s budoucím datem) */
+  isPlanned: boolean;
   accountName: string;
   categoryName: string;
   subcategoryName?: string;
@@ -217,83 +242,39 @@ export function toAnalyticsDateRange(periods: BudgetPeriodInfo[], todayStr: stri
 }
 
 /**
- * Vyfiltruje uskutečněné transakce podle časového rozsahu a volitelných filtrů.
- */
-export function getFilteredExecutedTransactions(
-  transactions: Transaction[] = [],
-  range: AnalyticsDateRange,
-  filters: AnalyticsFilters = {},
-  categories: Category[] = [],
-  todayStr: string = getTodayInPrague()
-): Transaction[] {
-  const safeTxs = Array.isArray(transactions) ? transactions : [];
-
-  return safeTxs.filter((t) => {
-    if (t.status !== 'executed') return false;
-    if (t.date > todayStr) return false;
-    if (t.date < range.startDate || t.date > range.endDate) return false;
-
-    if (filters.accountId) {
-      if (t.sourceAccountId !== filters.accountId && t.targetAccountId !== filters.accountId) {
-        return false;
-      }
-    }
-
-    if (filters.categoryId) {
-      const txCat = categories.find((c) => c.id === t.categoryId);
-      const mainCatId = txCat ? (txCat.parentId ? txCat.parentId : txCat.id) : null;
-      if (mainCatId !== filters.categoryId) {
-        return false;
-      }
-    }
-
-    if (filters.subcategoryId) {
-      if (t.subcategoryId !== filters.subcategoryId && t.categoryId !== filters.subcategoryId) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-}
-
-/**
- * Spočítá cash flow podle rozpočtových period pro hlavní sloupcový graf.
+ * Příjmy, výdaje a Skutečně uspořeno výchozího účtu po rozpočtových obdobích - jediný zdroj čísel
+ * celé Analýzy. Bere souhrn období z předpovědi (PeriodView.defaultAccount, tedy uskutečněné
+ * i plánované položky včetně opakovaných výskytů, shodně s KPI Měsíčního rozpočtu) a jeho
+ * rozdělení na uskutečněnou a plánovanou část (PeriodView.defaultAccountSplit).
+ * Období mimo předpověď a bez výchozího účtu jsou nulová.
  */
 export function calculateMonthlyCashFlow(
   periods: BudgetPeriodInfo[],
-  filteredTxs: Transaction[]
+  forecast: ForecastResult,
+  todayStr: string = getTodayInPrague()
 ): MonthlyCashFlowPoint[] {
   return periods.map((p) => {
-    let incomeInHaler = 0;
-    let expenseInHaler = 0;
-
-    for (const t of filteredTxs) {
-      if (t.type === 'transfer' || t.type === 'balance_adjustment') continue;
-      // Ověříme, zda transakce patří do této rozpočtové periody
-      if (isDateInPeriod(t.date, p.period) && t.date <= p.analysisEndDate) {
-        const amt = getEffectiveAmountInHaler(t);
-        if (t.type === 'income') incomeInHaler = addHaler(incomeInHaler, amt);
-        if (t.type === 'expense') expenseInHaler = addHaler(expenseInHaler, amt);
-      }
-    }
-
-    const netChangeInHaler = subHaler(incomeInHaler, expenseInHaler);
-    const savingsRate =
-      incomeInHaler > 0
-        ? ((incomeInHaler - expenseInHaler) / incomeInHaler) * 100
-        : null;
+    const view = forecast.getPeriod(p.key);
+    const totals = view?.defaultAccount;
+    const planned = view?.defaultAccountSplit.planned;
 
     return {
       monthKey: p.key,
       label: p.label,
       shortLabel: p.shortLabel,
       dateRangeStr: p.dateRangeStr,
-      incomeInHaler,
-      expenseInHaler,
-      netChangeInHaler,
-      savingsRate,
+      incomeInHaler: totals?.incomeInHaler ?? 0,
+      expenseInHaler: totals?.expenseInHaler ?? 0,
+      actuallySavedInHaler: totals?.actuallySavedInHaler ?? 0,
+      correctionsInHaler: view?.defaultAccountSplit.executed.correctionsInHaler ?? 0,
+      planned: {
+        incomeInHaler: planned?.incomeInHaler ?? 0,
+        expenseInHaler: planned?.expenseInHaler ?? 0,
+        actuallySavedInHaler: planned?.actuallySavedInHaler ?? 0,
+      },
+      hasPlanned: !!planned && (planned.incomeInHaler !== 0 || planned.expenseInHaler !== 0),
       isCurrentMonth: p.isCurrentPeriod,
+      isClosed: p.endDate < todayStr,
     };
   });
 }
@@ -315,34 +296,56 @@ export const CASH_FLOW_COMPOSITION_COLORS = {
 
 /**
  * Spočítá procentuální rozložení Příjmy / Výdaje / Skutečně uspořeno podle rozpočtových
- * period. Hodnoty odpovídají souhrnným ukazatelům v Měsíčním rozpočtu (stejný souhrn
- * období z forecastu): příjmy, výdaje a "Skutečně uspořeno" výchozího účtu
- * (viz PeriodView.defaultAccount). Bez výchozího účtu jsou nulové. Základna pro % (= 100 %) je
- * součet absolutních hodnot všech tří ukazatelů, záporné "Skutečně uspořeno" tak jde pod nulu.
+ * period z calculateMonthlyCashFlow (shodné se souhrnnými ukazateli Měsíčního rozpočtu).
+ * Základna pro % (= 100 %) je součet absolutních hodnot všech tří ukazatelů, záporné
+ * "Skutečně uspořeno" tak jde pod nulu. Plánovaná část příjmů a výdajů je v plannedPct;
+ * "Skutečně uspořeno" období s plánovanými položkami je celé plánované (odhad ke konci období),
+ * protože uskutečněná a plánovaná část mohou mít opačné znaménko.
  */
 export function calculateCashFlowComposition(
   periods: BudgetPeriodInfo[],
-  forecast: ForecastResult
+  forecast: ForecastResult,
+  todayStr: string = getTodayInPrague()
 ): CashFlowCompositionPoint[] {
-  return periods.map((p) => {
-    const totals = forecast.getPeriod(p.key)?.defaultAccount;
+  return calculateMonthlyCashFlow(periods, forecast, todayStr).map((cf) => {
+    const base = sumAbsoluteHaler([cf.incomeInHaler, cf.expenseInHaler, cf.actuallySavedInHaler]);
 
-    const incomeInHaler = totals?.incomeInHaler ?? 0;
-    const expenseInHaler = totals?.expenseInHaler ?? 0;
-    const actuallySavedInHaler = totals?.actuallySavedInHaler ?? 0;
+    const flowSegment = (
+      key: 'income' | 'expense',
+      label: string,
+      amountInHaler: number,
+      plannedInHaler: number
+    ): CashFlowCompositionSegment => {
+      const pct = toSharePct(amountInHaler, base);
+      return {
+        key, label, color: CASH_FLOW_COMPOSITION_COLORS[key], amountInHaler, pct,
+        plannedPct: pct !== null && amountInHaler !== 0 ? pct * (plannedInHaler / amountInHaler) : 0,
+        split: { executedLabel: 'uskutečněno', executedInHaler: subHaler(amountInHaler, plannedInHaler), plannedInHaler, correctionsInHaler: 0 },
+      };
+    };
 
-    const base = sumAbsoluteHaler([incomeInHaler, expenseInHaler, actuallySavedInHaler]);
-
+    const savedPct = toSharePct(cf.actuallySavedInHaler, base);
     return {
-      periodKey: p.key,
-      periodLabel: p.label,
-      periodShortLabel: p.shortLabel,
-      dateRangeStr: p.dateRangeStr,
-      isCurrentMonth: p.isCurrentPeriod,
+      periodKey: cf.monthKey,
+      periodLabel: cf.label,
+      periodShortLabel: cf.shortLabel,
+      dateRangeStr: cf.dateRangeStr,
+      isCurrentMonth: cf.isCurrentMonth,
+      hasPlanned: cf.hasPlanned,
       segments: [
-        { key: 'income', label: 'Příjmy', color: CASH_FLOW_COMPOSITION_COLORS.income, amountInHaler: incomeInHaler, pct: toSharePct(incomeInHaler, base) },
-        { key: 'expense', label: 'Výdaje', color: CASH_FLOW_COMPOSITION_COLORS.expense, amountInHaler: expenseInHaler, pct: toSharePct(expenseInHaler, base) },
-        { key: 'actuallySaved', label: 'Skutečně uspořeno', color: CASH_FLOW_COMPOSITION_COLORS.actuallySaved, amountInHaler: actuallySavedInHaler, pct: toSharePct(actuallySavedInHaler, base) },
+        flowSegment('income', 'Příjmy', cf.incomeInHaler, cf.planned.incomeInHaler),
+        flowSegment('expense', 'Výdaje', cf.expenseInHaler, cf.planned.expenseInHaler),
+        {
+          key: 'actuallySaved', label: 'Skutečně uspořeno', color: CASH_FLOW_COMPOSITION_COLORS.actuallySaved,
+          amountInHaler: cf.actuallySavedInHaler, pct: savedPct,
+          plannedPct: cf.hasPlanned ? savedPct ?? 0 : 0,
+          split: {
+            executedLabel: 'dosud',
+            executedInHaler: subHaler(cf.actuallySavedInHaler, cf.planned.actuallySavedInHaler),
+            plannedInHaler: cf.planned.actuallySavedInHaler,
+            correctionsInHaler: cf.correctionsInHaler,
+          },
+        },
       ],
     };
   });
@@ -410,78 +413,60 @@ export function calculatePortfolioComposition(
 }
 
 /**
- * Spočítá meziměsíční trend výdajů mezi rozpočtovými obdobími.
- * Každé období (i probíhající) srovnává s celým předchozím rozpočtovým obdobím.
+ * Spočítá meziměsíční trend výdajů výchozího účtu mezi rozpočtovými obdobími z předpovědi.
+ * Každé období (i probíhající a budoucí, včetně plánu) srovnává s celým předchozím obdobím.
  */
 export function calculateExpenseMoMTrend(
   periods: BudgetPeriodInfo[],
-  allExecutedTxs: Transaction[],
-  filters: AnalyticsFilters = {},
-  categories: Category[] = [],
-  todayStr: string = getTodayInPrague()
+  forecast: ForecastResult
 ): ExpenseTrendItem[] {
-  const result: ExpenseTrendItem[] = [];
+  return periods.map((p) => {
+    const view = forecast.getPeriod(p.key);
+    const expenseInHaler = view?.defaultAccount.expenseInHaler ?? 0;
+    const prevView = forecast.getPeriod(getPreviousPeriod(p.period).key);
+    const prevMonthExpenseInHaler = prevView ? prevView.defaultAccount.expenseInHaler : null;
 
-  const getExpensesInDateRange = (sDate: string, eDate: string): number => {
-    let sum = 0;
-    for (const t of allExecutedTxs) {
-      if (t.status !== 'executed' || t.type !== 'expense') continue;
-      if (t.date > todayStr) continue;
-      if (t.date >= sDate && t.date <= eDate) {
-        if (filters.accountId && t.sourceAccountId !== filters.accountId && t.targetAccountId !== filters.accountId) {
-          continue;
-        }
-        if (filters.categoryId) {
-          const txCat = categories.find((c) => c.id === t.categoryId);
-          const mainCatId = txCat ? (txCat.parentId ? txCat.parentId : txCat.id) : null;
-          if (mainCatId !== filters.categoryId) continue;
-        }
-        if (filters.subcategoryId && t.subcategoryId !== filters.subcategoryId && t.categoryId !== filters.subcategoryId) {
-          continue;
-        }
-
-        sum = addHaler(sum, getEffectiveAmountInHaler(t));
-      }
-    }
-    return sum;
-  };
-
-  for (let i = 0; i < periods.length; i++) {
-    const curP = periods[i];
-    const curExpenses = getExpensesInDateRange(curP.startDate, curP.analysisEndDate);
-
-    // Celé předchozí rozpočtové období
-    const prevPeriod = getPreviousPeriod(curP.period);
-    const prevExpenses = getExpensesInDateRange(prevPeriod.startDate, prevPeriod.endDate);
-
-    let changePercent: number | null = null;
-    if (prevExpenses > 0) {
-      changePercent = ((curExpenses - prevExpenses) / prevExpenses) * 100;
-    }
-
-    result.push({
-      monthKey: curP.key,
-      label: curP.label,
-      dateRangeStr: curP.dateRangeStr,
-      expenseInHaler: curExpenses,
-      prevMonthExpenseInHaler: prevExpenses,
-      changePercent,
-      isCurrentMonth: curP.isCurrentPeriod,
-    });
-  }
-
-  return result;
+    return {
+      monthKey: p.key,
+      label: p.label,
+      dateRangeStr: p.dateRangeStr,
+      expenseInHaler,
+      plannedExpenseInHaler: view?.defaultAccountSplit.planned.expenseInHaler ?? 0,
+      prevMonthExpenseInHaler,
+      changePercent:
+        prevMonthExpenseInHaler !== null && prevMonthExpenseInHaler > 0
+          ? ((expenseInHaler - prevMonthExpenseInHaler) / prevMonthExpenseInHaler) * 100
+          : null,
+      isCurrentMonth: p.isCurrentPeriod,
+    };
+  });
 }
 
 /**
- * Vrátí 10 nejvyšších uskutečněných výdajů ve vybraném rozsahu.
+ * Vrátí 10 nejvyšších výdajů výchozího účtu ve vybraných obdobích z efektivních položek předpovědi
+ * (uskutečněné i plánované včetně opakovaných výskytů, bez zrušených a bez položek před aktivací účtu),
+ * tedy z týchž položek jako výdaje v souhrnu období.
  */
 export function getTopExpenses(
-  filteredTxs: Transaction[],
+  periods: BudgetPeriodInfo[],
+  forecast: ForecastResult,
   accounts: Account[],
-  categories: Category[]
+  categories: Category[],
+  todayStr: string = getTodayInPrague()
 ): TopExpenseItem[] {
-  const expenseTxs = filteredTxs.filter((t) => t.type === 'expense');
+  const defaultAccount = getDefaultAccount(accounts);
+  if (!defaultAccount) return [];
+  const activeFrom = defaultAccount.initialBalanceDate;
+
+  const expenseTxs = periods.flatMap((p) =>
+    (forecast.getPeriod(p.key)?.items ?? []).filter(
+      (t) =>
+        t.type === 'expense' &&
+        t.status !== 'cancelled' &&
+        t.sourceAccountId === defaultAccount.id &&
+        !(activeFrom && t.date < activeFrom)
+    )
+  );
 
   const sorted = [...expenseTxs].sort((a, b) => getEffectiveAmountInHaler(b) - getEffectiveAmountInHaler(a));
 
@@ -516,6 +501,8 @@ export function getTopExpenses(
 
     return {
       transaction: tx,
+      amountInHaler: getEffectiveAmountInHaler(tx),
+      isPlanned: isRemainingPlanned(tx, todayStr),
       accountName: acc ? acc.name : 'Neznámý účet',
       categoryName,
       subcategoryName,
@@ -524,94 +511,42 @@ export function getTopExpenses(
 }
 
 /**
- * Spočítá finanční extrémy a průměry.
+ * Finanční extrémy a průměry jen z uzavřených období (konec před dneškem): probíhající a budoucí
+ * období ještě obsahují plán, takže by extrém i průměr zkreslovala. Čistá bilance je Skutečně
+ * uspořeno (příjmy − výdaje + korekce), shodně s Měsíčním rozpočtem.
  */
 export function calculateFinancialExtremes(
   monthlyCashFlow: MonthlyCashFlowPoint[]
 ): FinancialExtremes {
-  if (!monthlyCashFlow || monthlyCashFlow.length === 0) {
-    return {
-      highestIncomeMonth: null,
-      highestExpenseMonth: null,
-      bestNetMonth: null,
-      worstNetMonth: null,
-      avgMonthlyIncomeInHaler: 0,
-      avgMonthlyNetChangeInHaler: 0,
-    };
-  }
+  const closed = (monthlyCashFlow ?? []).filter((m) => m.isClosed);
 
-  let highestIncome = -Infinity;
-  let highestIncomeItem: MonthlyCashFlowPoint | null = null;
-
-  let highestExpense = -Infinity;
-  let highestExpenseItem: MonthlyCashFlowPoint | null = null;
-
-  let bestNet = -Infinity;
-  let bestNetItem: MonthlyCashFlowPoint | null = null;
-
-  let worstNet = Infinity;
-  let worstNetItem: MonthlyCashFlowPoint | null = null;
-
-  let totalIncome = 0;
-  let totalNet = 0;
-
-  for (const m of monthlyCashFlow) {
-    totalIncome = addHaler(totalIncome, m.incomeInHaler);
-    totalNet = addHaler(totalNet, m.netChangeInHaler);
-
-    if (m.incomeInHaler > highestIncome) {
-      highestIncome = m.incomeInHaler;
-      highestIncomeItem = m;
+  const pick = (
+    value: (m: MonthlyCashFlowPoint) => number,
+    better: (a: number, b: number) => boolean
+  ): FinancialExtremePeriod | null => {
+    let best: MonthlyCashFlowPoint | null = null;
+    for (const m of closed) {
+      if (!best || better(value(m), value(best))) best = m;
     }
+    return best ? { monthKey: best.monthKey, label: best.label, amountInHaler: value(best) } : null;
+  };
+  const average = (value: (m: MonthlyCashFlowPoint) => number) =>
+    closed.length > 0 ? Math.round(closed.reduce((sum, m) => addHaler(sum, value(m)), 0) / closed.length) : 0;
 
-    if (m.expenseInHaler > highestExpense) {
-      highestExpense = m.expenseInHaler;
-      highestExpenseItem = m;
-    }
-
-    if (m.netChangeInHaler > bestNet) {
-      bestNet = m.netChangeInHaler;
-      bestNetItem = m;
-    }
-
-    if (m.netChangeInHaler < worstNet) {
-      worstNet = m.netChangeInHaler;
-      worstNetItem = m;
-    }
-  }
-
-  const count = monthlyCashFlow.length;
+  const income = (m: MonthlyCashFlowPoint) => m.incomeInHaler;
+  const expense = (m: MonthlyCashFlowPoint) => m.expenseInHaler;
+  const saved = (m: MonthlyCashFlowPoint) => m.actuallySavedInHaler;
+  const higher = (a: number, b: number) => a > b;
+  const lower = (a: number, b: number) => a < b;
 
   return {
-    highestIncomeMonth: highestIncomeItem
-      ? {
-          monthKey: highestIncomeItem.monthKey,
-          label: highestIncomeItem.label,
-          amountInHaler: highestIncomeItem.incomeInHaler,
-        }
-      : null,
-    highestExpenseMonth: highestExpenseItem
-      ? {
-          monthKey: highestExpenseItem.monthKey,
-          label: highestExpenseItem.label,
-          amountInHaler: highestExpenseItem.expenseInHaler,
-        }
-      : null,
-    bestNetMonth: bestNetItem
-      ? {
-          monthKey: bestNetItem.monthKey,
-          label: bestNetItem.label,
-          amountInHaler: bestNetItem.netChangeInHaler,
-        }
-      : null,
-    worstNetMonth: worstNetItem
-      ? {
-          monthKey: worstNetItem.monthKey,
-          label: worstNetItem.label,
-          amountInHaler: worstNetItem.netChangeInHaler,
-        }
-      : null,
-    avgMonthlyIncomeInHaler: Math.round(totalIncome / count),
-    avgMonthlyNetChangeInHaler: Math.round(totalNet / count),
+    highestIncomeMonth: pick(income, higher),
+    highestExpenseMonth: pick(expense, higher),
+    mostSavedMonth: pick(saved, higher),
+    leastSavedMonth: pick(saved, lower),
+    avgMonthlyIncomeInHaler: average(income),
+    avgMonthlyActuallySavedInHaler: average(saved),
+    closedPeriodCount: closed.length,
   };
 }
+

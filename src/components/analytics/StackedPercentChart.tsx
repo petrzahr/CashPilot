@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { formatCurrency, formatPercent } from '../../services/currencyService';
 
 export interface StackedPercentSegment {
@@ -7,6 +7,10 @@ export interface StackedPercentSegment {
   color: string;
   amountInHaler: number;
   pct: number | null;     // podíl na součtu absolutních hodnot segmentů daného období
+  /** Plánovaná část pct (stejné znaménko), kreslí se šrafovaně na vnější straně segmentu */
+  plannedPct?: number;
+  /** Rozpad částky v tooltipu: „{executedLabel} X · plánováno Y“ a „vč. korekcí Z“ */
+  split?: { executedLabel: string; executedInHaler: number; plannedInHaler: number; correctionsInHaler: number };
 }
 
 export interface StackedPercentPoint {
@@ -15,7 +19,12 @@ export interface StackedPercentPoint {
   periodShortLabel: string;
   segments: StackedPercentSegment[];
   totalInHaler?: number;
+  /** Období obsahuje plánované položky (jantarové záhlaví v tabulce) */
+  hasPlanned?: boolean;
 }
+
+/** Částka, která se po zaokrouhlení na celé koruny zobrazí jako nenulová (stejně jako formatCurrency). */
+const isVisibleAmount = (amountInHaler: number) => Math.round(amountInHaler / 100) !== 0;
 
 interface StackedPercentChartProps {
   title: string;
@@ -56,6 +65,8 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   // Skutečná šířka plochy grafu v px - podle ní se na úzkých displejích ředí popisky osy X
   const plotRef = useRef<HTMLDivElement>(null);
   const [plotWidth, setPlotWidth] = useState(0);
+  // Id vzorů šrafování musí být v dokumentu jedinečné (stránka může mít víc grafů)
+  const hatchIdPrefix = `hatch-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const hasData = !!data && data.length > 0;
 
   useEffect(() => {
@@ -86,7 +97,12 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
   // zaokrouhlovací nepřesnost (zobrazující se jako "0 Kč") vynucovala zbytečné záporné
   // pásmo na ose.
   const isEffectivelyNegative = (seg: StackedPercentSegment) =>
-    (seg.pct ?? 0) < 0 && Math.round(seg.amountInHaler / 100) !== 0;
+    (seg.pct ?? 0) < 0 && isVisibleAmount(seg.amountInHaler);
+
+  // Barvy sérií, které mají v některém období plánovanou část (každá potřebuje svůj vzor šrafování)
+  const hatchColors = [...new Set(data.flatMap((d) => d.segments.filter((s) => s.plannedPct).map((s) => s.color)))];
+  const hatchId = (color: string) => `${hatchIdPrefix}-${hatchColors.indexOf(color)}`;
+  const hasAnyPlanned = hatchColors.length > 0;
 
   // Kladná a záporná strana dávají dohromady 100 %, osa se proto přizpůsobuje SKUTEČNÝM
   // hodnotám napříč obdobími (zaokrouhleno nahoru/dolů na nejbližší násobek 20).
@@ -145,6 +161,24 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <h2 className="text-sm font-bold text-slate-900">{title}</h2>
         {subtitle && <span className="text-xs text-slate-500">{subtitle}</span>}
+        {/* Legenda plnění jen tehdy, když některé období obsahuje plán */}
+        {hasAnyPlanned && (
+          <span className="ml-auto flex items-center gap-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
+                <rect width="12" height="12" rx="2" className="fill-slate-500" />
+              </svg>
+              Uskutečněno
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-3 h-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
+                <rect width="12" height="12" rx="2" className="fill-slate-500" opacity="0.25" />
+                <path d="M-3 9 L3 -3 M1 13 L9 -3 M5 17 L15 -3" className="stroke-slate-500" strokeWidth="2.5" />
+              </svg>
+              Plánováno
+            </span>
+          </span>
+        )}
       </div>
 
       {/* SVG Canvas */}
@@ -155,6 +189,17 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
           className="w-full h-auto overflow-visible select-none"
           onPointerLeave={(e) => { if (e.pointerType === 'mouse') setHoveredIdx(null); }}
         >
+          {/* Šrafování plánované části: šikmé pruhy v barvě série přes její světlý nádech */}
+          {hasAnyPlanned && (
+            <defs>
+              {hatchColors.map((color) => (
+                <pattern key={color} id={hatchId(color)} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                  <rect width="8" height="8" fill={color} opacity="0.25" />
+                  <rect width="3.5" height="8" fill={color} />
+                </pattern>
+              ))}
+            </defs>
+          )}
           {/* Vodorovné mřížkové linky (popisky % jsou vykreslené jako HTML overlay níže,
               aby jejich velikost písma odpovídala tabulce bez ohledu na škálování SVG) */}
           {gridValues.map((v) => (
@@ -243,22 +288,31 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                     y1 = posCum;
                   }
 
-                  const rectY = getY(clampPct(y1));
-                  const rectHeight = Math.max(0, getY(clampPct(y0)) - getY(clampPct(y1)));
+                  // Plánovaná část leží na vnější straně segmentu (dál od nuly), uskutečněná u nuly
+                  const negative = isEffectivelyNegative(seg);
+                  const outer = negative ? y0 : y1;
+                  const split = outer - (seg.plannedPct ?? 0);
+                  const parts = [
+                    { key: 'executed', from: negative ? split : y0, to: negative ? y1 : split, fill: seg.color },
+                    { key: 'planned', from: negative ? y0 : split, to: negative ? split : y1, fill: `url(#${hatchId(seg.color)})` },
+                  ];
 
-                  if (rectHeight <= 0) return null;
-
-                  return (
-                    <rect
-                      key={seg.key}
-                      x={barX}
-                      y={rectY}
-                      width={barWidth}
-                      height={rectHeight}
-                      fill={seg.color}
-                      className="transition-all hover:opacity-90"
-                    />
-                  );
+                  return parts.map((part) => {
+                    const rectY = getY(clampPct(part.to));
+                    const rectHeight = Math.max(0, getY(clampPct(part.from)) - getY(clampPct(part.to)));
+                    if (rectHeight <= 0) return null;
+                    return (
+                      <rect
+                        key={`${seg.key}-${part.key}`}
+                        x={barX}
+                        y={rectY}
+                        width={barWidth}
+                        height={rectHeight}
+                        fill={part.fill}
+                        className="transition-all hover:opacity-90"
+                      />
+                    );
+                  });
                 })}
               </g>
             );
@@ -333,8 +387,8 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
 
             <div className="space-y-1 pt-0.5 text-xs min-w-[220px]">
               {hoveredItem.segments.map((seg) => (
+                <div key={seg.key}>
                 <div
-                  key={seg.key}
                   className="flex items-center justify-between gap-4 text-slate-600"
                 >
                   <span className="flex items-center gap-1.5 truncate">
@@ -353,6 +407,17 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
                       </span>
                     )}
                   </span>
+                </div>
+                {seg.split && isVisibleAmount(seg.split.plannedInHaler) && (
+                  <div className="pl-3.5 text-slate-500 tabular-nums whitespace-nowrap">
+                    {seg.split.executedLabel} {formatCurrency(seg.split.executedInHaler)} · plánováno {formatCurrency(seg.split.plannedInHaler)}
+                  </div>
+                )}
+                {seg.split && isVisibleAmount(seg.split.correctionsInHaler) && (
+                  <div className="pl-3.5 text-slate-500 tabular-nums whitespace-nowrap">
+                    vč. korekcí {formatCurrency(seg.split.correctionsInHaler)}
+                  </div>
+                )}
                 </div>
               ))}
 
@@ -378,7 +443,11 @@ export const StackedPercentChart: React.FC<StackedPercentChartProps> = ({
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
               <th className="py-2.5 px-4">{rowHeaderLabel}</th>
               {data.map((d) => (
-                <th key={d.periodKey} className="py-2.5 px-4 text-right whitespace-nowrap">
+                <th
+                  key={d.periodKey}
+                  className={`py-2.5 px-4 text-right whitespace-nowrap ${d.hasPlanned ? 'text-amber-700' : ''}`}
+                  title={d.hasPlanned ? 'Obsahuje plánované položky' : undefined}
+                >
                   {d.periodShortLabel || d.periodLabel}
                 </th>
               ))}

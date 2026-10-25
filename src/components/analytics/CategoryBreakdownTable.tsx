@@ -7,6 +7,8 @@ import { formatCurrency } from '../../services/currencyService';
 interface CategoryBreakdownTableProps {
   periods: BudgetPeriodInfo[];
   data: CategoryBreakdownResult;
+  /** Období s plánovanými položkami; jejich záhlaví je jantarové */
+  plannedPeriodKeys?: ReadonlySet<string>;
 }
 
 const formatShare = (part: number, whole: number) =>
@@ -20,7 +22,7 @@ const heatStyle = (amount: number, rowMax: number): React.CSSProperties | undefi
     ? { backgroundColor: `rgb(var(--c-sky-500) / ${(0.03 + 0.17 * (amount / rowMax)).toFixed(3)})` }
     : undefined;
 
-export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ periods, data }) => {
+export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ periods, data, plannedPeriodKeys }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const expandableKeys = data.rows.filter((r) => r.children.length > 0).map((r) => r.key);
@@ -154,7 +156,11 @@ export const CategoryBreakdownTable: React.FC<CategoryBreakdownTableProps> = ({ 
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs">
               <th className={`${stickyCell} bg-slate-50 py-2.5 px-4`}>Kategorie</th>
               {periods.map((p) => (
-                <th key={p.key} className="py-2.5 px-4 text-right whitespace-nowrap">
+                <th
+                  key={p.key}
+                  className={`py-2.5 px-4 text-right whitespace-nowrap ${plannedPeriodKeys?.has(p.key) ? 'text-amber-700' : ''}`}
+                  title={plannedPeriodKeys?.has(p.key) ? 'Obsahuje plánované položky' : undefined}
+                >
                   {p.shortLabel || p.label}
                 </th>
               ))}

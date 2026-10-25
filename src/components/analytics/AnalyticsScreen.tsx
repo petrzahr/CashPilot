@@ -1,16 +1,14 @@
 import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 import { CashFlowCompositionChart } from './CashFlowCompositionChart';
 import { CategoryBreakdownTable } from './CategoryBreakdownTable';
 import { calculateCategoryBreakdown } from '../../services/categoryBreakdownService';
-import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
+import { getDefaultAccount } from '../../services/accountScope';
 import React, { useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import {
-  AnalyticsFilters,
   createBudgetPeriodInfo,
   toAnalyticsDateRange,
-  getFilteredExecutedTransactions,
   calculateMonthlyCashFlow,
   calculateExpenseMoMTrend,
   getTopExpenses,
@@ -52,10 +50,6 @@ export const AnalyticsScreen: React.FC = () => {
     () => getDefaultAccount(accounts),
     [accounts]
   );
-  const accountFilters = useMemo<AnalyticsFilters>(
-    () => ({ accountId: defaultAccount?.id ?? null, categoryId: null, subcategoryId: null }),
-    [defaultAccount]
-  );
 
   // Výběr období začíná na výchozím rozsahu z Nastavení; v rámci relace se pamatuje i při přechodu do jiné sekce
   const range = periodRanges.analytics;
@@ -73,47 +67,35 @@ export const AnalyticsScreen: React.FC = () => {
 
   const dateRange = useMemo(() => toAnalyticsDateRange(periods, todayStr), [periods, todayStr]);
 
-  // Filtrované transakce
-  const filteredTxs = useMemo(() => {
-    return getFilteredExecutedTransactions(
-      transactions,
-      dateRange,
-      accountFilters,
-      categories,
-      todayStr
-    );
-  }, [transactions, dateRange, accountFilters, categories, todayStr]);
-
-  // Všechny uskutečněné transakce (pro meziměsíční trendy i mimo vybraný rozsah)
-  const allExecutedTxs = useMemo(() => {
-    return transactions.filter((t) => t.status === 'executed' && t.date <= todayStr);
-  }, [transactions, todayStr]);
-
+  // Všechna čísla níže jsou ze souhrnu období předpovědi (shodně s KPI Měsíčního rozpočtu)
   const monthlyCashFlow = useMemo(() => {
-    return calculateMonthlyCashFlow(dateRange.periods, filteredTxs);
-  }, [dateRange.periods, filteredTxs]);
+    return calculateMonthlyCashFlow(dateRange.periods, forecast, todayStr);
+  }, [dateRange.periods, forecast, todayStr]);
 
   const expenseTrends = useMemo(() => {
-    return calculateExpenseMoMTrend(
-      dateRange.periods,
-      allExecutedTxs,
-      accountFilters,
-      categories,
-      todayStr
-    );
-  }, [dateRange.periods, allExecutedTxs, accountFilters, categories, todayStr, budgetStartDay]);
+    return calculateExpenseMoMTrend(dateRange.periods, forecast);
+  }, [dateRange.periods, forecast]);
 
   const topExpenses = useMemo(() => {
-    return getTopExpenses(filteredTxs, accounts, categories);
-  }, [filteredTxs, accounts, categories]);
+    return getTopExpenses(dateRange.periods, forecast, accounts, categories, todayStr);
+  }, [dateRange.periods, forecast, accounts, categories, todayStr]);
 
   const extremes = useMemo(() => {
     return calculateFinancialExtremes(monthlyCashFlow);
   }, [monthlyCashFlow]);
 
   const cashFlowComposition = useMemo(() => {
-    return calculateCashFlowComposition(dateRange.periods, forecast);
-  }, [dateRange.periods, forecast]);
+    return calculateCashFlowComposition(dateRange.periods, forecast, todayStr);
+  }, [dateRange.periods, forecast, todayStr]);
+
+  // Sloupce období s plánovanými položkami (záhlaví tabulky kategorií)
+  const plannedPeriodKeys = useMemo(
+    () => new Set(monthlyCashFlow.filter((m) => m.hasPlanned).map((m) => m.monthKey)),
+    [monthlyCashFlow]
+  );
+  const closedPeriodsText = extremes.closedPeriodCount > 0
+    ? `Za uzavřená období (${extremes.closedPeriodCount})`
+    : 'Jen uzavřená období';
 
   const categoryBreakdown = useMemo(() => {
     return calculateCategoryBreakdown(
@@ -162,7 +144,7 @@ export const AnalyticsScreen: React.FC = () => {
       <CashFlowCompositionChart data={cashFlowComposition} />
 
       {/* 4. Souhrn podle kategorií a podkategorií za vybrané období */}
-      <CategoryBreakdownTable periods={dateRange.periods} data={categoryBreakdown} />
+      <CategoryBreakdownTable periods={dateRange.periods} data={categoryBreakdown} plannedPeriodKeys={plannedPeriodKeys} />
 
       {/* 5. Dvousloupec: Meziměsíční trend výdajů & Finanční extrémy a průměry */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -186,6 +168,11 @@ export const AnalyticsScreen: React.FC = () => {
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">{t.label}</span>
+                    {t.plannedExpenseInHaler !== 0 && (
+                      <span className="chip bg-amber-50 text-amber-700" title={`Z toho plánováno: ${formatCurrency(t.plannedExpenseInHaler)}`}>
+                        <Clock className="w-3 h-3" aria-hidden="true" /> vč. plánu
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -259,33 +246,33 @@ export const AnalyticsScreen: React.FC = () => {
               </p>
             </div>
 
-            {/* Nejlepší čistá bilance */}
+            {/* Nejvíce skutečně uspořeno */}
             <div className="p-3 bg-slate-50 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
-                Nejlepší čistá bilance
+                Nejvíce skutečně uspořeno
               </span>
-              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.bestNetMonth?.amountInHaler)}`}>
-                {extremes.bestNetMonth
-                  ? formatCurrency(extremes.bestNetMonth.amountInHaler)
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.mostSavedMonth?.amountInHaler)}`}>
+                {extremes.mostSavedMonth
+                  ? formatCurrency(extremes.mostSavedMonth.amountInHaler)
                   : '—'}
               </div>
               <p className="text-xs text-slate-500 font-medium truncate">
-                {extremes.bestNetMonth?.label || 'Žádná data'}
+                {extremes.mostSavedMonth?.label || 'Žádná data'}
               </p>
             </div>
 
-            {/* Nejhorší čistá bilance */}
+            {/* Nejméně skutečně uspořeno */}
             <div className="p-3 bg-slate-50 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
-                Nejhorší čistá bilance
+                Nejméně skutečně uspořeno
               </span>
-              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.worstNetMonth?.amountInHaler)}`}>
-                {extremes.worstNetMonth
-                  ? formatCurrency(extremes.worstNetMonth.amountInHaler)
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.leastSavedMonth?.amountInHaler)}`}>
+                {extremes.leastSavedMonth
+                  ? formatCurrency(extremes.leastSavedMonth.amountInHaler)
                   : '—'}
               </div>
               <p className="text-xs text-slate-500 font-medium truncate">
-                {extremes.worstNetMonth?.label || 'Žádná data'}
+                {extremes.leastSavedMonth?.label || 'Žádná data'}
               </p>
             </div>
 
@@ -295,20 +282,20 @@ export const AnalyticsScreen: React.FC = () => {
                 Průměrný příjem za období
               </span>
               <div className="text-sm font-bold text-slate-900 tabular-nums">
-                {formatCurrency(extremes.avgMonthlyIncomeInHaler)}
+                {extremes.closedPeriodCount > 0 ? formatCurrency(extremes.avgMonthlyIncomeInHaler) : '—'}
               </div>
-              <p className="text-xs text-slate-500">Za vybraná období</p>
+              <p className="text-xs text-slate-500">{closedPeriodsText}</p>
             </div>
 
-            {/* Průměrná čistá bilance: barva podle znaménka jako u nejlepší a nejhorší */}
+            {/* Průměrně skutečně uspořeno: barva podle znaménka jako u nejvíce a nejméně */}
             <div className="p-3 bg-slate-50 rounded-xl space-y-1">
               <span className="text-xs font-medium text-slate-500">
-                Průměrná čistá bilance za období
+                Průměrně skutečně uspořeno za období
               </span>
-              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.avgMonthlyNetChangeInHaler)}`}>
-                {formatCurrency(extremes.avgMonthlyNetChangeInHaler)}
+              <div className={`text-sm font-bold tabular-nums ${netTone(extremes.closedPeriodCount > 0 ? extremes.avgMonthlyActuallySavedInHaler : undefined)}`}>
+                {extremes.closedPeriodCount > 0 ? formatCurrency(extremes.avgMonthlyActuallySavedInHaler) : '—'}
               </div>
-              <p className="text-xs text-slate-500">Za vybraná období</p>
+              <p className="text-xs text-slate-500">{closedPeriodsText}</p>
             </div>
           </div>
         </div>
@@ -342,7 +329,14 @@ export const AnalyticsScreen: React.FC = () => {
                       {formatCzechDate(item.transaction.date)}
                     </td>
                     <td className="py-2.5 px-4 font-bold text-slate-900">
-                      {item.transaction.title}
+                      <span className="flex items-center gap-2">
+                        {item.transaction.title}
+                        {item.isPlanned && (
+                          <span className="chip bg-amber-50 text-amber-700 font-medium">
+                            <Clock className="w-3 h-3" aria-hidden="true" /> Plánovaná
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td className="py-2.5 px-4 text-slate-500 font-medium">
                       {item.categoryName}
@@ -354,7 +348,7 @@ export const AnalyticsScreen: React.FC = () => {
                       {item.accountName}
                     </td>
                     <td className="py-2.5 px-4 text-right font-extrabold text-red-600 tabular-nums whitespace-nowrap">
-                      {formatCurrency(getEffectiveAmountInHaler(item.transaction))}
+                      {formatCurrency(item.amountInHaler)}
                     </td>
                   </tr>
                 ))}
