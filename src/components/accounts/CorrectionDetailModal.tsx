@@ -58,9 +58,8 @@ export const CorrectionDetailModal: React.FC<CorrectionDetailModalProps> = ({
   };
 
   // Smaže hned; oznámení po smazání nabídne „Vrátit“
-  const handleDelete = async () => {
-    const ok = await deleteCorrection(currentItem.id);
-    if (ok) onClose();
+  const handleDelete = () => {
+    if (deleteCorrection(currentItem.id).ok) onClose();
   };
 
   return (

@@ -71,8 +71,8 @@ describe('Smazání běžné položky a „Vrátit“', () => {
     const { ctx, controller, getCloud } = await setup([makeTx('tx_a', 'Káva', 1), rent, makeTx('tx_c', 'Oběd', 3)]);
 
     let deleted: unknown;
-    await act(async () => { deleted = await ctx().deleteTransaction('tx_b'); });
-    expect(deleted).toBe(true);
+    act(() => { deleted = ctx().deleteTransaction('tx_b'); });
+    expect(deleted).toEqual({ ok: true, value: undefined });
     expect(dayOrder()).toEqual(['1:tx_a', '2:tx_c']);
 
     // Záznam o smazání a obnovení nesmí mít stejný časový otisk
@@ -98,8 +98,8 @@ describe('Smazání běžné položky a „Vrátit“', () => {
     const { ctx } = await setup([corrTx], { corrections: [correction] });
 
     let deleted: unknown;
-    await act(async () => { deleted = await ctx().deleteCorrection('corr_1'); });
-    expect(deleted).toBe(true);
+    act(() => { deleted = ctx().deleteCorrection('corr_1'); });
+    expect(deleted).toEqual({ ok: true, value: undefined });
     expect(loadStoredDataResult().data.corrections).toHaveLength(0);
 
     await new Promise(resolve => setTimeout(resolve, 5));
@@ -112,7 +112,7 @@ describe('Smazání běžné položky a „Vrátit“', () => {
   it('opakované vrácení stejné položky nic nezdvojí', async () => {
     const rent = makeTx('tx_b', 'Nájem', 1);
     const { ctx } = await setup([rent]);
-    await act(async () => { await ctx().deleteTransaction('tx_b'); });
+    act(() => { ctx().deleteTransaction('tx_b'); });
     await new Promise(resolve => setTimeout(resolve, 5));
     clickUndo(ctx);
     clickUndo(ctx);

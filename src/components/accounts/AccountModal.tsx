@@ -84,8 +84,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     }
 
     const initialBalanceInHaler = parseInputToHaler(balanceStr);
-    if (isEditing && accountToEdit) {
-      const res = updateAccount({
+    const res = isEditing && accountToEdit
+      ? updateAccount({
         ...accountToEdit,
         name: name.trim(),
         type,
@@ -97,13 +97,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         isDefault,
         institution: institution.trim() || undefined,
         color,
-      });
-      if (res && !res.success) {
-        setErrorMessage(res.message || 'Účet se nepodařilo uložit.');
-        return;
-      }
-    } else {
-      addAccount({
+      })
+      : addAccount({
         name: name.trim(),
         type,
         currency,
@@ -117,6 +112,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         sortOrder: accounts.length + 1,
         status: 'active',
       });
+    if (!res.ok) {
+      setErrorMessage(res.message || 'Účet se nepodařilo uložit.');
+      return;
     }
 
     onClose();

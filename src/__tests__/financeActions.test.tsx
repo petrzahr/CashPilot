@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FinanceProvider, useFinance } from '../context/FinanceContext';
+import { FinanceProvider, NOT_SAVED_MESSAGE, useFinance } from '../context/FinanceContext';
 import { SyncController } from '../services/syncController';
 import { AppData, getActiveStorageKey, getInitialData, loadStoredDataResult } from '../services/storageService';
 import { saveStoredData } from './testStorageHelpers';
@@ -56,15 +56,81 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
+describe('perform: oznámení a výsledek akce', () => {
+  it('úspěšná akce uloží data, ukáže oznámení a vrátí hodnotu', async () => {
+    const { finance, controller } = await mountReady();
+
+    let result: ReturnType<ReturnType<typeof useFinance>['addAccount']> | undefined;
+    act(() => { result = finance().addAccount({ ...account, name: 'Spoření' }); });
+
+    expect(result).toMatchObject({ ok: true, value: { name: 'Spoření' } });
+    expect(controller.data.accounts.map(a => a.name)).toContain('Spoření');
+    expect(finance().toasts).toMatchObject([{ text: 'Účet „Spoření“ byl vytvořen.', type: 'success' }]);
+    expect(finance().toasts[0].action).toBeUndefined();
+  });
+
+  it('před první synchronizací nic neuloží, oznámí to a vrátí not-saved', () => {
+    const data = { ...getInitialData(), accounts: [account] };
+    const change = () => { throw new Error('nesmí se volat'); };
+    const session = { data, isReady: false, change, stop: () => {}, sync: async () => {} } as unknown as SyncController;
+    let finance!: ReturnType<typeof useFinance>;
+    const Capture = () => { finance = useFinance(); return null; };
+    render(<FinanceProvider syncSession={session}><Capture /></FinanceProvider>);
+
+    let result: unknown;
+    act(() => { result = finance.updateSettings({ budgetStartDay: 1 }); });
+
+    expect(result).toEqual({ ok: false, reason: 'not-saved', message: NOT_SAVED_MESSAGE });
+    expect(finance.toasts).toMatchObject([{ text: NOT_SAVED_MESSAGE, type: 'error' }]);
+  });
+
+  it('„Vrátit“ v oznámení obnoví data stejnou cestou a ukáže oznámení o vrácení', async () => {
+    const { finance, controller } = await mountReady({ transactions: [] });
+
+    act(() => { finance().deleteAccount('chk'); });
+    expect(controller.data.accounts).toEqual([]);
+    const toast = finance().toasts.find(t => t.action?.label === 'Vrátit');
+    expect(toast?.text).toBe('Účet „Běžný“ byl smazán.');
+
+    // Záznam o smazání a obnovení nesmí mít stejný časový otisk
+    await new Promise(resolve => setTimeout(resolve, 5));
+    act(() => toast!.action!.onClick());
+    expect(controller.data.accounts.map(a => a.id)).toEqual(['chk']);
+    expect(finance().toasts.map(t => t.text)).toContain('Účet „Běžný“ byl obnoven.');
+  });
+
+  it('odmítnutí bez oznámení: data beze změny, důvod jen ve výsledku', async () => {
+    const { finance, controller } = await mountReady();
+
+    let result: unknown;
+    act(() => { result = finance().deleteAccount('chk'); });
+
+    expect(result).toMatchObject({ ok: false, reason: 'rejected', message: expect.any(String) });
+    expect(controller.data.accounts.map(a => a.id)).toEqual(['chk']);
+    expect(finance().toasts).toEqual([]);
+  });
+
+  it('odmítnutí s oznámením: chyba se ukáže a vrátí se i volajícímu', async () => {
+    const { finance, controller } = await mountReady();
+
+    let result: { ok: boolean; message?: string } | undefined;
+    act(() => { result = finance().addTransaction({ ...tx, id: undefined, date: '2025-06-01' } as unknown as Transaction); });
+
+    expect(result).toMatchObject({ ok: false, reason: 'rejected' });
+    expect(finance().toasts).toMatchObject([{ text: result!.message, type: 'error' }]);
+    expect(controller.data.transactions.map(t => t.id)).toEqual(['tx']);
+  });
+});
+
 describe('selhání zápisu do úložiště', () => {
   it('smazání nic nezmění, vrátí neúspěch a ukáže chybu mazání', async () => {
     const { finance, controller } = await mountReady();
     storage.failWrites(true);
 
     let deleted: unknown;
-    await act(async () => { deleted = await finance().deleteTransaction('tx'); });
+    act(() => { deleted = finance().deleteTransaction('tx'); });
 
-    expect(deleted).toBe(false);
+    expect(deleted).toEqual({ ok: false, reason: 'not-saved', message: 'QuotaExceededError' });
     expect(controller.data.transactions.map(t => t.id)).toEqual(['tx']);
     expect(toastTexts(finance)).toContain('Položku se nepodařilo smazat. Zkuste to prosím znovu.');
   });

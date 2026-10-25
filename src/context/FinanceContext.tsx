@@ -184,22 +184,22 @@ interface FinanceContextType {
   showToast: (text: string, type?: 'success' | 'info' | 'warning' | 'error', action?: ToastMessage['action']) => void;
   removeToast: (id: string) => void;
 
-  // Transakce a pořadí
-  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Transaction;
-  updateTransaction: (tx: Transaction) => void;
+  // Transakce a pořadí (každá akce vrací ActionResult a nikdy nevyhazuje)
+  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => ActionResult<Transaction>;
+  updateTransaction: (tx: Transaction) => ActionResult;
   deleteTransaction: (
     id: string,
     recurringMode?: 'occurrence' | 'future' | 'series',
     deleteHistoricalExecuted?: boolean
-  ) => Promise<boolean>;
+  ) => ActionResult;
   setTransactionStatus: (
     id: string,
     newStatus: TransactionStatus,
     updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
-  ) => void;
-  markTransactionExecuted: (id: string, updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }) => void;
-  cancelTransaction: (id: string) => void;
-  reorderDayTransactions: (date: string, orderedIds: string[]) => void;
+  ) => ActionResult;
+  markTransactionExecuted: (id: string, updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }) => ActionResult;
+  cancelTransaction: (id: string) => ActionResult;
+  reorderDayTransactions: (date: string, orderedIds: string[]) => ActionResult;
   checkDueTransactions: () => void;
 
   addRecurringRule: (
@@ -207,7 +207,7 @@ interface FinanceContextType {
     initialSequence?: number,
     initialStatus?: TransactionStatus,
     existingTransactionId?: string
-  ) => RecurringRule;
+  ) => ActionResult<RecurringRule>;
   updateRecurringRule: (
     ruleId: string,
     mode: 'occurrence' | 'future' | 'series',
@@ -215,8 +215,8 @@ interface FinanceContextType {
     overrideData: Partial<Transaction>,
     originalTransactionId?: string,
     placement?: DayPlacement
-  ) => void;
-  deleteRecurringRule: (id: string) => void;
+  ) => ActionResult;
+  deleteRecurringRule: (id: string) => ActionResult;
   reorderRecurringItem: (
     ruleId: string,
     mode: 'occurrence' | 'future' | 'series',
@@ -224,50 +224,51 @@ interface FinanceContextType {
     periodKey: string,
     orderedIds: string[],
     movedTransactionId: string
-  ) => void;
+  ) => ActionResult;
 
   // Účty
-  addAccount: (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => Account | undefined;
-  updateAccount: (account: Account) => { success: boolean; message?: string };
-  archiveAccount: (id: string) => { success: boolean; message?: string };
-  restoreAccount: (id: string) => void;
-  deleteAccount: (id: string) => { success: boolean; message?: string };
-  reorderAccounts: (orderedIds: string[]) => void;
-  reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => void;
-  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string) => void;
-  updateCorrectionNote: (id: string, note: string) => void;
-  editMarketValue: (id: string, edit: MarketValueEdit) => void;
-  deleteMarketValue: (id: string) => void;
-  saveInvestmentFee: (accountId: string, periodKey: string, amountInHaler: number, note?: string) => void;
-  deleteInvestmentFee: (id: string) => void;
-  deleteCorrection: (id: string) => Promise<boolean>;
+  addAccount: (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => ActionResult<Account>;
+  updateAccount: (account: Account) => ActionResult;
+  archiveAccount: (id: string) => ActionResult;
+  restoreAccount: (id: string) => ActionResult;
+  deleteAccount: (id: string) => ActionResult;
+  reorderAccounts: (orderedIds: string[]) => ActionResult;
+  reconcileBalance: (accountId: string, actualBalanceInHaler: number, checkDate: string, note?: string) => ActionResult;
+  updateMarketValue: (accountId: string, marketValueInHaler: number, date?: string, note?: string) => ActionResult;
+  updateCorrectionNote: (id: string, note: string) => ActionResult;
+  editMarketValue: (id: string, edit: MarketValueEdit) => ActionResult;
+  deleteMarketValue: (id: string) => ActionResult;
+  saveInvestmentFee: (accountId: string, periodKey: string, amountInHaler: number, note?: string) => ActionResult;
+  deleteInvestmentFee: (id: string) => ActionResult;
+  deleteCorrection: (id: string) => ActionResult;
   dataConflicts: { transaction: Transaction; account: Account; reason: string }[];
 
   // Kategorie
-  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
-  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Category | undefined;
-  updateCategory: (cat: Category) => void;
-  moveSubcategory: (subcategoryId: string, newParentId: string, updateHistorical: boolean) => void;
-  archiveCategory: (id: string) => void;
-  restoreCategory: (id: string) => void;
-  deleteCategory: (id: string) => { success: boolean; message?: string };
+  addCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => ActionResult<Category>;
+  addMainCategory: (cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => ActionResult<Category>;
+  updateCategory: (cat: Category) => ActionResult;
+  moveSubcategory: (subcategoryId: string, newParentId: string, updateHistorical: boolean) => ActionResult;
+  archiveCategory: (id: string) => ActionResult;
+  restoreCategory: (id: string) => ActionResult;
+  deleteCategory: (id: string) => ActionResult;
 
   // Stav načtení a obnova dat
   loadState: AppLoadState;
   loadErrorDetails: { message: string; recoveryKey?: string; corruptedRaw?: string } | null;
-  restoreFromBackupFile: (jsonStr: string) => void;
+  /** Neplatný soubor vrací 'rejected' hned, ještě než se cokoli smaže. */
+  restoreFromBackupFile: (jsonStr: string) => Promise<ActionResult>;
   reloadFromDrive: () => void;
   retryLoadData: () => void;
 
   // Nastavení & Správa dat
-  clearAllTransactions: () => boolean;
-  clearAllAccounts: () => boolean;
-  clearAllCategories: () => boolean;
-  resetAllData: () => boolean;
-  updateSettings: (newSettings: Partial<AppSettings>) => void;
-  loadDemoData: () => void;
+  clearAllTransactions: () => ActionResult;
+  clearAllAccounts: () => ActionResult;
+  clearAllCategories: () => ActionResult;
+  resetAllData: () => ActionResult;
+  updateSettings: (newSettings: Partial<AppSettings>) => ActionResult;
+  loadDemoData: () => Promise<ActionResult>;
   exportJSON: () => void;
-  importJSON: (jsonStr: string) => boolean;
+  importJSON: (jsonStr: string) => ActionResult;
   exportCSV: () => void;
   // Google Drive Synchronizace
   driveSyncStatus: DriveSyncStatus;
@@ -289,6 +290,8 @@ interface FinanceContextType {
 export type AppLoadState = 'loading' | 'ready' | 'loadError';
 
 export const NOT_SAVED_MESSAGE = 'Data se ještě načítají, změna nebyla uložena. Zkuste to prosím za chvíli znovu.';
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 /** Outcome příkazu, který akci neodmítl (bez větve { error }). */
 type Accepted<O> = Exclude<O, { error: string }>;
@@ -432,7 +435,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   const runAutoExecute = useCallback((customToday?: string) => {
     const currentToday = customToday || getTodayInPrague();
     setTodayStr(currentToday);
-    perform(autoExecuteCommand, undefined, { silent: true, today: currentToday });
+    return perform(autoExecuteCommand, undefined, { silent: true, today: currentToday });
   }, [perform]);
 
   // 1. Spuštění při startu
@@ -497,30 +500,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- TRANSAKCE & POŘADÍ -------------------
 
   const addTransaction = useCallback((txData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const result = perform((prev, ctx) => addTransactionCommand(prev, txData, ctx), addTransactionFeedback, { value: o => o.transaction });
-    if (!result.ok) throw new Error(result.message);
-    return result.value;
+    return perform((prev, ctx) => addTransactionCommand(prev, txData, ctx), addTransactionFeedback, { value: o => o.transaction });
   }, [perform]);
 
   const updateTransaction = useCallback((updatedTx: Transaction) => {
-    const result = perform((prev, ctx) => updateTransactionCommand(prev, updatedTx, ctx), updateTransactionFeedback);
-    if (!result.ok && result.reason === 'rejected') throw new Error(result.message);
+    return perform((prev, ctx) => updateTransactionCommand(prev, updatedTx, ctx), updateTransactionFeedback);
   }, [perform]);
 
   const reorderDayTransactions = useCallback((date: string, orderedIds: string[]) => {
-    perform((prev, ctx) => reorderDayTransactionsCommand(prev, { date, orderedIds }, ctx), reorderDayTransactionsFeedback);
+    return perform((prev, ctx) => reorderDayTransactionsCommand(prev, { date, orderedIds }, ctx), reorderDayTransactionsFeedback);
   }, [perform]);
 
-  const deleteTransaction = useCallback(async (
+  const deleteTransaction = useCallback((
     id: string,
     recurringMode: RecurringMode = 'occurrence',
     deleteHistoricalExecuted: boolean = false
-  ): Promise<boolean> => {
+  ) => {
     return perform(
       (prev, ctx) => deleteTransactionCommand(prev, { id, mode: recurringMode, deleteHistoricalExecuted }, ctx),
       outcome => deleteTransactionFeedback(outcome, { mode: recurringMode }),
       { failed: DELETE_TRANSACTION_FAILED }
-    ).ok;
+    );
   }, [perform]);
 
   const setTransactionStatus = useCallback((
@@ -528,7 +528,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     newStatus: TransactionStatus,
     updates?: StatusUpdates
   ) => {
-    perform(
+    return perform(
       (prev, ctx) => setTransactionStatusCommand(prev, { id, status: newStatus, updates }, ctx),
       outcome => setTransactionStatusFeedback(outcome, { status: newStatus })
     );
@@ -538,11 +538,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     id: string,
     updates?: StatusUpdates
   ) => {
-    setTransactionStatus(id, 'executed', updates);
+    return setTransactionStatus(id, 'executed', updates);
   }, [setTransactionStatus]);
 
   const cancelTransaction = useCallback((id: string) => {
-    setTransactionStatus(id, 'cancelled');
+    return setTransactionStatus(id, 'cancelled');
   }, [setTransactionStatus]);
 
   // ------------------- PRAVIDELNÉ POLOŽKY -------------------
@@ -553,13 +553,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     initialStatus?: TransactionStatus,
     existingTransactionId?: string
   ) => {
-    const result = perform(
+    return perform(
       (prev, ctx) => addRecurringRuleCommand(prev, { ruleData, initialSequence, initialStatus, existingTransactionId }, ctx),
       addRecurringRuleFeedback,
       { today: getTodayInPrague(), value: o => o.rule }
     );
-    if (!result.ok) throw new Error(result.message);
-    return result.value;
   }, [perform]);
 
   const updateRecurringRule = useCallback((
@@ -570,7 +568,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     originalTransactionId?: string,
     placement?: DayPlacement
   ) => {
-    perform(
+    return perform(
       (prev, ctx) => updateRecurringRuleCommand(prev, { ruleId, mode, periodKey, overrideData, originalTransactionId, placement }, ctx),
       updateRecurringRuleFeedback
     );
@@ -584,44 +582,40 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     orderedIds: string[],
     movedTransactionId: string
   ) => {
-    perform(
+    return perform(
       (prev, ctx) => reorderRecurringItemCommand(prev, { ruleId, mode, date, periodKey, orderedIds, movedTransactionId }, ctx),
       reorderRecurringItemFeedback
     );
   }, [perform]);
 
   const deleteRecurringRule = useCallback((id: string) => {
-    perform(prev => deleteRecurringRuleCommand(prev, id), deleteRecurringRuleFeedback);
+    return perform(prev => deleteRecurringRuleCommand(prev, id), deleteRecurringRuleFeedback);
   }, [perform]);
 
   // ------------------- SPRÁVA ÚČTŮ -------------------
 
   const addAccount = useCallback((accData: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const result = perform((prev, ctx) => addAccountCommand(prev, accData, ctx), addAccountFeedback, { value: o => o.account });
-    return result.ok ? result.value : undefined;
+    return perform((prev, ctx) => addAccountCommand(prev, accData, ctx), addAccountFeedback, { value: o => o.account });
   }, [perform]);
 
   const updateAccount = useCallback((acc: Account) => {
-    const result = perform((prev, ctx) => updateAccountCommand(prev, acc, ctx), outcome => updateAccountFeedback(outcome, { account: acc }));
-    return result.ok ? { success: true } : { success: false, message: result.message };
+    return perform((prev, ctx) => updateAccountCommand(prev, acc, ctx), outcome => updateAccountFeedback(outcome, { account: acc }));
   }, [perform]);
 
   const archiveAccount = useCallback((id: string) => {
-    const result = perform((prev, ctx) => archiveAccountCommand(prev, id, ctx), archiveAccountFeedback);
-    return result.ok ? { success: true } : { success: false, message: result.message };
+    return perform((prev, ctx) => archiveAccountCommand(prev, id, ctx), archiveAccountFeedback);
   }, [perform]);
 
   const restoreAccount = useCallback((id: string) => {
-    perform((prev, ctx) => restoreAccountCommand(prev, id, ctx), restoreAccountFeedback);
+    return perform((prev, ctx) => restoreAccountCommand(prev, id, ctx), restoreAccountFeedback);
   }, [perform]);
 
   const deleteAccount = useCallback((id: string) => {
-    const result = perform(prev => deleteAccountCommand(prev, id), deleteAccountFeedback);
-    return result.ok ? { success: true } : { success: false, message: result.message };
+    return perform(prev => deleteAccountCommand(prev, id), deleteAccountFeedback);
   }, [perform]);
 
   const reorderAccounts = useCallback((orderedIds: string[]) => {
-    perform(prev => reorderAccountsCommand(prev, orderedIds));
+    return perform(prev => reorderAccountsCommand(prev, orderedIds));
   }, [perform]);
 
   const reconcileBalance = useCallback((
@@ -630,7 +624,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     checkDate: string,
     note?: string
   ) => {
-    perform(
+    return perform(
       (prev, ctx) => reconcileBalanceCommand(prev, { accountId, actualBalanceInHaler, checkDate, note }, ctx),
       reconcileBalanceFeedback
     );
@@ -642,7 +636,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     date?: string,
     note?: string
   ) => {
-    perform(
+    return perform(
       (prev, ctx) => addMarketValueCommand(prev, { accountId, marketValueInHaler, date, note }, ctx),
       updateMarketValueFeedback,
       { today: getTodayInPrague() }
@@ -650,86 +644,83 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [perform]);
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
-    perform(prev => editMarketValueCommand(prev, { id, edit }), outcome => editMarketValueFeedback(outcome, { edit }));
+    return perform(prev => editMarketValueCommand(prev, { id, edit }), outcome => editMarketValueFeedback(outcome, { edit }));
   }, [perform]);
 
   const deleteMarketValue = useCallback((id: string) => {
-    perform(prev => deleteMarketValueCommand(prev, id), deleteMarketValueFeedback);
+    return perform(prev => deleteMarketValueCommand(prev, id), deleteMarketValueFeedback);
   }, [perform]);
 
   const saveInvestmentFee = useCallback((accountId: string, periodKey: string, amountInHaler: number, note?: string) => {
-    perform(
+    return perform(
       (prev, ctx) => saveInvestmentFeeCommand(prev, { accountId, periodKey, amountInHaler, note }, ctx),
       saveInvestmentFeeFeedback
     );
   }, [perform]);
 
   const deleteInvestmentFee = useCallback((id: string) => {
-    perform(prev => deleteInvestmentFeeCommand(prev, id), deleteInvestmentFeeFeedback);
+    return perform(prev => deleteInvestmentFeeCommand(prev, id), deleteInvestmentFeeFeedback);
   }, [perform]);
 
   const updateCorrectionNote = useCallback((id: string, note: string) => {
-    perform((prev, ctx) => updateCorrectionNoteCommand(prev, { id, note }, ctx), updateCorrectionNoteFeedback);
+    return perform((prev, ctx) => updateCorrectionNoteCommand(prev, { id, note }, ctx), updateCorrectionNoteFeedback);
   }, [perform]);
 
-  const deleteCorrection = useCallback(async (id: string) => {
+  const deleteCorrection = useCallback((id: string) => {
     // Korekce uložená i jako položka seznamu se maže jako položka (s „Vrátit“ pro obojí)
     if (latestDataRef.current.transactions.some(t => t.id === id)) {
       return deleteTransaction(id);
     }
-    return perform(prev => deleteStandaloneCorrectionCommand(prev, id), deleteCorrectionFeedback).ok;
+    return perform(prev => deleteStandaloneCorrectionCommand(prev, id), deleteCorrectionFeedback);
   }, [perform, deleteTransaction]);
 
   // ------------------- SPRÁVA KATEGORIÍ -------------------
 
   const addCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const result = perform((prev, ctx) => addCategoryCommand(prev, catData, ctx), addCategoryFeedback, { value: o => o.category });
-    return result.ok ? result.value : undefined;
+    return perform((prev, ctx) => addCategoryCommand(prev, catData, ctx), addCategoryFeedback, { value: o => o.category });
   }, [perform]);
 
   const addMainCategory = useCallback((catData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const result = perform((prev, ctx) => addMainCategoryCommand(prev, catData, ctx), addCategoryFeedback, { value: o => o.category });
-    return result.ok ? result.value : undefined;
+    return perform((prev, ctx) => addMainCategoryCommand(prev, catData, ctx), addCategoryFeedback, { value: o => o.category });
   }, [perform]);
 
   const updateCategory = useCallback((cat: Category) => {
-    perform((prev, ctx) => updateCategoryCommand(prev, cat, ctx), outcome => updateCategoryFeedback(outcome, { category: cat }));
+    return perform((prev, ctx) => updateCategoryCommand(prev, cat, ctx), outcome => updateCategoryFeedback(outcome, { category: cat }));
   }, [perform]);
 
   const moveSubcategory = useCallback((subcategoryId: string, newParentId: string, updateHistorical: boolean) => {
-    perform(
+    return perform(
       (prev, ctx) => moveSubcategoryCommand(prev, { subcategoryId, newParentId, updateHistorical }, ctx),
       moveSubcategoryFeedback
     );
   }, [perform]);
 
   const archiveCategory = useCallback((id: string) => {
-    perform((prev, ctx) => archiveCategoryCommand(prev, id, ctx), archiveCategoryFeedback);
+    return perform((prev, ctx) => archiveCategoryCommand(prev, id, ctx), archiveCategoryFeedback);
   }, [perform]);
 
   const restoreCategory = useCallback((id: string) => {
-    perform((prev, ctx) => restoreCategoryCommand(prev, id, ctx), restoreCategoryFeedback);
+    return perform((prev, ctx) => restoreCategoryCommand(prev, id, ctx), restoreCategoryFeedback);
   }, [perform]);
 
   const deleteCategory = useCallback((id: string) => {
-    const result = perform(prev => deleteCategoryCommand(prev, id), deleteCategoryFeedback);
-    return result.ok ? { success: true } : { success: false, message: result.message };
+    return perform(prev => deleteCategoryCommand(prev, id), deleteCategoryFeedback);
   }, [perform]);
 
   // ------------------- NASTAVENÍ A DATA -------------------
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
-    perform(prev => updateSettingsCommand(prev, newSettings), updateSettingsFeedback);
+    return perform(prev => updateSettingsCommand(prev, newSettings), updateSettingsFeedback);
   }, [perform]);
 
-  const loadDemoData = useCallback(async () => {
+  const loadDemoData = useCallback(async (): Promise<ActionResult> => {
     if (!isDemoModeEnabled()) {
       showToast(DEMO_MODE_ONLY.text, DEMO_MODE_ONLY.type);
-      return;
+      return { ok: false, reason: 'rejected', message: DEMO_MODE_ONLY.text };
     }
     const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
     const demo = { accounts: DEMO_ACCOUNTS, recurringRules: DEMO_RECURRING_RULES, transactions: DEMO_TRANSACTIONS };
-    perform(prev => replaceWithDemoDataCommand(prev, demo), loadDemoDataFeedback);
+    return perform(prev => replaceWithDemoDataCommand(prev, demo), loadDemoDataFeedback);
   }, [perform, showToast]);
 
   // Hromadné smazání: nejdřív interní pojistná kopie; když se neuloží, nic se nesmaže
@@ -746,20 +737,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     return perform(command, feedback, options);
   }, [perform, showToast]);
 
-  const clearAllTransactions = useCallback((): boolean => {
-    return performWithRecoveryBackup('clear_transactions', clearAllTransactionsCommand, clearAllTransactionsFeedback).ok;
+  const clearAllTransactions = useCallback((): ActionResult => {
+    return performWithRecoveryBackup('clear_transactions', clearAllTransactionsCommand, clearAllTransactionsFeedback);
   }, [performWithRecoveryBackup]);
 
-  const clearAllAccounts = useCallback((): boolean => {
-    return performWithRecoveryBackup('clear_accounts', clearAllAccountsCommand, clearAllAccountsFeedback).ok;
+  const clearAllAccounts = useCallback((): ActionResult => {
+    return performWithRecoveryBackup('clear_accounts', clearAllAccountsCommand, clearAllAccountsFeedback);
   }, [performWithRecoveryBackup]);
 
-  const clearAllCategories = useCallback((): boolean => {
-    return performWithRecoveryBackup('clear_categories', clearAllCategoriesCommand, clearAllCategoriesFeedback).ok;
+  const clearAllCategories = useCallback((): ActionResult => {
+    return performWithRecoveryBackup('clear_categories', clearAllCategoriesCommand, clearAllCategoriesFeedback);
   }, [performWithRecoveryBackup]);
 
-  const resetAllData = useCallback((): boolean => {
-    return performWithRecoveryBackup('clear_all', resetAllDataCommand, resetAllDataFeedback, { reset: true }).ok;
+  const resetAllData = useCallback((): ActionResult => {
+    return performWithRecoveryBackup('clear_all', resetAllDataCommand, resetAllDataFeedback, { reset: true });
   }, [performWithRecoveryBackup]);
 
   // Obnova z obrazovky chyby načtení: poškozená je jen lokální obálka, data na Google Disku
@@ -769,16 +760,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     void discardCorruptedCache();
   }, [discardCorruptedCache]);
 
-  // Neplatný soubor vyhodí chybu synchronně, ještě než se cokoli smaže
-  const restoreFromBackupFile = useCallback((jsonStr: string) => {
-    const parsed = validateAndParseBackup(jsonStr);
-    void discardCorruptedCache().then(result => {
-      if (result === 'refused') return;
-      // Chybu zápisu už hlásí stav synchronizace; záloha se jen nesloučí
-      const merged = result === 'ready' && perform(prev => importBackupCommand(prev, parsed), undefined, { silent: true }).ok;
-      const toast = restoreFromBackupToast(merged);
-      showToast(toast.text, toast.type);
-    });
+  // Neplatný soubor se odmítne dřív, než se cokoli smaže
+  const restoreFromBackupFile = useCallback(async (jsonStr: string): Promise<ActionResult> => {
+    let parsed: AppData;
+    try {
+      parsed = validateAndParseBackup(jsonStr);
+    } catch (err) {
+      return { ok: false, reason: 'rejected', message: errorMessage(err) };
+    }
+    const notMerged = restoreFromBackupToast(false);
+    const result = await discardCorruptedCache();
+    // Důvod odmítnutí už oznámila relace
+    if (result === 'refused') return { ok: false, reason: 'not-saved', message: notMerged.text };
+    // Chybu zápisu už hlásí stav synchronizace; záloha se jen nesloučí
+    const merged = result === 'ready' && perform(prev => importBackupCommand(prev, parsed), undefined, { silent: true }).ok;
+    const toast = restoreFromBackupToast(merged);
+    showToast(toast.text, toast.type);
+    return merged ? { ok: true, value: undefined } : { ok: false, reason: 'not-saved', message: notMerged.text };
   }, [discardCorruptedCache, perform, showToast]);
 
   // Znovu založí relaci: obálku účtu načte SyncController, výsledek přijde přes onData nebo onLoadError
@@ -792,17 +790,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast(EXPORT_JSON_DONE.text, EXPORT_JSON_DONE.type);
   }, [data, showToast]);
 
-  const importJSON = useCallback((jsonStr: string): boolean => {
+  const importJSON = useCallback((jsonStr: string): ActionResult => {
     let parsed: AppData;
     try {
       parsed = validateAndParseBackup(jsonStr);
     } catch (err) {
-      const toast = importBackupFailed(err instanceof Error ? err.message : String(err));
+      const toast = importBackupFailed(errorMessage(err));
       showToast(toast.text, toast.type);
-      return false;
+      return { ok: false, reason: 'rejected', message: toast.text };
     }
     // Slučuje se s aktuálními daty v controlleru, nikdy se starší kopií z tohoto renderu
-    return perform(prev => importBackupCommand(prev, parsed), importBackupFeedback, { failed: importBackupFailed }).ok;
+    return perform(prev => importBackupCommand(prev, parsed), importBackupFeedback, { failed: importBackupFailed });
   }, [perform, showToast]);
 
   const exportCSV = useCallback(() => {

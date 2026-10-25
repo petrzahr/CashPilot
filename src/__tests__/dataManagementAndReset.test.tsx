@@ -262,7 +262,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
       categoryId: null, subcategoryId: null, note: 'Edited note',
       startDate: '2026-09-20', frequency: 'quarterly', dayOfMonth: 20, isActive: true,
     };
-    const rule = ctx.addRecurringRule(ruleData, 1, status, original.id);
+    const rule = ctx.addRecurringRule(ruleData, 1, status, original.id).value;
     const read = () => loadStoredDataResult().data;
     const converted = read().transactions.find(t => t.id === original.id)!;
     expect(read().transactions).toHaveLength(sampleTransactions.length);
@@ -277,8 +277,8 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(converted.actualAmountInHaler).toBe(
       status === 'executed' ? ruleData.amountInHaler : status === 'planned' ? undefined : original.actualAmountInHaler
     );
-    expect(() => ctx.addRecurringRule(ruleData, 1, status, original.id)).toThrow();
-    expect(() => ctx.addRecurringRule(ruleData, 1, status, 'missing')).toThrow();
+    expect(ctx.addRecurringRule(ruleData, 1, status, original.id)).toMatchObject({ ok: false, reason: 'rejected' });
+    expect(ctx.addRecurringRule(ruleData, 1, status, 'missing')).toMatchObject({ ok: false, reason: 'rejected' });
     await ctx.__syncSession.sync();
     expect(read().transactions.find(t => t.id === original.id)).toEqual(converted);
     expect(read().recurringRules).toEqual(persistedRules);
@@ -289,7 +289,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     expect(effective('2026-10-20')).toHaveLength(0);
     expect(effective('2026-12-20')).toMatchObject([{ date: '2026-12-20', amountInHaler: 123400 }]);
 
-    const createdRule = ctx.addRecurringRule(ruleData, 1, status);
+    const createdRule = ctx.addRecurringRule(ruleData, 1, status).value;
     expect(read().transactions).toHaveLength(sampleTransactions.length + 1);
     const future = getEffectiveTransactionsForPeriod(getPeriodForDate('2026-12-20', 1), read().transactions, read().recurringRules, [], '2026-09-01');
     const createdFuture = future.find(t => t.recurringRuleId === createdRule.id)!;
@@ -306,7 +306,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
   ] as const)('recurring conversion retains the %s schedule after reopening', async (frequency, nextDate) => {
     populateTestStorage({ recurringRules: [] });
     const ctx = await getContextHandle();
-    const rule = ctx.addRecurringRule({
+    const { value: rule } = ctx.addRecurringRule({
       ...sampleRules[0], frequency, startDate: '2026-09-20', dayOfMonth: 20,
     }, 1, 'planned', sampleTransactions[0].id);
     await ctx.__syncSession.sync();
@@ -342,7 +342,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     expect(ctx.transactions.length).toBe(3);
     const result = ctx.clearAllTransactions();
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
 
     const reloaded = loadStoredDataResult();
     expect(reloaded.data.transactions.length).toBe(0);
@@ -415,7 +415,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     expect(ctx.accounts.length).toBe(3);
     const result = ctx.clearAllAccounts();
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
 
     const reloaded = loadStoredDataResult();
     expect(reloaded.data.accounts.length).toBe(0);
@@ -456,7 +456,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     expect(ctx.categories.length).toBeGreaterThan(0);
     const result = ctx.clearAllCategories();
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
 
     const reloaded = loadStoredDataResult();
     expect(reloaded.data.categories.length).toBe(0);
@@ -525,7 +525,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     const ctx = await getContextHandle();
 
     const result = ctx.resetAllData();
-    expect(result).toBe(true);
+    expect(result.ok).toBe(true);
 
     const reloaded = loadStoredDataResult();
     expect(reloaded.data.accounts.length).toBe(0);
@@ -642,7 +642,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
     });
 
     const result = ctx.clearAllTransactions();
-    expect(result).toBe(false);
+    expect(result.ok).toBe(false);
 
     // Data v úložišti nebyla smazána!
     const reloaded = loadStoredDataResult();
@@ -694,7 +694,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
 
     ctx.clearAllAccounts();
 
-    const newAcc = ctx.addAccount({
+    const { value: newAcc } = ctx.addAccount({
       name: 'Nový běžný účet',
       type: 'checking',
       currency: 'CZK',
@@ -742,7 +742,7 @@ describe('CashPilot - Správa dat a reset (21 požadavků)', () => {
       ],
       recurringRules: [], recurringExceptions: [], corrections: [], marketValueSnapshots: [],
     };
-    const ok = ctx.importJSON(JSON.stringify(backup));
+    const { ok } = ctx.importJSON(JSON.stringify(backup));
     expect(ok).toBe(true);
 
     const dayTxs = loadStoredDataResult().data.transactions

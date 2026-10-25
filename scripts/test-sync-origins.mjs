@@ -75,7 +75,7 @@ try {
   await Promise.all([ready(a), ready(b)]);
   assert.notEqual(await a.evaluate(() => location.origin), await b.evaluate(() => location.origin));
   await b.close(); // Cache at the second origin still contains the old transaction.
-  assert.equal(await a.evaluate(() => window.finance.deleteTransaction('old')), true);
+  assert.equal(await a.evaluate(() => window.finance.deleteTransaction('old').ok), true);
   await a.evaluate(() => window.finance.addMainCategory({ name: 'New category', type: 'expense', parentId: null, color: '#123456', sortOrder: 1, status: 'active' }));
   await sync(a);
   assert.equal(cloud.transactions.length, 0);

@@ -148,19 +148,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setIsSaving(true);
     try {
       const action = toSaveAction(form, mode);
-      switch (action.kind) {
-        case 'addTransaction':
-          addTransaction(action.transaction);
-          break;
-        case 'updateTransaction':
-          updateTransaction(action.transaction);
-          break;
-        case 'addRecurringRule':
-          addRecurringRule(action.rule, action.initialSequence, action.initialStatus, action.existingTransactionId);
-          break;
-        case 'updateRecurringRule':
-          updateRecurringRule(action.ruleId, action.mode, action.periodKey, action.overrideData, action.originalTransactionId, action.placement);
-          break;
+      const result =
+        action.kind === 'addTransaction' ? addTransaction(action.transaction)
+        : action.kind === 'updateTransaction' ? updateTransaction(action.transaction)
+        : action.kind === 'addRecurringRule'
+          ? addRecurringRule(action.rule, action.initialSequence, action.initialStatus, action.existingTransactionId)
+          : updateRecurringRule(action.ruleId, action.mode, action.periodKey, action.overrideData, action.originalTransactionId, action.placement);
+      // Neuložená nebo odmítnutá změna nechá formulář otevřený se zprávou
+      if (!result.ok) {
+        setSaveError(result.message);
+        return;
       }
       if (addAnother && !isEditing && !form.isRecurring) {
         resetForm(resetForAnother(form));

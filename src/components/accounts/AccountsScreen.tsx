@@ -117,8 +117,9 @@ export const AccountsScreen: React.FC = () => {
   };
 
   const runArchive = (acc: Account) => {
+    // Neuloženou změnu už oznámil kontext; důvod odmítnutí ukáže obrazovka
     const res = archiveAccount(acc.id);
-    if (!res.success && res.message) {
+    if (!res.ok && res.reason === 'rejected') {
       showToast(res.message, 'error');
     }
   };
@@ -141,7 +142,7 @@ export const AccountsScreen: React.FC = () => {
       return;
     }
     const res = deleteAccount(acc.id);
-    if (!res.success && res.message) showToast(res.message, 'error');
+    if (!res.ok && res.reason === 'rejected') showToast(res.message, 'error');
   };
 
   const confirmPendingAction = () => {

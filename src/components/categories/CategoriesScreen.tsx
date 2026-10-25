@@ -68,8 +68,9 @@ export const CategoriesScreen: React.FC = () => {
       setDeletingCategory(cat);
       return;
     }
+    // Neuloženou změnu už oznámil kontext; důvod odmítnutí ukáže obrazovka
     const res = deleteCategory(cat.id);
-    if (!res.success && res.message) showToast(res.message, 'error');
+    if (!res.ok && res.reason === 'rejected') showToast(res.message, 'error');
   };
 
   // Použitou kategorii (i přes podkategorie) smazat nejde – dialog rovnou nabídne archivaci

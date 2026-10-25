@@ -182,7 +182,9 @@ describe('obnova z obrazovky chyby načtení', () => {
     renderApp();
     await waitFor(() => expect(finance.loadState).toBe('loadError'));
 
-    expect(() => finance.restoreFromBackupFile('{"nope":')).toThrow();
+    let result: unknown;
+    await act(async () => { result = await finance.restoreFromBackupFile('{"nope":'); });
+    expect(result).toMatchObject({ ok: false, reason: 'rejected' });
 
     expect(localStorage.getItem(envelopeKey)).toBe('{broken');
     expect(mocks.fetchGoogleUserProfile).toHaveBeenCalledTimes(1);

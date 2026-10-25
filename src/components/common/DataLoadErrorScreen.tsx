@@ -2,12 +2,13 @@ import React, { useRef, useState } from 'react';
 import { AlertTriangle, Download, Upload, RefreshCw, CloudDownload, ShieldCheck } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 import { exportCorruptedRawData } from '../../services/storageService';
+import type { ActionResult } from '../../services/commandFeedback';
 
 interface DataLoadErrorScreenProps {
   errorMessage?: string;
   recoveryKey?: string;
   corruptedRaw?: string;
-  onRestoreBackup: (jsonStr: string) => void;
+  onRestoreBackup: (jsonStr: string) => Promise<ActionResult>;
   onReloadFromDrive: () => void;
   onRetry: () => void;
 }
@@ -46,14 +47,13 @@ export const DataLoadErrorScreen: React.FC<DataLoadErrorScreenProps> = ({
     if (e.target) e.target.value = '';
   };
 
-  // Neplatná záloha skončí chybou ještě před smazáním čehokoli
-  const handleConfirmRestore = () => {
+  // Neplatná záloha se odmítne ještě před smazáním čehokoli; ostatní výsledky hlásí oznámení
+  const handleConfirmRestore = async () => {
     if (pendingBackup === null) return;
-    try {
-      onRestoreBackup(pendingBackup);
-      setRestoreError(null);
-    } catch (err: any) {
-      setRestoreError(err.message || 'Soubor se zálohou se nepodařilo načíst. Zkontrolujte, že jde o zálohu z CashPilotu (.json).');
+    setRestoreError(null);
+    const result = await onRestoreBackup(pendingBackup);
+    if (!result.ok && result.reason === 'rejected') {
+      setRestoreError(result.message || 'Soubor se zálohou se nepodařilo načíst. Zkontrolujte, že jde o zálohu z CashPilotu (.json).');
     }
   };
 

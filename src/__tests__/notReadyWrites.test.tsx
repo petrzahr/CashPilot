@@ -33,20 +33,20 @@ describe('Zápis před první synchronizací', () => {
   it('nic neuloží a nevrátí falešný úspěch', async () => {
     const { finance, change } = financeBeforeFirstSync();
 
-    expect(finance.updateAccount({ ...account, name: 'Nový název' })).toEqual({ success: false, message: NOT_SAVED_MESSAGE });
-    expect(finance.deleteAccount('chk')).toEqual({ success: false, message: NOT_SAVED_MESSAGE });
-    expect(finance.deleteCategory('cat')).toEqual({ success: false, message: NOT_SAVED_MESSAGE });
-    expect(finance.addCategory({ ...category, name: 'Nová' })).toBeUndefined();
-    expect(finance.addAccount({ ...account, name: 'Nový' })).toBeUndefined();
-    expect(finance.clearAllTransactions()).toBe(false);
-    expect(finance.importJSON(JSON.stringify(getInitialData()))).toBe(false);
-    await expect(finance.deleteTransaction('tx')).resolves.toBe(false);
-    expect(() => finance.addTransaction({ ...tx, title: 'Další' })).toThrow(NOT_SAVED_MESSAGE);
-
-    // Zápisy bez návratové hodnoty jen nesmí nic změnit
-    finance.updateCategory({ ...category, name: 'Jiný název' });
-    finance.updateSettings({ budgetStartDay: 1 });
-    finance.setTransactionStatus('tx', 'planned');
+    const notSaved = { ok: false, reason: 'not-saved', message: NOT_SAVED_MESSAGE };
+    expect(finance.updateAccount({ ...account, name: 'Nový název' })).toEqual(notSaved);
+    expect(finance.deleteAccount('chk')).toEqual(notSaved);
+    expect(finance.deleteCategory('cat')).toEqual(notSaved);
+    expect(finance.addCategory({ ...category, name: 'Nová' })).toEqual(notSaved);
+    expect(finance.addAccount({ ...account, name: 'Nový' })).toEqual(notSaved);
+    // Bez localStorage (node) skončí už pojistná kopie; nic se nesmaže
+    expect(finance.clearAllTransactions()).toMatchObject({ ok: false });
+    expect(finance.importJSON(JSON.stringify(getInitialData()))).toEqual(notSaved);
+    expect(finance.deleteTransaction('tx')).toEqual(notSaved);
+    expect(finance.addTransaction({ ...tx, title: 'Další' })).toEqual(notSaved);
+    expect(finance.updateCategory({ ...category, name: 'Jiný název' })).toEqual(notSaved);
+    expect(finance.updateSettings({ budgetStartDay: 1 })).toEqual(notSaved);
+    expect(finance.setTransactionStatus('tx', 'planned')).toEqual(notSaved);
 
     expect(change).not.toHaveBeenCalled();
   });

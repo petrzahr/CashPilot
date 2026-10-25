@@ -10,12 +10,14 @@ const tx = (overrides: Partial<Transaction>): Transaction => ({
   sourceAccountId: 'acc_a', status: 'planned', createdAt: '', updatedAt: '', ...overrides,
 });
 
+const done = { ok: true, value: undefined } as const;
+
 function setup(overrides: Partial<ItemActionsDeps> = {}) {
   const deps: ItemActionsDeps = {
     transactions: [],
-    deleteTransaction: vi.fn().mockResolvedValue(true),
-    deleteCorrection: vi.fn().mockResolvedValue(true),
-    setTransactionStatus: vi.fn(),
+    deleteTransaction: vi.fn().mockReturnValue(done),
+    deleteCorrection: vi.fn().mockReturnValue(done),
+    setTransactionStatus: vi.fn().mockReturnValue(done),
     showToast: vi.fn(),
     ...overrides,
   };

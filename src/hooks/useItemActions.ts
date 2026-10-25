@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Transaction, TransactionStatus } from '../types/finance';
 import { parseVirtualId } from '../services/transactionCommands';
+import type { ActionResult } from '../services/commandFeedback';
 
 export type RecurringDeleteMode = 'occurrence' | 'future' | 'series';
 
 export interface ItemActionsDeps {
   transactions: Transaction[];
-  deleteTransaction: (id: string, recurringMode?: RecurringDeleteMode, deleteHistoricalExecuted?: boolean) => Promise<boolean>;
-  deleteCorrection: (id: string) => Promise<boolean>;
-  setTransactionStatus: (id: string, newStatus: TransactionStatus) => void;
+  deleteTransaction: (id: string, recurringMode?: RecurringDeleteMode, deleteHistoricalExecuted?: boolean) => ActionResult;
+  deleteCorrection: (id: string) => ActionResult;
+  setTransactionStatus: (id: string, newStatus: TransactionStatus) => ActionResult;
   showToast: (text: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
@@ -28,7 +29,7 @@ export function useItemActions(deps: ItemActionsDeps) {
   // Běžná položka se smaže hned (oznámení nabídne „Vrátit“), pravidelná potřebuje volbu rozsahu
   const requestDelete = (tx: Transaction) => {
     if (tx.recurringRuleId || tx.id.startsWith('virtual_')) setDeletingTx(tx);
-    else void deleteTransaction(tx.id);
+    else deleteTransaction(tx.id);
   };
   const closeDelete = () => {
     if (!isDeletingTx) setDeletingTx(null);
@@ -36,7 +37,7 @@ export function useItemActions(deps: ItemActionsDeps) {
   const confirmDelete = async (tx: Transaction, mode?: RecurringDeleteMode, deleteHistorical?: boolean) => {
     setIsDeletingTx(true);
     try {
-      return await deleteTransaction(tx.id, mode, deleteHistorical);
+      return deleteTransaction(tx.id, mode, deleteHistorical).ok;
     } finally {
       setIsDeletingTx(false);
     }
