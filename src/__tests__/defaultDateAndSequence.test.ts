@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createBudgetPeriod, getDefaultDateForPeriod, getTodayInPrague } from '../services/periodService';
 import { getNextSequenceForDate } from '../services/sequenceService';
-import { getEffectiveTransactionsForPeriod } from '../services/financialEngine';
+import { changeDate, createFormState, TransactionFormData } from '../services/transactionForm';
 import { RecurringRule, Transaction } from '../types/finance';
 
 describe('CashPilot - Testy automatického výchozího data a pořadí nové položky', () => {
+  const formData: TransactionFormData = {
+    transactions: [], recurringRules: [], recurringExceptions: [], accounts: [], categories: [],
+    settings: { budgetStartDay: 15 }, today: '2026-09-20',
+  };
 
   // 1. Přidání položky v aktuálním období předvyplní dnešní datum
   it('1. Přidání položky v aktuálním období předvyplní dnešní datum', () => {
@@ -204,15 +208,12 @@ describe('CashPilot - Testy automatického výchozího data a pořadí nové pol
       updatedAt: ''
     };
 
-    // Simulace chování TransactionModal při editaci:
-    // Pokud je zadáno transactionToEdit, formulář použije transactionToEdit.date a transactionToEdit.sequence,
-    // namísto volání getDefaultDateForPeriod
-    const isEditing = true;
-    const formDate = isEditing ? existingTx.date : getDefaultDateForPeriod(createBudgetPeriod(2026, 9, 15), '2026-09-20');
-    const formSequence = isEditing ? existingTx.sequence : getNextSequenceForDate(formDate, [existingTx]);
-
-    expect(formDate).toBe('2026-08-25'); // Původní datum zůstalo zachováno!
-    expect(formSequence).toBe(5); // Původní pořadí zůstalo zachováno!
+    const form = createFormState(
+      { kind: 'edit', transaction: existingTx, periodKey: '2026-09' },
+      { ...formData, transactions: [existingTx] }
+    );
+    expect(form.date).toBe('2026-08-25'); // Původní datum zůstalo zachováno!
+    expect(form.sequenceStr).toBe('5'); // Původní pořadí zůstalo zachováno!
   });
 
   // 12. Nová položka v budoucím dni s virtuálním výskytem opakující se platby se řadí až za něj
@@ -235,15 +236,13 @@ describe('CashPilot - Testy automatického výchozího data a pořadí nové pol
     };
 
     // V daném dni zatím neexistují žádné reálné transakce - jen virtuální výskyt nájmu.
-    // Naivní getNextSequenceForDate nad "holými" transakcemi o virtuálním výskytu neví,
-    // a chybně by vrátilo 1 (nová položka by "přeskočila" před nájem).
-    const naiveSeq = getNextSequenceForDate(targetDay, []);
-    expect(naiveSeq).toBe(1);
+    // Naivní getNextSequenceForDate nad "holými" transakcemi o virtuálním výskytu neví.
+    expect(getNextSequenceForDate(targetDay, [])).toBe(1);
 
-    // Efektivní výpočet (reálné + virtuální transakce) musí zohlednit už zobrazený
-    // virtuální výskyt a novou položku zařadit až za něj.
-    const effectiveTxs = getEffectiveTransactionsForPeriod(period, [], [rentRule], []);
-    const correctSeq = getNextSequenceForDate(targetDay, effectiveTxs);
-    expect(correctSeq).toBe(2);
+    // Formulář nové položky musí virtuální výskyt zohlednit - při otevření i při změně data
+    const data = { ...formData, recurringRules: [rentRule] };
+    const mode = { kind: 'new' as const, initialType: 'expense' as const, period };
+    expect(createFormState({ ...mode, initialDate: targetDay }, data).sequenceStr).toBe('2');
+    expect(changeDate(createFormState({ ...mode, initialDate: '2026-10-20' }, data), targetDay, mode, data).sequenceStr).toBe('2');
   });
 });

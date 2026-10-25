@@ -13,58 +13,7 @@ import {
 
 describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Požadavek 10)', () => {
   const todayRef = '2026-09-20';
-
-  // Helper pro výpočet výchozího dne z data první platby (stejná logika jako v TransactionModal)
-  const getDayFromDate = (dateStr: string): number => {
-    const parts = dateStr.split('-');
-    const day = parseInt(parts[2], 10);
-    return isNaN(day) || day < 1 || day > 31 ? 1 : day;
-  };
-
-  // 1. První platba 27. dne automaticky nastaví den opakování 27
-  it('1. První platba 27. dne automaticky nastaví den opakování 27', () => {
-    const firstDate = '2026-09-27';
-    const day = getDayFromDate(firstDate);
-    expect(day).toBe(27);
-  });
-
-  // 2. První platba 5. dne automaticky nastaví den opakování 5
-  it('2. První platba 5. dne automaticky nastaví den opakování 5', () => {
-    const firstDate = '2026-09-05';
-    const day = getDayFromDate(firstDate);
-    expect(day).toBe(5);
-  });
-
-  // 3. Změna data první platby okamžitě aktualizuje den opakování
-  it('3. Změna data první platby okamžitě aktualizuje den opakování', () => {
-    let date = '2026-09-27';
-    let day = getDayFromDate(date);
-    expect(day).toBe(27);
-
-    // Uživatel změní první platbu na 5. 10. 2026
-    date = '2026-10-05';
-    day = getDayFromDate(date);
-    expect(day).toBe(5);
-
-    // Další změna na 31. 10. 2026
-    date = '2026-10-31';
-    day = getDayFromDate(date);
-    expect(day).toBe(31);
-  });
-
-  // 4. Uživatel může den opakování ručně změnit (1-31)
-  it('4. Uživatel může den opakování ručně změnit v rozsahu 1-31', () => {
-    const firstDate = '2026-09-27';
-    let chosenDay = getDayFromDate(firstDate); // automaticky 27
-    expect(chosenDay).toBe(27);
-
-    // Uživatel ručně změní na 5
-    const manualDay = 5;
-    if (manualDay >= 1 && manualDay <= 31) {
-      chosenDay = manualDay;
-    }
-    expect(chosenDay).toBe(5);
-  });
+  // Výchozí den opakování z data položky ve formuláři testuje transactionForm.test.ts
 
   // 5. Ručně zvolený den se správně použije pro budoucí výskyty
   it('5. Ručně zvolený den se správně použije pro budoucí výskyty (první platba 27. 9., den 5 -> další výskyt 5. 10.)', () => {
@@ -294,20 +243,4 @@ describe('CashPilot - Testy výchozího nastavení dne u opakovaných plateb (Po
     expect(occFuture?.status).toBe('planned');
   });
 
-  // 12. Pevný výchozí den 15 se již nepoužívá
-  it('12. Pevný výchozí den 15 se již nepoužívá v kódu formuláře ani jako výchozí fallback', async () => {
-    // @ts-ignore
-    const fs = await import('fs');
-    // @ts-ignore
-    const path = await import('path');
-    const modalFilePath = path.resolve('src/components/transactions/TransactionModal.tsx');
-    const content = fs.readFileSync(modalFilePath, 'utf-8');
-
-    // Ověříme, že v TransactionModal.tsx není pevné nastavení useState<number>(15)
-    expect(content.includes('useState<number>(15)')).toBe(false);
-    // Ověříme, že v TransactionModal.tsx není pevné setDayOfMonth(15)
-    expect(content.includes('setDayOfMonth(15)')).toBe(false);
-    // Ověříme, že v TransactionModal.tsx není fallback || 15
-    expect(content.includes('|| 15')).toBe(false);
-  });
 });
