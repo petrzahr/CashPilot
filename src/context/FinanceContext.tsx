@@ -175,7 +175,6 @@ interface FinanceContextType {
   goToPreviousPeriod: () => void;
   goToCurrentPeriod: () => void;
   isCurrentPeriodSelected: boolean;
-  forecastSequence: BudgetPeriod[];
   forecast: ForecastResult;
   quickOverview: QuickFinancialOverview;
 
@@ -197,10 +196,7 @@ interface FinanceContextType {
     newStatus: TransactionStatus,
     updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }
   ) => ActionResult;
-  markTransactionExecuted: (id: string, updates?: { actualAmountInHaler?: number; date?: string; sourceAccountId?: string; categoryId?: string }) => ActionResult;
-  cancelTransaction: (id: string) => ActionResult;
   reorderDayTransactions: (date: string, orderedIds: string[]) => ActionResult;
-  checkDueTransactions: () => void;
 
   addRecurringRule: (
     rule: Omit<RecurringRule, 'id' | 'createdAt' | 'updatedAt'>,
@@ -534,17 +530,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     );
   }, [perform]);
 
-  const markTransactionExecuted = useCallback((
-    id: string,
-    updates?: StatusUpdates
-  ) => {
-    return setTransactionStatus(id, 'executed', updates);
-  }, [setTransactionStatus]);
-
-  const cancelTransaction = useCallback((id: string) => {
-    return setTransactionStatus(id, 'cancelled');
-  }, [setTransactionStatus]);
-
   // ------------------- PRAVIDELNÉ POLOŽKY -------------------
 
   const addRecurringRule = useCallback((
@@ -842,7 +827,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // Účty se napříč aplikací zobrazují v uživatelem definovaném pořadí (sortOrder).
   const orderedAccounts = useMemo(() => sortAccountsByOrder(data.accounts), [data.accounts]);
 
-  const value = {
+  const {
+    currentPeriod, selectedPeriod, setSelectedPeriod, periodRanges, setPeriodRange,
+    goToNextPeriod, goToPreviousPeriod, goToCurrentPeriod, isCurrentPeriodSelected,
+  } = periodForecast;
+  const {
+    driveSyncStatus, isCloudReady, isDriveConnected, driveUser, lastDriveSyncTime, driveError,
+    connectGoogleDrive, disconnectGoogleDrive, syncWithGoogleDrive,
+    driveBackupEnabled, setDriveBackupEnabled, lastDriveBackupTime, runDriveBackupNow,
+  } = session;
+
+  // Nová hodnota jen při změně některého členu, aby se konzumenti nepřekreslovali zbytečně
+  const value = useMemo<FinanceContextType>(() => ({
     data,
     settings: data.settings,
     accounts: orderedAccounts,
@@ -855,16 +851,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     investmentFees: data.investmentFees || [],
 
     today: todayStr,
-    currentPeriod: periodForecast.currentPeriod,
-    selectedPeriod: periodForecast.selectedPeriod,
-    setSelectedPeriod: periodForecast.setSelectedPeriod,
-    periodRanges: periodForecast.periodRanges,
-    setPeriodRange: periodForecast.setPeriodRange,
-    goToNextPeriod: periodForecast.goToNextPeriod,
-    goToPreviousPeriod: periodForecast.goToPreviousPeriod,
-    goToCurrentPeriod: periodForecast.goToCurrentPeriod,
-    isCurrentPeriodSelected: periodForecast.isCurrentPeriodSelected,
-    forecastSequence: periodForecast.forecastSequence,
+    currentPeriod,
+    selectedPeriod,
+    setSelectedPeriod,
+    periodRanges,
+    setPeriodRange,
+    goToNextPeriod,
+    goToPreviousPeriod,
+    goToCurrentPeriod,
+    isCurrentPeriodSelected,
     forecast,
     quickOverview,
 
@@ -876,10 +871,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     updateTransaction,
     deleteTransaction,
     setTransactionStatus,
-    markTransactionExecuted,
-    cancelTransaction,
     reorderDayTransactions,
-    checkDueTransactions: runAutoExecute,
 
     addRecurringRule,
     updateRecurringRule,
@@ -927,20 +919,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     exportCSV,
 
     // Google Drive
-    driveSyncStatus: session.driveSyncStatus,
-    isCloudReady: session.isCloudReady,
-    isDriveConnected: session.isDriveConnected,
-    driveUser: session.driveUser,
-    lastDriveSyncTime: session.lastDriveSyncTime,
-    driveError: session.driveError,
-    connectGoogleDrive: session.connectGoogleDrive,
-    disconnectGoogleDrive: session.disconnectGoogleDrive,
-    syncWithGoogleDrive: session.syncWithGoogleDrive,
-    driveBackupEnabled: session.driveBackupEnabled,
-    setDriveBackupEnabled: session.setDriveBackupEnabled,
-    lastDriveBackupTime: session.lastDriveBackupTime,
-    runDriveBackupNow: session.runDriveBackupNow,
-  };
+    driveSyncStatus,
+    isCloudReady,
+    isDriveConnected,
+    driveUser,
+    lastDriveSyncTime,
+    driveError,
+    connectGoogleDrive,
+    disconnectGoogleDrive,
+    syncWithGoogleDrive,
+    driveBackupEnabled,
+    setDriveBackupEnabled,
+    lastDriveBackupTime,
+    runDriveBackupNow,
+  }), [
+    data, orderedAccounts,
+    todayStr, currentPeriod, selectedPeriod, setSelectedPeriod, periodRanges, setPeriodRange,
+    goToNextPeriod, goToPreviousPeriod, goToCurrentPeriod, isCurrentPeriodSelected, forecast, quickOverview,
+    toasts, showToast, removeToast,
+    addTransaction, updateTransaction, deleteTransaction, setTransactionStatus, reorderDayTransactions,
+    addRecurringRule, updateRecurringRule, deleteRecurringRule, reorderRecurringItem,
+    addAccount, updateAccount, archiveAccount, restoreAccount, deleteAccount, reorderAccounts, reconcileBalance,
+    updateMarketValue, editMarketValue, deleteMarketValue, saveInvestmentFee, deleteInvestmentFee,
+    updateCorrectionNote, deleteCorrection, dataConflicts,
+    addCategory, addMainCategory, updateCategory, moveSubcategory, archiveCategory, restoreCategory, deleteCategory,
+    loadState, loadErrorDetails, restoreFromBackupFile, reloadFromDrive, retryLoadData,
+    clearAllTransactions, clearAllAccounts, clearAllCategories, resetAllData, updateSettings, loadDemoData,
+    exportJSON, importJSON, exportCSV,
+    driveSyncStatus, isCloudReady, isDriveConnected, driveUser, lastDriveSyncTime, driveError,
+    connectGoogleDrive, disconnectGoogleDrive, syncWithGoogleDrive,
+    driveBackupEnabled, setDriveBackupEnabled, lastDriveBackupTime, runDriveBackupNow,
+  ]);
 
   return <FinanceContext.Provider value={value}>{children}</FinanceContext.Provider>;
 };

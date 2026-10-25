@@ -40,8 +40,8 @@ describe('MonthlyBudgetScreen — nové rozvržení karet', () => {
     vi.mocked(useFinance).mockReturnValue({
       selectedPeriod: period, forecast, settings: DEFAULT_SETTINGS, accounts, categories: [],
       transactions: txs, recurringRules: [], recurringExceptions: [], marketValueSnapshots: [],
-      setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
-      cancelTransaction: vi.fn(), deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(), showToast: vi.fn(),
+      setTransactionStatus: vi.fn(),
+      deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(), showToast: vi.fn(),
     } as unknown as ReturnType<typeof useFinance>);
 
     const html = renderToStaticMarkup(

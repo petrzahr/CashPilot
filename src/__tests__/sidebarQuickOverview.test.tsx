@@ -563,7 +563,8 @@ describe('Sidebar - Rychlý finanční přehled (5 skupin k dnešnímu dni)', ()
   it('13. Hodnoty rychlého přehledu se nemění podle zvoleného období v záhlaví aplikace', () => {
     // Testovací komponenta ověřující zobrazení nezávisle na selectedPeriod
     const TestComponent: React.FC = () => {
-      const { setSelectedPeriod, forecastSequence, quickOverview } = useFinance();
+      const { setSelectedPeriod, forecast, quickOverview } = useFinance();
+      const forecastSequence = forecast.forecastPeriods?.map(p => p.period);
 
       return (
         <div>

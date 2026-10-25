@@ -36,8 +36,8 @@ describe('MonthlyBudgetScreen respects account activation date for recurring rul
     vi.mocked(useFinance).mockReturnValue({
       selectedPeriod: period, forecast, settings, accounts: [checking], categories: [],
       transactions: [], recurringRules: [rule], recurringExceptions: [], marketValueSnapshots: [],
-      setTransactionStatus: vi.fn(), markTransactionExecuted: vi.fn(),
-      cancelTransaction: vi.fn(), deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(), showToast: vi.fn(),
+      setTransactionStatus: vi.fn(),
+      deleteTransaction: vi.fn(), reorderDayTransactions: vi.fn(), showToast: vi.fn(),
     } as unknown as ReturnType<typeof useFinance>);
 
     const html = renderToStaticMarkup(
