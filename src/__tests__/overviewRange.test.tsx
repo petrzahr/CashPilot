@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';
@@ -8,31 +10,33 @@ import { getInitialData, validateAndParseBackup } from '../services/storageServi
 import { SyncController } from '../services/syncController';
 import { PeriodRangePresetId } from '../types/finance';
 
-const selection = vi.hoisted(() => ({ direction: 'future', months: 12, matrix: false }));
-vi.mock('react', async importOriginal => {
-  const actual = await importOriginal<typeof import('react')>();
-  return { ...actual, useState: (initial: unknown) => actual.useState(
-    initial === 'period' && selection.matrix ? 'matrix' : initial
-  ) };
-});
+const selection = { direction: 'future', months: 12 } as OverviewRange;
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-16T12:00:00Z'));
-  selection.matrix = false;
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
-function renderOverview(startDay: number) {
+function overviewTree(startDay: number) {
   const data = getInitialData();
   data.settings.budgetStartDay = startDay;
   // Rozsah se vybírá přes výchozí volbu z Nastavení; předpověď ho musí pokrýt sama
   data.settings.defaultPeriodRanges = { overview: `${selection.direction}:${selection.months}` as PeriodRangePresetId };
-  let finance!: ReturnType<typeof useFinance>;
-  function Capture() { finance = useFinance(); return <OverviewScreen onNavigateToBudget={vi.fn()} />; }
-  const session = { data, isReady: true } as SyncController;
-  const html = renderToStaticMarkup(<FinanceProvider syncSession={session}><Capture /></FinanceProvider>);
-  return { html, finance };
+  const capture: { finance?: ReturnType<typeof useFinance> } = {};
+  function Capture() { capture.finance = useFinance(); return <OverviewScreen onNavigateToBudget={vi.fn()} />; }
+  // Připojení (jsdom) spouští efekty relace: automatické provedení zapisuje, odpojení zastaví sync
+  const session = { data, isReady: true, change: () => {}, stop: () => {}, sync: async () => {} } as unknown as SyncController;
+  return { tree: <FinanceProvider syncSession={session}><Capture /></FinanceProvider>, capture };
+}
+
+function renderOverview(startDay: number) {
+  const { tree, capture } = overviewTree(startDay);
+  const html = renderToStaticMarkup(tree);
+  return { html, finance: capture.finance! };
 }
 
 describe.each(['future', 'past'] as const)('shared %s overview range', direction => {
@@ -55,9 +59,14 @@ describe.each(['future', 'past'] as const)('shared %s overview range', direction
   });
 
   it('uses the same range in the account matrix', () => {
-    Object.assign(selection, { direction, months: 3, matrix: true });
-    const { html, finance } = renderOverview(31);
-    const periods = getOverviewPeriods(finance.currentPeriod, selection as OverviewRange, 31);
+    Object.assign(selection, { direction, months: 3 });
+    const { tree, capture } = overviewTree(31);
+    const { container } = render(tree);
+    fireEvent.click(screen.getByRole('button', { name: 'Matice účtů' }));
+    const html = container.innerHTML;
+    const finance = capture.finance!;
+    const periods = getOverviewPeriods(finance.currentPeriod, selection, 31);
+    expect(html).toContain('title="K – konečný stav"');
     // Graf Rozložení majetku má vlastní tabulku se zkrácenými názvy období, kontrolují se jen tabulky zůstatků
     const balanceTables = html.replace(/Rozložení celkového majetku[\s\S]*?(?=>Účty<\/h2>)/, '');
     for (const table of balanceTables.split('<table').slice(1)) {
