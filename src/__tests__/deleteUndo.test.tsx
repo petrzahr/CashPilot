@@ -1,5 +1,6 @@
-import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, it, expect, beforeEach } from 'vitest';
+// @vitest-environment jsdom
+import { act, cleanup, render } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { FinanceProvider, useFinance } from '../context/FinanceContext';
 import { SyncController } from '../services/syncController';
 import { getActiveStorageKey, getInitialData, loadStoredDataResult, AppData } from '../services/storageService';
@@ -40,10 +41,17 @@ async function setup(transactions: Transaction[], extra: Partial<AppData> = {}) 
     upload: async (_token, next) => { cloud = next; return { id: 'file', name: 'cashpilot_data.json' }; },
   });
   await controller.sync();
-  let ctx: any;
+  let ctx!: ReturnType<typeof useFinance>;
   const Consumer = () => { ctx = useFinance(); return null; };
-  renderToStaticMarkup(<FinanceProvider syncSession={controller}><Consumer /></FinanceProvider>);
-  return { ctx, controller, getCloud: () => cloud };
+  render(<FinanceProvider syncSession={controller}><Consumer /></FinanceProvider>);
+  return { ctx: () => ctx, controller, getCloud: () => cloud };
+}
+
+/** Klikne na „Vrátit“ v posledním oznámení, které ho nabízí. */
+function clickUndo(ctx: () => ReturnType<typeof useFinance>) {
+  const toast = [...ctx().toasts].reverse().find(t => t.action?.label === 'Vrátit');
+  expect(toast).toBeDefined();
+  act(() => toast!.action!.onClick());
 }
 
 const dayOrder = () => loadStoredDataResult().data.transactions
@@ -56,18 +64,22 @@ describe('Smazání běžné položky a „Vrátit“', () => {
     Object.defineProperty(globalThis, 'localStorage', { value: storageMock, writable: true, configurable: true });
     localStorage.clear();
   });
+  afterEach(() => cleanup());
 
   it('vrátí položku na původní místo v dni a obnovení přežije synchronizaci', async () => {
     const rent = makeTx('tx_b', 'Nájem', 2);
     const { ctx, controller, getCloud } = await setup([makeTx('tx_a', 'Káva', 1), rent, makeTx('tx_c', 'Oběd', 3)]);
 
-    expect(await ctx.deleteTransaction('tx_b')).toBe(true);
+    let deleted: unknown;
+    await act(async () => { deleted = await ctx().deleteTransaction('tx_b'); });
+    expect(deleted).toBe(true);
     expect(dayOrder()).toEqual(['1:tx_a', '2:tx_c']);
 
     // Záznam o smazání a obnovení nesmí mít stejný časový otisk
     await new Promise(resolve => setTimeout(resolve, 5));
-    ctx.restoreDeletedTransaction(rent);
+    clickUndo(ctx);
     expect(dayOrder()).toEqual(['1:tx_a', '2:tx_b', '3:tx_c']);
+    expect(ctx().toasts.map(t => t.text)).toContain('Položka byla obnovena.');
 
     await controller.sync();
     expect(getCloud().transactions.map((t: Transaction) => t.id).sort()).toEqual(['tx_a', 'tx_b', 'tx_c']);
@@ -85,11 +97,13 @@ describe('Smazání běžné položky a „Vrátit“', () => {
     };
     const { ctx } = await setup([corrTx], { corrections: [correction] });
 
-    expect(await ctx.deleteCorrection('corr_1')).toBe(true);
+    let deleted: unknown;
+    await act(async () => { deleted = await ctx().deleteCorrection('corr_1'); });
+    expect(deleted).toBe(true);
     expect(loadStoredDataResult().data.corrections).toHaveLength(0);
 
     await new Promise(resolve => setTimeout(resolve, 5));
-    ctx.restoreDeletedTransaction(corrTx, correction);
+    clickUndo(ctx);
     const stored = loadStoredDataResult().data;
     expect(stored.transactions.map(t => t.id)).toEqual(['corr_1']);
     expect(stored.corrections.map(c => c.id)).toEqual(['corr_1']);
@@ -98,10 +112,10 @@ describe('Smazání běžné položky a „Vrátit“', () => {
   it('opakované vrácení stejné položky nic nezdvojí', async () => {
     const rent = makeTx('tx_b', 'Nájem', 1);
     const { ctx } = await setup([rent]);
-    await ctx.deleteTransaction('tx_b');
+    await act(async () => { await ctx().deleteTransaction('tx_b'); });
     await new Promise(resolve => setTimeout(resolve, 5));
-    ctx.restoreDeletedTransaction(rent);
-    ctx.restoreDeletedTransaction(rent);
+    clickUndo(ctx);
+    clickUndo(ctx);
     expect(dayOrder()).toEqual(['1:tx_b']);
   });
 });
