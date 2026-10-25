@@ -2,40 +2,29 @@ import React, { useState, useEffect, useId, useRef } from 'react';
 import { useFinance } from '../../context/FinanceContext';
 import { Modal, ModalFooter } from '../common/Modal';
 import { ConfirmationModal } from '../common/ConfirmationModal';
-import { Account, Category, MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
-import { halerToInputValue, parseInputToHaler } from '../../services/currencyService';
-import { getNextSequenceForDate } from '../../services/sequenceService';
-import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
-import { getDefaultDateForPeriod, getPeriodForDate, formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { getStatusForDate } from '../../services/statusService';
-import { czechStringCompare } from '../../services/categoryService';
-import { getDefaultAccount, getEffectiveAmountInHaler } from '../../services/accountScope';
+import { MovementType, RecurrenceFrequency, Transaction, TransactionStatus } from '../../types/finance';
+import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
+import {
+  TransactionFormData,
+  TransactionFormErrors,
+  TransactionFormMode,
+  TransactionFormState,
+  TxField,
+  changeCategory,
+  changeDate,
+  changeType,
+  createFormState,
+  getAccountActivationErrors,
+  getFormOptions,
+  isSameForm,
+  resetForAnother,
+  setRecurring,
+  toSaveAction,
+  validateForm,
+} from '../../services/transactionForm';
 import { Hash, Loader2 } from 'lucide-react';
 import { RecurrenceScopePicker } from '../shared/RecurrenceScopePicker';
-import { FieldError, FieldErrors, FormError, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
-
-type TxField = 'title' | 'amount' | 'source' | 'target' | 'endDate';
-
-/**
- * Údaje nové položky převzaté při duplikaci (datum, pořadí a stav se určí jako u nové položky).
- * Archivované účty a kategorie se v nové položce nenabízejí, proto se nepředvyplní.
- */
-export function getDuplicateDraft(source: Transaction, accounts: Account[], categories: Category[]) {
-  const isActiveAcc = (id?: string | null) => !!id && accounts.some(a => a.id === id && a.status === 'active');
-  const isActiveCat = (id?: string | null) => !!id && categories.some(c => c.id === id && c.status === 'active');
-  const haler = getEffectiveAmountInHaler(source);
-  const categoryId = isActiveCat(source.categoryId) ? source.categoryId! : '';
-  return {
-    title: source.title,
-    amountStr: halerToInputValue(haler),
-    type: source.type,
-    sourceAccountId: isActiveAcc(source.sourceAccountId) ? source.sourceAccountId : '',
-    targetAccountId: isActiveAcc(source.targetAccountId) ? source.targetAccountId! : '',
-    categoryId,
-    subcategoryId: categoryId && isActiveCat(source.subcategoryId) ? source.subcategoryId! : '',
-    note: source.note || '',
-  };
-}
+import { FieldError, FormError, fieldStateClass, fieldErrorProps, focusFirstInvalid } from '../common/FieldError';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -70,155 +59,49 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     updateRecurringRule,
   } = useFinance();
 
-  // Další volné pořadí v daném dni musí počítat i s ještě nezhmotněnými (virtuálními)
-  // výskyty opakujících se položek, jinak by nová položka v budoucím dni, kde zatím
-  // existuje jen virtuální výskyt, dostala pořadí 1 místo posledního místa v tom dni.
-  const getEffectiveNextSequence = (targetDate: string, excludeId?: string): number => {
-    const baseTxs = excludeId ? transactions.filter(t => t.id !== excludeId) : transactions;
-    const period = getPeriodForDate(targetDate, settings.budgetStartDay);
-    const effectiveTxs = getEffectiveTransactionsForPeriod(
-      period,
-      baseTxs,
-      recurringRules,
-      recurringExceptions,
-      undefined,
-      accounts
-    );
-    return getNextSequenceForDate(targetDate, effectiveTxs);
+  const formData: TransactionFormData = {
+    transactions, recurringRules, recurringExceptions, accounts, categories, settings, today: getTodayInPrague(),
   };
+  const mode: TransactionFormMode = transactionToEdit
+    ? { kind: 'edit', transaction: transactionToEdit, periodKey: selectedPeriod.key }
+    : transactionToDuplicate
+      ? { kind: 'duplicate', source: transactionToDuplicate, initialDate, period: selectedPeriod }
+      : { kind: 'new', initialType, initialDate, period: selectedPeriod };
 
-  const [title, setTitle] = useState('');
-  const [amountStr, setAmountStr] = useState('');
-  const [date, setDate] = useState('');
-  const [sequenceStr, setSequenceStr] = useState('1');
-  const [type, setType] = useState<MovementType>(initialType);
-  const [sourceAccountId, setSourceAccountId] = useState('');
-  const [targetAccountId, setTargetAccountId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [subcategoryId, setSubcategoryId] = useState('');
-  const [status, setStatus] = useState<TransactionStatus>('planned');
-  const [note, setNote] = useState('');
+  const [form, setForm] = useState<TransactionFormState>(() => createFormState(mode, formData));
+  const update = (patch: Partial<TransactionFormState>) => setForm(prev => ({ ...prev, ...patch }));
 
-  // Pravidelnost
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<RecurrenceFrequency>('monthly');
-  const [dayOfMonth, setDayOfMonth] = useState<number>(1);
-  const [recurringEndDate, setRecurringEndDate] = useState('');
-
-  // Dialog úpravy pravidelné položky
-  const [recurringEditMode, setRecurringEditMode] = useState<'occurrence' | 'future' | 'series'>('occurrence');
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState<FieldErrors<TxField>>({});
+  const [errors, setErrors] = useState<TransactionFormErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const clearError = (field: TxField) => setErrors(prev => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
-  const isEditing = !!transactionToEdit;
+  const isEditing = mode.kind === 'edit';
   const isLinkedToRecurring = !!transactionToEdit?.recurringRuleId;
   const linkedRule = isLinkedToRecurring
     ? recurringRules.find(r => r.id === transactionToEdit?.recurringRuleId)
     : undefined;
 
-  const activeAccounts = accounts
-    .filter(a => isEditing ? (a.status === 'active' || a.id === sourceAccountId || a.id === targetAccountId) : a.status === 'active')
-    .sort((a, b) => czechStringCompare(a.name, b.name));
-
-  const relevantCategories = categories
-    .filter(c => 
-      !c.parentId && 
-      (type === 'transfer' ? false : c.type === type) &&
-      (isEditing ? (c.status === 'active' || c.id === categoryId) : c.status === 'active')
-    )
-    .sort((a, b) => czechStringCompare(a.name, b.name));
-
-  const subcategories = categories
-    .filter(c => 
-      c.parentId === categoryId && 
-      (isEditing ? (c.status === 'active' || c.id === subcategoryId) : c.status === 'active')
-    )
-    .sort((a, b) => czechStringCompare(a.name, b.name));
+  const options = getFormOptions(form, mode, formData);
 
   // Rozepsaný formulář: po naplnění se uloží otisk hodnot a zavření omylem (klepnutí mimo,
-  // Escape) se při jakékoli změně nejdřív zeptá. Efekt stojí před naplněním formuláře,
-  // aby otisk vznikl až v dalším vykreslení, kdy už stav obsahuje nové hodnoty.
+  // Escape) se při jakékoli změně nejdřív zeptá.
   const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
-  const formSnapshotRef = useRef('');
-  const snapshotPendingRef = useRef(false);
-  const formValues = JSON.stringify([
-    title, amountStr, date, sequenceStr, type, sourceAccountId, targetAccountId, categoryId,
-    subcategoryId, status, note, isRecurring, frequency, dayOfMonth, recurringEndDate, recurringEditMode,
-  ]);
-  useEffect(() => {
-    if (!snapshotPendingRef.current) return;
-    snapshotPendingRef.current = false;
-    formSnapshotRef.current = formValues;
-  });
+  const formSnapshotRef = useRef(form);
   const handleDismissAttempt = () => {
-    if (formValues !== formSnapshotRef.current) setIsDiscardConfirmOpen(true);
+    if (!isSameForm(form, formSnapshotRef.current)) setIsDiscardConfirmOpen(true);
     else onClose();
+  };
+  const resetForm = (next: TransactionFormState) => {
+    setForm(next);
+    formSnapshotRef.current = next;
   };
 
   useEffect(() => {
     setErrors({});
     setSaveError(null);
     setIsDiscardConfirmOpen(false);
-    snapshotPendingRef.current = true;
-    if (transactionToEdit) {
-      setTitle(transactionToEdit.title);
-      const haler = getEffectiveAmountInHaler(transactionToEdit);
-      setAmountStr(halerToInputValue(haler));
-      setDate(transactionToEdit.date);
-      setSequenceStr(transactionToEdit.sequence?.toString() || '1');
-      setType(transactionToEdit.type);
-      setSourceAccountId(transactionToEdit.sourceAccountId);
-      setTargetAccountId(transactionToEdit.targetAccountId || '');
-      setCategoryId(transactionToEdit.categoryId || '');
-      setSubcategoryId(transactionToEdit.subcategoryId || '');
-      setStatus(transactionToEdit.status);
-      setNote(transactionToEdit.note || '');
-      setIsRecurring(false);
-      setFrequency('monthly');
-      setDayOfMonth(parseInt(transactionToEdit.date.split('-')[2], 10) || 1);
-      setRecurringEndDate('');
-    } else {
-      const defaultDate = initialDate || getDefaultDateForPeriod(selectedPeriod);
-      const defaultDay = parseInt(defaultDate.split('-')[2], 10) || 1;
-      setDate(defaultDate);
-      const nextSeq = getEffectiveNextSequence(defaultDate);
-      setSequenceStr(nextSeq.toString());
-
-      if (transactionToDuplicate) {
-        const draft = getDuplicateDraft(transactionToDuplicate, accounts, categories);
-        setTitle(draft.title);
-        setAmountStr(draft.amountStr);
-        setType(draft.type);
-        setSourceAccountId(draft.sourceAccountId);
-        setTargetAccountId(draft.targetAccountId);
-        setCategoryId(draft.categoryId);
-        setSubcategoryId(draft.subcategoryId);
-        setNote(draft.note);
-      } else {
-        setTitle('');
-        setAmountStr('');
-        setType(initialType);
-
-        // Default account: preselect only if an active account is marked as default and valid for defaultDate
-        const defaultAcc = getDefaultAccount(accounts);
-        const isDefaultValid = defaultAcc && (!defaultAcc.initialBalanceDate || defaultAcc.initialBalanceDate <= defaultDate);
-        setSourceAccountId(isDefaultValid ? defaultAcc.id : '');
-        setTargetAccountId('');
-
-        // No category or subcategory preselected by default
-        setCategoryId('');
-        setSubcategoryId('');
-        setNote('');
-      }
-
-      setStatus(getStatusForDate(defaultDate));
-      setIsRecurring(false);
-      setFrequency('monthly');
-      setDayOfMonth(defaultDay);
-      setRecurringEndDate('');
-    }
+    resetForm(createFormState(mode, formData));
     // Formulář se má znovu naplnit jen při otevření modálu nebo přepnutí na jinou položku -
     // ne pokaždé, když se (i referenčně) změní transactions/accounts kdekoli jinde v appce
     // (např. periodická kontrola splatných položek na pozadí), jinak by to za běhu smazalo
@@ -227,7 +110,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   }, [transactionToEdit?.id, transactionToDuplicate?.id, isOpen, initialType, initialDate, selectedPeriod.startDate, selectedPeriod.endDate]);
 
   // Plánovaná položka s dnešním či starším datem se sama uskuteční, proto ji tak nejde nastavit
-  const isPastOrToday = !!date && date <= getTodayInPrague();
+  const isPastOrToday = !!form.date && form.date <= formData.today;
 
   // Rychlý zápis: nová položka začíná rovnou v poli Částka (na telefonu se otevře klávesnice)
   const addAnotherRef = useRef(false);
@@ -239,59 +122,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, transactionToEdit?.id]);
 
-  // Při změně data v editačním formuláři ihned přepočti a předvyplň pořadí pro nově zvolený den
-  const handleDateChange = (newDate: string) => {
-    setDate(newDate);
-    if (!isLinkedToRecurring) {
-      const parsedDay = parseInt(newDate.split('-')[2], 10);
-      if (!isNaN(parsedDay) && parsedDay >= 1 && parsedDay <= 31) {
-        setDayOfMonth(parsedDay);
-      }
-    }
-    if (!isEditing) {
-      const nextSeq = getEffectiveNextSequence(newDate);
-      setSequenceStr(nextSeq.toString());
-      setStatus(getStatusForDate(newDate));
-      // Účet se u nového data nemaže - pokud je pro dané datum neplatný, na to
-      // upozorní sourceAccError/targetAccError a odešle se odeslání formuláře.
-    } else {
-      if (newDate === transactionToEdit?.date) {
-        setSequenceStr((transactionToEdit.sequence || 1).toString());
-      } else {
-        const nextSeq = getEffectiveNextSequence(newDate, transactionToEdit?.id);
-        setSequenceStr(nextSeq.toString());
-      }
-    }
-  };
-
-  const handleTypeChange = (newType: MovementType) => {
-    setType(newType);
-    if (newType === 'transfer') {
-      setCategoryId('');
-      setSubcategoryId('');
-    } else {
-      const selectedCat = categories.find(c => c.id === categoryId);
-      if (!selectedCat || selectedCat.type !== newType || selectedCat.status === 'archived') {
-        setCategoryId('');
-        setSubcategoryId('');
-      }
-    }
-  };
-
-  const handleCategoryChange = (newCatId: string) => {
-    setCategoryId(newCatId);
-    setSubcategoryId('');
-  };
-
-  const selectedSourceAcc = accounts.find(a => a.id === sourceAccountId);
-  const sourceAccError = selectedSourceAcc?.initialBalanceDate && date < selectedSourceAcc.initialBalanceDate
-    ? `Tento účet je aktivní až od ${formatCzechDate(selectedSourceAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-    : null;
-
-  const selectedTargetAcc = type === 'transfer' ? accounts.find(a => a.id === targetAccountId) : undefined;
-  const targetAccError = selectedTargetAcc?.initialBalanceDate && date < selectedTargetAcc.initialBalanceDate
-    ? `Tento účet je aktivní až od ${formatCzechDate(selectedTargetAcc.initialBalanceDate)}. Zvolte stejné nebo pozdější datum.`
-    : null;
+  const { source: sourceAccError, target: targetAccError } = getAccountActivationErrors(form, accounts);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,22 +130,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     const addAnother = addAnotherRef.current;
     addAnotherRef.current = false;
     if (isSaving) return;
-    const amountInHaler = parseInputToHaler(amountStr);
-    const sequenceNum = Math.max(1, parseInt(sequenceStr, 10) || 1);
 
-    const nextErrors: FieldErrors<TxField> = {};
-    if (!title.trim()) nextErrors.title = 'Zadejte prosím název položky.';
-    if (amountInHaler <= 0) nextErrors.amount = 'Zadejte částku větší než 0.';
-    if (!sourceAccountId) nextErrors.source = 'Vyberte prosím účet.';
-    else if (sourceAccError) nextErrors.source = sourceAccError;
-    if (type === 'transfer') {
-      if (!targetAccountId) nextErrors.target = 'Pro převod vyberte cílový účet.';
-      else if (sourceAccountId === targetAccountId) nextErrors.target = 'Vyberte jiný účet, než ze kterého peníze odcházejí.';
-      else if (targetAccError) nextErrors.target = targetAccError;
-    }
-    if (isRecurring && !isLinkedToRecurring && recurringEndDate && recurringEndDate < date) {
-      nextErrors.endDate = 'Konec opakování musí být stejný den jako datum položky, nebo pozdější.';
-    }
+    const nextErrors = validateForm(form, mode, accounts);
     setErrors(nextErrors);
     setSaveError(null);
     if (Object.values(nextErrors).some(Boolean)) {
@@ -330,129 +147,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     setIsSaving(true);
     try {
-      if (isRecurring && !isLinkedToRecurring) {
-        const dateDay = parseInt(date.split('-')[2], 10) || 1;
-        const chosenDay = (dayOfMonth >= 1 && dayOfMonth <= 31) ? dayOfMonth : dateDay;
-        addRecurringRule({
-          title,
-          amountInHaler,
-          type,
-          frequency,
-          dayOfMonth: chosenDay,
-          endDate: recurringEndDate || null,
-          startDate: date,
-          sourceAccountId,
-          targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-          categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-          subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-          note,
-          isActive: true,
-        }, sequenceNum, status, transactionToEdit?.id);
-      } else if (isEditing && transactionToEdit) {
-        if (isLinkedToRecurring && transactionToEdit.recurringRuleId) {
-          if (recurringEditMode === 'occurrence') {
-            if (transactionToEdit.id.startsWith('virtual_')) {
-              addTransaction({
-                title,
-                amountInHaler,
-                plannedAmountInHaler: transactionToEdit.amountInHaler,
-                actualAmountInHaler: status === 'executed' ? amountInHaler : undefined,
-                date,
-                sequence: sequenceNum,
-                type,
-                sourceAccountId,
-                targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-                categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-                subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-                status,
-                note,
-                recurringRuleId: transactionToEdit.recurringRuleId
-              });
-            } else {
-              updateTransaction({
-                ...transactionToEdit,
-                title,
-                amountInHaler,
-                actualAmountInHaler: status === 'executed' ? amountInHaler : (status === 'planned' ? undefined : transactionToEdit.actualAmountInHaler),
-                date,
-                sequence: sequenceNum,
-                type,
-                sourceAccountId,
-                targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-                categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-                subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-                status,
-                note,
-              });
-            }
-          } else {
-            // Pořadí se nastaví stejně jako přetažením, jen když se pořadí nebo den změnily
-            const seqChanged = sequenceNum !== (transactionToEdit.sequence || 1);
-            const placement = seqChanged || date !== transactionToEdit.date
-              ? { date, position: sequenceNum }
-              : undefined;
-            updateRecurringRule(
-              transactionToEdit.recurringRuleId,
-              recurringEditMode,
-              selectedPeriod.key,
-              {
-                title,
-                amountInHaler,
-                // U celé série posíláme datum jen při skutečné změně - jinak by se
-                // přesunutý jednotlivý výskyt propsal jako nový den celé série.
-                date: recurringEditMode === 'series' && date === transactionToEdit.date ? undefined : date,
-                sourceAccountId,
-                targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-                categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-                subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-                note
-              },
-              transactionToEdit.id,
-              placement
-            );
-          }
-        } else {
-          updateTransaction({
-            ...transactionToEdit,
-            title,
-            amountInHaler,
-            actualAmountInHaler: status === 'executed' ? amountInHaler : (status === 'planned' ? undefined : transactionToEdit.actualAmountInHaler),
-            date,
-            sequence: sequenceNum,
-            type,
-            sourceAccountId,
-            targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-            categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-            subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-            status,
-            note,
-          });
-        }
-      } else {
-        addTransaction({
-            title,
-            amountInHaler,
-            plannedAmountInHaler: amountInHaler,
-            actualAmountInHaler: status === 'executed' ? amountInHaler : undefined,
-            date,
-            sequence: sequenceNum,
-            type,
-            sourceAccountId,
-            targetAccountId: type === 'transfer' ? targetAccountId : undefined,
-            categoryId: type !== 'transfer' && categoryId ? categoryId : null,
-            subcategoryId: type !== 'transfer' && subcategoryId ? subcategoryId : null,
-            status,
-            note,
-        });
+      const action = toSaveAction(form, mode);
+      switch (action.kind) {
+        case 'addTransaction':
+          addTransaction(action.transaction);
+          break;
+        case 'updateTransaction':
+          updateTransaction(action.transaction);
+          break;
+        case 'addRecurringRule':
+          addRecurringRule(action.rule, action.initialSequence, action.initialStatus, action.existingTransactionId);
+          break;
+        case 'updateRecurringRule':
+          updateRecurringRule(action.ruleId, action.mode, action.periodKey, action.overrideData, action.originalTransactionId, action.placement);
+          break;
       }
-      if (addAnother && !isEditing && !isRecurring) {
-        // „Uložit a další“: datum, typ, účet a kategorie zůstávají, vyplňuje se jen částka a název
-        setTitle('');
-        setAmountStr('');
-        setNote('');
-        setSequenceStr(String(sequenceNum + 1));
+      if (addAnother && !isEditing && !form.isRecurring) {
+        resetForm(resetForAnother(form));
         setErrors({});
-        snapshotPendingRef.current = true;
         focusAmountField();
       } else {
         onClose();
@@ -479,24 +191,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         <div role="group" aria-label="Typ položky" className="segmented grid grid-cols-3">
           <button
             type="button"
-            onClick={() => handleTypeChange('expense')}
-            aria-pressed={type === 'expense'}
-            className={`segment ${type === 'expense' ? 'text-red-600' : ''}`}
+            onClick={() => setForm(prev => changeType(prev, 'expense', categories))}
+            aria-pressed={form.type === 'expense'}
+            className={`segment ${form.type === 'expense' ? 'text-red-600' : ''}`}
           >
             Výdaj
           </button>
           <button
             type="button"
-            onClick={() => handleTypeChange('income')}
-            aria-pressed={type === 'income'}
-            className={`segment ${type === 'income' ? 'text-emerald-600' : ''}`}
+            onClick={() => setForm(prev => changeType(prev, 'income', categories))}
+            aria-pressed={form.type === 'income'}
+            className={`segment ${form.type === 'income' ? 'text-emerald-600' : ''}`}
           >
             Příjem
           </button>
           <button
             type="button"
-            onClick={() => handleTypeChange('transfer')}
-            aria-pressed={type === 'transfer'}
+            onClick={() => setForm(prev => changeType(prev, 'transfer', categories))}
+            aria-pressed={form.type === 'transfer'}
             className="segment"
           >
             Převod
@@ -509,8 +221,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <RecurrenceScopePicker
               legend="Pravidelná položka – co chcete upravit?"
               name="recMode"
-              value={recurringEditMode}
-              onChange={setRecurringEditMode}
+              value={form.recurringEditMode}
+              onChange={(recurringEditMode) => update({ recurringEditMode })}
               descriptions={{
                 occurrence: `Změna platí jen v období ${selectedPeriod.name}.`,
                 future: 'Změna platí od tohoto výskytu dál. Minulé výskyty zůstanou beze změny.',
@@ -541,8 +253,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 autoComplete="off"
                 required
                 placeholder="0"
-                value={amountStr}
-                onChange={(e) => { setAmountStr(e.target.value); clearError('amount'); }}
+                value={form.amountStr}
+                onChange={(e) => { update({ amountStr: e.target.value }); clearError('amount'); }}
                 {...fieldErrorProps(`${fieldId}-2`, errors.amount)}
                 className={`w-full pl-3.5 pr-10 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.amount, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')} font-medium`}
               />
@@ -561,8 +273,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               type="text"
               required
               placeholder="např. Nákup potravin, Mzda"
-              value={title}
-              onChange={(e) => { setTitle(e.target.value); clearError('title'); }}
+              value={form.title}
+              onChange={(e) => { update({ title: e.target.value }); clearError('title'); }}
               {...fieldErrorProps(`${fieldId}-1`, errors.title)}
               className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.title, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             />
@@ -579,8 +291,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <input id={`${fieldId}-3`}
               type="date"
               required
-              value={date}
-              onChange={(e) => handleDateChange(e.target.value)}
+              value={form.date}
+              onChange={(e) => { const date = e.target.value; setForm(prev => changeDate(prev, date, mode, formData)); }}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             />
           </div>
@@ -590,11 +302,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               Stav
             </label>
             <select id={`${fieldId}-5`}
-              value={status}
-              onChange={(e) => setStatus(e.target.value as TransactionStatus)}
+              value={form.status}
+              onChange={(e) => update({ status: e.target.value as TransactionStatus })}
               className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
             >
-              <option value="planned" disabled={isPastOrToday && status !== 'planned'}>Plánovaná</option>
+              <option value="planned" disabled={isPastOrToday && form.status !== 'planned'}>Plánovaná</option>
               <option value="executed">Uskutečněná</option>
               <option value="cancelled">Zrušená</option>
             </select>
@@ -608,18 +320,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label htmlFor={`${fieldId}-6`} className="block text-xs font-semibold text-slate-500 mb-1">
-              {type === 'transfer' ? 'Z účtu *' : 'Účet *'}
+              {form.type === 'transfer' ? 'Z účtu *' : 'Účet *'}
             </label>
             <select id={`${fieldId}-6`}
               required
-              value={sourceAccountId}
-              onChange={(e) => { setSourceAccountId(e.target.value); clearError('source'); }}
+              value={form.sourceAccountId}
+              onChange={(e) => { update({ sourceAccountId: e.target.value }); clearError('source'); }}
               {...fieldErrorProps(`${fieldId}-6`, errors.source || sourceAccError)}
               className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.source || sourceAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
             >
               <option value="">Vyberte účet</option>
-              {activeAccounts.map((acc) => {
-                const isInactive = !!(acc.initialBalanceDate && date && date < acc.initialBalanceDate);
+              {options.accounts.map((acc) => {
+                const isInactive = !!(acc.initialBalanceDate && form.date && form.date < acc.initialBalanceDate);
                 return (
                   <option key={acc.id} value={acc.id} disabled={isInactive}>
                     {acc.name} ({acc.institution || (acc.isUsableCash ? 'Použitelné' : 'Majetek')}){isInactive ? ` — aktivní až od ${formatCzechDate(acc.initialBalanceDate!)}` : ''}
@@ -630,23 +342,23 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <FieldError inputId={`${fieldId}-6`} message={errors.source || sourceAccError} />
           </div>
 
-          {type === 'transfer' ? (
+          {form.type === 'transfer' ? (
             <div>
               <label htmlFor={`${fieldId}-7`} className="block text-xs font-semibold text-slate-500 mb-1">
                 Na účet *
               </label>
               <select id={`${fieldId}-7`}
                 required
-                value={targetAccountId}
-                onChange={(e) => { setTargetAccountId(e.target.value); clearError('target'); }}
+                value={form.targetAccountId}
+                onChange={(e) => { update({ targetAccountId: e.target.value }); clearError('target'); }}
                 {...fieldErrorProps(`${fieldId}-7`, errors.target || targetAccError)}
                 className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.target || targetAccError, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
               >
                 <option value="">Vyberte účet</option>
-                {activeAccounts
-                  .filter((a) => a.id !== sourceAccountId)
+                {options.accounts
+                  .filter((a) => a.id !== form.sourceAccountId)
                   .map((acc) => {
-                    const isInactive = !!(acc.initialBalanceDate && date && date < acc.initialBalanceDate);
+                    const isInactive = !!(acc.initialBalanceDate && form.date && form.date < acc.initialBalanceDate);
                     return (
                       <option key={acc.id} value={acc.id} disabled={isInactive}>
                         {acc.name}{isInactive ? ` — aktivní až od ${formatCzechDate(acc.initialBalanceDate!)}` : ''}
@@ -663,12 +375,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   Kategorie
                 </label>
                 <select id={`${fieldId}-8`}
-                  value={categoryId}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  value={form.categoryId}
+                  onChange={(e) => { const categoryId = e.target.value; setForm(prev => changeCategory(prev, categoryId)); }}
                   className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 >
                   <option value="">Bez kategorie</option>
-                  {relevantCategories.map((cat) => (
+                  {options.categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>
@@ -681,13 +393,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   Podkategorie
                 </label>
                 <select id={`${fieldId}-9`}
-                  value={subcategoryId}
-                  onChange={(e) => setSubcategoryId(e.target.value)}
-                  disabled={!categoryId || subcategories.length === 0}
+                  value={form.subcategoryId}
+                  onChange={(e) => update({ subcategoryId: e.target.value })}
+                  disabled={!form.categoryId || options.subcategories.length === 0}
                   className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 disabled:bg-slate-50 disabled:text-slate-400"
                 >
                   <option value="">Bez podkategorie</option>
-                  {subcategories.map((sub) => (
+                  {options.subcategories.map((sub) => (
                     <option key={sub.id} value={sub.id}>
                       {sub.name}
                     </option>
@@ -704,7 +416,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <span className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
               <Hash className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">
-                Pořadí v rámci dne: <strong className="text-slate-900">{sequenceStr || '1'}.</strong>
+                Pořadí v rámci dne: <strong className="text-slate-900">{form.sequenceStr || '1'}.</strong>
               </span>
             </span>
             <span className="text-xs font-semibold text-sky-700 shrink-0 group-open:hidden">Změnit</span>
@@ -719,8 +431,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               inputMode="numeric"
               min="1"
               step="1"
-              value={sequenceStr}
-              onChange={(e) => setSequenceStr(e.target.value)}
+              value={form.sequenceStr}
+              onChange={(e) => update({ sequenceStr: e.target.value })}
               className="w-full sm:w-32 px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium"
               aria-describedby={`${fieldId}-4-hint`}
             />
@@ -736,17 +448,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={isRecurring}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setIsRecurring(checked);
-                  if (checked) {
-                    const parsedDay = parseInt(date.split('-')[2], 10);
-                    if (!isNaN(parsedDay) && parsedDay >= 1 && parsedDay <= 31) {
-                      setDayOfMonth(parsedDay);
-                    }
-                  }
-                }}
+                checked={form.isRecurring}
+                onChange={(e) => { const checked = e.target.checked; setForm(prev => setRecurring(prev, checked)); }}
                 className="w-4 h-4 text-sky-600 rounded-sm border-slate-300 focus:ring-sky-500"
               />
               <span className="text-sm font-medium text-slate-900">
@@ -754,16 +457,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </span>
             </label>
 
-            {isRecurring && (
+            {form.isRecurring && (
               <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className={`grid ${frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                <div className={`grid ${form.frequency !== 'custom' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
                   <div>
                     <label htmlFor={`${fieldId}-10`} className="block text-xs font-semibold text-slate-500 mb-1">
                       Jak často
                     </label>
                     <select id={`${fieldId}-10`}
-                      value={frequency}
-                      onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
+                      value={form.frequency}
+                      onChange={(e) => update({ frequency: e.target.value as RecurrenceFrequency })}
                       className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     >
                       <option value="monthly">Každý měsíc</option>
@@ -773,7 +476,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       <option value="annually">Ročně (12 měsíců)</option>
                     </select>
                   </div>
-                  {frequency !== 'custom' && (
+                  {form.frequency !== 'custom' && (
                     <div>
                       <label htmlFor={`${fieldId}-11`} className="block text-xs font-semibold text-slate-500 mb-1">
                         Den v měsíci
@@ -782,10 +485,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                         type="number"
                         min="1"
                         max="31"
-                        value={dayOfMonth || ''}
+                        value={form.dayOfMonth || ''}
                         onChange={(e) => {
                           const val = parseInt(e.target.value, 10);
-                          setDayOfMonth(isNaN(val) ? 0 : val);
+                          update({ dayOfMonth: isNaN(val) ? 0 : val });
                         }}
                         className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                       />
@@ -798,9 +501,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </label>
                   <input id={`${fieldId}-12`}
                     type="date"
-                    value={recurringEndDate}
-                    min={date}
-                    onChange={(e) => { setRecurringEndDate(e.target.value); clearError('endDate'); }}
+                    value={form.recurringEndDate}
+                    min={form.date}
+                    onChange={(e) => { update({ recurringEndDate: e.target.value }); clearError('endDate'); }}
                     {...fieldErrorProps(`${fieldId}-12`, errors.endDate)}
                     className={`w-full px-3.5 py-2 text-sm bg-white border rounded-xl focus:outline-hidden ${fieldStateClass(errors.endDate, 'border-slate-200 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500')}`}
                   />
@@ -825,8 +528,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <input id={`${fieldId}-13`}
             type="text"
             placeholder="např. Faktura č. 2026-04, účel platby…"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
+            value={form.note}
+            onChange={(e) => update({ note: e.target.value })}
             className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
           />
         </div>
@@ -842,7 +545,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           >
             Zrušit
           </button>
-          {!isEditing && !isRecurring && (
+          {!isEditing && !form.isRecurring && (
             <button
               type="submit"
               disabled={isSaving}

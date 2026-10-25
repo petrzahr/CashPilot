@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDuplicateDraft } from '../components/transactions/TransactionModal';
+import { getDuplicateDraft } from '../services/transactionForm';
 import { Account, Category, Transaction } from '../types/finance';
 
 const account = (id: string, status: Account['status'] = 'active'): Account => ({
