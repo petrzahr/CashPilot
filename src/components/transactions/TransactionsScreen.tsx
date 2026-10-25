@@ -1,48 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../../context/FinanceContext';
-import { MovementType, Transaction, TransactionStatus } from '../../types/finance';
+import { MovementType, Transaction } from '../../types/finance';
 import { formatCurrency } from '../../services/currencyService';
 import { formatCzechDate, getTodayInPrague } from '../../services/periodService';
-import { StatusBadgeMenu } from '../shared/StatusBadgeMenu';
 import {
   Plus,
   Search,
-  Copy,
-  Trash2,
-  Edit3,
   ArrowUp,
   ArrowDown,
   Download,
-  Eye,
-  SlidersHorizontal,
   AlertTriangle,
-  Repeat,
   X
 } from 'lucide-react';
-import { } from '../../services/sequenceService';
+import { sortTransactionsByDateAndSequence } from '../../services/sequenceService';
 import { getEffectiveTransactionsForPeriod } from '../../services/financialEngine';
-import { czechStringCompare } from '../../services/categoryService';
-import { getEffectiveAmountInHaler } from '../../services/accountScope';
 import { useItemFilters } from '../../hooks/useItemFilters';
-import { getCorrectionDiffInHaler, sumItemsInHaler } from '../../services/itemFilter';
-import { parseVirtualId } from '../../services/transactionCommands';
+import { useItemActions } from '../../hooks/useItemActions';
+import { STATUS_OPTIONS, TYPE_OPTIONS, sumItemsInHaler } from '../../services/itemFilter';
+import { buildItemRow } from '../../services/itemRow';
 import { DeleteTransactionModal } from './DeleteTransactionModal';
 import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
-
-const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
-  { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
-  { value: 'income' as MovementType, label: 'Příjem' },
-  { value: 'transfer' as MovementType, label: 'Převod' },
-  { value: 'expense' as MovementType, label: 'Výdaj' },
-].sort((a, b) => czechStringCompare(a.label, b.label));
-
-const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
-  { value: 'planned' as TransactionStatus, label: 'Plánovaná' },
-  { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
-  { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
-].sort((a, b) => czechStringCompare(a.label, b.label));
+import { buildItemRowParts } from '../shared/ItemRowParts';
 
 interface TransactionsScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
@@ -71,45 +51,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     showToast,
   } = useFinance();
 
-  // Stav mazání položky
-  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
-  const [isDeletingTx, setIsDeletingTx] = useState(false);
-  // Běžná položka se smaže hned (oznámení nabídne „Vrátit“), pravidelná potřebuje volbu rozsahu
-  const requestDelete = (tx: Transaction) => {
-    if (tx.recurringRuleId || tx.id.startsWith('virtual_')) setDeletingTx(tx);
-    else void deleteTransaction(tx.id);
-  };
-
-  // Stav vybrané korekce pro detail modal
-  const [selectedCorrection, setSelectedCorrection] = useState<Transaction | null>(null);
-  const openCorrection = (tx: Transaction) => setSelectedCorrection(tx);
-
-  // Stav probíhající změny stavu položky (Akce sloupec)
-  const [updatingStatusTxId, setUpdatingStatusTxId] = useState<string | null>(null);
+  // Smazání, změna stavu a detail korekce (sdílené s Měsíčním rozpočtem)
+  const itemActions = useItemActions({ transactions, deleteTransaction, deleteCorrection, setTransactionStatus, showToast });
 
   // Dnešní datum v pražském čase: minulé položky se nedají vrátit do plánu (uskuteční se samy)
   const todayIso = getTodayInPrague();
-
-  const handleStatusChange = async (txId: string, newStatus: TransactionStatus) => {
-    if (updatingStatusTxId) return;
-    setUpdatingStatusTxId(txId);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 60));
-      setTransactionStatus(txId, newStatus);
-    } catch (err) {
-      console.error(err);
-      showToast('Při změně stavu položky došlo k chybě.', 'error');
-    } finally {
-      setUpdatingStatusTxId(null);
-    }
-  };
-
-  const deletingTxHasExecutedHistorical = useMemo(() => {
-    if (!deletingTx) return false;
-    const ruleId = deletingTx.recurringRuleId ?? parseVirtualId(deletingTx.id)?.ruleId;
-    if (!ruleId) return false;
-    return transactions.some(t => t.recurringRuleId === ruleId && t.status === 'executed');
-  }, [deletingTx, transactions]);
 
   // Volba období: aktuální období, nebo všechny položky
   const [periodFilter, setPeriodFilter] = useState<'current' | 'all'>('current');
@@ -167,20 +113,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const { accounts: sortedAccounts, mainCategories: availableMainCategories, subCategories: availableSubCategories } = itemFilters.options;
 
   // Filtrované a seřazené položky (v aktuálním období jen s datem v jeho rozsahu)
-  const filteredTransactions = useMemo(() => {
-    return itemFilters.filtered
-      .filter(tx => periodFilter !== 'current' || (tx.date >= selectedPeriod.startDate && tx.date <= selectedPeriod.endDate))
-      .sort((a, b) => {
-        const cmp = a.date.localeCompare(b.date);
-        if (cmp !== 0) {
-          return dateSortOrder === 'asc' ? cmp : -cmp;
-        }
-        // V rámci stejného dne řadíme podle sequence
-        const seqA = a.sequence !== undefined ? a.sequence : 1;
-        const seqB = b.sequence !== undefined ? b.sequence : 1;
-        return dateSortOrder === 'asc' ? seqA - seqB : seqB - seqA;
-      });
-  }, [itemFilters.filtered, periodFilter, selectedPeriod, dateSortOrder]);
+  const filteredTransactions = useMemo(() => sortTransactionsByDateAndSequence(
+    itemFilters.filtered
+      .filter(tx => periodFilter !== 'current' || (tx.date >= selectedPeriod.startDate && tx.date <= selectedPeriod.endDate)),
+    dateSortOrder
+  ), [itemFilters.filtered, periodFilter, selectedPeriod, dateSortOrder]);
 
   // Na mobilu jsou filtry kromě hledání schované; počet zahrnuje i volbu „Všechna období“
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -197,189 +134,17 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const filteredTransactionsSum = useMemo(() => sumItemsInHaler(filteredTransactions), [filteredTransactions]);
 
   // Části řádku sdílí tabulka (od md) i řádky-karty na mobilu, aby se obě podoby nerozešly
-  const getRowParts = (tx: Transaction, rowIndex: number) => {
-    const sourceAcc = accounts.find(a => a.id === tx.sourceAccountId);
-    const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
-    const cat = categories.find(c => c.id === tx.categoryId);
-    const subCat = categories.find(c => c.id === tx.subcategoryId);
-
-    const effectiveAmount = getEffectiveAmountInHaler(tx);
-    const isCancelled = tx.status === 'cancelled';
-    const isCorrection = tx.type === 'balance_adjustment';
-
-    const diff = getCorrectionDiffInHaler(tx);
-
-    const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
-
-    const rowTone = isCancelled
-      ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500'
-      : isCorrection ? 'bg-slate-50' : conflict ? 'bg-red-50/30' : '';
-
-    const title = (
-      <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
-        {isCorrection ? (
-          <button
-            type="button"
-            onClick={() => openCorrection(tx)}
-            className="hover:text-sky-700 hover:underline text-left font-bold text-slate-900 flex items-center gap-1.5 min-w-0"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
-            <span className="truncate">{tx.title}</span>
-          </button>
-        ) : (
-          // Název položky je vždy odkaz na její úpravu, stejně jako v Rozpočtu
-          <button
-            type="button"
-            onClick={() => onEditTransaction(tx)}
-            className="hover:text-sky-700 hover:underline text-left truncate min-w-0"
-          >
-            {tx.title}
-          </button>
-        )}
-        {tx.recurringRuleId && (
-          <span title="Pravidelná položka" role="img" aria-label="Pravidelná položka" className="shrink-0 inline-flex">
-            <Repeat className="w-3.5 h-3.5 text-slate-500" />
-          </span>
-        )}
-        {isCorrection && (
-          <span className="chip bg-slate-100 text-slate-600 shrink-0">
-            Korekce
-          </span>
-        )}
-        {conflict && (
-          <span
-            className="chip bg-red-100 text-red-700 cursor-help shrink-0"
-            title={conflict.reason}
-          >
-            <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
-            Před aktivací
-          </span>
-        )}
-      </div>
-    );
-
-    const note = tx.note ? <span className="text-xs text-slate-500 block font-normal truncate">{tx.note}</span> : null;
-
-    const category = isCorrection ? (
-      <span className="chip bg-slate-100 text-slate-600">
-        Korekce zůstatku
-      </span>
-    ) : cat ? (
-      <div className="min-w-0" title={subCat ? `${cat.name} › ${subCat.name}` : cat.name}>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-          <span className="truncate">{cat.name}</span>
-        </div>
-        {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
-      </div>
-    ) : tx.type === 'transfer' ? (
-      <span className="text-slate-500 font-medium">Převod</span>
-    ) : (
-      <span className="text-slate-500 italic text-xs">Bez kategorie</span>
-    );
-
-    // Na mobilu stačí kategorie na jednom řádku; korekci už ohlašuje štítek u názvu
-    const categoryInline = isCorrection ? null : cat ? (
-      <span className="inline-flex items-center gap-1.5 min-w-0">
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-        <span className="truncate">{subCat ? `${cat.name} › ${subCat.name}` : cat.name}</span>
-      </span>
-    ) : tx.type === 'transfer' ? (
-      <span className="font-medium">Převod</span>
-    ) : (
-      <span className="italic">Bez kategorie</span>
-    );
-
-    const account = sourceAcc ? (
-      <span className="block min-w-0" title={targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name}>
-        <span className="block truncate">{sourceAcc.name}</span>
-        {targetAcc && <span className="block text-slate-500 truncate">→ {targetAcc.name}</span>}
-      </span>
-    ) : '—';
-
-    const accountInline = sourceAcc ? (targetAcc ? `${sourceAcc.name} → ${targetAcc.name}` : sourceAcc.name) : null;
-
-    // Stejný štítek stavu jako v rozpočtu; korekce má vlastní štítek
-    const status = isCorrection ? (
-      <span className="chip bg-slate-100 text-slate-600">
-        Korekce
-      </span>
-    ) : (
-      <StatusBadgeMenu
-        tx={tx}
-        todayIso={todayIso}
-        isUpdating={updatingStatusTxId === tx.id}
-        onChange={(status) => handleStatusChange(tx.id, status)}
-        openUp={rowIndex >= filteredTransactions.length - 3 && filteredTransactions.length > 3}
-      />
-    );
-
-    const amountClass = isCorrection
-      ? (diff >= 0 ? 'text-emerald-600' : 'text-red-600')
-      : tx.type === 'income'
-        ? 'text-emerald-600'
-        : tx.type === 'expense'
-          ? 'text-red-600'
-          : 'text-slate-900';
-
-    const amount = isCorrection
-      ? formatCurrency(diff, { showPlus: true })
-      : `${tx.type === 'income' ? '+' : tx.type === 'expense' ? '−' : ''}${formatCurrency(effectiveAmount)}`;
-
-    const actions = isCorrection ? (
-      <>
-        <button
-          type="button"
-          onClick={() => openCorrection(tx)}
-          title="Detail a poznámka korekce"
-          aria-label={`Detail a poznámka korekce: ${tx.title}`}
-          className="btn-icon"
-        >
-          <Eye className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => void deleteCorrection(tx.id)}
-          title="Smazat korekci"
-          aria-label={`Smazat korekci: ${tx.title}`}
-          className="btn-icon btn-icon-danger"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </>
-    ) : (
-      <>
-        {/* Stav se mění jen štítkem stavu, řádek nese úpravu, duplikaci a smazání */}
-        <button
-          onClick={() => onEditTransaction(tx)}
-          title="Upravit položku"
-          aria-label={`Upravit položku: ${tx.title}`}
-          className="btn-icon"
-        >
-          <Edit3 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onDuplicateTransaction(tx)}
-          title="Duplikovat položku"
-          aria-label={`Duplikovat položku: ${tx.title}`}
-          className="btn-icon"
-        >
-          <Copy className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => requestDelete(tx)}
-          disabled={isDeletingTx}
-          title="Smazat položku"
-          aria-label={`Smazat položku: ${tx.title}`}
-          className="btn-icon btn-icon-danger"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </>
-    );
-
-    return { rowTone, title, note, category, categoryInline, account, accountInline, status, amountClass, amount, actions };
-  };
+  const getRowParts = (tx: Transaction, rowIndex: number) => buildItemRowParts(
+    tx,
+    buildItemRow(tx, { accounts, categories, conflicts: dataConflicts }),
+    {
+      actions: itemActions,
+      todayIso,
+      openStatusUp: rowIndex >= filteredTransactions.length - 3 && filteredTransactions.length > 3,
+      onEdit: onEditTransaction,
+      onDuplicate: onDuplicateTransaction,
+    }
+  );
 
   return (
     <div className="space-y-6">
@@ -683,29 +448,19 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
       {/* Potvrzovací modální okno pro smazání položky */}
       <DeleteTransactionModal
-        isOpen={Boolean(deletingTx)}
-        onClose={() => {
-          if (!isDeletingTx) setDeletingTx(null);
-        }}
-        transaction={deletingTx}
-        isDeleting={isDeletingTx}
-        hasExecutedHistorical={deletingTxHasExecutedHistorical}
-        onConfirm={async (tx, mode, deleteHistorical) => {
-          setIsDeletingTx(true);
-          try {
-            const ok = await deleteTransaction(tx.id, mode, deleteHistorical);
-            return ok;
-          } finally {
-            setIsDeletingTx(false);
-          }
-        }}
+        isOpen={Boolean(itemActions.deletingTx)}
+        onClose={itemActions.closeDelete}
+        transaction={itemActions.deletingTx}
+        isDeleting={itemActions.isDeletingTx}
+        hasExecutedHistorical={itemActions.deletingTxHasExecutedHistorical}
+        onConfirm={itemActions.confirmDelete}
       />
 
       {/* Detail korekce pro zobrazení a editaci poznámky */}
       <CorrectionDetailModal
-        isOpen={Boolean(selectedCorrection)}
-        onClose={() => setSelectedCorrection(null)}
-        correctionItem={selectedCorrection}      />
+        isOpen={Boolean(itemActions.selectedCorrection)}
+        onClose={itemActions.closeCorrection}
+        correctionItem={itemActions.selectedCorrection}      />
     </div>
   );
 };

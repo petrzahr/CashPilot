@@ -5,8 +5,8 @@ import { Account, Transaction, MarketValueSnapshot, InvestmentFee } from '../../
 import { formatCurrency, subHaler } from '../../services/currencyService';
 import { createBudgetPeriod, formatCzechDate } from '../../services/periodService';
 import { getAccountFees, getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
-import { getEffectiveAmountInHaler } from '../../services/accountScope';
-import { getCorrectionDiffInHaler } from '../../services/itemFilter';
+import { formatItemAmount, getItemRowAmount } from '../../services/itemRow';
+import { amountToneClass } from '../shared/ItemRowParts';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
@@ -242,31 +242,21 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                 const isIncomingTransfer = tx.type === 'transfer' && tx.targetAccountId === account.id;
                 const isOutgoingTransfer = tx.type === 'transfer' && tx.sourceAccountId === account.id;
 
-                let amountDisplay = '';
-                let amountClass = '';
-                let typeBadge = '';
-                const effectiveAmount = getEffectiveAmountInHaler(tx);
+                // Znaménko a barva částky ze sdíleného modelu řádku, převod z pohledu tohoto účtu
+                const rowAmount = getItemRowAmount(tx, account.id);
+                const amountDisplay = formatItemAmount(rowAmount);
+                const amountClass = amountToneClass(rowAmount.tone);
 
+                let typeBadge = '';
                 if (isCorrection) {
-                  const diff = getCorrectionDiffInHaler(tx);
-                  amountDisplay = formatCurrency(diff, { showPlus: true });
-                  amountClass = diff >= 0 ? 'text-emerald-600' : 'text-red-600';
                   typeBadge = 'Korekce zůstatku';
                 } else if (tx.type === 'income') {
-                  amountDisplay = `+${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-emerald-600';
                   typeBadge = 'Příjem';
                 } else if (tx.type === 'expense') {
-                  amountDisplay = `−${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-red-600';
                   typeBadge = 'Výdaj';
                 } else if (isIncomingTransfer) {
-                  amountDisplay = `+${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-slate-900';
                   typeBadge = isAssetAccount ? 'Vklad do portfolia' : 'Příchozí převod';
                 } else if (isOutgoingTransfer) {
-                  amountDisplay = `−${formatCurrency(effectiveAmount)}`;
-                  amountClass = 'text-slate-900';
                   typeBadge = isAssetAccount ? 'Výběr z portfolia' : 'Odchozí převod';
                 }
 

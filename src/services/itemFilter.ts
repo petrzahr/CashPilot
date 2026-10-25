@@ -1,7 +1,22 @@
-import { Account, Category, Transaction } from '../types/finance';
+import { Account, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
 import { getEffectiveAmountInHaler } from './accountScope';
 import { czechStringCompare } from './categoryService';
 import { addHaler } from './currencyService';
+
+/** Nabídka filtru Typ seřazená A–Z. */
+export const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
+  { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
+  { value: 'income' as MovementType, label: 'Příjem' },
+  { value: 'transfer' as MovementType, label: 'Převod' },
+  { value: 'expense' as MovementType, label: 'Výdaj' },
+].sort((a, b) => czechStringCompare(a.label, b.label));
+
+/** Nabídka filtru Stav seřazená A–Z. */
+export const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
+  { value: 'planned' as TransactionStatus, label: 'Plánovaná' },
+  { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
+  { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
+].sort((a, b) => czechStringCompare(a.label, b.label));
 
 /**
  * Filtrování seznamu položek (Měsíční rozpočet, Všechny položky). Prázdný výběr = bez omezení;

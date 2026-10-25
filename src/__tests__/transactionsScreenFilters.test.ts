@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { Account, BudgetPeriod, Category, MovementType, Transaction, TransactionStatus } from '../types/finance';
+import { Account, BudgetPeriod, Category, Transaction } from '../types/finance';
 import { czechStringCompare } from '../services/categoryService';
-import { EMPTY_ITEM_FILTERS, filterItems, getFilterOptions } from '../services/itemFilter';
+import { EMPTY_ITEM_FILTERS, STATUS_OPTIONS, TYPE_OPTIONS, filterItems, getFilterOptions } from '../services/itemFilter';
 import { createBudgetPeriod } from '../services/periodService';
 
 describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
@@ -216,13 +216,6 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
   });
 
   it('6. Movement types and statuses dropdown options: sorted alphabetically A–Z', () => {
-    const TYPE_OPTIONS: { value: MovementType; label: string }[] = [
-      { value: 'balance_adjustment' as MovementType, label: 'Korekce zůstatku' },
-      { value: 'income' as MovementType, label: 'Příjem' },
-      { value: 'transfer' as MovementType, label: 'Převod' },
-      { value: 'expense' as MovementType, label: 'Výdaj' },
-    ].sort((a, b) => czechStringCompare(a.label, b.label));
-
     // Korekce zůstatku, Převod, Příjem, Výdaj
     expect(TYPE_OPTIONS.map(t => t.label)).toEqual([
       'Korekce zůstatku',
@@ -230,12 +223,6 @@ describe('TransactionsScreen Filters & Alphabetical Sorting', () => {
       'Příjem',
       'Výdaj'
     ]);
-
-    const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
-      { value: 'planned' as TransactionStatus, label: 'Plánovaná' },
-      { value: 'executed' as TransactionStatus, label: 'Uskutečněná' },
-      { value: 'cancelled' as TransactionStatus, label: 'Zrušená' },
-    ].sort((a, b) => czechStringCompare(a.label, b.label));
 
     // Plánovaná, Uskutečněná, Zrušená
     expect(STATUS_OPTIONS.map(s => s.label)).toEqual([
