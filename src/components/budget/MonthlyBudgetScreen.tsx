@@ -884,10 +884,10 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
                                   ? 'bg-slate-50 border-transparent'
-                                  : conflict && !isCancelled
-                                    ? 'bg-red-50/30 border-transparent hover:bg-slate-50'
                                   : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-transparent hover:bg-red-50'
+                                  : conflict && !isCancelled
+                                    ? 'bg-red-50/30 border-transparent hover:bg-slate-50'
                                     : `${isCancelled ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'} border-transparent`
                             } ${isCancelled ? 'line-through decoration-slate-400 text-slate-500' : ''}`}
                           >
