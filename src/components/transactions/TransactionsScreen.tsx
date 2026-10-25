@@ -273,7 +273,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         {subCat && <span className="block pl-3.5 text-slate-500 truncate">› {subCat.name}</span>}
       </div>
     ) : tx.type === 'transfer' ? (
-      <span className="text-sky-600 font-medium">Převod</span>
+      <span className="text-slate-500 font-medium">Převod</span>
     ) : (
       <span className="text-slate-500 italic text-xs">Bez kategorie</span>
     );
@@ -285,7 +285,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <span className="truncate">{subCat ? `${cat.name} › ${subCat.name}` : cat.name}</span>
       </span>
     ) : tx.type === 'transfer' ? (
-      <span className="text-sky-600 font-medium">Převod</span>
+      <span className="font-medium">Převod</span>
     ) : (
       <span className="italic">Bez kategorie</span>
     );

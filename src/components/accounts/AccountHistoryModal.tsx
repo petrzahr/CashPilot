@@ -6,6 +6,7 @@ import { formatCurrency, subHaler } from '../../services/currencyService';
 import { createBudgetPeriod, formatCzechDate } from '../../services/periodService';
 import { getAccountFees, getFeesUpToDate, getInvestedAmountAtValuation } from '../../services/investmentPerformanceService';
 import { getEffectiveAmountInHaler } from '../../services/accountScope';
+import { getCorrectionDiffInHaler } from '../../services/itemFilter';
 import { CorrectionDetailModal } from './CorrectionDetailModal';
 import { MarketValueModal } from './MarketValueModal';
 import { InvestmentFeeModal } from './InvestmentFeeModal';
@@ -247,7 +248,7 @@ export const AccountHistoryModal: React.FC<AccountHistoryModalProps> = ({
                 const effectiveAmount = getEffectiveAmountInHaler(tx);
 
                 if (isCorrection) {
-                  const diff = tx.diffInHaler ?? 0;
+                  const diff = getCorrectionDiffInHaler(tx);
                   amountDisplay = formatCurrency(diff, { showPlus: true });
                   amountClass = diff >= 0 ? 'text-emerald-600' : 'text-red-600';
                   typeBadge = 'Korekce zůstatku';

@@ -101,6 +101,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     deleteCorrection,
     reorderDayTransactions,
     reorderRecurringItem,
+    dataConflicts,
     showToast,
   } = useFinance();
 
@@ -409,7 +410,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
     const diff = getCorrectionDiffInHaler(tx);
 
-    const rowTone = isCancelled ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500' : isCorrection ? 'bg-slate-50' : '';
+    const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
+
+    const rowTone = isCancelled
+      ? 'line-through decoration-slate-400 bg-slate-50 text-slate-500'
+      : isCorrection ? 'bg-slate-50' : conflict ? 'bg-red-50/30' : '';
 
     const title = (
       <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
@@ -439,6 +444,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
         {isCorrection && (
           <span className="chip bg-slate-100 text-slate-600 shrink-0">
             Korekce
+          </span>
+        )}
+        {conflict && (
+          <span
+            className="chip bg-red-100 text-red-700 cursor-help shrink-0"
+            title={conflict.reason}
+          >
+            <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
+            Před aktivací
           </span>
         )}
       </div>
@@ -1096,6 +1110,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
 
                         const diff = getCorrectionDiffInHaler(tx);
 
+                        const conflict = dataConflicts?.find(c => c.transaction.id === tx.id);
+
                         const balanceAfterInHaler = sourceAccountBalanceByTxId.get(tx.id) ?? runningBalanceInHaler;
 
                         return (
@@ -1110,6 +1126,8 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                 ? 'opacity-40 bg-sky-50 border-dashed border-sky-400'
                                 : isCorrection
                                   ? 'bg-slate-50 border-transparent'
+                                  : conflict && !isCancelled
+                                    ? 'bg-red-50/30 border-transparent hover:bg-slate-50'
                                   : balanceAfterInHaler < 0 && !isCancelled
                                     ? 'bg-red-50/60 border-transparent hover:bg-red-50'
                                     : `${isCancelled ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'} border-transparent`
@@ -1173,6 +1191,15 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                   ) : (
                                     renderStatusBadge(tx)
                                   )}
+                                  {conflict && (
+                                    <span
+                                      className="chip bg-red-100 text-red-700 cursor-help shrink-0"
+                                      title={conflict.reason}
+                                    >
+                                      <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
+                                      Před aktivací
+                                    </span>
+                                  )}
                                 </div>
 
                                 <div className="text-xs text-slate-500 flex flex-wrap items-center gap-x-2 mt-0.5">
@@ -1180,9 +1207,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                                     <span className="text-slate-500 font-medium text-xs">Korekce zůstatku</span>
                                   ) : cat ? (
                                     <span>{cat.name} {subCat && `› ${subCat.name}`}</span>
-                                  ) : tx.type !== 'transfer' ? (
+                                  ) : tx.type === 'transfer' ? (
+                                    <span className="font-medium">Převod</span>
+                                  ) : (
                                     <span className="italic">Bez kategorie</span>
-                                  ) : null}
+                                  )}
                                   {sourceAcc && <span>• {sourceAcc.name} {targetAcc && `→ ${targetAcc.name}`}</span>}
                                 </div>
                               </div>
