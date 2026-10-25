@@ -4,7 +4,8 @@ import type { CommandContext, CommandResult } from './transactionCommands';
 import { getAccountBalanceAtDate } from './accountBalance';
 import { subHaler } from './currencyService';
 import { getAccountFees } from './investmentPerformanceService';
-import { mutateMarketValueHistory, reconcileMarketValueHistory } from './marketValueHistoryService';
+import { applyAccountOrder } from './accountService';
+import { mutateMarketValueHistory, reconcileMarketValueHistory, type MarketValueEdit } from './marketValueHistoryService';
 import { formatCzechDate } from './periodService';
 import { getNextSequenceForDate, insertOrUpdateWithSequence } from './sequenceService';
 
@@ -226,6 +227,11 @@ export function restoreDeletedAccount(data: AppData, removed: RemovedAccount, ct
   };
 }
 
+/** Uloží uživatelské pořadí účtů (účty mimo seznam zůstanou za ním). */
+export function reorderAccounts(data: AppData, orderedIds: string[]): CommandResult<null> {
+  return { data: { ...data, accounts: applyAccountOrder(orderedIds, data.accounts) }, outcome: null };
+}
+
 // ------------------- Korekce zůstatku -------------------
 
 export type ReconcileOutcome =
@@ -395,6 +401,11 @@ export function addMarketValue(
     }),
     outcome: { kind: 'saved', accountType: account.type },
   };
+}
+
+/** Upraví ocenění a z historie znovu sestaví aktuální tržní hodnotu účtu; neplatná úprava nic nezmění. */
+export function editMarketValue(data: AppData, input: { id: string; edit: MarketValueEdit }): CommandResult<null> {
+  return { data: mutateMarketValueHistory(data, input.id, input.edit), outcome: null };
 }
 
 /** Smaže ocenění; outcome nese smazaný záznam pro „Vrátit“. */

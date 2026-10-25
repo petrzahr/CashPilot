@@ -23,21 +23,15 @@ import {
   exportTransactionsCSV,
   isDemoModeEnabled,
   createOperationRecoveryBackup,
-  repairRecurringRuleSplitOverlaps,
 } from '../services/storageService';
-import {
-  DEFAULT_CATEGORIES,
-  DEFAULT_SETTINGS,
-  createResetAppData,
-} from '../constants/defaultData';
 import {
   calculateQuickFinancialOverview,
   QuickFinancialOverview,
 } from '../services/financialEngine';
 import { getTodayInPrague, formatCzechDate } from '../services/periodService';
 import type { DualPeriodRange } from '../services/periodRange';
-import { applyAccountOrder, sortAccountsByOrder } from '../services/accountService';
-import { mutateMarketValueHistory, MarketValueEdit } from '../services/marketValueHistoryService';
+import { sortAccountsByOrder } from '../services/accountService';
+import type { MarketValueEdit } from '../services/marketValueHistoryService';
 import { formatCurrency } from '../services/currencyService';
 import type { GoogleUser } from '../services/googleDriveService';
 
@@ -68,7 +62,9 @@ import {
   deleteInvestmentFee as deleteInvestmentFeeCommand,
   deleteMarketValue as deleteMarketValueCommand,
   deleteStandaloneCorrection as deleteStandaloneCorrectionCommand,
+  editMarketValue as editMarketValueCommand,
   reconcileBalance as reconcileBalanceCommand,
+  reorderAccounts as reorderAccountsCommand,
   restoreAccount as restoreAccountCommand,
   restoreCorrection as restoreCorrectionCommand,
   restoreDeletedAccount as restoreDeletedAccountCommand,
@@ -90,7 +86,16 @@ import {
   undoArchiveCategory as undoArchiveCategoryCommand,
   updateCategory as updateCategoryCommand,
 } from '../services/categoryCommands';
-import { importBackup as importBackupCommand } from '../services/dataCommands';
+import {
+  clearAllAccounts as clearAllAccountsCommand,
+  clearAllCategories as clearAllCategoriesCommand,
+  clearAllTransactions as clearAllTransactionsCommand,
+  importBackup as importBackupCommand,
+  repairRecurringRules as repairRecurringRulesCommand,
+  replaceWithDemoData as replaceWithDemoDataCommand,
+  resetAllData as resetAllDataCommand,
+  updateSettings as updateSettingsCommand,
+} from '../services/dataCommands';
 import { useDriveSession } from '../hooks/useDriveSession';
 import { usePeriodForecast } from '../hooks/usePeriodForecast';
 
@@ -317,33 +322,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     showToast,
   });
   const sessionChange = session.change;
-  /** Tichý zápis (automatické provedení, oprava dat); vrací false, pokud se neuložil. */
-  const setData = useCallback((action: React.SetStateAction<AppData>): boolean => {
-    return sessionChange(action);
-  }, [sessionChange]);
 
   // Zápis, o který požádal uživatel: když se neuloží (data se ještě načítají), řekne to.
   const notifyNotSaved = useCallback(() => {
     showToast(NOT_SAVED_MESSAGE, 'error');
   }, [showToast]);
-  const saveData = useCallback((action: React.SetStateAction<AppData>, reset?: boolean): boolean => {
-    const saved = sessionChange(action, reset);
-    if (!saved) notifyNotSaved();
-    return saved;
-  }, [sessionChange, notifyNotSaved]);
 
   // Spustí čistý příkaz nad aktuálními daty a vrátí jeho výsledek. SyncController volá
   // updater synchronně. Když se změna neuloží, vrací undefined a (mimo tichý režim) to oznámí.
   const runCommand = useCallback(<O,>(
     command: (prev: AppData) => CommandResult<O>,
-    options: { silent?: boolean } = {}
+    options: { silent?: boolean; reset?: boolean } = {}
   ): O | undefined => {
     let outcome: O | undefined;
     const saved = sessionChange(prev => {
       const result = command(prev);
       outcome = result.outcome;
       return result.data;
-    });
+    }, options.reset);
     if (!saved) {
       if (!options.silent) notifyNotSaved();
       return undefined;
@@ -374,12 +370,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ale při doručení reálných dat vždy vymění, takže na ni bezpečně navazujeme.
   useEffect(() => {
     if (loadState !== 'ready') return;
-    setData(prev => {
-      const { rules, fixedCount } = repairRecurringRuleSplitOverlaps(prev.recurringRules);
-      if (fixedCount === 0) return prev;
-      console.info(`[CashPilot] Opraveno ${fixedCount} pravidel s překryvem endDate/startDate po rozštěpení série.`);
-      return { ...prev, recurringRules: rules };
-    });
+    const outcome = runCommand(repairRecurringRulesCommand, { silent: true });
+    if (outcome && outcome.fixedCount > 0) {
+      console.info(`[CashPilot] Opraveno ${outcome.fixedCount} pravidel s překryvem endDate/startDate po rozštěpení série.`);
+    }
   }, [loadState, data.recurringRules]);
 
   // 2. Návrat aplikace z neaktivního stavu (visibilitychange, focus)
@@ -664,11 +658,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [runCommand, showToast]);
 
   const reorderAccounts = useCallback((orderedIds: string[]) => {
-    saveData(prev => ({
-      ...prev,
-      accounts: applyAccountOrder(orderedIds, prev.accounts)
-    }));
-  }, [saveData]);
+    runCommand(prev => reorderAccountsCommand(prev, orderedIds));
+  }, [runCommand]);
 
   const reconcileBalance = useCallback((
     accountId: string,
@@ -713,9 +704,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   }, [runCommand, showToast]);
 
   const editMarketValue = useCallback((id: string, edit: MarketValueEdit) => {
-    if (!saveData(prev => mutateMarketValueHistory(prev, id, edit))) return;
+    if (runCommand(prev => editMarketValueCommand(prev, { id, edit })) === undefined) return;
     showToast(`Tržní hodnota z ${formatCzechDate(edit.date)} byla upravena.`);
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const deleteMarketValue = useCallback((id: string) => {
     const outcome = runCommand(prev => deleteMarketValueCommand(prev, id));
@@ -865,13 +856,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
   // ------------------- NASTAVENÍ A DATA -------------------
 
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
-    const saved = saveData(prev => ({
-      ...prev,
-      settings: { ...prev.settings, ...newSettings }
-    }));
-    if (!saved) return;
+    if (runCommand(prev => updateSettingsCommand(prev, newSettings)) === undefined) return;
     showToast('Nastavení bylo uloženo.');
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const loadDemoData = useCallback(async () => {
     if (!isDemoModeEnabled()) {
@@ -879,23 +866,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
       return;
     }
     const { DEMO_ACCOUNTS, DEMO_RECURRING_RULES, DEMO_TRANSACTIONS } = await import('../fixtures/demoData');
-    const saved = saveData({
-      version: 2,
-      deletions: [],
-      sync: { revision: 0, updatedAt: '', updatedByDeviceId: '' },
-      settings: { ...DEFAULT_SETTINGS },
-      accounts: [...DEMO_ACCOUNTS],
-      categories: [...DEFAULT_CATEGORIES],
-      transactions: [...DEMO_TRANSACTIONS],
-      recurringRules: [...DEMO_RECURRING_RULES],
-      recurringExceptions: [],
-      corrections: [],
-      marketValueSnapshots: [],
-      investmentFees: [],
-    });
-    if (!saved) return;
+    const demo = { accounts: DEMO_ACCOUNTS, recurringRules: DEMO_RECURRING_RULES, transactions: DEMO_TRANSACTIONS };
+    if (runCommand(prev => replaceWithDemoDataCommand(prev, demo)) === undefined) return;
     showToast('Ukázková data byla načtena.');
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const clearAllTransactions = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -906,19 +880,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     // 2. Odstranit všechny finanční položky, pravidla opakovaných plateb, výjimky a korekce
-    const updated: AppData = {
-      ...latestDataRef.current,
-      transactions: [],
-      recurringRules: [],
-      recurringExceptions: [],
-      corrections: [],
-    };
-
-    if (!saveData(updated)) return false;
+    if (runCommand(clearAllTransactionsCommand) === undefined) return false;
 
     showToast('Všechny položky, pravidelné položky a korekce byly smazány.');
     return true;
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const clearAllAccounts = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -929,25 +895,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     // 2. Odstranit všechny účty a všechna závislá finanční data
-    const updated: AppData = {
-      ...latestDataRef.current,
-      accounts: [],
-      transactions: [],
-      recurringRules: [],
-      recurringExceptions: [],
-      corrections: [],
-      marketValueSnapshots: [],
-      investmentFees: [],
-      settings: {
-        ...latestDataRef.current.settings,
-      },
-    };
-
-    if (!saveData(updated)) return false;
+    if (runCommand(clearAllAccountsCommand) === undefined) return false;
 
     showToast('Všechny účty a data k nim byly smazány.');
     return true;
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const clearAllCategories = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -958,37 +910,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     // 2. Odstranit všechny kategorie a u všech zachovaných položek a pravidel odpojit kategorie (nastavit na null)
-    const updatedTxs = latestDataRef.current.transactions.map(t => ({
-      ...t,
-      categoryId: null,
-      subcategoryId: null,
-    }));
-
-    const updatedRules = latestDataRef.current.recurringRules.map(r => ({
-      ...r,
-      categoryId: null,
-      subcategoryId: null,
-    }));
-
-    const updatedExceptions = latestDataRef.current.recurringExceptions.map(e => ({
-      ...e,
-      overrideCategoryId: null,
-      overrideSubcategoryId: null,
-    }));
-
-    const updated: AppData = {
-      ...latestDataRef.current,
-      categories: [],
-      transactions: updatedTxs,
-      recurringRules: updatedRules,
-      recurringExceptions: updatedExceptions,
-    };
-
-    if (!saveData(updated)) return false;
+    if (runCommand(clearAllCategoriesCommand) === undefined) return false;
 
     showToast('Všechny kategorie byly smazány. Položky zůstaly bez kategorie.');
     return true;
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   const resetAllData = useCallback((): boolean => {
     // 1. Vytvořit interní recovery zálohu
@@ -999,12 +925,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode; syncSession?
     }
 
     // 2. Kompletní čistý reset: 0 účtů, 0 transakcí, 0 pravidel, 0 korekcí, 0 tržních hodnot, 0 kategorií
-    const fresh = createResetAppData();
-    if (!saveData(fresh, true)) return false;
+    if (runCommand(resetAllDataCommand, { reset: true }) === undefined) return false;
 
     showToast('Všechna data byla smazána. Aplikace začíná od nuly.');
     return true;
-  }, [saveData, showToast]);
+  }, [runCommand, showToast]);
 
   // Obnova z obrazovky chyby načtení: poškozená je jen lokální obálka, data na Google Disku
   // se nikdy neresetují. Relace se načte z Disku a výsledek přijde přes onData.

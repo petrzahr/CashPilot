@@ -9,7 +9,9 @@ import {
   deleteInvestmentFee,
   deleteMarketValue,
   deleteStandaloneCorrection,
+  editMarketValue,
   reconcileBalance,
+  reorderAccounts,
   restoreAccount,
   restoreCorrection,
   restoreDeletedAccount,
@@ -194,6 +196,26 @@ describe('tržní hodnoty', () => {
     const restored = restoreMarketValue(deleted, outcome.deleted!, ctx).data;
     expect(restored.marketValueSnapshots.map(s => s.id)).toEqual([id]);
     expect(restoreMarketValue(restored, outcome.deleted!, ctx).data).toBe(restored);
+  });
+
+  it('úprava ocenění přepočítá aktuální hodnotu účtu, neplatná úprava nic nezmění', () => {
+    const saved = addMarketValue(dataWith({}), { accountId: 'inv', marketValueInHaler: 9000 }, ctx).data;
+    const id = saved.marketValueSnapshots[0].id;
+    const edited = editMarketValue(saved, { id, edit: { date: '2026-09-20', marketValueInHaler: 9500, note: 'opraveno' } }).data;
+    expect(edited.marketValueSnapshots[0]).toMatchObject({ marketValueInHaler: 9500, note: 'opraveno' });
+    expect(edited.accounts[1]).toMatchObject({ currentMarketValueInHaler: 9500 });
+
+    expect(editMarketValue(saved, { id, edit: { date: '2025-12-31', marketValueInHaler: 1 } }).data).toBe(saved);
+    expect(editMarketValue(saved, { id: 'missing', edit: { date: '2026-09-20', marketValueInHaler: 1 } }).data).toBe(saved);
+  });
+});
+
+describe('pořadí účtů', () => {
+  it('uloží zadané pořadí a účty mimo seznam zařadí za něj', () => {
+    const third = acc({ id: 'sav', name: 'Spoření', sortOrder: 3 });
+    const { data } = reorderAccounts(dataWith({ accounts: [checking, investment, third] }), ['sav', 'chk']);
+    const order = [...data.accounts].sort((a, b) => a.sortOrder - b.sortOrder).map(a => a.id);
+    expect(order).toEqual(['sav', 'chk', 'inv']);
   });
 });
 
