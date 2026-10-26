@@ -16,6 +16,7 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
         periodLabel: d.periodLabel,
         periodShortLabel: d.periodShortLabel,
         totalInHaler: d.totalNetWorthInHaler,
+        hasPlanned: d.hasPlanned,
         segments: d.segments.map((s) => ({
           key: s.key,
           label: s.label,

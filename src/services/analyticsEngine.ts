@@ -22,6 +22,7 @@ import { sortAccountsByOrder } from './accountService';
 import { getDefaultAccount, getEffectiveAmountInHaler } from './accountScope';
 import { getAccountBalanceAtDate } from './accountBalance';
 import { isRemainingPlanned } from './financialEngine';
+import { getAccountPlannedFlows } from './overviewRows';
 
 export interface BudgetPeriodInfo {
   period: BudgetPeriod;
@@ -83,6 +84,8 @@ export interface PortfolioCompositionPoint {
   dateRangeStr: string;
   totalNetWorthInHaler: number;
   isCurrentMonth: boolean;
+  /** Konečné stavy zahrnují plánované položky některého z účtů */
+  hasPlanned: boolean;
   segments: PortfolioCompositionSegment[];
 }
 
@@ -378,8 +381,12 @@ export function calculatePortfolioComposition(
 
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
-    const projected =
-      forecast && p.endDate >= todayStr ? forecast.getPeriod(p.key)?.projected : undefined;
+    const view = forecast && p.endDate >= todayStr ? forecast.getPeriod(p.key) : undefined;
+    const projected = view?.projected;
+    const hasPlanned = !!view && eligibleAccounts.some((acc) => {
+      const planned = getAccountPlannedFlows(view.items, acc, todayStr);
+      return planned.incomeInHaler !== 0 || planned.expenseInHaler !== 0 || planned.netTransfersInHaler !== 0;
+    });
 
     const rawSegments = eligibleAccounts.map((acc) => {
       const balanceInHaler =
@@ -407,6 +414,7 @@ export function calculatePortfolioComposition(
       dateRangeStr: p.dateRangeStr,
       totalNetWorthInHaler,
       isCurrentMonth: p.isCurrentPeriod,
+      hasPlanned,
       segments,
     };
   });

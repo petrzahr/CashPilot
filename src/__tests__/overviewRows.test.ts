@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getAccountRow, getScopeRow, OverviewAccountRow } from '../services/overviewRows';
+import {
+  getAccountPlannedFlows, getAccountRow, getAccountSplit, getScopeRow, getScopeSplit, OverviewAccountRow,
+} from '../services/overviewRows';
 import { summarizePeriods } from '../services/financialEngine';
 import { createBudgetPeriod, generatePeriodsSequence } from '../services/periodService';
 import { Account, AccountPeriodBalance, Transaction } from '../types/finance';
@@ -127,5 +129,61 @@ describe.each(['investment', 'pension'] as const)('getAccountRow on a projected 
       openingInHaler: 1000000, incomingInHaler: 100000, outgoingInHaler: 0, netTransfersInHaler: 0, netChangeInHaler: 100000, closingInHaler: 1100000,
     });
     expect(summary.closingBalanceInHaler).toBe(closing * 100 + 1100000);
+  });
+});
+
+describe('executed and planned split', () => {
+  const period = createBudgetPeriod(2026, 9, 15); // 2026-09-15 .. 2026-10-14
+  const today = '2026-09-20';
+  const cash = account('cash');
+  const savings = account('savings', { type: 'savings', isUsableCash: false, initialBalanceInHaler: 0 });
+  const accounts = [cash, savings];
+  const transactions = [
+    tx('salary', 'income', 50000, { status: 'executed', date: '2026-09-16' }),
+    tx('bonus', 'income', 30000, { date: '2026-10-01' }),
+    // Provedená s budoucím datem se ještě neuskutečnila
+    tx('rent', 'expense', 20000, { status: 'executed', date: '2026-09-25' }),
+    tx('cancelled', 'expense', 5000, { status: 'cancelled' }),
+    tx('saving', 'transfer', 8000, { targetAccountId: 'savings', date: '2026-10-01' }),
+    tx('withdrawal', 'transfer', 3000, { sourceAccountId: 'savings', targetAccountId: 'cash', status: 'executed', date: '2026-09-18' }),
+  ];
+  const view = (onDay = today) =>
+    summarizePeriods([period], { accounts, transactions }, { today: onDay, currentPeriodKey: period.key }).getPeriod(period.key)!;
+
+  it('plans remaining items only, from the account activation on', () => {
+    expect(getAccountPlannedFlows(transactions, cash, today)).toEqual({ incomeInHaler: 30000, expenseInHaler: 20000, netTransfersInHaler: -8000 });
+    const late = account('late', { initialBalanceDate: '2026-10-05' });
+    const lateItems = [
+      tx('early', 'income', 100, { sourceAccountId: 'late', date: '2026-10-01' }),
+      tx('ontime', 'income', 200, { sourceAccountId: 'late', date: '2026-10-10' }),
+      tx('topup', 'transfer', 40, { targetAccountId: 'late', date: '2026-10-10' }),
+    ];
+    expect(getAccountPlannedFlows(lateItems, late, today)).toEqual({ incomeInHaler: 200, expenseInHaler: 0, netTransfersInHaler: 40 });
+  });
+
+  it('splits the usable row into executed flows and today\'s balance', () => {
+    expect(getScopeSplit(view(), accounts, 'usable', today)).toEqual({
+      hasPlanned: true,
+      executed: { incomingInHaler: 50000, outgoingInHaler: 0, netTransfersInHaler: 3000, netChangeInHaler: 53000, nowInHaler: 1053000 },
+    });
+  });
+
+  it('nets transfers inside the all scope and keeps them out of its net change', () => {
+    expect(getScopeSplit(view(), accounts, 'all', today)).toEqual({
+      hasPlanned: true,
+      executed: { incomingInHaler: 50000, outgoingInHaler: 0, netTransfersInHaler: 0, netChangeInHaler: 50000, nowInHaler: 1050000 },
+    });
+  });
+
+  it('splits one account row', () => {
+    expect(getAccountSplit(view(), savings, today)).toEqual({
+      hasPlanned: true,
+      executed: { incomingInHaler: 0, outgoingInHaler: 0, netTransfersInHaler: -3000, netChangeInHaler: -3000, nowInHaler: -3000 },
+    });
+  });
+
+  it('has no executed part outside the period that contains today', () => {
+    expect(getScopeSplit(view('2026-09-10'), accounts, 'all', '2026-09-10')).toEqual({ hasPlanned: true });
+    expect(getAccountSplit(view('2026-09-10'), cash, '2026-09-10')).toEqual({ hasPlanned: true });
   });
 });

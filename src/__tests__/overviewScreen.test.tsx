@@ -8,10 +8,12 @@ import { getInitialData } from '../services/storageService';
 import { SyncController } from '../services/syncController';
 import { Account } from '../types/finance';
 
+// Hodnota ke konci období je první uzel buňky; podřádek probíhajícího období (provedeno / teď) se čte zvlášť
 const cells = (row: Element | null) => [...row!.querySelectorAll('td')].slice(1).map(td => ({
-  text: td.textContent,
+  text: td.firstChild?.textContent,
   tone: td.className.match(/text-(emerald-600|red-600|slate-500|slate-900)/)?.[1],
 }));
+const sublines = (row: Element | null) => [...row!.querySelectorAll('td span[title]')].map(s => `${s.getAttribute('title')} ${s.textContent}`);
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -49,6 +51,14 @@ it('renders the usable scope row of the current period', () => {
     { text: formatCurrency(0, { showPlus: true }), tone: 'slate-500' },
     { text: formatCurrency(100000, { showPlus: true }), tone: 'emerald-600' },
     { text: formatCurrency(1100000), tone: 'slate-900' },
+  ]);
+  // Vše je provedené: podřádky se shodují s hodnotami ke konci období
+  expect(sublines(row)).toEqual([
+    `provedeno ${formatCurrency(100000)}`,
+    `provedeno ${formatCurrency(0)}`,
+    `provedeno ${formatCurrency(0, { showPlus: true })}`,
+    `provedeno ${formatCurrency(100000, { showPlus: true })}`,
+    `teď ${formatCurrency(1100000)}`,
   ]);
 });
 

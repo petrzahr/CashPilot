@@ -338,7 +338,7 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     const forecast = {
       getPeriod: (key: string) => {
         const found = projected.find(s => s.period.key === key);
-        return found && { period: found.period, projected: found, recorded: found };
+        return found && { period: found.period, projected: found, recorded: found, items: [] };
       },
     } as unknown as ForecastResult;
 

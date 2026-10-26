@@ -36,6 +36,7 @@ import { CorrectionDetailModal } from '../accounts/CorrectionDetailModal';
 import { MultiSelectDropdown } from '../shared/MultiSelectDropdown';
 import { MobileFiltersToggle } from '../shared/MobileFiltersToggle';
 import { MoveButtons } from '../shared/MoveButtons';
+import { NowLine } from '../shared/NowLine';
 import { ConflictChip, RecurringIcon, buildItemRowParts } from '../shared/ItemRowParts';
 import { MoveDirection, moveIdByStep, moveIdToTarget } from '../../services/reorderService';
 import { calculateBudgetCategoryOverview } from '../../services/categoryBreakdownService';
@@ -57,11 +58,6 @@ const SignedValue: React.FC<{ text: string; value: number | null }> = ({ text, v
 
 /** Barva textu dlaždice toku: inkoust, chybějící hodnota „—“ vedlejším inkoustem. */
 const flowTone = (value: number | null) => (value === null ? 'text-slate-500' : 'text-slate-900');
-
-/** Podřádek dlaždice v probíhajícím období: jen číslo, význam („teď“ / „provedeno“) v tooltipu. */
-const NowLine: React.FC<{ label: string; text: string }> = ({ label, text }) => (
-  <span className="text-xs text-slate-500 font-medium block truncate tabular-nums" title={label}>{text}</span>
-);
 
 /** Prázdný podřádek: hodnoty dlaždic bez podřádku zůstanou v řadě zarovnané s ostatními. */
 const NowLineSpacer: React.FC = () => <span className="text-xs block" aria-hidden="true">&nbsp;</span>;

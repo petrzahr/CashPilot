@@ -5,7 +5,8 @@ import { DualPeriodFilterPanel } from '../shared/DualPeriodFilterPanel';
 import { calculatePortfolioComposition, createBudgetPeriodInfo } from '../../services/analyticsEngine';
 import { PortfolioCompositionChart } from '../analytics/PortfolioCompositionChart';
 import { DualPeriodRange, resolvePeriodRange } from '../../services/periodRange';
-import { getAccountRow, getScopeRow } from '../../services/overviewRows';
+import { getAccountRow, getAccountSplit, getScopeRow, getScopeSplit } from '../../services/overviewRows';
+import { NowLine } from '../shared/NowLine';
 import { getSignTone, ItemAmountTone } from '../../services/itemRow';
 import { BudgetPeriod } from '../../types/finance';
 import {
@@ -33,10 +34,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
     data: { accounts, transactions, corrections, snapshots: marketValueSnapshots },
   }), [range, forecast.currentPeriod, settings.budgetStartDay, accounts, transactions, corrections, marketValueSnapshots]);
 
-  const displayPeriods = useMemo(() => selectedPeriods.flatMap(period => {
-    const summary = forecast.getPeriod(period.key)?.projected;
-    return summary ? [summary] : [];
+  const displayViews = useMemo(() => selectedPeriods.flatMap(period => {
+    const view = forecast.getPeriod(period.key);
+    return view ? [view] : [];
   }), [forecast, selectedPeriods]);
+  const displayPeriods = useMemo(() => displayViews.map(view => view.projected), [displayViews]);
 
   // Rozložení celkového majetku za stejná období jako tabulky
   const portfolioComposition = useMemo(() => calculatePortfolioComposition(
@@ -113,9 +115,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {displayPeriods.map((p) => {
+              {displayViews.map((view) => {
+                const p = view.projected;
                 const isCurrent = p.period.key === forecast.currentPeriod.key;
                 const row = getScopeRow(p, accounts, forecastScope);
+                // Probíhající období: pod hodnotami ke konci období provedené toky a dnešní stav (jako v Rozpočtu)
+                const { hasPlanned, executed } = getScopeSplit(view, accounts, forecastScope, todayStr);
 
                 return (
                   <tr
@@ -133,7 +138,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handlePeriodClick(p.period); }}
                         aria-label={`Přejít do rozpočtu: ${p.period.name}`}
-                        className="text-left rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40 group-hover:text-sky-700"
+                        title={hasPlanned ? 'Obsahuje plánované položky' : undefined}
+                        className={`text-left rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-500/40 group-hover:text-sky-700 ${hasPlanned ? 'text-amber-700' : ''}`}
                       >
                         {p.period.name}
                       </button>
@@ -148,20 +154,25 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-emerald-600">
                       {row.incomeInHaler > 0 ? `+${formatCurrency(row.incomeInHaler)}` : '0 Kč'}
+                      {executed && <NowLine label="provedeno" text={formatCurrency(executed.incomingInHaler)} />}
                     </td>
                     <td className="py-3 px-4 w-[120px] text-right font-semibold text-red-600">
                       {row.expenseInHaler > 0 ? `−${formatCurrency(row.expenseInHaler)}` : '0 Kč'}
+                      {executed && <NowLine label="provedeno" text={formatCurrency(executed.outgoingInHaler)} />}
                     </td>
                     <td className={`py-3 px-4 w-[120px] text-right font-semibold ${signToneClass(getSignTone(row.netTransfersInHaler))}`}>
                       {formatCurrency(row.netTransfersInHaler, { showPlus: true })}
+                      {executed && <NowLine label="provedeno" text={formatCurrency(executed.netTransfersInHaler, { showPlus: true })} />}
                     </td>
                     <td className={`py-3 px-4 w-[130px] text-right font-medium ${signToneClass(getSignTone(row.netChangeInHaler))}`}>
                       {formatCurrency(row.netChangeInHaler, { showPlus: true })}
+                      {executed && <NowLine label="provedeno" text={formatCurrency(executed.netChangeInHaler, { showPlus: true })} />}
                     </td>
                     <td className={`py-3 px-4 w-[140px] text-right font-bold ${
                       row.closingInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                     }`}>
                       {formatCurrency(row.closingInHaler)}
+                      {executed && <NowLine label="teď" text={formatCurrency(executed.nowInHaler)} />}
                     </td>
                   </tr>
                 );
@@ -203,7 +214,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
         {/* 1. Režim: Přehled podle období */}
         {accountViewMode === 'period' && (
           <div className="divide-y divide-slate-100">
-            {displayPeriods.map((p) => {
+            {displayViews.map((view) => {
+              const p = view.projected;
               const isExpanded = expandedPeriodKey === p.period.key;
 
               return (
@@ -247,6 +259,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                             const accBal = p.accountBalances[acc.id];
                             if (!accBal) return null;
                             const row = getAccountRow(acc, accBal);
+                            const { executed } = getAccountSplit(view, acc, todayStr);
 
                             return (
                               <tr key={acc.id} className="group hover:bg-white">
@@ -262,20 +275,25 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({ onNavigateToBudg
                                 </td>
                                 <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-emerald-600">
                                   {row.incomingInHaler > 0 ? `+${formatCurrency(row.incomingInHaler)}` : '0 Kč'}
+                                  {executed && <NowLine label="provedeno" text={formatCurrency(executed.incomingInHaler)} />}
                                 </td>
                                 <td className="py-2.5 px-4 w-[120px] text-right font-semibold text-red-600">
                                   {row.outgoingInHaler > 0 ? `−${formatCurrency(row.outgoingInHaler)}` : '0 Kč'}
+                                  {executed && <NowLine label="provedeno" text={formatCurrency(executed.outgoingInHaler)} />}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[120px] text-right font-semibold ${signToneClass(getSignTone(row.netTransfersInHaler))}`}>
                                   {formatCurrency(row.netTransfersInHaler, { showPlus: true })}
+                                  {executed && <NowLine label="provedeno" text={formatCurrency(executed.netTransfersInHaler, { showPlus: true })} />}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[130px] text-right font-medium ${signToneClass(getSignTone(row.netChangeInHaler))}`}>
                                   {formatCurrency(row.netChangeInHaler, { showPlus: true })}
+                                  {executed && <NowLine label="provedeno" text={formatCurrency(executed.netChangeInHaler, { showPlus: true })} />}
                                 </td>
                                 <td className={`py-2.5 px-4 w-[140px] text-right font-bold ${
                                   row.closingInHaler < 0 ? 'text-red-600' : 'text-slate-900'
                                 }`}>
                                   {formatCurrency(row.closingInHaler)}
+                                  {executed && <NowLine label="teď" text={formatCurrency(executed.nowInHaler)} />}
                                 </td>
                               </tr>
                             );
