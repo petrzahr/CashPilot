@@ -358,8 +358,8 @@ export const AccountsScreen: React.FC = () => {
                   {formatCurrency(closingBalance)}
                 </div>
                 {actualBalances?.[acc.id] !== undefined && (
-                  <span className="text-xs text-slate-500 font-medium block truncate tabular-nums">
-                    Aktuální zůstatek {formatCurrency(actualBalances[acc.id])}
+                  <span className="text-xs text-slate-500 font-medium block truncate tabular-nums" title="Aktuální zůstatek">
+                    {formatCurrency(actualBalances[acc.id])}
                   </span>
                 )}
 
