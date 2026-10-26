@@ -281,17 +281,20 @@ const SectionTable: React.FC<SectionTableProps> = ({
 
     return (
       <tr key={item.ruleId} className={rowClass}>
-        <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
-          {item.title}
-          {(item.simState === 'added' || item.simState === 'edited') && (
-            <span className="ml-1.5 chip bg-sky-50 text-sky-700">
-              {item.simState === 'added' ? 'nová' : 'upravená'}
-            </span>
-          )}
-          {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
-          {!isDeleted && item.frequency !== 'monthly' && (
-            <span className="ml-1.5 chip bg-slate-100 text-slate-600">rozpočítaná</span>
-          )}
+        <td className={`py-2 ${isTransfer ? 'px-4' : 'pl-8 pr-4'} font-medium whitespace-nowrap ${isDeleted ? strike : 'text-slate-900'} ${STICKY_LEFT} ${rowBg}`}>
+          {/* Název se zkrátí, štítky zůstanou celé - buňka nikdy nezalomí na dva řádky */}
+          <span className="inline-flex items-center gap-1.5 max-w-64 align-middle">
+            <span className="truncate" title={item.title}>{item.title}</span>
+            {(item.simState === 'added' || item.simState === 'edited') && (
+              <span className="shrink-0 chip bg-sky-50 text-sky-700">
+                {item.simState === 'added' ? 'nová' : 'upravená'}
+              </span>
+            )}
+            {/* Nepravidelná platba: měsíční částka je jen průměr, štítek to řekne i bez barvy */}
+            {!isDeleted && item.frequency !== 'monthly' && (
+              <span className="shrink-0 chip bg-slate-100 text-slate-600">rozpočítaná</span>
+            )}
+          </span>
         </td>
         {!isTransfer && <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.categoryLabel}</td>}
         <td className={`py-2 px-4 whitespace-nowrap ${strike || 'text-slate-500'}`}>{item.accountLabel}</td>
