@@ -75,6 +75,10 @@ export interface PortfolioCompositionSegment {
   color: string;
   balanceInHaler: number;
   pct: number | null;     // % podíl na celkovém majetku daného období (null, pokud total === 0)
+  /** Část pct z plánovaných položek (jen přírůstek proti dnešku), kreslí se šrafovaně */
+  plannedPct?: number;
+  /** Dnešní stav a plánovaná změna ke konci období (probíhající a budoucí období) */
+  split?: { executedLabel: string; executedInHaler: number; plannedInHaler: number; correctionsInHaler: number };
 }
 
 export interface PortfolioCompositionPoint {
@@ -364,7 +368,9 @@ export function calculateCashFlowComposition(
  * přesně 100 % (např. účet na -15 % => kladné účty sahají jen do 85 %).
  * Minulá období ukazují skutečný stav ke konci období; probíhající a budoucí období berou
  * projektovaný konečný stav účtu z forecastu (shodný se sekcí Majetek a "Konečným stavem"
- * v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav.
+ * v Měsíčním rozpočtu), jinak by ukazovala jen dnešní stav. Jejich plánovaná část je změna
+ * od dnešního stavu ke konci období; šrafuje se jen přírůstek ve směru zůstatku, úbytek je
+ * vidět jen v tooltipu (segment je už menší a „chybějící“ část nemá kde ležet).
  */
 export function calculatePortfolioComposition(
   periods: BudgetPeriodInfo[],
@@ -378,6 +384,8 @@ export function calculatePortfolioComposition(
   const eligibleAccounts = sortAccountsByOrder(accounts).filter(
     (a) => a.isNetWorth && a.status === 'active'
   );
+  // Dnešní stav účtů (jen provedené položky) z probíhajícího období forecastu
+  const actual = forecast?.currentPeriod && forecast.getPeriod(forecast.currentPeriod.key)?.actual;
 
   return periods.map((p) => {
     const pointDate = p.analysisEndDate;
@@ -402,10 +410,20 @@ export function calculatePortfolioComposition(
     );
 
     const pctBaseInHaler = sumAbsoluteHaler(rawSegments.map((s) => s.balanceInHaler));
-    const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => ({
-      ...s,
-      pct: toSharePct(s.balanceInHaler, pctBaseInHaler),
-    }));
+    const segments: PortfolioCompositionSegment[] = rawSegments.map((s) => {
+      const pct = toSharePct(s.balanceInHaler, pctBaseInHaler);
+      const nowInHaler = view && actual ? actual.accountBalances[s.key] ?? 0 : undefined;
+      if (nowInHaler === undefined) return { ...s, pct };
+      // Plánovaná část = změna od dnešního stavu ke konci období; šrafuje se jen ta, která segment zvětšuje
+      const plannedInHaler = subHaler(s.balanceInHaler, nowInHaler);
+      const grows = s.balanceInHaler !== 0 && Math.sign(plannedInHaler) === Math.sign(s.balanceInHaler);
+      return {
+        ...s,
+        pct,
+        plannedPct: pct !== null && grows ? pct * Math.min(plannedInHaler / s.balanceInHaler, 1) : 0,
+        split: { executedLabel: 'teď', executedInHaler: nowInHaler, plannedInHaler, correctionsInHaler: 0 },
+      };
+    });
 
     return {
       periodKey: p.key,

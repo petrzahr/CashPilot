@@ -357,6 +357,42 @@ describe('Rozložení celkového majetku (calculatePortfolioComposition)', () =>
     expect(fallback[2].totalNetWorthInHaler).toBe(30000000);
   });
 
+  it('10d. Plánovaná část je změna od dnešního stavu; šrafuje se jen přírůstek ve směru zůstatku', () => {
+    const periods = generateBudgetPeriodSequence(createBudgetPeriod(2026, 7, 15), createBudgetPeriod(2026, 9, 15), today);
+    const summary = (key: string, chk: number, sav: number) =>
+      ({
+        period: { key },
+        accountBalances: {
+          [checking.id]: { closingBalanceInHaler: chk },
+          [savings.id]: { closingBalanceInHaler: sav },
+        },
+      }) as unknown as PeriodSummary;
+    const projected = [summary('2026-08', 11000000, 20000000), summary('2026-09', -500000, 21000000)];
+    const actual = { accountBalances: { [checking.id]: 10000000, [savings.id]: 21000000 } };
+    const forecast = {
+      currentPeriod: { key: '2026-08' },
+      getPeriod: (key: string) => {
+        const found = projected.find(s => s.period.key === key);
+        return found && { period: found.period, projected: found, recorded: found, items: [], actual: key === '2026-08' ? actual : undefined };
+      },
+    } as unknown as ForecastResult;
+
+    const [past, current, future] = calculatePortfolioComposition(periods, [checking, savings], [], [], [], forecast, today);
+    const seg = (point: typeof current, id: string) => point.segments.find((s) => s.key === id)!;
+
+    // Minulé období nemá plán
+    expect(seg(past, checking.id)).not.toHaveProperty('split');
+    // Plánovaný přírůstek 10 000 Kč z 110 000 Kč je šrafovaný
+    expect(seg(current, checking.id).plannedPct).toBeCloseTo(seg(current, checking.id).pct! / 11);
+    expect(seg(current, checking.id).split).toEqual({ executedLabel: 'teď', executedInHaler: 10000000, plannedInHaler: 1000000, correctionsInHaler: 0 });
+    // Plánovaný úbytek se nešrafuje, jen je v tooltipu
+    expect(seg(current, savings.id).plannedPct).toBe(0);
+    expect(seg(current, savings.id).split?.plannedInHaler).toBe(-1000000);
+    // Plán překlopí účet do mínusu: celý záporný segment je plánovaný
+    expect(seg(future, checking.id).plannedPct).toBe(seg(future, checking.id).pct);
+    expect(seg(future, savings.id).plannedPct).toBe(0);
+  });
+
   it('11. Graf se renderuje v sekci Majetek mezi Vývojem zůstatků a Účty, v Analýze už není', () => {
     saveStoredAuth({
       accessToken: 'mock_token',

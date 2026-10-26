@@ -23,6 +23,8 @@ export const PortfolioCompositionChart: React.FC<PortfolioCompositionChartProps>
           color: s.color,
           amountInHaler: s.balanceInHaler,
           pct: s.pct,
+          plannedPct: s.plannedPct,
+          split: s.split,
         })),
       })),
     [data]
