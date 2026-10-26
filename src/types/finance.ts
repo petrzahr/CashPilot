@@ -247,13 +247,26 @@ export interface DefaultAccountPeriod {
   investedPct: number | null;
 }
 
-/** Default account income, expense and corrections for one part of a period. */
+/** Default account flows and saving KPIs for one part of a period; percentages are of this part's income. */
 export interface DefaultAccountFlows {
   incomeInHaler: number;
   expenseInHaler: number;
   correctionsInHaler: number;
+  netTransfersInHaler: number;
   /** Příjmy − výdaje + korekce */
   actuallySavedInHaler: number;
+  actuallySavedPct: number | null;
+  savedInHaler: number;
+  savedPct: number | null;
+  investedInHaler: number;
+  investedPct: number | null;
+}
+
+/** Balances at the end of today (executed items only), for the period that contains today. */
+export interface ActualBalances {
+  accountBalances: Record<string, number>;
+  usableInHaler: number;
+  netWorthInHaler: number;
 }
 
 /**
@@ -279,6 +292,8 @@ export interface PeriodView {
   readonly defaultAccount: DefaultAccountPeriod;
   /** Computed on first access; executed + planned = defaultAccount income, expense, corrections. */
   readonly defaultAccountSplit: DefaultAccountSplit;
+  /** Computed on first access; only for the period that contains today, undefined otherwise. */
+  readonly actual: ActualBalances | undefined;
 }
 
 // Struktura pro denní průběžný zůstatek (intra-day)

@@ -58,6 +58,14 @@ const SignedValue: React.FC<{ text: string; value: number | null }> = ({ text, v
 /** Barva textu dlaždice toku: inkoust, chybějící hodnota „—“ vedlejším inkoustem. */
 const flowTone = (value: number | null) => (value === null ? 'text-slate-500' : 'text-slate-900');
 
+/** Podřádek dlaždice v probíhajícím období: dnešní stav („teď“) nebo provedené toky („provedeno“). */
+const NowLine: React.FC<{ label: string; text: string }> = ({ label, text }) => (
+  <span className="text-xs text-slate-500 font-medium block truncate tabular-nums">{label} {text}</span>
+);
+
+/** Prázdný podřádek: hodnoty dlaždic bez podřádku zůstanou v řadě zarovnané s ostatními. */
+const NowLineSpacer: React.FC = () => <span className="text-xs block" aria-hidden="true">&nbsp;</span>;
+
 interface MonthlyBudgetScreenProps {
   onOpenTransactionModal: (initialDate?: string, initialType?: MovementType) => void;
   onEditTransaction: (tx: Transaction) => void;
@@ -322,6 +330,11 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
     isOverdraftExceeded,
   } = defaultTotals;
 
+  // Probíhající období: pod hodnotami ke konci období dnešní stav a provedené toky
+  const actual = periodView?.actual;
+  const executed = actual ? periodView?.defaultAccountSplit.executed : undefined;
+  const defaultNowBalance = actual && defaultAccount ? actual.accountBalances[defaultAccount.id] ?? 0 : undefined;
+
   // Části řádku seznamu sdílí tabulka (od lg) i řádky-karty na mobilu, stejně jako ve Všech položkách
   const getListRowParts = (
     tx: Transaction,
@@ -346,6 +359,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <span className={`text-xl sm:text-[32px] sm:leading-tight font-extrabold block mt-1 truncate ${aggregateSummary.usableClosingInHaler < 0 ? 'text-red-600' : 'text-slate-900'}`}>
               {formatCurrency(aggregateSummary.usableClosingInHaler)}
             </span>
+            {actual && <NowLine label="teď" text={formatCurrency(actual.usableInHaler)} />}
           </div>
 
           <div className="bg-white p-4 rounded-2xl border border-slate-200">
@@ -353,6 +367,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
             <span className={`text-xl sm:text-[32px] sm:leading-tight font-extrabold block mt-1 truncate ${aggregateSummary.netWorthClosingInHaler < 0 ? 'text-red-600' : 'text-purple-600'}`}>
               {formatCurrency(aggregateSummary.netWorthClosingInHaler)}
             </span>
+            {actual && <NowLine label="teď" text={formatCurrency(actual.netWorthInHaler)} />}
           </div>
         </div>
 
@@ -382,6 +397,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultOpeningBalance)}
                 </span>
+                {actual && <NowLineSpacer />}
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -389,6 +405,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultIncomeBalance)}
                 </span>
+                {executed && <NowLine label="provedeno" text={formatCurrency(executed.incomeInHaler)} />}
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -396,6 +413,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultExpenseBalance)}
                 </span>
+                {executed && <NowLine label="provedeno" text={formatCurrency(executed.expenseInHaler)} />}
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -403,6 +421,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   <SignedValue text={formatCurrency(defaultNetTransfers, { showPlus: true })} value={defaultNetTransfers} />
                 </span>
+                {executed && <NowLine label="provedeno" text={formatCurrency(executed.netTransfersInHaler, { showPlus: true })} />}
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -410,6 +429,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   <SignedValue text={formatCurrency(defaultNetChange, { showPlus: true })} value={defaultNetChange} />
                 </span>
+                {defaultNowBalance !== undefined && (
+                  <NowLine label="teď" text={formatCurrency(defaultNowBalance - defaultOpeningBalance, { showPlus: true })} />
+                )}
               </div>
 
               <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -417,6 +439,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultClosingBalance)}
                 </span>
+                {defaultNowBalance !== undefined && <NowLine label="teď" text={formatCurrency(defaultNowBalance)} />}
               </div>
 
               <div className={`flex flex-col p-3 rounded-xl border col-span-2 sm:col-span-1 transition-colors ${
@@ -435,6 +458,9 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                 <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                   {formatCurrency(defaultWithOverdraft)}
                 </span>
+                {defaultNowBalance !== undefined && (
+                  <NowLine label="teď" text={formatCurrency(defaultNowBalance + overdraftLimitInHaler)} />
+                )}
               </div>
             </div>
           </div>
@@ -448,6 +474,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                 <SignedValue text={formatCurrency(aggregateSummary.actuallySavedInHaler, { showPlus: true })} value={aggregateSummary.actuallySavedInHaler} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatCurrency(executed.actuallySavedInHaler, { showPlus: true })} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -455,6 +482,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.actuallySavedPct)}`}>
                 <SignedValue text={formatSignedPercent(aggregateSummary.actuallySavedPct)} value={aggregateSummary.actuallySavedPct} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatSignedPercent(executed.actuallySavedPct)} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -462,6 +490,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                 <SignedValue text={formatCurrency(aggregateSummary.savedInHaler, { showPlus: true })} value={aggregateSummary.savedInHaler} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatCurrency(executed.savedInHaler, { showPlus: true })} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -469,6 +498,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.savedPct)}`}>
                 <SignedValue text={formatSignedPercent(aggregateSummary.savedPct)} value={aggregateSummary.savedPct} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatSignedPercent(executed.savedPct)} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -476,6 +506,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className="text-base font-bold text-slate-900 block mt-auto pt-0.5 truncate">
                 <SignedValue text={formatCurrency(aggregateSummary.investedInHaler, { showPlus: true })} value={aggregateSummary.investedInHaler} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatCurrency(executed.investedInHaler, { showPlus: true })} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200">
@@ -483,6 +514,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
               <span className={`text-base font-bold block mt-auto pt-0.5 truncate ${flowTone(aggregateSummary.investedPct)}`}>
                 <SignedValue text={formatSignedPercent(aggregateSummary.investedPct)} value={aggregateSummary.investedPct} />
               </span>
+              {executed && <NowLine label="provedeno" text={formatSignedPercent(executed.investedPct)} />}
             </div>
 
             <div className="flex flex-col bg-white p-3 rounded-xl border border-slate-200 col-span-2 sm:col-span-1">
@@ -492,6 +524,7 @@ export const MonthlyBudgetScreen: React.FC<MonthlyBudgetScreenProps> = ({
                   ? '—'
                   : <SignedValue text={formatCurrency(aggregateSummary.investmentChange, { showPlus: true })} value={aggregateSummary.investmentChange} />}
               </span>
+              {actual && <NowLineSpacer />}
             </div>
           </div>
         </div>

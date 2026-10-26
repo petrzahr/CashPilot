@@ -190,9 +190,36 @@ describe('PeriodView.defaultAccountSplit', () => {
 
   it('splits into executed items dated up to today and the remaining planned items', () => {
     const { executed, planned } = view([checking, savings], mixed()).defaultAccountSplit;
-    expect(executed).toEqual({ incomeInHaler: 48000, expenseInHaler: 10000, correctionsInHaler: -500, actuallySavedInHaler: 37500 });
+    expect(executed).toMatchObject({ incomeInHaler: 48000, expenseInHaler: 10000, correctionsInHaler: -500, actuallySavedInHaler: 37500 });
     // planned expense dated in the past and executed expense dated in the future both still count as planned
-    expect(planned).toEqual({ incomeInHaler: 20000, expenseInHaler: 10000, correctionsInHaler: 0, actuallySavedInHaler: 10000 });
+    expect(planned).toMatchObject({ incomeInHaler: 20000, expenseInHaler: 10000, correctionsInHaler: 0, actuallySavedInHaler: 10000 });
+  });
+
+  it('splits net transfers, Uspořeno and Investováno; percentages are of the part\'s own income', () => {
+    const v = view([checking, savings, investment], [
+      tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 100000, status: 'executed', date: '2026-09-16' }),
+      tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 50000, date: '2026-10-01' }),
+      tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'sav', amountInHaler: 20000, status: 'executed', date: '2026-09-17' }),
+      tx({ type: 'transfer', sourceAccountId: 'sav', targetAccountId: 'chk', amountInHaler: 5000, status: 'executed', date: '2026-09-18' }),
+      tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'inv', amountInHaler: 10000, date: '2026-10-02' }),
+      tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'sav', amountInHaler: 7000, status: 'cancelled', date: '2026-10-03' }),
+    ]);
+    const { executed, planned } = v.defaultAccountSplit;
+    expect(executed).toMatchObject({ netTransfersInHaler: -15000, savedInHaler: 15000, savedPct: 15, investedInHaler: 0, investedPct: 0 });
+    expect(executed.actuallySavedPct).toBe(100);
+    expect(planned).toMatchObject({ netTransfersInHaler: -10000, savedInHaler: 0, investedInHaler: 10000, investedPct: 20 });
+    expect(executed.netTransfersInHaler + planned.netTransfersInHaler).toBe(v.defaultAccount.netTransfersInHaler);
+    expect(executed.savedInHaler + planned.savedInHaler).toBe(v.defaultAccount.savedInHaler);
+    expect(executed.investedInHaler + planned.investedInHaler).toBe(v.defaultAccount.investedInHaler);
+  });
+
+  it('has null percentages for a part without income', () => {
+    const { executed } = view([checking, savings], [
+      tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 50000, date: '2026-10-01' }),
+      tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'sav', amountInHaler: 1000, status: 'executed', date: '2026-09-16' }),
+    ]).defaultAccountSplit;
+    expect([executed.actuallySavedPct, executed.savedPct, executed.investedPct]).toEqual([null, null, null]);
+    expect(executed.savedInHaler).toBe(1000);
   });
 
   it('adds up to the default account totals', () => {
@@ -232,7 +259,10 @@ describe('PeriodView.defaultAccountSplit', () => {
       accounts: [checking],
       transactions: [tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 4000, status: 'executed', date: '2026-10-01' })],
     }, { today: '2026-11-01' }).getPeriod(period.key)!;
-    expect(v.defaultAccountSplit.planned).toEqual({ incomeInHaler: 0, expenseInHaler: 0, correctionsInHaler: 0, actuallySavedInHaler: 0 });
+    expect(v.defaultAccountSplit.planned).toMatchObject({
+      incomeInHaler: 0, expenseInHaler: 0, correctionsInHaler: 0, netTransfersInHaler: 0,
+      actuallySavedInHaler: 0, savedInHaler: 0, investedInHaler: 0,
+    });
     expect(v.defaultAccountSplit.executed.expenseInHaler).toBe(4000);
   });
 
@@ -241,5 +271,32 @@ describe('PeriodView.defaultAccountSplit', () => {
     expect(v.defaultAccountSplit.planned.incomeInHaler).toBe(0);
     expect(v.defaultAccountSplit.executed.incomeInHaler).toBe(0);
     expect(v.defaultAccountSplit).toBe(v.defaultAccountSplit);
+  });
+});
+
+describe('PeriodView.actual', () => {
+  // today = 2026-09-20 (see view)
+  const cash = account('cash', 'cash', { initialBalanceInHaler: 5000 });
+  const items = () => [
+    tx({ type: 'income', sourceAccountId: 'chk', amountInHaler: 50000, status: 'executed', date: '2026-09-16' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 7000, date: '2026-09-18' }),
+    tx({ type: 'expense', sourceAccountId: 'chk', amountInHaler: 3000, status: 'executed', date: '2026-10-02' }),
+    tx({ type: 'transfer', sourceAccountId: 'chk', targetAccountId: 'sav', amountInHaler: 20000, status: 'executed', date: '2026-09-17' }),
+  ];
+
+  it('holds today\'s balances from executed items dated up to today', () => {
+    const actual = view([checking, cash, savings, { ...pension, isNetWorth: false }], items()).actual!;
+    expect(actual.accountBalances).toEqual({ chk: 1030000, cash: 5000, sav: 20000, pen: 0 });
+    expect(actual.usableInHaler).toBe(1035000);
+    expect(actual.netWorthInHaler).toBe(1055000);
+    const v = view([checking], items());
+    expect(v.actual).toBe(v.actual);
+  });
+
+  it('is undefined for periods that do not contain today', () => {
+    expect(summarizePeriods([period], { accounts: [checking], transactions: items() }, { today: '2026-11-01' })
+      .getPeriod(period.key)!.actual).toBeUndefined();
+    expect(summarizePeriods([period], { accounts: [checking], transactions: items() }, { today: '2026-09-14' })
+      .getPeriod(period.key)!.actual).toBeUndefined();
   });
 });

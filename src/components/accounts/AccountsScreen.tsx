@@ -67,7 +67,10 @@ export const AccountsScreen: React.FC = () => {
     .filter(a => showArchived ? true : a.status === 'active')
     .filter(a => typeFilters.length === 0 || typeFilters.includes(a.type));
 
-  const currentSummary = forecast.getPeriod(selectedPeriod.key)?.projected;
+  const selectedView = forecast.getPeriod(selectedPeriod.key);
+  const currentSummary = selectedView?.projected;
+  // Dnešní zůstatky jen v probíhajícím období
+  const actualBalances = selectedView?.actual?.accountBalances;
 
   const resetDragState = () => {
     setDragHandleAccountId(null);
@@ -354,6 +357,11 @@ export const AccountsScreen: React.FC = () => {
                 }`}>
                   {formatCurrency(closingBalance)}
                 </div>
+                {actualBalances?.[acc.id] !== undefined && (
+                  <span className="text-xs text-slate-500 font-medium block truncate tabular-nums">
+                    Aktuální zůstatek {formatCurrency(actualBalances[acc.id])}
+                  </span>
+                )}
 
                 {isInvestment && (
                   <div className="pt-2 mt-2 border-t border-slate-200 flex items-center justify-between gap-3 text-xs">

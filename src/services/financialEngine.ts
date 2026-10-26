@@ -1,8 +1,10 @@
 import {
   Account,
+  ActualBalances,
   BalanceCorrection,
   AppSettings,
   BudgetPeriod,
+  DefaultAccountFlows,
   DefaultAccountPeriod,
   DefaultAccountSplit,
   ForecastResult,
@@ -489,32 +491,91 @@ function splitDefaultAccount(
   const defaultAccount = getDefaultAccount(accounts);
   let plannedIncome = 0;
   let plannedExpense = 0;
+  let plannedNetTransfers = 0;
   if (defaultAccount) {
     const activeFrom = defaultAccount.initialBalanceDate;
     for (const tx of periodTransactions) {
-      if (tx.sourceAccountId !== defaultAccount.id || !isRemainingPlanned(tx, today)) continue;
+      if (!isRemainingPlanned(tx, today)) continue;
       if (activeFrom && tx.date < activeFrom) continue;
+      if (tx.type === 'transfer') plannedNetTransfers = addHaler(plannedNetTransfers, getAccountFlowInHaler(tx, defaultAccount.id));
+      if (tx.sourceAccountId !== defaultAccount.id) continue;
       if (tx.type === 'income') plannedIncome = addHaler(plannedIncome, getEffectiveAmountInHaler(tx));
       else if (tx.type === 'expense') plannedExpense = addHaler(plannedExpense, getEffectiveAmountInHaler(tx));
     }
   }
+  const plannedTransfers = defaultAccount
+    ? sumDefaultAccountTransfers(periodTransactions, accounts, defaultAccount.id, tx => isRemainingPlanned(tx, today))
+    : { savedInHaler: 0, investedInHaler: 0 };
   const corrections = subHaler(totals.actuallySavedInHaler, subHaler(totals.incomeInHaler, totals.expenseInHaler));
   const executedIncome = subHaler(totals.incomeInHaler, plannedIncome);
   const executedExpense = subHaler(totals.expenseInHaler, plannedExpense);
   return {
-    executed: {
-      incomeInHaler: executedIncome,
-      expenseInHaler: executedExpense,
-      correctionsInHaler: corrections,
-      actuallySavedInHaler: addHaler(subHaler(executedIncome, executedExpense), corrections),
-    },
-    planned: {
-      incomeInHaler: plannedIncome,
-      expenseInHaler: plannedExpense,
-      correctionsInHaler: 0,
-      actuallySavedInHaler: subHaler(plannedIncome, plannedExpense),
-    },
+    executed: toDefaultAccountFlows(
+      executedIncome,
+      executedExpense,
+      corrections,
+      subHaler(totals.netTransfersInHaler, plannedNetTransfers),
+      subHaler(totals.savedInHaler, plannedTransfers.savedInHaler),
+      subHaler(totals.investedInHaler, plannedTransfers.investedInHaler)
+    ),
+    planned: toDefaultAccountFlows(
+      plannedIncome,
+      plannedExpense,
+      0,
+      plannedNetTransfers,
+      plannedTransfers.savedInHaler,
+      plannedTransfers.investedInHaler
+    ),
   };
+}
+
+function toDefaultAccountFlows(
+  income: number,
+  expense: number,
+  corrections: number,
+  netTransfers: number,
+  saved: number,
+  invested: number
+): DefaultAccountFlows {
+  const actuallySaved = addHaler(subHaler(income, expense), corrections);
+  const pct = (amount: number) => (income > 0 ? (amount / income) * 100 : null);
+  return {
+    incomeInHaler: income,
+    expenseInHaler: expense,
+    correctionsInHaler: corrections,
+    netTransfersInHaler: netTransfers,
+    actuallySavedInHaler: actuallySaved,
+    actuallySavedPct: pct(actuallySaved),
+    savedInHaler: saved,
+    savedPct: pct(saved),
+    investedInHaler: invested,
+    investedPct: pct(invested),
+  };
+}
+
+/**
+ * Uspořeno / Investováno = čisté převody mezi výchozím účtem a aktivními spořicími, resp. investičními
+ * a penzijními účty (z výchozího účtu +, zpět na něj −); zrušené převody se nepočítají.
+ */
+function sumDefaultAccountTransfers(
+  periodTransactions: Transaction[],
+  accounts: Account[],
+  defaultAccountId: string,
+  include: (tx: Transaction) => boolean = () => true
+): { savedInHaler: number; investedInHaler: number } {
+  const typeById = new Map(accounts.filter(a => a.status === 'active').map(a => [a.id, a.type]));
+  let savedInHaler = 0;
+  let investedInHaler = 0;
+  for (const tx of periodTransactions) {
+    if (tx.type !== 'transfer' || tx.status === 'cancelled' || !include(tx)) continue;
+    const signed = -getAccountFlowInHaler(tx, defaultAccountId);
+    if (signed === 0) continue;
+    const counterpartyId = tx.sourceAccountId === defaultAccountId ? tx.targetAccountId : tx.sourceAccountId;
+    const type = counterpartyId ? typeById.get(counterpartyId) : undefined;
+    if (type === 'savings') savedInHaler = addHaler(savedInHaler, signed);
+    else if (type === 'investment' || type === 'pension') investedInHaler = addHaler(investedInHaler, signed);
+  }
+  return { savedInHaler, investedInHaler };
 }
 
 /** Skutečně uspořeno = příjmy − výdaje + korekce účtu (bez převodů). */
@@ -548,21 +609,9 @@ function summarizeDefaultAccount(
   const closing = balance?.closingBalanceInHaler ?? (opening + netChange);
   const withOverdraft = closing + overdraftLimitInHaler;
 
-  let savedInHaler = 0;
-  let investedInHaler = 0;
-  if (defaultAccount) {
-    const typeById = new Map(accounts.filter(a => a.status === 'active').map(a => [a.id, a.type]));
-    for (const tx of periodTransactions) {
-      if (tx.type !== 'transfer' || tx.status === 'cancelled') continue;
-      // Z výchozího účtu odteklo = uspořeno (+), vráceno na něj = (−)
-      const signed = -getAccountFlowInHaler(tx, defaultAccount.id);
-      if (signed === 0) continue;
-      const counterpartyId = tx.sourceAccountId === defaultAccount.id ? tx.targetAccountId : tx.sourceAccountId;
-      const type = counterpartyId ? typeById.get(counterpartyId) : undefined;
-      if (type === 'savings') savedInHaler = addHaler(savedInHaler, signed);
-      else if (type === 'investment' || type === 'pension') investedInHaler = addHaler(investedInHaler, signed);
-    }
-  }
+  const { savedInHaler, investedInHaler } = defaultAccount
+    ? sumDefaultAccountTransfers(periodTransactions, accounts, defaultAccount.id)
+    : { savedInHaler: 0, investedInHaler: 0 };
 
   const actuallySavedInHaler = getActuallySavedInHaler(balance);
   const pct = (amount: number) => (income > 0 ? (amount / income) * 100 : null);
@@ -970,6 +1019,8 @@ export function summarizePeriods(
       const projected = projectedByKey.get(recorded.period.key) ?? recorded;
       let defaultAccount: DefaultAccountPeriod | undefined;
       let defaultAccountSplit: DefaultAccountSplit | undefined;
+      let actual: ActualBalances | undefined;
+      const containsToday = isDateInPeriod(today, recorded.period);
       views.set(recorded.period.key, {
         period: recorded.period,
         projected,
@@ -985,6 +1036,11 @@ export function summarizePeriods(
           defaultAccountSplit ??= splitDefaultAccount(this.defaultAccount, safeAccounts, getEffectiveForPeriod(recorded.period), today);
           return defaultAccountSplit;
         },
+        get actual() {
+          if (!containsToday) return undefined;
+          actual ??= summarizeActualBalances(safeAccounts, safeTxs, safeCorrections, safeSnapshots, today);
+          return actual;
+        },
       });
     }
     return views;
@@ -999,6 +1055,26 @@ export function summarizePeriods(
       return periodViews.get(key);
     },
   };
+}
+
+/** Dnešní stav účtů (jen provedené položky) a z něj použitelný zůstatek a majetek jako v souhrnu období. */
+function summarizeActualBalances(
+  accounts: Account[],
+  transactions: Transaction[],
+  corrections: BalanceCorrection[],
+  snapshots: MarketValueSnapshot[],
+  today: string
+): ActualBalances {
+  const accountBalances: Record<string, number> = {};
+  let usableInHaler = 0;
+  let netWorthInHaler = 0;
+  for (const acc of accounts) {
+    const balance = getAccountBalanceAtDate(acc, today, { transactions, corrections, snapshots });
+    accountBalances[acc.id] = balance;
+    if (acc.isUsableCash) usableInHaler = addHaler(usableInHaler, balance);
+    if (acc.isNetWorth) netWorthInHaler = addHaler(netWorthInHaler, balance);
+  }
+  return { accountBalances, usableInHaler, netWorthInHaler };
 }
 
 export interface QuickFinancialOverview {
